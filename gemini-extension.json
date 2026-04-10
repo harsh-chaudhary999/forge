@@ -1,0 +1,7 @@
+{
+  "name": "forge",
+  "description": "Plug-and-play multi-repo product orchestration plugin. Takes a PRD to shipped PRs across any product stack.",
+  "version": "1.0.0",
+  "contextFileName": "GEMINI.md",
+  "homepage": "https://github.com/harsh-chaudhary999/forge"
+}

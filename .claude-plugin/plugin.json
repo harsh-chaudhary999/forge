@@ -1,0 +1,12 @@
+{
+  "name": "forge",
+  "description": "Multi-repo product orchestration. Takes a PRD and ships it end-to-end across any product stack.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Harsh Chaudhary"
+  },
+  "homepage": "https://github.com/harsh-chaudhary999/forge",
+  "repository": "https://github.com/harsh-chaudhary999/forge",
+  "license": "MIT",
+  "keywords": ["orchestration", "multi-repo", "product", "tdd", "eval", "brain", "council"]
+}

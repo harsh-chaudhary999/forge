@@ -1,0 +1,14 @@
+{
+  "name": "forge",
+  "version": "1.0.0",
+  "description": "Plug-and-play multi-repo product orchestration plugin. Takes a PRD to shipped PRs across any product stack.",
+  "type": "module",
+  "main": ".opencode/plugins/forge.js",
+  "homepage": "https://github.com/harsh-chaudhary999/forge",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/harsh-chaudhary999/forge.git"
+  },
+  "author": "Harsh Chaudhary",
+  "license": "MIT"
+}

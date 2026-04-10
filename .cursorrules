@@ -1,0 +1,54 @@
+# Forge — Cursor AI Guidelines
+
+## What This Repo Is
+
+Forge is a plug-and-play multi-repo product orchestration plugin for AI coding tools. It takes a PRD and ships it end-to-end across any product stack.
+
+## If You Are an AI Working in This Repo
+
+- All skills live in `skills/` at repo root (not `.claude/skills/` — that is a symlink)
+- All agents live in `agents/` at repo root
+- Plugin hooks (session injection) live in `hooks/` at repo root
+- Git hooks (commit-msg, pre-commit, etc.) live in `.claude/hooks/` — do not confuse these
+- The `using-forge` skill is the bootstrap. It is injected via the `hooks/session-start` hook
+
+## Skill Format
+
+Every skill is a `SKILL.md` file with YAML frontmatter:
+```yaml
+---
+name: skill-name
+description: WHEN to invoke — describes the trigger, not what the skill does
+type: rigid | flexible
+requires: [other-skill-name]
+---
+```
+
+## Key Constraints
+
+- D5: No third-party agent frameworks. No LangChain, Playwright, Puppeteer.
+- D13: No runtime dependency on Superpowers or any other plugin.
+- D15: Skills are TDD'd — developed via pressure scenarios against seed product.
+- D24: HARD-GATE tags on every non-skippable step.
+- D25: Anti-Pattern preambles on every discipline-enforcing skill.
+
+## Core Rules (Non-Negotiable)
+
+1. **Intake first**: Every PRD must go through `forge-intake-gate` before any implementation
+2. **Council before code**: Run `council-multi-repo-negotiate` to reason across all surfaces
+3. **Worktree per task**: Every task gets a fresh git worktree — never work on main directly
+4. **Eval gates everything**: Nothing ships without `forge-eval-gate` passing
+5. **Brain persistence**: Every decision is recorded via `forge-brain-persist`
+
+## Where Things Live
+
+| Thing | Location |
+|---|---|
+| Skills | `skills/` |
+| Agents | `agents/` |
+| Plugin hooks | `hooks/` |
+| Git hooks | `.claude/hooks/` |
+| Brain (decisions) | `brain/` |
+| Seed product | `seed-product/` |
+| Commands | `commands/` |
+| Platform docs | `docs/platforms/` |

@@ -13,6 +13,17 @@ Production deployment driver for systemd-managed services on Linux systems. Mana
 
 The following rationalizations **WILL BLOCK** your deployment. These are not edge cases—they are guaranteed failure modes that will surface in production.
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **`systemctl start` is called without a preceding `daemon-reload`** — Systemd will start the previously loaded unit file, ignoring the newly deployed one. STOP. Always run `systemctl daemon-reload` after writing a new or modified unit file and before calling `start()`.
+- **Service is claimed healthy because `systemctl start` returned exit code 0** — A zero exit from `start` means systemd accepted the instruction, not that the service is running. STOP. Always follow `start` with `is-active` and application-level health check before declaring healthy.
+- **Unit file contains directives not supported by the target systemd version** — Unsupported directives are silently ignored or cause load failure depending on systemd version. STOP. Run `systemd-analyze verify` against the actual unit file before deploying.
+- **`stop()` is not called in cleanup after eval fails** — A running service from a failed eval run will conflict with the next run's port binding or state. STOP. Cleanup must call `stop()` unconditionally, regardless of eval outcome.
+- **Deployment proceeds while system is in `degraded` state** — A degraded system has one or more failed units that may be dependencies of the service being deployed. STOP. `systemctl is-system-running` must return `running` (not `degraded`) before any deployment action.
+- **Restart policy is absent from unit file for a critical service** — Without a `Restart=` directive, a crashed service stays down until manual intervention. STOP. All production services must have an explicit restart policy in their unit file.
+
 ### 1. "systemctl will always work if the unit file is valid"
 
 **Why This Fails:**

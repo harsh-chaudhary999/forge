@@ -15,6 +15,18 @@ You cannot. The biggest projects fail because teams assume they agree on a spec 
 
 Do not skip intake. Every PRD goes through this. No matter how simple it seems.
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Any question is answered with "TBD" or "we'll figure it out later"** — Unanswered questions become undiscovered requirements. STOP. Get the answer now or the PRD cannot be locked.
+- **Agent fires multiple questions in a single message** — Simultaneous questions produce short answers. STOP. One question at a time, always.
+- **Product slug is not found in `~/forge/brain/products/`** — PRD references an unregistered product. STOP. Register the product or ask the user to provide forge-product.md before proceeding.
+- **Success criteria is stated in vague terms ("fast", "good UX", "reliable")** — Unmeasurable criteria cannot be evaluated. STOP. Get specific, testable criteria (e.g., "< 200ms p99 latency") before locking.
+- **Rollback plan is "just redeploy the old version"** — Not a real rollback plan for schema changes, cache migrations, or event stream additions. STOP. Get a concrete rollback procedure.
+- **User skips a question saying "that's not relevant"** — Every question was added because of a real project failure. STOP. Ask the question anyway; the user decides what's in scope, not which questions get asked.
+- **PRD is locked without brain-write recording the decision** — The lock exists only in chat context and will be lost. STOP. Write to brain before calling PRD locked.
+
 ## Process
 
 1. **One question at a time** — ask, wait for answer, move to next. No multi-question dumps.

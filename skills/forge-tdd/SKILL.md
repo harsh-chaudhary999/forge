@@ -37,6 +37,19 @@ If you write 1 line of code without a test first, you have failed.
 
 ---
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Implementation code is written before a test file exists** — The Iron Law is violated. STOP. Delete the implementation, write the test first, watch it fail, then reimplement.
+- **Test passes on first run without ever seeing it fail (RED step skipped)** — A test that never fails is a test that doesn't test anything. STOP. Verify the test actually fails when the implementation is removed.
+- **Multiple tests are written at once before any implementation** — Multiple tests at once hide which test drives which implementation. STOP. Write one test, see it fail, implement, see it pass, then write the next.
+- **Agent says "I'll write tests after" or "tests follow the implementation"** — Post-hoc tests cannot drive design. STOP. Tests must be written first, always.
+- **Refactoring adds new behavior** — Refactor is for clarity, not features. STOP. If the refactor adds functionality, extract that as a new RED-GREEN cycle.
+- **Test infrastructure is broken and agent proceeds without tests** — Working without tests is not a valid workaround. STOP. Report BLOCKED. Do not write production code in a broken test environment.
+
+---
+
 ## The RED-GREEN-REFACTOR Cycle
 
 ### RED — Write Test, Watch It Fail

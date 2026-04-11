@@ -23,6 +23,17 @@ Before skipping scenarios, understand what you're risking. The following rationa
 
 ---
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **A scenario `expected:` field contains prose description instead of concrete, assertable value** — "User sees their order" is not assertable. STOP. Every `expected:` must be a specific, machine-verifiable value: HTTP status code, exact element text, DB row count, Kafka message payload.
+- **A scenario covers more than one distinct user journey** — Compound scenarios produce ambiguous failure signals: when the scenario fails, it's unclear which journey is broken. STOP. One scenario = one user journey. Split multi-journey scenarios into individual entries.
+- **Scenario steps contain `wait: 5s` hardcoded delays instead of condition polling** — Fixed waits are timing-dependent and cause flakiness: too short on slow machines, too long in CI. STOP. Use explicit readiness conditions (HTTP health check, element visible, message received) instead of arbitrary sleep.
+- **A scenario references a driver not listed in the product's eval stack** — A driver not in the product stack cannot be executed; the scenario will fail with "unknown driver" at runtime. STOP. Verify every `driver:` value in the scenario against `forge-product.md` before saving.
+- **`on_failure:` field is absent from scenario steps that call external services** — Without a failure policy, a timed-out external call leaves the scenario in an undefined state. STOP. Every step calling an external service must specify `on_failure: stop` or `on_failure: continue` explicitly.
+- **Scenario file is not committed to brain before eval runs** — An uncommitted scenario file may be modified between eval runs, making results non-reproducible. STOP. Commit the scenario file to `~/forge/brain/prds/<task-id>/` before invoking eval.
+
 ## Overview
 
 The eval scenario format is a declarative YAML specification for defining multi-surface user journey tests. Each scenario describes a sequence of driver actions across web, API, database, cache, search, and message bus layers, with clear expected results and failure handling policies.

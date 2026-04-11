@@ -19,6 +19,17 @@ requires: [brain-read]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **A decision file is being deleted instead of demoted** — Deletion destroys the audit trail permanently. STOP. No decision file is ever deleted. The minimum action is demotion to `archived` status with a commit explaining why.
+- **A decision is being demoted from Active straight to Archived in one step** — Skipping the Warm and Cold stages bypasses the safeguards that catch premature archival. STOP. Each step in the lifecycle (Active → Warm → Cold → Archived) requires its own evidence and commit.
+- **Bulk demotion is being applied to all decisions for a product** — Bulk operations skip per-decision evaluation and will incorrectly archive decisions that remain relevant across products. STOP. Every decision must be evaluated individually.
+- **A demotion commit message says "cleaned up old decisions" or similar** — Uninformative commit messages make it impossible to audit why a decision was demoted. STOP. Each commit must state which decision changed status, from what status, to what status, and why.
+- **Dependent decisions were not checked before demoting** — Demoting a foundational decision (e.g., an API versioning strategy) can orphan decisions that depend on it. STOP. Read all dependents via brain-read before demoting.
+- **A demoted decision is being used to justify a current design** — Archived and cold decisions are not authoritative for new work. STOP. Only Active and Warm decisions can be cited as current guidance; cold/archived are historical record only.
+
 Archive old or deprecated decisions without deletion. Implements a demotion lifecycle: **Active → Warm → Cold → Archived**. All decisions remain auditable and searchable by status.
 
 ## Decision Status Lifecycle

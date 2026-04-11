@@ -21,6 +21,17 @@ Teaches teams to negotiate Redis/Memcached cache contracts. Covers key structure
 
 ---
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Any cache key is specified without an explicit TTL** — A key without a TTL is a memory leak waiting to happen, or stale data served indefinitely. STOP. Every key in the contract must have a concrete TTL value — no "default", no "TBD", no "same as session".
+- **Two services are specified as writers to the same cache key** — Two writers create a last-write-wins race with no ordering guarantee, producing unpredictable data. STOP. Each key must have exactly one owner service. Other services may only read.
+- **Cache stampede prevention is absent from the contract** — A cache miss under load sends all concurrent requests simultaneously to the database. STOP. Every high-traffic key must specify its stampede prevention strategy (lock-and-refresh, probabilistic early expiry, or write-through).
+- **Fallback behavior when cache is unavailable is not specified** — When Redis or Memcached goes down, the system must decide: fail fast or degrade to direct DB reads. Without a specified fallback, behavior is undefined and inconsistent across services. STOP. Every key type must specify its cache-miss fallback.
+- **Key naming pattern is not specified with a namespace prefix** — Unnamespaced keys from different services collide silently. STOP. Every key pattern must include a namespace that uniquely identifies the owning service (e.g., `auth:session:{id}`, not just `session:{id}`).
+- **Invalidation trigger is described as "on deploy" or "manually"** — Manual invalidation is not a strategy; it will not happen consistently. STOP. Every key must have a programmatic invalidation trigger tied to a specific data mutation event.
+
 ## When to Use This Skill
 
 Use this skill when:

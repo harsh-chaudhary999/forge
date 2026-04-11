@@ -19,6 +19,17 @@ requires: [brain-read]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Provenance is being reconstructed from git log instead of brain files** — Git history shows what changed, not why it was chosen. STOP. Always query `~/forge/brain/` directly — the brain file is the authoritative provenance record, not the commit message.
+- **Decision ID is not found in brain but agent proceeds with "best guess" reasoning** — If the brain has no record of a decision, the provenance is unknown — not guessable. STOP. Report that provenance is unrecorded and escalate for documentation. Do not invent a rationale.
+- **Alternatives section of a decision is empty and agent treats this as "one option existed"** — An empty alternatives section means the decision was underspecified, not that no alternatives were possible. STOP. Flag the gap: "Decision recorded without alternatives — provenance is incomplete."
+- **brain-why is being skipped because "the decision is recent"** — Recency does not substitute for documentation. What seems obvious today will be opaque in 6 months. STOP. Trace every decision, regardless of age.
+- **Agent uses brain-recall results instead of brain-why to answer a provenance question** — brain-recall searches for related decisions; brain-why traces a specific decision's chain of reasoning and alternatives. They are not interchangeable. STOP. For provenance questions, use brain-why with the specific decision ID.
+- **Provenance trace stops at the most recent decision without checking for superseded predecessors** — A current decision may supersede an earlier one; the full chain matters for understanding the evolution of thinking. STOP. Always check for `supersedes` links and follow them to the origin.
+
 Trace the provenance of any decision. Given a decision ID, this skill walks through the complete decision history, from motivation to outcome, showing why the decision was made, when, by whom, what evidence justified it, what alternatives were considered, and what actually happened.
 
 ## 1. Decision Lookup

@@ -19,6 +19,17 @@ requires: [brain-read]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Migration adds a NOT NULL column without a DEFAULT or backfill** — This will fail on any row that existed before the migration. STOP. Add a DEFAULT or perform a 3-step migration (add nullable → backfill → add NOT NULL constraint).
+- **Migration plan has no rollback procedure** — Irreversible migrations with no rollback = production incident with no recovery. STOP. Write rollback steps before any migration runs.
+- **Two services are documented as owning the same table** — Shared table ownership causes schema conflicts and migration races. STOP. Establish single ownership per table before locking the contract.
+- **Index is not specified for a column used in WHERE clauses** — Missing indexes cause full table scans under load. STOP. Define indexes for all query patterns at contract time.
+- **Breaking schema change is introduced without a deprecation window** — Clients using the old schema will break on deploy. STOP. Plan a backward-compatible migration (add new columns, deprecate old ones, remove after transition).
+- **Migration locks the table without a lock timeout** — Long locks block all reads/writes. STOP. Set explicit lock wait timeouts and use online DDL strategies for large tables.
+
 This skill teaches teams to safely negotiate and implement MySQL database schema changes using contracts. It covers safe migration patterns, backward compatibility strategies, indexing best practices, constraint handling, and comprehensive rollback procedures.
 
 ## 1. Safe Migrations

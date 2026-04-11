@@ -9,6 +9,17 @@ requires: [brain-read]
 
 Convert plain English descriptions of user journeys and scenarios into executable YAML evaluation scenarios. Enables non-technical stakeholders to define test scenarios without needing to understand YAML syntax or eval driver APIs.
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **English description contains "somehow", "at some point", or "eventually"** — These words hide missing steps. STOP. Get precise timing and order before translating.
+- **Generated YAML has empty `expected:` fields or `expected: true`** — Empty assertions are not assertions. They will never fail. STOP. Derive explicit expected values from the English description.
+- **Scenario references a UI element without a CSS selector or test ID** — Ambiguous selectors break in CI and on different screen sizes. STOP. Ask for or derive a stable selector before generating.
+- **Scenario covers only the happy path with no error cases** — Real eval requires negative paths. STOP. Generate at least one failure or edge case scenario alongside every happy path.
+- **English description is one sentence covering multiple independent flows** — Multi-flow descriptions produce multi-step YAML that can't isolate failures. STOP. Break into one YAML scenario per user journey.
+- **Translated YAML references a driver (web, api, db) that is not in the product's eval stack** — Untestable scenarios produce false confidence. STOP. Verify driver availability against forge-product.md before generating.
+
 ## Purpose
 
 Non-technical stakeholders can describe user flows in plain English, and the skill generates complete, executable YAML scenarios that:

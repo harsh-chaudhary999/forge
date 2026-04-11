@@ -144,6 +144,17 @@ The following rationalizations **WILL BLOCK** your deployment. These are not edg
 └─────────────────────────────────────────────────────┘
 ```
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **`depends_on` is used without health check conditions** — `depends_on` guarantees start order, not readiness. STOP. Add `condition: service_healthy` with `healthcheck` blocks for every dependent service.
+- **`docker-compose up` is called without waiting for health checks** — Services may accept connections before they are ready to serve. STOP. Verify each service's health endpoint before proceeding.
+- **`docker-compose down` is skipped after a failed test** — Orphaned containers consume ports and resources for subsequent runs. STOP. Always call `down()` in cleanup, even on failure.
+- **Volume mounts use absolute paths instead of project-relative paths** — Absolute paths break on different developer machines and in CI. STOP. Use relative paths from the compose file location.
+- **`latest` image tag is used in compose file** — `latest` produces non-deterministic builds. STOP. Pin to exact image digest or version tag.
+- **Multiple `docker-compose up` calls run in parallel without port isolation** — Port conflicts will cause random failures. STOP. Assign unique ports per parallel run or use network-level isolation.
+
 ## Overview
 
 This skill provides a unified interface for:

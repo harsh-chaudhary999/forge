@@ -19,6 +19,18 @@ requires: [brain-read, reasoning-as-backend, reasoning-as-infra]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **App surface says "same as web" without separate offline analysis** — Mobile and web have fundamentally different connectivity patterns. STOP. Produce explicit offline-first analysis regardless of what web surface said.
+- **API versioning compatibility is not analyzed** — App versions linger in production for months. STOP. Specify minimum supported API version, deprecation handling, and force-update thresholds before spec freeze.
+- **Push notification payload schema is absent** — Notification payloads are contracts. Changes break older app versions. STOP. Define the full notification payload schema before locking.
+- **Platform differences (iOS vs Android) are not documented** — Permission flows, storage APIs, and lifecycle models differ significantly. STOP. Address both platforms explicitly or flag which is in scope.
+- **Sync conflict resolution strategy is "TBD"** — Offline-first with no conflict resolution creates silent data loss. STOP. Define conflict resolution strategy (last-write-wins, server-authoritative, CRDT) before spec freeze.
+- **App surface reasoning depends on backend API shape before backend surface has finished** — Unilateral assumption creates mismatched contracts. STOP. Run surfaces in parallel; resolve conflicts in negotiation.
+- **Battery and bandwidth impact is not assessed** — Features that drain battery or consume excessive bandwidth will be rejected by users. STOP. State explicit constraints before locking.
+
 You are the mobile app team (Android/iOS). Given a locked PRD, reason about user-facing behavior, data consistency, offline capabilities, and platform constraints. This reasoning focuses on the app frontend's role in distributed system reliability.
 
 ## 1. Screens & Navigation

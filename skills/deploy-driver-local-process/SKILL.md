@@ -50,6 +50,17 @@ Deploy and manage local Node.js processes via npm scripts. Tracks process IDs, p
 └─────────────────────────────────────────────────────┘
 ```
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **`start()` is called without verifying the port is free** — If another process is bound to the target port, `nohup` will succeed but the application will fail to bind and exit silently. STOP. Check port availability with `lsof -ti:<port>` before calling `start()`.
+- **PID is captured from `$!` and not re-verified with `ps`** — On some systems `$!` returns the shell's job PID, not the actual application PID. STOP. Always confirm the correct PID via `ps aux | grep` after capture.
+- **`health_check()` is skipped because `ps -p $PID` returned success** — Process running ≠ process ready. The application may be in initialization with the port bound but not yet serving requests. STOP. Always call `health_check()` after `start()`, never skip it.
+- **`stop()` is not called when eval fails or scenario teardown runs** — A leaked process will hold the port across subsequent runs, causing the next `start()` to fail on port binding. STOP. `stop()` must be called in all teardown paths, success and failure.
+- **Environment variables are inherited from the parent shell rather than set explicitly** — CI/CD environments do not have the same shell profile as a developer's local terminal. An env var that works locally will silently be absent in CI. STOP. All required environment variables must be explicitly set before `start()`.
+- **Output logs from the process are not captured or linked in the eval report** — A process that silently fails or panics produces no assertion failure — the health check just times out. Without logs, diagnosis is blind. STOP. Always redirect stdout/stderr to a log file and link it in the scenario output.
+
 ## HARD-GATE: Anti-Pattern Preambles
 
 The following rationalizations **WILL BLOCK** your deployment. These are not edge cases—they are guaranteed failure modes that will surface in production.

@@ -23,6 +23,17 @@ This skill provides a complete iOS app automation driver using XCTest UI Testing
 
 4. **"We tested Android, iOS is the same"** — Incorrect. iOS has distinct permission dialogs (system alerts via UIInterruptionMonitor), different lifecycle (foreground/background/suspended), and different element locators (accessibility identifiers vs resource IDs).
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Simulator booted state is not verified before launch** — `xcrun simctl launch` on a non-booted simulator silently fails or spawns a zombie process. STOP. Always confirm `Booted` status via `xcrun simctl list devices` before calling `launch()`.
+- **Assertions use `XCTAssertTrue(app.otherElements.count > 0)` or other non-specific checks** — Non-specific assertions mean any element satisfies the condition; the test cannot fail on wrong content. STOP. Every assertion must target a named accessibility identifier or exact element predicate.
+- **UIInterruptionMonitor is not registered before actions that trigger system alerts** — iOS permission dialogs (camera, notifications, location) interrupt UI flows without an active monitor. STOP. Register a UIInterruptionMonitor before any action that could trigger a system alert.
+- **`disconnect()` is not called after scenario completes** — An unclosed simulator connection leaves dangling process references and prevents the next scenario from cleanly booting the same simulator. STOP. Always call `disconnect()` in a teardown block, even if the scenario fails.
+- **App state from prior scenario is not cleared before new scenario** — Leftover keychain entries, cached tokens, or persisted user defaults contaminate subsequent test runs. STOP. Reset app state with `app.terminate()` + `xcrun simctl privacy reset` before each scenario.
+- **`screenshot()` is called but the image is not attached to the eval report** — Screenshots without links to evidence are invisible to the eval judge. STOP. Every `screenshot()` call must save the file and record the path in the scenario output.
+
 ## Prerequisites
 
 - Xcode installed (provides `xcrun`, `simctl`, `xcodebuild`)

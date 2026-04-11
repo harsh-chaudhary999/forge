@@ -19,6 +19,17 @@ requires: [brain-read]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Triage classification is "probably flaky" with no timing evidence** — Probability-based triage is a guess. STOP. Collect actual timing data (retry counts, timestamps, test duration) before classifying as flaky.
+- **Classification is made after only 1 data point (1 failure)** — Single-occurrence failures are unclassifiable without more data. STOP. Run the test 3 times to distinguish flaky from real.
+- **"Environment issue" is used to dismiss a failure without a root cause** — Environment failures have root causes. STOP. Identify what specifically broke in the environment and whether it's also broken in production.
+- **Triage confidence is LOW and triage proceeds anyway** — Low-confidence triage sends the wrong fix strategy downstream. STOP. Gather more evidence until confidence is MEDIUM or higher.
+- **Fix is applied before triage completes** — Fixing before classifying means applying the wrong fix strategy. STOP. Always complete triage before prescribing a fix.
+- **Same failure is classified differently on two consecutive runs** — Classification instability means the evidence is insufficient. STOP. Rerun with more isolation and additional log capture.
+
 ## Purpose
 Automatically classify test and system failures into one of four categories to enable rapid remediation. Each classification provides evidence, confidence scoring, and a suggested action.
 

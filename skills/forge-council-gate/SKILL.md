@@ -22,6 +22,18 @@ type: rigid
 | "The contracts are defined by the previous system, we can't change them" | Every contract is renegotiable. If the new PRD requires a different contract, negotiate it. Don't lock to old contracts. |
 | "We already negotiated with stakeholders, council is redundant" | Stakeholder agreement != technical consensus. Council surfaces conflicts in tech that stakeholder agreement misses. |
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Fewer than 4 surfaces are present in the council session** — Missing any surface means its constraints, vetos, and integration requirements go unheard. STOP. All 4 surfaces (backend, web, mobile, infra) must be represented before council can begin.
+- **Council is starting before the PRD is locked in brain** — An unlocked PRD means intake hasn't completed. Council negotiates contracts on top of assumptions, not validated requirements. STOP. Verify the PRD exists and is locked in `~/forge/brain/prds/` before invoking council.
+- **A conflict between two surfaces is being deferred with "we'll resolve it post-merge"** — Deferred conflicts become integration bugs. Council exists to surface and resolve these conflicts before any code is written. STOP. Every conflict must be resolved or escalated during council.
+- **Contracts contain "TBD" fields after council closes** — A "TBD" in a contract is an open negotiation item, not a closed one. STOP. Every contract field must be filled with a concrete, agreed value before the shared-dev-spec is frozen.
+- **The shared-dev-spec is frozen without a brain commit** — Spec freeze without a brain-write means the decision has no audit trail. STOP. Commit the frozen spec to `~/forge/brain/` before any surface proceeds to tech planning.
+- **Tech planning has begun for any surface before spec is frozen** — If any surface starts writing tasks before spec-freeze, they are planning against a moving target. STOP. Freeze the spec first.
+- **Council is skipped because "this is a patch to an existing feature"** — Patches modify behavior, touch contracts, and affect other surfaces. Every PRD — no matter how small — goes through council. STOP. No exceptions.
+
 ## Detailed Workflow
 
 ### Gather Inputs (Pre-Council)

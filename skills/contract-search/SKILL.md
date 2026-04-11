@@ -19,6 +19,17 @@ Teaches teams to negotiate Elasticsearch contracts with explicit specifications 
 | "We don't need analyzers, default is fine" | Default analyzer splits on whitespace and lowercases. "New York" becomes ["new", "york"]. "iPhone" becomes ["iphone"]. If your search contract doesn't specify analyzer behavior, users will get wrong results. |
 | "Index versioning is overkill" | Without index versioning, schema changes require destructive reindexing. With versioning (`products_v1`, `products_v2` behind alias), you can reindex in the background and swap atomically. Contract must include version strategy. |
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Contract has `dynamic: true` or no explicit mappings** — Dynamic mapping will silently corrupt data the moment field types disagree. STOP. Define explicit mappings for every field before the contract is accepted.
+- **Refresh policy is not specified in the contract** — Search consistency expectations are undefined. Different surfaces will make different assumptions. STOP. Agree on refresh policy (immediate vs. interval) before locking.
+- **Index alias strategy is absent from the contract** — Reindexing will require downtime or cause routing failures. STOP. Define index versioning and alias strategy before any index is created.
+- **Analyzer strategy is listed as "TBD" or "default"** — Default analyzers produce wrong search results for many languages, proper nouns, and compound words. STOP. Define analyzers explicitly before locking.
+- **No reindex rollback plan is documented** — Reindex failures without a rollback plan mean data unavailability. STOP. Define the rollback procedure (swap alias back, restore from snapshot) before the contract is accepted.
+- **Multiple teams interpret "search freshness" differently** — One team expects read-after-write, another expects eventual consistency. STOP. Align on a single freshness SLO and write it into the contract.
+
 ---
 
 ## When to Use

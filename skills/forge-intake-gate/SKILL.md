@@ -22,6 +22,18 @@ type: rigid
 | "No one will notice if we skip intake on this one" | Skipping intake once makes it easy to skip twice. Systems degrade through exceptions. |
 | "This is internal-only, not user-facing, so less rigor" | Internal changes affect platform reliability. Risk doesn't scale with audience. |
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **PRD is being handed to council before intake is complete** — Council requires a locked PRD. Intake produces the lock. Council before intake means negotiating on unvalidated assumptions. STOP. Complete intake and brain-write before council.
+- **Any of the 8 intake questions has a "TBD" or blank answer** — An unanswered question is not a skipped question — it is an unknown risk that will surface at the worst moment. STOP. All 8 questions must have concrete answers before locking.
+- **The intake document was not written to brain** — Verbal intake is not intake. If it's not committed to `~/forge/brain/prds/`, it didn't happen and cannot be referenced downstream. STOP. Write and commit before locking.
+- **"This is a continuation of a previous PRD, we can skip intake"** — Continuation PRDs introduce new behavior, change existing contracts, or extend scope. Each one gets independent intake. STOP. Run intake for the new PRD.
+- **Rollback plan is "revert the commit"** — A one-line rollback plan is not a rollback plan. It doesn't address data migrations, cache invalidation, or external service state. STOP. Require a concrete rollback procedure before locking.
+- **Success criteria are behavioral descriptions instead of verifiable conditions** — "User should be able to see their orders" is not a success criterion — it cannot be objectively passed or failed. STOP. Require measurable, testable criteria.
+- **Intake is being run after tech plans have started** — Tech plans derive from locked PRDs. If intake runs after planning begins, the plans are built on unlocked sand. STOP. Invalidate plans and re-run intake first.
+
 ## Detailed Workflow
 
 ### Identify PRD (Input Validation)

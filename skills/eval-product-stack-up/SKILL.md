@@ -33,6 +33,17 @@ Orchestrates startup of entire product stack for evaluation. Reads product topol
    - Consequence: A/B test: 99% uptime vs 100% uptime. The 1% failure rate is where all the subtle bugs hide. You test against 99% uptime and miss them.
    - Standard: All critical services must be healthy before proceeding. No partial stacks. If any service fails, fail fast with detailed error.
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Eval scenarios begin before all service health checks have passed** — A service that accepted the start command may still be initializing (DB migrations running, cache warming, event consumer subscribing). STOP. All health checks must return healthy before the first scenario step executes.
+- **Stack is started without reading the current `forge-product.md`** — Using a cached or remembered topology means missing newly added services or removed dependencies. STOP. Always read `forge-product.md` fresh at the start of each stack-up.
+- **Services are started in alphabetical or arbitrary order instead of dependency order** — Service B depending on Service A will fail to connect if A is not yet healthy. STOP. Resolve the dependency graph and start in topological order: infrastructure first, then services that depend on it.
+- **`stack-down` is not called when eval fails** — Services left running from a failed eval contaminate the next run with leftover data, open connections, and consumed offsets. STOP. `stack-down` must be called unconditionally in the cleanup path, whether eval passed or failed.
+- **Health check is a TCP port probe only (port accepting connections)** — A port open means the OS socket is bound, not that the application is ready. STOP. Health checks must be HTTP endpoint checks (or equivalent application-level readiness probes) that verify the application is actually serving requests.
+- **Stack-up is declared successful before every service in `forge-product.md` is verified** — A stack that is missing a service will produce eval failures that look like code bugs. STOP. Every service listed in the product topology must be health-checked before reporting stack ready.
+
 ## Overview
 
 This skill enables:

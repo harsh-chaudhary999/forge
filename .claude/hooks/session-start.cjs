@@ -69,11 +69,16 @@ const wrappedContent = `<EXTREMELY_IMPORTANT>
 ${skillContent}
 </EXTREMELY_IMPORTANT>`;
 
-// Output to stdout (this is captured by Claude Code as additionalContext)
-console.log(wrappedContent);
+const output = {
+  hookSpecificOutput: {
+    hookEventName: 'SessionStart',
+    additionalContext: wrappedContent,
+  },
+};
+
+process.stdout.write(JSON.stringify(output));
 
 log(`✅ Forge bootstrap loaded and inlined`);
 log(`Skill size: ${skillContent.length} chars`);
-log(`Wrapped: <EXTREMELY_IMPORTANT> ... </EXTREMELY_IMPORTANT>`);
 
 process.exit(0);

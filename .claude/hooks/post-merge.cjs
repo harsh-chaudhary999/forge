@@ -290,9 +290,9 @@ Review main branch and address issues before deploying.
   }
 }
 
-// Try to sync to exocortex brain if available
-const exocortexBrain = '/home/lordvoldemort/Videos/exocortex';
-if (fs.existsSync(exocortexBrain)) {
+// Try to sync to exocortex brain if available (opt-in via env var)
+const exocortexBrain = process.env.EXOCORTEX_BRAIN || '';
+if (exocortexBrain && fs.existsSync(exocortexBrain)) {
   try {
     const exocortexMergeLog = path.join(exocortexBrain, 'brain', 'main-merge.log');
     const exocortexDir = path.dirname(exocortexMergeLog);

@@ -9,6 +9,17 @@ requires: [brain-read]
 
 Automates browser interactions and state inspection using Chrome DevTools Protocol. Provides a programmatic interface for launching headless Chrome, navigating URLs, interacting with UI elements, capturing screenshots, and extracting DOM state.
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **`navigate()` is called without waiting for `networkIdle` or `DOMContentLoaded`** — Interacting with a page that has not finished loading produces false "element not found" failures. STOP. Always verify load state after `navigate()` before any interaction.
+- **Element interaction uses `document.querySelector` instead of accessibility identifiers or test IDs** — CSS selectors break on UI refactors that don't change behavior. STOP. Elements must be targeted by `data-testid`, accessibility role, or stable aria-label.
+- **`teardown()` is not called after the scenario completes** — An unclosed Chrome process holds a debug port that prevents the next scenario from launching. STOP. `teardown()` must be called in all paths — success, failure, and timeout.
+- **Screenshot is captured but not linked in the eval evidence** — Screenshots are meaningless if the eval report doesn't reference them. STOP. Every `screenshot()` call must produce a file path entry in the scenario output.
+- **Assertion is based on `getDOM()` returning non-empty rather than specific content** — A non-empty DOM matches any rendered page, including error pages. STOP. Every assertion must verify specific text, element state, or attribute value — not merely presence.
+- **Browser viewport size is not set before scenarios with responsive layout** — Default headless viewport may not match the breakpoint the UI targets, causing elements to be hidden or rearranged. STOP. Set explicit viewport dimensions at `launch()` time to match the spec's target device class.
+
 ## Overview
 
 This skill enables eval scripts to drive web UI automation through CDP, supporting:

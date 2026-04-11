@@ -7,6 +7,18 @@ requires: [brain-read]
 
 # Contract-API-REST Skill
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **API versioning strategy is absent from the contract** — Unversioned APIs cannot evolve without breaking clients. STOP. Define versioning strategy (URL path `/v1`, header, or content-type) before any endpoint is implemented.
+- **Error response shape is not specified** — Error formats that differ by endpoint confuse clients and break error handling. STOP. Define a single error envelope format for all endpoints before locking.
+- **Authentication mechanism is listed as "TBD"** — Unspecified auth means clients implement assumptions. STOP. Lock auth mechanism (JWT, API key, OAuth) before contract is accepted.
+- **No rate limit policy is defined** — Unspecified rate limits cause client implementations that hammer the API and get blocked in production. STOP. Specify rate limits per endpoint or per client tier.
+- **Deprecation policy is absent** — APIs without deprecation policy cannot be versioned safely. STOP. Define deprecation timeline and sunset headers before freezing the contract.
+- **Contract is created unilaterally by backend without frontend/mobile input** — Client requirements will not be met. STOP. All consumer surfaces must approve the contract shape before it is locked.
+- **Idempotency behavior is not specified for mutating endpoints** — Non-idempotent mutations cause duplicate writes on retry. STOP. Specify idempotency key requirements for all POST/PUT/PATCH endpoints.
+
 ## Overview
 
 This skill teaches teams to negotiate REST API contracts **before** implementing endpoints. Once clients exist, changing API contracts becomes costly and breaks production systems. This skill prevents design debt by establishing clear contracts upfront.

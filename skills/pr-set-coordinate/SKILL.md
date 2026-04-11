@@ -19,6 +19,17 @@ requires: [brain-read, brain-write]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Multiple PRs are raised simultaneously** — Parallel PRs can be merged out of order by reviewers. STOP. Raise PRs sequentially: wait for each to merge before raising the next.
+- **A PR is raised before its dependency PR is merged** — Downstream PR may be merged before the upstream PR, breaking the dependency. STOP. Confirm upstream merge before raising the downstream PR.
+- **PRs do not include `depends-on` links to other PRs in the set** — Reviewers merge in whatever order they choose. STOP. Add `depends-on: <url>` to every PR description before requesting review.
+- **One PR in the set fails review and the others are merged anyway** — Partial deployment creates a broken intermediate state. STOP. If any PR in the set cannot merge, halt the entire set until it is resolved.
+- **Eval has not passed before PRs are raised** — PRs raised before eval passes risk merging code that will fail in production. STOP. Confirm GREEN eval verdict before raising any PR.
+- **Brain is not updated with PR URLs and merge status** — Audit trail is lost. STOP. Write PR URLs, merge order, and merge timestamps to brain before considering the PR set complete.
+
 ## Purpose
 
 After eval passes and branches are ready to merge, this skill raises N coordinated PRs (one per affected project) in strict dependency order. Each PR links to the others, and the skill waits for each to merge before raising the next.

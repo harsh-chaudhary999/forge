@@ -1,0 +1,133 @@
+#!/usr/bin/env node
+/**
+ * pre-tool-use.cjs
+ *
+ * DESTRUCTIVE COMMAND INTERCEPTOR (HARD-GATE)
+ * Fires before every Bash tool call. Intercepts patterns that are irreversible
+ * or have high blast radius and requires explicit user confirmation before
+ * proceeding. Prevents impulsive reflex actions (--no-verify bypasses, force
+ * pushes, hard resets) that violate forge-letter-spirit.
+ *
+ * Blocks (asks for confirmation):
+ *   - git push --force / -f
+ *   - git reset --hard
+ *   - git checkout -- .  / git restore .
+ *   - git clean -f / -fd
+ *   - git branch -D (force delete)
+ *   - rm -rf <path>
+ *   - DROP TABLE / DROP DATABASE
+ *   - redis-cli FLUSHALL / FLUSHDB
+ *
+ * Does NOT block: normal reads, test runs, or standard dev operations.
+ *
+ * Input: JSON from stdin (Claude Code hook protocol)
+ * Output: JSON to stdout (allow = exit 0 with no output; ask = permissionDecision)
+ *
+ * Cross-platform: works on Linux, macOS, Windows (via run-hook.cmd → bash → node)
+ */
+
+const fs = require('fs');
+
+// Read tool call from stdin
+let input = '';
+try {
+  input = fs.readFileSync(0, 'utf-8').trim();
+} catch (e) {
+  // Cannot read stdin — allow by default
+  process.exit(0);
+}
+
+let toolName = '';
+let toolInput = {};
+
+try {
+  const parsed = JSON.parse(input);
+  toolName = parsed.tool_name || parsed.toolName || '';
+  toolInput = parsed.tool_input || parsed.input || {};
+} catch (e) {
+  // Cannot parse input JSON — allow by default
+  process.exit(0);
+}
+
+// Only inspect Bash tool calls
+if (toolName !== 'Bash') {
+  process.exit(0);
+}
+
+const command = (toolInput.command || '').trim();
+if (!command) {
+  process.exit(0);
+}
+
+// ── Destructive patterns ────────────────────────────────────────────────────
+
+const BLOCKED_PATTERNS = [
+  {
+    pattern: /git\s+push\s+(--force|-f)\b/i,
+    reason:
+      'git push --force rewrites remote history and cannot be undone by other contributors. ' +
+      'Verify: (1) this is not main/master, or (2) you have explicit user approval, or (3) you are recovering a specific known incident.',
+  },
+  {
+    pattern: /git\s+reset\s+--hard\b/i,
+    reason:
+      'git reset --hard permanently discards all uncommitted changes. ' +
+      'Use git stash to save work first, or confirm there is truly nothing worth keeping.',
+  },
+  {
+    pattern: /git\s+checkout\s+--\s*\./i,
+    reason:
+      'git checkout -- . discards all working directory changes. This cannot be undone without git stash or prior staging.',
+  },
+  {
+    pattern: /git\s+restore\s+\.(\s|$)/i,
+    reason:
+      'git restore . discards all working directory changes. This cannot be undone.',
+  },
+  {
+    pattern: /git\s+clean\s+(-[a-z]*f|-f[a-z]*)\b/i,
+    reason:
+      'git clean -f deletes untracked files permanently. Run git clean -n first to preview what will be deleted.',
+  },
+  {
+    pattern: /git\s+branch\s+(-D\b|-d\s+-f\b|-fd\b|-df\b)/i,
+    reason:
+      'Force-deleting a git branch may destroy unmerged commits. Confirm the branch has been fully merged.',
+  },
+  {
+    pattern: /\brm\s+-[a-z]*r[a-z]*f[a-z]*\s+[^\s-]/i,
+    reason:
+      'rm -rf is irreversible. Verify the exact path matches your intent and does not expand to an unexpected directory.',
+  },
+  {
+    pattern: /\bDROP\s+(TABLE|DATABASE|SCHEMA)\b/i,
+    reason:
+      'DROP TABLE/DATABASE permanently destroys data. Confirm this is against an isolated eval/test database — not production or a shared environment.',
+  },
+  {
+    pattern: /redis-cli\s+(.*\s+)?FLUSH(ALL|DB)\b/i,
+    reason:
+      'FLUSHALL/FLUSHDB wipes all Redis data instantly. Confirm this targets an isolated eval Redis instance — not a shared or production cache.',
+  },
+];
+
+for (const { pattern, reason } of BLOCKED_PATTERNS) {
+  if (pattern.test(command)) {
+    const output = {
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'ask',
+        permissionDecisionReason:
+          `[forge-pre-tool-use] DESTRUCTIVE COMMAND — CONFIRM BEFORE PROCEEDING\n\n` +
+          `Command: ${command}\n\n` +
+          `Why this was flagged: ${reason}\n\n` +
+          `To proceed: confirm this is intentional, you've verified the target, and there is no safer alternative.`,
+      },
+    };
+    process.stdout.write(JSON.stringify(output));
+    process.exit(0);
+  }
+}
+
+// Allow all other commands
+process.exit(0);

@@ -9,6 +9,18 @@ requires: [brain-read]
 
 Teaches teams to negotiate Kafka/event-bus contracts systematically. Covers schema versioning, topic design, consumer guarantees, idempotency, and ordering semantics. Output is a locked event bus contract that all producers and consumers sign off on.
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Topic name is generic ("events", "messages", "updates")** — Generic topic names cause producers and consumers from different domains to collide. STOP. Name topics with domain + entity + action (e.g., `payments.order.paid`).
+- **Payload schema is described in prose only, not a formal schema** — Prose schemas cause producer/consumer drift. STOP. Define a formal schema (Avro, Protobuf, or JSON Schema) before the contract is locked.
+- **Delivery semantics are listed as "TBD"** — At-most-once, at-least-once, and exactly-once require different idempotency and offset strategies. STOP. Lock delivery semantics before any producer or consumer is implemented.
+- **No dead-letter queue (DLQ) is defined** — Poison messages with no DLQ will block a partition indefinitely. STOP. Define DLQ topic, routing rules, and alert threshold before the contract is accepted.
+- **Retention period is not specified** — Default retention may drop messages before all consumers have read them. STOP. Set explicit retention based on slowest consumer's expected lag.
+- **Consumer group naming is left unspecified** — Unnamed consumer groups default to arbitrary names, causing rebalancing and offset loss. STOP. Assign stable, service-namespaced consumer group IDs.
+- **Schema evolution policy is absent** — Field additions without compatibility rules break existing consumers. STOP. Specify forward/backward/full compatibility policy before any schema is shipped.
+
 ## When to Use
 
 - **Negotiating async integration between services** — Different teams need to exchange events (payments, user lifecycle, notifications)

@@ -22,6 +22,17 @@ type: rigid
 | "We document everything in Confluence/Notion, that's the brain" | External docs get stale. The brain is source of truth. Link Confluence to brain, not the reverse. |
 | "No one needs to know the details, just the final decision" | Reasoning is as important as conclusion. Future trade-offs require understanding original context. Record both. |
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **A decision is recorded in conversation or chat but not committed to `~/forge/brain/`** — Chat history is ephemeral. Brain is permanent. STOP. A decision exists only when it is a committed file in the brain repo. No exceptions.
+- **A decision file is written but not committed with `git commit`** — An uncommitted file is not a brain record — it disappears with the working directory. STOP. Every brain write must be followed by an explicit `git -C ~/forge/brain commit` before proceeding.
+- **A PRD is locked or a spec is frozen without a corresponding brain decision** — Locking without a brain record means there is no auditable basis for the lock. STOP. Every gate event (PRD lock, spec freeze, trade-off decision) must produce a brain commit before the pipeline advances.
+- **Decision body contains only a conclusion without reasoning** — Future maintainers cannot evaluate whether to change a decision if they don't know why it was made. STOP. Every decision must record the alternatives considered and the reasoning for the choice made.
+- **An existing brain decision is overwritten instead of superseded** — Overwriting destroys the audit trail of the change. STOP. When a decision changes, create a new decision that references the old one and marks the old decision's status as superseded — never edit the original record.
+- **Decision ID is absent or is a generic name like `decision-1`** — Non-unique IDs cause reference collisions and make brain-recall queries ambiguous. STOP. Every decision must have a globally unique ID following the brain naming convention (e.g., `PRD-20260401-auth-2fa`).
+
 ## Detailed Workflow
 
 ### Identify Decision Points

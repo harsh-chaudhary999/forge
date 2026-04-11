@@ -22,6 +22,18 @@ type: rigid
 | "One task can reuse the worktree from the previous task" | Worktree reuse means state leakage. Previous task's dependency modifications, config changes, cleanup gaps all infect next task. Fresh only. |
 | "Worktrees are overkill for infrastructure or config changes" | Config changes have the most subtle bugs. Fresh environment catches config mistakes that shared main never will. |
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Agent starts editing files in the main branch directly** — Shared state contamination in progress. Stop the task, create a fresh worktree, restart from there.
+- **Two tasks share the same `node_modules/` or `dist/` directory** — Worktree isolation has been broken. Both tasks are compromised. Recreate both worktrees fresh from main.
+- **A task's branch is based on another task's branch (not main)** — Cross-task dependency introduced. Tasks must branch from main only. Rebase onto main or abort and re-isolate.
+- **Agent says "I'll clean up after" or "I'll reset it when done"** — Cleanup-after is not isolation. The contamination already happened. Isolation must be pre-work, not post-work.
+- **Multiple tasks are running in the same working directory** — One task will stomp on the other's changes. Stop both. Assign separate worktree directories and restart.
+- **Worktree directory already exists with previous task artifacts** — Previous task's state is still present. Destroy and recreate fresh from main before starting.
+- **A task branch was merged before all sibling tasks completed** — Remaining tasks may conflict with merged state. Rebase their worktrees onto updated main and verify no conflicts.
+
 ## Detailed Workflow
 
 ### Identify Task Scope

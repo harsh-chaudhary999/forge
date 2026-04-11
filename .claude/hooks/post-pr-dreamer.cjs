@@ -33,10 +33,10 @@ const { execSync } = require('child_process');
 
 // Configuration
 const TASK_ID = process.argv[2];
-const REPO_ROOT = '/home/lordvoldemort/Videos/forge';
-const BRAIN_DIR = path.join(REPO_ROOT, 'brain');
-const RETROSPECTIVE_FILE = path.join(BRAIN_DIR, 'retrospective.md');
-const EXOCORTEX_BRAIN = '/home/lordvoldemort/Videos/exocortex';
+const FORGE_ROOT = process.argv[3] || path.join(process.env.HOME || '/root', 'forge');
+const BRAIN_DIR = path.join(FORGE_ROOT, 'brain');
+const RETROSPECTIVES_DIR = path.join(BRAIN_DIR, 'retrospectives');
+const EXOCORTEX_BRAIN = process.env.EXOCORTEX_BRAIN || '';
 
 function die(message) {
   console.error(`ERROR: ${message}`);
@@ -83,15 +83,15 @@ if (!TASK_ID) {
   die('TASK_ID required as first argument');
 }
 
-if (!fs.existsSync(path.join(REPO_ROOT, '.git'))) {
-  die(`Not a git repo: ${REPO_ROOT}`);
+if (!fs.existsSync(path.join(FORGE_ROOT, '.git'))) {
+  die(`Not a git repo: ${FORGE_ROOT}`);
 }
 
 log(`Post-PR Hook: Triggering dreamer retrospective for task ${TASK_ID}`);
 
-// Create brain directory if it doesn't exist
-if (!fs.existsSync(BRAIN_DIR)) {
-  fs.mkdirSync(BRAIN_DIR, { recursive: true });
+// Create retrospectives directory if it doesn't exist
+if (!fs.existsSync(RETROSPECTIVES_DIR)) {
+  fs.mkdirSync(RETROSPECTIVES_DIR, { recursive: true });
 }
 
 // Export dreamer mode for subagent
@@ -106,7 +106,7 @@ let prCount = 0;
 
 try {
   prLog = execSync(`git log --all --grep="${TASK_ID}" --oneline 2>/dev/null || true`, {
-    cwd: REPO_ROOT,
+    cwd: FORGE_ROOT,
     encoding: 'utf-8',
     stdio: ['pipe', 'pipe', 'pipe']
   });
@@ -124,7 +124,7 @@ let gitUser = 'unknown';
 try {
   const commitDateCmd = `git log --all --grep="${TASK_ID}" --format=%aI 2>/dev/null | tail -1 || true`;
   workStart = execSync(commitDateCmd, {
-    cwd: REPO_ROOT,
+    cwd: FORGE_ROOT,
     encoding: 'utf-8',
     stdio: ['pipe', 'pipe', 'pipe']
   }).trim();
@@ -134,7 +134,7 @@ try {
 
 try {
   gitUser = execSync('git config user.name || echo "unknown"', {
-    cwd: REPO_ROOT,
+    cwd: FORGE_ROOT,
     encoding: 'utf-8'
   }).trim();
 } catch (e) {
@@ -163,7 +163,7 @@ runLog += '\n=== Commit Details ===\n';
 try {
   const detailCmd = `git log --all --grep="${TASK_ID}" --format="%H|%s|%aI|%b" 2>/dev/null || echo "No detailed commits available"`;
   const commitDetails = execSync(detailCmd, {
-    cwd: REPO_ROOT,
+    cwd: FORGE_ROOT,
     encoding: 'utf-8',
     stdio: ['pipe', 'pipe', 'pipe']
   });
@@ -222,21 +222,25 @@ Dreamer retrospective analysis triggered after PR merge completion. This retrosp
 [To be populated by dreamer analysis]
 `;
 
-fs.writeFileSync(RETROSPECTIVE_FILE, retrospectiveContent);
+// Write per-task retrospective file (never overwrite; each task gets its own)
+const retroFileName = `${TASK_ID}-${new Date().toISOString().split('T')[0]}.md`;
+const retrospectiveFile = path.join(RETROSPECTIVES_DIR, retroFileName);
 
-log(`Retrospective written to ${RETROSPECTIVE_FILE}`);
+fs.writeFileSync(retrospectiveFile, retrospectiveContent);
+
+log(`Retrospective written to ${retrospectiveFile}`);
 
 // If exocortex brain is available, write to distributed brain as well
-if (fs.existsSync(EXOCORTEX_BRAIN)) {
+if (EXOCORTEX_BRAIN && fs.existsSync(EXOCORTEX_BRAIN)) {
   log('Writing to exocortex brain...');
   const exocortexRetroDir = path.join(EXOCORTEX_BRAIN, 'brain', 'retrospectives');
-  const exocortexRetrospective = path.join(exocortexRetroDir, `forge-task-${TASK_ID}.md`);
+  const exocortexRetrospective = path.join(exocortexRetroDir, retroFileName);
 
   if (!fs.existsSync(exocortexRetroDir)) {
     fs.mkdirSync(exocortexRetroDir, { recursive: true });
   }
 
-  fs.copyFileSync(RETROSPECTIVE_FILE, exocortexRetrospective);
+  fs.copyFileSync(retrospectiveFile, exocortexRetrospective);
   log(`Exocortex retrospective: ${exocortexRetrospective}`);
 }
 
@@ -245,8 +249,8 @@ log('Committing retrospective to forge repo...');
 
 try {
   // Add retrospective file
-  execSync(`git add "${RETROSPECTIVE_FILE}"`, {
-    cwd: REPO_ROOT,
+  execSync(`git add "${retrospectiveFile}"`, {
+    cwd: FORGE_ROOT,
     stdio: 'pipe'
   });
 } catch (e) {
@@ -260,12 +264,12 @@ const commitMsg = `dreamer: retrospective for ${TASK_ID} after PR merge
 - Commits analyzed: ${prCount}
 - Generated: ${workEnd}
 - Mode: retrospective scoring
-- Output: brain/retrospective.md`;
+- Output: brain/retrospectives/${retroFileName}`;
 
 try {
   // Check if there are staged changes
   const statusOutput = execSync('git diff --cached --quiet', {
-    cwd: REPO_ROOT,
+    cwd: FORGE_ROOT,
     stdio: 'pipe'
   });
 
@@ -273,7 +277,7 @@ try {
 } catch (e) {
   try {
     execSync(`git commit -m "${commitMsg.replace(/"/g, '\\"')}"`, {
-      cwd: REPO_ROOT,
+      cwd: FORGE_ROOT,
       stdio: 'pipe'
     });
     log(`Committed retrospective`);
@@ -283,6 +287,6 @@ try {
 }
 
 log(`Post-PR Hook: Complete for task ${TASK_ID}`);
-log(`Retrospective available at: ${RETROSPECTIVE_FILE}`);
+log(`Retrospective available at: ${retrospectiveFile}`);
 
 process.exit(0);

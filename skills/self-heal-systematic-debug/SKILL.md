@@ -19,6 +19,18 @@ requires: [brain-read]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Agent applies a fix before completing the investigate phase** — Fixing symptoms without root cause produces recurring failures. STOP. Complete investigation and hypothesis before touching any code.
+- **Multiple files changed in a single fix attempt** — Multi-file fixes make it impossible to isolate which change resolved the issue. STOP. Make the smallest possible single-change fix, verify, then proceed.
+- **Verification is skipped after a fix** — A fix without verification is an assumption. STOP. Re-run the failing test or eval after every single fix before making the next one.
+- **The same fix is applied twice** — Repeating a fix that already failed means the root cause is not understood. STOP. Return to the investigate phase with fresh eyes.
+- **Debugging is done in the main branch** — Debug changes in main pollute the codebase. STOP. Create a fresh debug worktree before making any changes.
+- **Agent describes the fix in words instead of showing actual test output** — "I fixed it" without evidence is not a fix. STOP. Show actual passing test output after every fix.
+- **Self-heal attempts have exceeded 3** — The loop cap has been reached. STOP. Escalate to human with full failure context per self-heal-loop-cap.
+
 ## Overview
 
 Systematic debugging framework that applies the scientific method to code failures. When a test fails, an API returns 500, or eval breaks, use this skill to isolate the root cause, apply a minimal fix, and verify resolution.

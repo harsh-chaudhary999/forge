@@ -19,6 +19,17 @@ requires: [brain-read]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Search returns zero results and agent concludes "no prior art"** — Zero results means the query was too narrow, not that no prior art exists. STOP. Broaden query with synonyms, adjacent tags, and cross-product search before concluding.
+- **Agent recalls from memory instead of searching brain files** — Memory is subjective and lossy. STOP. Always search the actual brain directory; never rely on recalled summaries of decisions.
+- **Recall is skipped because "this is a new problem"** — Cross-domain patterns appear in unexpected places. STOP. Search even when the problem feels novel.
+- **Only the most recent result is used without reviewing all matches** — Recency bias misses more applicable older patterns. STOP. Review all matches and select based on relevance, not date.
+- **Recall query uses only the current product name** — Patterns recorded under a different product name will be missed. STOP. Search across all products with domain-level tags.
+- **Brain path is wrong or outdated** — Searching the wrong brain path produces incomplete results. STOP. Verify brain path from forge-product.md before searching.
+
 Hybrid retrieval from persistent brain. Searches past decisions, patterns, learnings using grep + tags + product/project filtering.
 
 ## Overview

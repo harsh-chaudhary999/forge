@@ -20,6 +20,18 @@ requires: [brain-read, reasoning-as-backend, reasoning-as-web-frontend, reasonin
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Fewer than 4 surfaces produced reasoning outputs** — A skipped surface is a surface that will surface conflicts during build. STOP. All 4 surfaces must produce reasoning, even if "no impact."
+- **Fewer than 5 contracts are negotiated** — Any unagreed contract becomes an integration failure during build. STOP. All 5 contracts (REST, events, cache, DB, search) must be explicitly negotiated.
+- **Shared-dev-spec contains "TBD" in any field** — Unresolved TBDs become undiscovered bugs. STOP. Resolve every TBD before spec-freeze is called.
+- **Conflict between two surfaces is "deferred to implementation"** — Build-time conflict resolution costs 10x more than council-time resolution. STOP. Invoke dreamer to resolve the conflict now.
+- **Spec is frozen before all surface reasoning files are written to brain** — Provenance is lost. STOP. Write all surface outputs to brain before calling spec-freeze.
+- **Council is invoked before PRD is locked** — Unlocked PRD means the scope can change mid-council. STOP. Confirm PRD lock (brain decision ID) before invoking any surface reasoning.
+- **Only 1-2 surfaces are "affected" so the rest are skipped** — Surfaces that appear unaffected often discover hidden dependencies. STOP. All surfaces must reason, even if briefly.
+
 Master orchestration skill that brings together all 4 surface reasoning skills and all 5 contract skills to negotiate conflicts and lock the shared-dev-spec.
 
 ## Section 1: Load PRD & Surfaces

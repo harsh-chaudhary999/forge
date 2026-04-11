@@ -19,6 +19,17 @@ requires: [brain-read]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Fault is attributed to the most recently changed service without log evidence** — Confirmation bias. STOP. Trace the failure chain from the failing assertion back through the call graph using actual logs.
+- **"Multiple services failed" is used to conclude "environment issue" without finding the root** — Multi-service cascades have a single root cause. STOP. Find the first failure in the chain by timestamp.
+- **Fault location is stated as "probably Service X" without a request ID trace** — Probability without evidence is a guess. STOP. Find the request ID in the failing eval output and follow it through logs.
+- **Only the last log line is examined** — Failures log their cause before their effect. STOP. Search logs 30+ seconds before the failure time for the root event.
+- **Fault is declared "unknown" after one log search** — Unknown fault = insufficient log collection. STOP. Expand log collection to all services, not just the reported failing one.
+- **Re-running eval before completing fault location** — Passing on re-run hides intermittent bugs. STOP. Complete fault location and triage before re-running eval.
+
 When an eval scenario fails, this skill diagnoses which service caused the failure and collects evidence for remediation.
 
 ## Overview

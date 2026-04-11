@@ -27,6 +27,17 @@ Provides a complete driver for executing and verifying SQL queries against MySQL
 
 ---
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Queries run against the production database instead of an isolated eval database** — Eval queries that modify data will corrupt production state. STOP. Verify the connection string targets a dedicated eval/test database before calling any `execute()`.
+- **`teardown()` is not called after scenario completion** — Open connections and uncommitted transactions left behind will starve the connection pool for the next scenario. STOP. `teardown()` must always run in all paths: success, failure, and timeout.
+- **Assertion checks for row existence only (`COUNT(*) > 0`) without verifying column values** — A row existing is not the same as the row containing correct data. STOP. Every `verify()` call must assert specific column values, not just row presence.
+- **Schema state is assumed without verification before queries** — If a migration hasn't run, a query against a missing table will fail with a cryptic error instead of a clear "migration not applied" failure. STOP. Always run `setup()` to verify schema state before executing any scenario queries.
+- **Queries are executed outside a transaction when testing multi-step writes** — Non-transactional multi-step writes may leave partial state if interrupted, contaminating subsequent scenarios. STOP. Wrap related write steps in a transaction and roll back in teardown unless committed state is required for downstream drivers.
+- **Assertion failure shows "got X, expected Y" but the test proceeds to the next step** — A failed assertion on DB state means the system is in unexpected state. Continuing will make subsequent steps produce meaningless results. STOP. Any failed `verify()` must abort the scenario immediately.
+
 ## Overview
 
 The MySQL eval driver implements the native wire protocol to connect, authenticate, execute queries, and verify results. Designed for isolation (test databases), determinism (fixtures + verification), and observability (detailed error reporting).

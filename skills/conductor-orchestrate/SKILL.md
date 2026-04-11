@@ -20,6 +20,18 @@ requires: [intake-interrogate, product-context-load, brain-read, brain-write]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Conductor moves to Council before PRD is locked in brain** — Phase ordering is violated. STOP. Intake must produce a brain-recorded PRD lock before any other phase starts.
+- **Build is dispatched while Council is still open** — Tech plans cannot be written against an unlocked spec. STOP. Lock the shared-dev-spec first, then write tech plans, then dispatch build.
+- **Eval is running while tasks report NEEDS_CONTEXT or BLOCKED** — Eval against incomplete builds produces meaningless results. STOP. Resolve all subagent statuses before invoking eval.
+- **PRs are raised while eval verdict is RED or YELLOW** — Merging without a GREEN eval means shipping known failures. STOP. Fix the failures and re-run eval.
+- **Conductor proceeds after a BLOCKED subagent status without escalation** — Blocked tasks are silently dropped. STOP. Escalate BLOCKED status to human before any forward progress.
+- **Brain state from a previous run is present in the current run's path** — State leakage between runs. STOP. Initialize a clean brain path for this orchestration run.
+- **Conductor retries self-heal more than 3 times on the same failure** — Exceeds the cap defined in self-heal-loop-cap. STOP. Escalate to human with full failure context.
+
 ## Purpose
 
 The Conductor is the master state machine that orchestrates a single task (PRD) through the entire Forge lifecycle:

@@ -22,6 +22,17 @@ type: rigid
 | "Eval caught a flaky test, we can just remove the flaky test" | A flaky test is a symptom of real behavior. Removing the test hides the problem. Fix the underlying flakiness. |
 | "This change doesn't touch user flows, eval isn't critical" | Internal changes affect reliability. All changes affect user experience eventually (latency, availability, correctness). Eval all. |
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **A PR is raised before eval passes** — Merging without eval means deploying untested code. STOP. Eval must return GREEN before any PR is raised.
+- **Eval is run against uncommitted code** — Eval must test what will be merged, not what is in progress. STOP. Commit all changes before running eval.
+- **Eval driver is skipped because the service is "not changed"** — Unchanged services still verify integration. STOP. All drivers must run regardless of which services changed.
+- **Eval fails but team proceeds citing "it's a known flaky test"** — Known flakiness is a real bug. STOP. Fix the flakiness or remove the test; do not proceed past a failing eval.
+- **Self-heal has run 3 times and eval still fails** — The cap has been reached. STOP. Escalate to human with full failure context. Do not attempt a 4th self-heal cycle.
+- **Eval verdict is YELLOW and team treats it as GREEN** — YELLOW means non-critical failures. STOP. Investigate YELLOW scenarios before merging; do not treat YELLOW as acceptable.
+
 ## Detailed Workflow
 
 ### Prepare Eval Scenarios

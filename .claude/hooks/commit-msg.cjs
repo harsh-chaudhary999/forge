@@ -122,14 +122,25 @@ if (/^(v\d+\.\d+\.\d+|release:|RELEASE:|version:)/i.test(firstLine)) {
   allow();
 }
 
+// Edge case: conventional commits (feat:, fix:, docs:, chore:, refactor:, test:, etc.)
+// The forge repo itself uses conventional commits; tracked projects may also prefer this.
+const conventionalCommitPattern = /^(feat|fix|docs|chore|refactor|test|style|perf|ci|build|revert)(\(.+\))?!?:\s+\S+/i;
+if (conventionalCommitPattern.test(firstLine)) {
+  log('Conventional commit format detected - allowed');
+  allow();
+}
+
 // Validate first line has task-ID (format: task-NNN or task-NNNN)
 // Allow formats: task-123, TASK-123, [task-123], (task-123)
 const taskIdPattern = /task-\d+/i;
 if (!taskIdPattern.test(firstLine)) {
   die(
-    `Summary line missing task-ID.\n` +
+    `Summary line missing task-ID or conventional commit prefix.\n` +
     `  Found: "${firstLine}"\n` +
-    `  Required: "task-NNN: summary" (e.g., "task-123: fix login bug")`
+    `  Accepted formats:\n` +
+    `    task-NNN: summary  (e.g., "task-123: fix login bug")\n` +
+    `    feat: summary      (e.g., "feat: add 2fa support")\n` +
+    `    fix(scope): summary`
   );
 }
 

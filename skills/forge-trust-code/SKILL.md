@@ -22,6 +22,17 @@ type: rigid
 | "I did a spot-check of key functions, that's sufficient" | Spot-checks miss edge cases, error handling, and integration points. Read all relevant code. |
 | "The implementer said they checked the spec, so I don't need to" | Self-review is the weakest form of review. Verify independently. Always. |
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Reviewer is reading the implementer's summary instead of the diff** — Summaries are curated. Diffs are reality. A reviewer who reads the summary only will miss what was omitted, not just what was changed. STOP. Open the actual diff before forming any opinion.
+- **Review consists of "looks good to me" or "LGTM" without citing spec sections** — Approval without evidence of spec verification is not a review — it is an endorsement. STOP. Every review must cite which spec requirements were checked and how.
+- **Acceptance criteria checklist is unmarked but reviewer claims spec is met** — Unchecked items are unverified items. STOP. Every acceptance criterion must have a explicit checked/not-checked status with evidence linking to code.
+- **Reviewer finds code clean and well-structured and infers correctness** — Code quality is independent of spec compliance. Beautiful code frequently omits edge cases specified in the PRD. STOP. Run through the spec requirements line by line, regardless of code quality impression.
+- **Review is performed on a branch that has uncommitted changes** — Uncommitted changes are invisible to the diff. Reviewing against partially complete code validates a state that will not be merged. STOP. Verify the branch is fully committed before beginning review.
+- **Error handling paths are not checked during review** — Happy-path code is usually spec-compliant. Error paths are where spec requirements get silently dropped. STOP. For every spec requirement, verify both the success path and the failure/edge-case path in the code.
+
 ## Detailed Workflow
 
 ### Prepare for Review

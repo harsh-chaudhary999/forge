@@ -22,6 +22,17 @@ type: rigid
 | "This is internal-only, the rule doesn't apply to internal work" | The rule is unchanged by audience. Apply the rule everywhere or retract the rule. No hidden exceptions. |
 | "The rule is a good-to-have, not a must-have, so I can skip it if pressed for time" | No rule is a good-to-have in Forge. All rules are must-haves. If time pressure is real, escalate (don't rationalize). |
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Agent says "technically the rule says X but…"** — The word "but" is the start of a rationalization. STOP. Either follow the rule exactly or escalate. No alternatives.
+- **Agent invokes the "spirit" of a rule to skip a step in the "letter"** — Spirit is not a license to modify letter. Both must be followed. STOP. Do both or escalate.
+- **A rule is silently applied to only some situations** — Selective compliance is non-compliance. STOP. Apply every rule in every context it covers, without exception.
+- **A HARD-GATE step is labeled "optional for this case"** — HARD-GATE means non-optional. There is no case where a HARD-GATE is optional. STOP. Follow the HARD-GATE or escalate to human.
+- **Repeated past exceptions are cited as precedent** — Prior violations are not a precedent. They are prior violations. STOP. Follow the rule today regardless of what happened before.
+- **Agent proceeds without understanding why the rule exists** — Rules without understood intent are the first to be rationalized away. STOP. Read the rule until you understand both letter and intent.
+
 ## Detailed Workflow
 
 ### Understand the Rule (Letter + Spirit)

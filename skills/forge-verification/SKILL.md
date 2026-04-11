@@ -23,6 +23,18 @@ type: rigid
 | "I can just describe what passed instead of showing logs" | Logs are the only source of truth. Descriptions are filtered through human interpretation. |
 | "Running verification a second time would just duplicate effort" | Running verification confirms repeatability. Flaky tests need investigation. Do not skip. |
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Agent says "should pass", "confident it works", or "looks correct"** — These are beliefs, not evidence. STOP. Run the verification and show actual output before any claim of success.
+- **Verification output is summarized in words instead of shown as logs** — Summaries hide failures. "Tests passed" is not evidence. STOP. Show the raw test runner output.
+- **Test count drops between runs without explanation** — Tests are being silently skipped or filtered. A lower count is not a better result. STOP. Investigate why tests disappeared.
+- **Agent runs only a subset of tests ("these are the relevant ones")** — Selective verification misses cross-cutting regressions. STOP. Run the full suite or explicitly justify each exclusion.
+- **Infrastructure is unreachable and verification is skipped** — "Can't connect to DB" means the test ran in an invalid environment. STOP. Fix infrastructure and re-run from scratch.
+- **A "flaky" test is dismissed without investigation** — Flakiness is a real bug. A flaky test means the system has nondeterministic behavior. STOP. Investigate and fix before claiming pass.
+- **Verification is claimed complete but checklist items are unmarked** — Partial verification is not verification. STOP. Every checklist item must be independently confirmed.
+
 ## Detailed Workflow
 
 ### Identify What to Verify

@@ -22,6 +22,17 @@ Evaluation driver for Apache Kafka using the wire protocol. Produces and consume
 
 ---
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Consumer is polled without resetting offsets to the start of the eval run** — If a previous scenario committed offsets on this topic, the consumer starts after those messages and silently "misses" the messages produced in the current scenario. STOP. Always seek to the beginning of the relevant offset range before consuming in eval.
+- **`teardown()` is not called after scenario completion** — An unclosed Kafka consumer with uncommitted offsets leaves the consumer group in an inconsistent state for the next run. STOP. `teardown()` must always be called to close consumers, flush producers, and release connections.
+- **Scenario asserts "message received" without verifying message content** — A message arriving is not the same as the correct message arriving. A stale message from a prior run can satisfy an existence assertion. STOP. Every `consume()` assertion must verify the message payload, key, and schema — not just that a message exists.
+- **Topic used in eval was not created with explicit partition count** — Auto-created topics may use broker defaults that don't match the partition strategy required by the consumer group, causing message distribution to be unpredictable. STOP. Verify the topic exists with the expected partition count before producing.
+- **Schema validation is skipped because "we're just testing the flow"** — Schema drift is invisible at the flow level. A producer sending a v2 schema while the consumer expects v1 produces silent data corruption, not a test failure. STOP. Always call `verify(topic, schema)` as part of every produce/consume cycle.
+- **Consumer timeout is shorter than the produce-to-consume propagation time** — If the consumer polls before the producer's message has been replicated to the partition the consumer is reading, it times out and reports "no messages" — a false failure. STOP. Set consume timeout to at least 3x the expected end-to-end propagation latency.
+
 ## Overview
 
 This skill provides a complete evaluation harness for Kafka-based event-driven systems. It enables:

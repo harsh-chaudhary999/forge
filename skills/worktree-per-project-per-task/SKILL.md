@@ -17,6 +17,17 @@ type: rigid
 | "Cleanup later is fine" | Stale worktrees waste disk; cleanup must be deterministic and automated |
 | "One worktree per repo is enough" | A single task spans multiple projects; each needs its own isolated branch |
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Code changes are being made in the main branch of any project repo** — Main branch contamination means rollback requires reverting shared history. STOP. Create a worktree first. No exceptions even for "one-line" changes.
+- **Two tasks share the same worktree directory** — Shared worktrees create dependency between unrelated tasks: one task's uncommitted changes become visible to the other's eval. STOP. Each task gets its own isolated worktree path.
+- **Worktree is created from a non-main base branch** — Basing a task branch on another feature branch creates hidden dependency; if that branch changes or fails, this task inherits the problem. STOP. Always base from the latest `main`/`master` before creating a worktree.
+- **`npm install` / `bundle install` / dependency install is shared across worktrees via symlink or cached path** — Shared node_modules between worktrees means a dependency install in one task can break another task mid-eval. STOP. Each worktree must have its own installed dependencies.
+- **Worktree cleanup is skipped after eval fails** — Stale worktrees from failed tasks accumulate and fill disk, and may be mistakenly reused. STOP. Run cleanup regardless of eval outcome — cleanup is unconditional.
+- **Conductor dispatches a dev-implementer before worktrees are initialized** — Implementer working without a worktree will work directly in main. STOP. Worktrees must be created and verified before any dev-implementer sub-agent is dispatched.
+
 ---
 
 ## The Pattern

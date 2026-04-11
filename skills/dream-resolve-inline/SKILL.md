@@ -25,6 +25,17 @@ Before resolving any cross-service conflict, reject these rationalizations:
 
 ---
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Resolution picks the "newer" service's version without examining why they diverged** — Recency is not correctness. STOP. Read both sides of the divergence and trace back to the locked spec before deciding.
+- **Dreamer produces a resolution that modifies the locked shared-dev-spec without invoking spec-freeze re-negotiation** — Spec modifications after freeze require full re-negotiation. STOP. Record the conflict and resolution decision in brain; if spec must change, invoke council.
+- **Resolution is described as "they're close enough"** — Field name mismatches and type differences are not cosmetic. STOP. Document the exact delta and its downstream impact before accepting any resolution.
+- **Conflict involves 3+ services and dreamer resolves for only 2** — Partial resolution leaves remaining services in conflict. STOP. Identify all affected services before proposing any resolution.
+- **Resolution is deferred with "fix in next sprint"** — Deferred contract conflicts compound as downstream services build on broken assumptions. STOP. Resolve inline now or escalate BLOCKED.
+- **Brain decision ID is not written before resolution is applied** — Resolution without provenance cannot be audited or reversed. STOP. Write the conflict and resolution decision to brain before applying any code changes.
+
 ## Purpose
 
 When eval runs detect that two or more services disagree on a shared contract — field names, data types, response shapes, event payloads, error codes, or behavioral semantics — this skill provides a structured framework for the dreamer agent to analyze, reason about, and resolve the conflict inline during the self-heal cycle.

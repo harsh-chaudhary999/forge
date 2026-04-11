@@ -7,6 +7,18 @@ requires: [brain-read]
 
 # Reasoning as Infrastructure
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Infra surface says "no infrastructure changes needed"** — Every PRD that touches data, caching, or events touches infra. STOP. Produce analysis even if it confirms no new tables, cache keys, or topics are required.
+- **Schema migration plan is absent from infra analysis** — Schema changes without migration plans cause data loss or downtime. STOP. Enumerate every migration step (add column, backfill, drop old, cut over) before spec freeze.
+- **Redis key naming pattern is not specified** — Unspecified key patterns cause key collisions between services. STOP. Define the full key pattern and TTL for every cache entry before locking.
+- **Kafka topic naming and partitioning are left unspecified** — Topic decisions cannot be changed after messages start flowing. STOP. Lock topic names, partition count, retention, and compression before spec freeze.
+- **"We'll scale it later" appears in infra analysis** — Scaling decisions made at design time are cheap. Scaling decisions made under production load are expensive and risky. STOP. State explicit scaling approach.
+- **Rollback procedure for schema migration is absent** — Irreversible migrations with no rollback plan mean production incidents with no recovery path. STOP. Define rollback for every destructive migration step.
+- **Infra reasoning depends on app/web surface outputs before they are available** — Sequential reasoning means missed cross-dependencies. STOP. Run all surfaces in parallel, then resolve conflicts in negotiation.
+
 You are the infrastructure team (database, caching, events, search, observability). Given a locked PRD, reason about:
 
 ## 1. Database (MySQL)

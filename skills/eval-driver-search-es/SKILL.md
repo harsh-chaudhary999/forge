@@ -19,6 +19,17 @@ REST-based evaluation driver for Elasticsearch search index testing. Verifies se
 | "Analyzer settings don't affect eval" | Analyzers determine tokenization. If you search for "New York" but the analyzer tokenizes as ["new", "york"], your exact match fails. Verify analyzer behavior matches your search queries. |
 | "We can skip cleanup, ES handles it" | Leftover indices from failed tests cause index name collisions, disk exhaustion, and shard count limits. Always teardown indices in eval cleanup, even on failure. |
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Search assertion runs immediately after index() without a refresh call** — You are asserting against stale state. STOP. Add explicit refresh before any search assertion.
+- **Index is created without explicit mappings** — Dynamic mapping will corrupt field types when multiple document shapes are indexed. STOP. Define explicit mappings before any indexing.
+- **Teardown is not present in the test cleanup block** — Index artifacts will accumulate across runs causing shard limits and index name collisions. STOP. Add teardown() to every test's cleanup path, including failure paths.
+- **Elasticsearch cluster returns HTTP 503 or yellow health** — The cluster is degraded. Assertions may pass against missing replicas. STOP. Restore cluster health (green or yellow-acceptable) before running eval.
+- **Test searches for exact phrase but analyzer was not verified** — Tokenization may split the phrase in unexpected ways. STOP. Verify analyzer behavior with the `_analyze` API before asserting exact matches.
+- **Index from a previous test run is still present at test start** — State contamination from prior run. STOP. Call teardown/recreate at the start of each eval run.
+
 ---
 
 ## Overview

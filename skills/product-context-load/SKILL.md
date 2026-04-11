@@ -19,6 +19,17 @@ requires: [brain-read]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Product slug from PRD doesn't match any directory in `~/forge/brain/products/`** — Unregistered product will cause all downstream phases to fail. STOP. Ask user to create forge-product.md or fix the PRD slug before proceeding.
+- **Product context is loaded from memory or chat history instead of reading the brain file** — Memory is stale. Brain files are authoritative. STOP. Read `~/forge/brain/products/<slug>/product.md` fresh on every load.
+- **Product topology lists repos that no longer exist in git** — Stale product.md causes tech plan tasks to fail. STOP. Validate each repo path exists before returning context.
+- **PRD mentions a repo not in product.md** — Either the repo should be added to product.md or the PRD has a typo. STOP. Reconcile before proceeding to council.
+- **Product context is loaded after council has already started** — Council needs topology to identify affected surfaces. STOP. Always load product context before invoking any surface reasoning.
+- **Service start/stop commands in product.md are not verified** — Wrong startup commands make eval-product-stack-up fail. STOP. Verify commands are executable before surfacing to downstream phases.
+
 Given a product slug (from the locked PRD), load and validate:
 
 1. **Find the product.md**

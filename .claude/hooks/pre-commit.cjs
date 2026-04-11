@@ -214,20 +214,27 @@ for (const file of stagedFiles) {
       }
       if (isBinary) continue;
 
-      // Check file content for secrets
+      // Check STAGED content for secrets (use git show to read index, not working dir)
       if (stats.isFile() && stats.size < 1024 * 1024) { // Only check files < 1MB
         try {
-          const content = fs.readFileSync(filePath, 'utf-8');
+          // Read from the git index (staged version), not the working directory file.
+          // This catches: staged secret removed from working copy before commit.
+          const stagedContent = execSync(`git show ":${file}"`, {
+            cwd: PROJECT_ROOT,
+            encoding: 'utf-8',
+            stdio: 'pipe',
+            maxBuffer: 2 * 1024 * 1024
+          });
           for (const pattern of SECRET_PATTERNS) {
-            if (pattern.test(content)) {
-              issues.push(`SECRET IN FILE: ${file}`);
+            if (pattern.test(stagedContent)) {
+              issues.push(`SECRET IN STAGED FILE: ${file}`);
               hasIssues = true;
-              log(`SECRET DETECTED IN CONTENT: ${file}`);
+              log(`SECRET DETECTED IN STAGED CONTENT: ${file}`);
               break;
             }
           }
         } catch (e) {
-          // Binary file or read error - skip content check
+          // Binary file, git show error, or read error — skip content check
         }
       }
     } catch (e) {

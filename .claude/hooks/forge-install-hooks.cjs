@@ -224,29 +224,91 @@ exit 0
   die(`Failed to install pre-push hook: ${e.message}`);
 }
 
-// 7. Summary
+// 7. Install post-pr-dreamer hook
+const postPrDreamerSrc = path.join(HOOKS_SRC, 'post-pr-dreamer.cjs');
+const postPrDreamerDest = path.join(HOOKS_DIR, 'post-merge-dreamer');
+
+if (!fs.existsSync(postPrDreamerSrc)) {
+  die(`post-pr-dreamer.cjs not found: ${postPrDreamerSrc}`);
+}
+
+try {
+  // post-pr-dreamer is invoked manually with a TASK_ID after all PRs merge.
+  // We also install it as a named hook script so it can be called:
+  //   .git/hooks/post-merge-dreamer <task-id>
+  const postPrDreamerWrapper = `#!/bin/bash
+# Forge post-pr-dreamer hook — triggers dreamer retrospective after PR set merges
+# Usage: .git/hooks/post-merge-dreamer <task-id>
+# Called manually after all PRs for a task have merged to main
+TASK_ID="\${1:-}"
+if [ -z "$TASK_ID" ]; then
+  echo "Usage: $0 <task-id>" >&2
+  exit 1
+fi
+node "${postPrDreamerSrc}" "$TASK_ID" "${FORGE_ROOT}"
+exit 0
+`;
+
+  fs.writeFileSync(postPrDreamerDest, postPrDreamerWrapper);
+  fs.chmodSync(postPrDreamerDest, 0o755);
+  log(`Installed post-merge-dreamer hook`);
+} catch (e) {
+  die(`Failed to install post-merge-dreamer hook: ${e.message}`);
+}
+
+// 8. Install forge-worktree-cleanup hook
+const worktreeCleanupSrc = path.join(HOOKS_SRC, 'forge-worktree-cleanup.cjs');
+const worktreeCleanupDest = path.join(HOOKS_DIR, 'forge-worktree-cleanup');
+
+if (!fs.existsSync(worktreeCleanupSrc)) {
+  die(`forge-worktree-cleanup.cjs not found: ${worktreeCleanupSrc}`);
+}
+
+try {
+  // Worktree cleanup is invoked after eval completes (pass or fail).
+  // Installed as a named hook script: .git/hooks/forge-worktree-cleanup [stale-hours] [verbose]
+  const worktreeCleanupWrapper = `#!/bin/bash
+# Forge worktree cleanup hook — removes stale worktrees after eval completes
+# Usage: .git/hooks/forge-worktree-cleanup [stale-threshold-hours] [verbose]
+STALE_HOURS="\${1:-24}"
+VERBOSE="\${2:-0}"
+node "${worktreeCleanupSrc}" "$(pwd)" "$STALE_HOURS" "$VERBOSE"
+exit 0
+`;
+
+  fs.writeFileSync(worktreeCleanupDest, worktreeCleanupWrapper);
+  fs.chmodSync(worktreeCleanupDest, 0o755);
+  log(`Installed forge-worktree-cleanup hook`);
+} catch (e) {
+  die(`Failed to install forge-worktree-cleanup hook: ${e.message}`);
+}
+
+// 9. Summary
 console.log('\n' + '='.repeat(60));
 console.log('✅ Forge hooks installed successfully');
 console.log('='.repeat(60));
 console.log('\nHooks installed:');
-console.log('  • session-start  — Bootstraps Forge at session start');
-console.log('  • post-commit    — Tracks commits in brain/inbox/');
-console.log('  • commit-msg     — Validates commit message format (task-ID required)');
-console.log('  • pre-commit     — Prevents secrets and large files');
-console.log('  • post-rewrite   — Updates brain state after rebase/amend');
-console.log('  • post-merge     — Consolidates brain state after merge to main');
-console.log('  • pre-push       — Verifies eval green before push to main');
-console.log('  • post-pr        — Triggers dreamer retrospective after PR merge');
+console.log('  • session-start          — Bootstraps Forge at session start (via plugin)');
+console.log('  • post-commit            — Tracks commits in brain/inbox/');
+console.log('  • commit-msg             — Validates commit message format (task-ID required)');
+console.log('  • pre-commit             — Scans staged content for secrets and large files');
+console.log('  • post-rewrite           — Updates brain state after rebase/amend');
+console.log('  • post-merge             — Consolidates brain state after merge to main');
+console.log('  • pre-push               — Verifies eval green before push to main');
+console.log('  • post-merge-dreamer     — Triggers dreamer retrospective (call manually with task-id)');
+console.log('  • forge-worktree-cleanup — Removes stale worktrees after eval completes');
 console.log('\nHooks are installed at:');
 console.log(`  ${HOOKS_DIR}/<hook-name>`);
 console.log('\nHook execution order on commit:');
 console.log('  1. commit-msg (validate message format)');
-console.log('  2. pre-commit (prevent secrets/large files)');
+console.log('  2. pre-commit (scan staged content for secrets/large files)');
 console.log('  3. post-commit (track in brain)');
 console.log('\nHook execution order on merge:');
 console.log('  1. pre-push (verify eval green)');
 console.log('  2. post-merge (consolidate brain state)');
-console.log('  3. post-pr-dreamer (trigger retrospective)');
+console.log('  3. post-merge-dreamer (invoke manually: .git/hooks/post-merge-dreamer <task-id>)');
+console.log('\nWorktree cleanup (invoke after eval completes):');
+console.log('  .git/hooks/forge-worktree-cleanup [stale-hours] [verbose]');
 console.log('\nTo uninstall, remove files from .git/hooks/');
-console.log('To verify: git hook list');
+console.log('To verify: ls .git/hooks/');
 console.log('');

@@ -19,6 +19,17 @@ Evaluation driver for Redis cache state verification during test execution. Supp
 | "Redis is local so it's always fast" | Local Redis still has connection overhead, pipeline latency, and Lua script execution time. In eval, connection pool exhaustion and AUTH failures are real. Always set timeouts. |
 | "FLUSHDB before each test is fine" | FLUSHDB destroys other tests' state if running in parallel. Use namespaced keys with deterministic cleanup. Never flush in shared environments. |
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Assertion checks key existence only (not value, type, and TTL)** — Key existence proves the write happened, not that the data is correct. STOP. Assert all three: value, type, and TTL within range.
+- **`FLUSHDB` is used in a shared Redis instance** — Flushing destroys other tests' cache state. STOP. Use namespaced keys and delete only your own keys in cleanup.
+- **Teardown is missing from test cleanup** — Redis keys accumulate across runs and can trigger eviction of active test data. STOP. Add explicit key deletion to every test's cleanup block.
+- **Redis is asserted immediately after a write without checking the expiry** — TTL is set at write time and the assertion may catch a key that is about to expire. STOP. Verify TTL is within an acceptable range, not just > 0.
+- **Redis connection is not closed after test** — Connection leaks exhaust the connection pool. STOP. Always call `teardown()` at end of test, even on failure.
+- **RESP command error is silently swallowed** — Silent errors mask real failures (AUTH denied, WRONGTYPE, connection refused). STOP. Propagate Redis errors as test failures.
+
 ---
 
 ## Overview

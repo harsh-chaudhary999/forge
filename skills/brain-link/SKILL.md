@@ -19,6 +19,17 @@ requires: [brain-read]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **A link is created without a declared `link_type`** — An untyped link is ambiguous: "related" means nothing specific when querying "what does D42 supersede?" or "what contradicts D42?". STOP. Every link must specify its type: `supersedes`, `depends-on`, `contradicts`, `implements`, `extends`, or `informs`.
+- **Only a forward link is created without the reverse** — A one-directional link means queries from the target side return no results. STOP. Every link must be created in both directions: if D42 `depends-on` D17, D17 must also have a `required-by` link pointing to D42.
+- **Links are created from memory of what decisions exist, not from brain-read** — Linking to a decision ID that doesn't exist creates dangling references that break provenance traces. STOP. Always query `brain-read` to verify both source and target decision IDs exist before creating any link.
+- **A `supersedes` link is created without marking the superseded decision's status** — A supersedes link without a status update leaves the old decision appearing active. STOP. When creating a `supersedes` link, also update the superseded decision's status to `superseded` via brain-forget or brain-write.
+- **Links are batched and created after multiple decisions are written** — Links created after the fact are reconstructions — they lose the reasoning that was present at decision time. STOP. Create links immediately when writing each decision.
+- **Link target is a product or project ID instead of a specific decision ID** — Coarse-grained links don't support precise provenance queries. STOP. Links must always point to specific decision IDs (e.g., `D42`), never to product slugs or repo names.
+
 Link decisions across products, projects, and time. Create a queryable graph of decision relationships, patterns, and evolution.
 
 ## Overview

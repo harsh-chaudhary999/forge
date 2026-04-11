@@ -33,6 +33,17 @@ Teams rationalize away multi-surface eval, thinking single-layer testing is suff
 - Reality: In eval you can recreate the bug in 20 minutes. In staging you'll spin up 6 services, wait for warm cache, reproduce race condition 1 in 20 tries, spend 8 hours. Multi-surface eval makes bugs reproducible.
 - Cost of ignoring: Cascade failure: API timeout → web hangs → user refreshes → duplicate POST → orphaned transaction → data corruption.
 
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **A scenario step fails and subsequent steps are still executed** — A failed step means the system is in an unknown state. Running further steps against corrupted state produces meaningless results. STOP. Any step failure must abort the scenario and record the failure point.
+- **DB and cache are not checked after a web action** — A web action completing does not mean the data persisted or the cache invalidated. These are separate layers that can silently fail. STOP. Every write action must be followed by DB and cache verification steps.
+- **Services are health-checked at startup but not re-verified mid-scenario** — A service can degrade or crash during a long scenario. Health at start ≠ health at step 12. STOP. Re-check critical service health after any step that produces unexpected results.
+- **Scenario reports PASS but evidence logs are empty or "N/A"** — A pass claim without evidence is a trust claim, not a verified claim. STOP. Every scenario step must produce a concrete evidence entry (query result, HTTP response, element screenshot, or event payload).
+- **A surface is excluded from a scenario because "we didn't change it"** — Unchanged surfaces still process data from changed surfaces. A search index may break due to a schema change it didn't own. STOP. All surfaces must be driven in every end-to-end scenario.
+- **Scenario timeout is set higher than the SLA for the user flow** — A scenario that passes after 45 seconds but the SLA is 3 seconds is a failing scenario, not a passing one. STOP. Scenario timeout must be set at or below the SLA specified in the shared-dev-spec.
+
 ## Edge Cases in Multi-Surface Coordination
 
 Multi-surface scenarios expose edge cases that single-driver tests miss. Document these explicitly and provide fallback strategies:

@@ -1,6 +1,6 @@
 ---
 name: tech-plan-write-per-project
-description: Convert shared-dev-spec into per-project tech plans. Output: 1 plan per repo with bite-sized tasks (exact files, complete code, exact bash commands).
+description: "Convert shared-dev-spec into per-project tech plans. Output: 1 plan per repo with bite-sized tasks (exact files, complete code, exact bash commands)."
 type: rigid
 requires: [brain-read]
 ---

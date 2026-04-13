@@ -1,6 +1,6 @@
 ---
 name: deploy-driver-pm2-ssh
-description: Deploy via PM2 over SSH. Functions: connect(ssh_config), start(project_path, script), health_check(port, endpoint), stop(project_name).
+description: "Deploy via PM2 over SSH. Functions: connect(ssh_config), start(project_path, script), health_check(port, endpoint), stop(project_name)."
 type: rigid
 requires: [brain-read]
 ---

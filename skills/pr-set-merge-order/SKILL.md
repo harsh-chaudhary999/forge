@@ -1,6 +1,6 @@
 ---
 name: pr-set-merge-order
-description: WHEN coordinated PRs exist across multiple repos and you need to determine the safe merge sequence before pr-set-coordinate executes merges.
+description: "WHEN coordinated PRs exist across multiple repos and you need to determine the safe merge sequence before pr-set-coordinate executes merges."
 type: rigid
 requires: [brain-read]
 ---

@@ -1,6 +1,6 @@
 ---
 name: eval-driver-web-cdp
-description: Eval driver for web UI via Chrome DevTools Protocol. Functions: launch(), navigate(), interact(click/type/scroll), screenshot(), getDOM(), teardown().
+description: "Eval driver for web UI via Chrome DevTools Protocol. Functions: launch(), navigate(), interact(click/type/scroll), screenshot(), getDOM(), teardown()."
 type: rigid
 requires: [brain-read]
 ---

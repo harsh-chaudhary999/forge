@@ -1,6 +1,6 @@
 ---
 name: tech-plan-self-review
-description: Verify per-project tech plans against shared-dev-spec. Check: all requirements covered, no placeholders, complete code, exact commands, clear outputs.
+description: "Verify per-project tech plans against shared-dev-spec. Check: all requirements covered, no placeholders, complete code, exact commands, clear outputs."
 type: rigid
 requires: [brain-read]
 ---

@@ -1,6 +1,6 @@
 ---
 name: contract-schema-db
-description: Negotiate database schema contracts (MySQL). Defines migrations, backward compatibility, indexing, constraints, and safe change procedures.
+description: "Negotiate database schema contracts (MySQL). Defines migrations, backward compatibility, indexing, constraints, and safe change procedures."
 type: rigid
 requires: [brain-read]
 ---
@@ -767,5 +767,207 @@ FROM user_2fa;
   - Option 1: Add constraint only for NEW rows: `CHECK (user_id IS NOT NULL)` on future inserts.
   - Option 2: Add constraint but allow NULL for legacy service: `UNIQUE KEY (order_id, user_id) WHERE user_id IS NOT NULL` (partial index).
   - Option 3: Change legacy service code to not insert NULL.
+
+**Escalation**: If multiple services depend on NULL values, escalate to NEEDS_COORD - Services must agree on constraint level before migration.
+
+---
+
+## Decision Tree 1: Schema Migration Strategy
+
+**Q: Does this change break existing code?**
+
+→ **Additive change (new column, new table, new index)**
+  - Model: **Expand Phase**
+  - Risk: Low (old code ignores new columns)
+  - Process:
+    1. Deploy schema change (new column with default)
+    2. Code updates within 1 week (starts using new column)
+    3. No rollback needed (backward compatible)
+  - Timeline: 1-2 weeks total
+  - Example: Add `email_verified` column with `DEFAULT FALSE`
+
+→ **Breaking change (remove column, rename, type change)**
+  - Model: **Expand-Contract Cycle**
+  - Risk: High (old code fails when reading/writing)
+  - Process:
+    1. Expand: Add new column, don't remove old
+    2. Dual-write: Code writes to both old+new during transition
+    3. Backfill: Fill new column from old data
+    4. Contract: Switch code to use new column only
+    5. Cleanup: Drop old column after deprecation period
+  - Timeline: 4-8 weeks (allows rollback window)
+  - Example: Migrate `email` → `email_canonical` (normalize to lowercase)
+
+→ **Urgent breaking change (security, data corruption, compliance)**
+  - Model: **Coordinated Cutover**
+  - Risk: Very high (requires synchronized deployment)
+  - Process:
+    1. Expand: Add new column
+    2. Parallel deployment: All services deploy code + schema simultaneously
+    3. Quick cutover: Traffic switches to new column
+    4. Rollback plan: If critical failure, revert all services within 15 minutes
+  - Timeline: Hours (not days)
+  - Cost: Requires rehearsal, on-call team, high coordination
+  - Example: Add `password_hash_v2` using bcrypt, replace insecure hashing
+
+**Decision Flow:**
+```
+Will old code fail if you deploy this migration?
+├─ NO (new column, new table, new index)
+│  └─ Expand Only
+│     Timeline: 1-2 weeks
+│     Risk: Low
+│     Rollback: Revert code (not schema)
+│
+├─ YES, but can be fixed incrementally
+│  └─ Expand → Contract Cycle
+│     Timeline: 4-8 weeks
+│     Risk: Medium
+│     Rollback window: 2-4 weeks
+│     Code must support dual-read/dual-write
+│
+└─ YES, critical, must change NOW
+   └─ Coordinated Cutover
+      Timeline: Hours
+      Risk: High
+      Requires: On-call team, rollback plan, rehearsal
+      Cannot be async or incremental
+```
+
+**Key Commitment in Contract:**
+```markdown
+# Migration Strategy
+
+- **Type**: [Expand Only | Expand-Contract | Coordinated Cutover]
+- **Breaking Changes**: [Yes/No]
+- **Timeline**: [1-2 weeks | 4-8 weeks | Same-day cutover]
+- **Rollback Window**: [Until code deployed | 2-4 weeks | 15 minutes]
+
+## Timeline for Expand-Contract Migration
+
+Day 1: Schema change deployed
+  ├─ New column added with default
+  ├─ Old code continues working (ignores new column)
+  └─ Monitoring active
+
+Day 1-7: Code deployment with dual-write/dual-read
+  ├─ New code writes to both old+new columns
+  ├─ Reads prefer new, fallback to old
+  └─ Backfill any missed records
+
+Day 14: Verification
+  ├─ All new writes complete
+  ├─ Backfill validation finished
+  ├─ Sample data spot-checks passed
+  └─ Ready for contract phase
+
+Day 21: Contract phase (optional)
+  ├─ Code updated to use new column only (old column deprecated)
+  ├─ Monitoring for any old column references
+  └─ Deprecation notice sent to team
+
+Day 90: Cleanup (optional)
+  ├─ Code fully uses new column
+  ├─ Safe to drop old column
+  └─ Backups retain old schema for 30 days post-drop
+```
+
+---
+
+## Decision Tree 2: Constraint Enforcement Layer
+
+**Q: Where should data validation live (database or application)?**
+
+→ **Database layer (MySQL constraints: NOT NULL, UNIQUE, CHECK, FOREIGN KEY)**
+  - Model: **Database-Enforced**
+  - Pros:
+    - Guarantees data integrity at source
+    - Works even if app bypassed (direct SQL, batch jobs)
+    - Clear audit trail of invalid attempts
+    - No code bugs can violate constraint
+  - Cons:
+    - Breaks application easily (surprise errors)
+    - Harder to roll back (schema change required)
+    - Complex constraints hard to express in SQL
+  - Use when: Data integrity is non-negotiable (financial, identity, payment)
+  - Example: `UNIQUE (email)`, `NOT NULL phone_number`, `FOREIGN KEY (user_id)`
+
+→ **Application layer (ORM validation, business logic checks)**
+  - Model: **App-Enforced**
+  - Pros:
+    - Easy to change without schema migration
+    - Better error messages to users
+    - Complex validation logic possible (regex, API calls, async checks)
+    - Fast feedback (fail fast before DB round-trip)
+  - Cons:
+    - Bugs in app code violate constraint
+    - Direct DB access (batch jobs, migrations) bypass checks
+    - No guarantee of consistency
+  - Use when: Constraint is domain-specific or user experience is critical
+  - Example: "Email must be company domain" (requires DNS lookup), "Username length 3-20 chars"
+
+→ **Dual layer (Both database AND application)**
+  - Model: **Redundant Safety**
+  - Pros:
+    - Database catches bugs in app code
+    - App provides better error messages
+    - Layers protect each other
+    - Most robust for critical data
+  - Cons:
+    - Double maintenance (two validation paths)
+    - Inconsistent error messages between layers
+    - App errors differ from DB errors
+  - Cost: Higher complexity
+  - Use when: Data is critical AND user experience matters
+  - Example: UNIQUE constraint in DB, app checks first with better message
+
+**Decision Flow:**
+```
+How critical is this constraint to data integrity?
+├─ Critical (money, identity, compliance)
+│  └─ Database-Enforced
+│     Add constraint: NOT NULL, UNIQUE, CHECK, FOREIGN KEY
+│     App cannot bypass
+│
+├─ Important (user preference, soft business rule)
+│  └─ Dual-Layer
+│     DB: Constraint for safety
+│     App: Validation for UX
+│
+└─ Nice-to-have (user experience, optimization)
+   └─ App-Enforced Only
+      Validation in ORM or business logic
+      No DB constraint (allows schema flexibility)
+```
+
+**Key Commitment in Contract:**
+```markdown
+# Constraint Enforcement
+
+## Database-Enforced Constraints
+- `NOT NULL phone_number`: Phone required for 2FA
+- `UNIQUE (email)`: Prevent duplicate accounts
+- `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- `CHECK (age >= 18)`: Adult-only access
+- Rationale: Critical for data integrity, app cannot bypass
+
+## Application-Enforced Validations
+- Email format: Regex validation in ORM
+- Username length: 3-20 characters checked in app
+- Company domain: DNS lookup for company verification
+- Rationale: Better UX, easy to change without DB migration
+
+## Dual-Layer (Critical Data)
+- Email: DB UNIQUE + App format validation + DNS check
+- Password: DB NOT NULL + App min-length + complexity checker
+- Rationale: Prevent invalid data at multiple layers
+
+## Error Handling
+- If DB constraint fails: Return 409 Conflict (app expected this)
+- If app validation fails: Return 400 Bad Request with specific field
+- Document for clients: "409 means constraint violation (duplicate, invalid FK)"
+```
+
+---
 
 **Escalation**: If multiple services depend on NULL values, escalate to NEEDS_COORD - Services must agree on constraint level before migration.

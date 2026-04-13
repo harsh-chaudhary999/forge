@@ -1,6 +1,6 @@
 ---
 name: forge-eval-gate
-description: HARD-GATE: Nothing merges without eval passing. E2E product eval is the final gate.
+description: "HARD-GATE: Nothing merges without eval passing. E2E product eval is the final gate."
 type: rigid
 ---
 # Eval Gate (HARD-GATE)
@@ -201,4 +201,61 @@ Before merging, verify:
 - [ ] Eval output captured and linked in brain
 - [ ] Self-heal loop retries <= 3 (or escalated as BLOCKED)
 
-Output: **EVAL PASS** (ready to merge) or **BLOCKED** (eval failing, real bug after 3 retries, infrastructure down, scale/perf infeasible)
+## Additional Edge Cases
+
+### Edge Case 1: Eval Infrastructure Unavailable (CI/CD Runner Down, Services Broken)
+**Situation:** Cannot run eval because supporting infrastructure is down (Kafka broker, test runner, database service).
+
+**Example:** "Docker daemon not running" or "Cannot connect to Redis" or "CI/CD pipeline agent offline"
+
+**Do NOT:** Claim eval pass because "it should work if infrastructure was up"
+
+**Action:**
+1. Identify failing infrastructure component
+2. Attempt restoration (restart service, reconnect, failover)
+3. If restorable: restore and re-run eval from scratch
+4. If NOT restorable: escalate as **BLOCKED** (with infrastructure dependency documented)
+5. Record in brain: "Eval blocked due to [component] failure; cannot evaluate without infrastructure"
+
+---
+
+### Edge Case 2: Eval Passes but with Warnings (Flakiness, Tolerable Failures, Timeouts)
+**Situation:** All scenarios technically pass, but output contains warnings (test ran twice to pass, timeouts, deprecation warnings, known flakiness).
+
+**Example:** "Scenario passed on retry after 3s timeout" or "Test passed but took 35s, SLA is 30s"
+
+**Do NOT:** Treat YELLOW (warnings) as GREEN (clean pass)
+
+**Action:**
+1. Categorize each warning:
+   - **Transient (timing):** retry scenario 3 more times; if all pass, document flakiness, continue
+   - **Performance (SLA miss):** investigate bottleneck, optimize, re-run; if cannot meet SLA, escalate to dreamer
+   - **Deprecation:** fix deprecated code before merge
+2. Do NOT claim "PASS" — claim **DONE_WITH_CONCERNS** + list all warnings
+3. Document in brain: which warnings exist, why acceptable (or not), plan to fix
+4. Code review must acknowledge warnings before approval
+
+---
+
+### Edge Case 3: Eval Takes Too Long (Hangs, Timeout > 1 Hour)
+**Situation:** Eval scenarios hang or timeout before completion (> 60 min total runtime).
+
+**Example:** "Test scenario deadlocked waiting for response" or "Performance test still running after 90 minutes"
+
+**Do NOT:** Increase timeout limits to make eval pass. Long timeouts hide real bugs (deadlocks, infinite loops, incorrect waits).
+
+**Action:**
+1. Kill hanging eval (timeout it aggressively)
+2. Investigate: where did eval hang?
+   - Use `/self-heal-locate-fault` to identify hanging service/scenario
+   - Check logs for deadlocks, infinite loops, stack traces
+3. Root cause analysis:
+   - Code bug (infinite loop, race condition)?
+   - Test bug (incorrect wait condition)?
+   - Infrastructure (slow response, contention)?
+4. Fix root cause, re-run eval
+5. If cannot fix within 3 attempts: escalate as **BLOCKED** (eval infrastructure too slow to validate code)
+
+---
+
+Output: **EVAL PASS** (ready to merge) or **DONE_WITH_CONCERNS** (passes with warnings, must be documented) or **BLOCKED** (eval failing after 3 retries, infrastructure down, scale/perf infeasible, eval hangs)

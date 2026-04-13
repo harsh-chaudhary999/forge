@@ -1,6 +1,6 @@
 ---
 name: forge-council-gate
-description: HARD-GATE: Every locked PRD goes through Council (4 surfaces + 5 contracts negotiated). No skipping.
+description: "HARD-GATE: Every locked PRD goes through Council (4 surfaces + 5 contracts negotiated). No skipping."
 type: rigid
 ---
 # Council Gate (HARD-GATE)
@@ -166,4 +166,75 @@ Before locking spec, verify:
 - [ ] Shared-dev-spec created in brain (SPECLOCK decision ID)
 - [ ] Per-project tech plan inputs ready (surface scope + contracts)
 
-Output: **SPEC LOCKED** (ready for per-project tech planning) or **BLOCKED** (deadlock, resource infeasibility, unresolved conflict awaiting dreamer)
+## Additional Edge Cases
+
+### Edge Case 1: Surfaces Cannot Reach Consensus (Deadlock, Split Vote)
+**Situation:** Two or more surfaces have irreconcilable positions. Backend insists on schema X, web insists on schema Y, neither will move.
+
+**Example:** Backend: "Single monolithic table for performance"; Web: "Normalized tables for flexibility" — both have valid technical reasons.
+
+**Do NOT:** Pick one arbitrarily. Deadlock is a signal that the decision matters and needs authority to resolve.
+
+**Action:**
+1. Document both positions in detail:
+   - Backend proposal + rationale + performance metrics
+   - Web proposal + rationale + usability concerns
+   - Why they conflict (what's the core trade-off?)
+2. Escalate to dreamer (architectural decision, not engineering compromise)
+3. Dreamer evaluates trade-off space:
+   - Can we hybrid? (partial normalization, compromise schema)
+   - Which is right for product strategy?
+   - Cost-benefit of each approach?
+4. Dreamer decides; record decision in brain (SPECLOCK with arbitration noted)
+5. Return to council with dreamer decision, lock spec
+6. Escalation keyword: **NEEDS_COORDINATION** (surfaces can't self-resolve)
+
+---
+
+### Edge Case 2: Stakeholders Appear or Disappear Mid-Council (Attendance Conflict)
+**Situation:** Required stakeholder or surface representative is unavailable during council session.
+
+**Example:** Infra engineer called to incident; web stakeholder dropped off call; new requirement surfaces from product who wasn't initially consulted.
+
+**Do NOT:** Proceed with incomplete council. Missing surface = missing constraints, vetos, requirements.
+
+**Action:**
+1. Identify who is missing and why (unavailable, didn't attend, left mid-session)
+2. If critical path surface is missing:
+   - Pause council
+   - Reschedule with all attendees present
+   - Do NOT make agreements without complete representation
+3. If new stakeholder surfaces mid-council:
+   - Add them to session (represent their surface concerns)
+   - May require re-negotiating contracts to account for their input
+   - Document late entry in brain (why they joined late)
+4. Lock spec only after all 4 surfaces have been heard AND agree
+5. Escalation keyword: **BLOCKED** (incomplete council, must reschedule with full attendance)
+
+---
+
+### Edge Case 3: Conflict Unresolvable in One Council Session (Needs Multiple Rounds)
+**Situation:** Council runs but key conflicts surface late. Surfaces need time to research alternatives or consult external teams. One session is insufficient.
+
+**Example:** "This API contract requires infrastructure we haven't built yet; we need 2 days to scope the work" — valid concern, but not resolvable in 1-hour council.
+
+**Do NOT:** Force consensus under time pressure. Premature lock creates technical debt later.
+
+**Action:**
+1. Acknowledge the conflict is real and important
+2. Identify what needs to be resolved in the gap:
+   - Infrastructure feasibility study?
+   - Design exploration of hybrid approach?
+   - Consultation with external team?
+3. Plan the follow-up:
+   - Who owns the research/design?
+   - Timeline (target: 2-3 days max)
+   - What will be brought to council round 2?
+4. Document in brain: "SPECLOCK pending" + list of open items
+5. Schedule council round 2 (with same attendees + research results)
+6. In round 2: resolve conflicts using research/designs, lock spec
+7. Escalation keyword: **NEEDS_COORDINATION** (multi-round negotiation required)
+
+---
+
+Output: **SPEC LOCKED** (ready for per-project tech planning) or **BLOCKED** (deadlock without dreamer input, incomplete attendance, unresolvable conflict awaiting follow-up research)

@@ -1,6 +1,6 @@
 ---
 name: forge-tdd
-description: HARD-GATE: Iron law - write test first, watch fail, write minimal code, watch pass. No exceptions. Non-negotiable discipline enforcer.
+description: "HARD-GATE: Iron law - write test first, watch fail, write minimal code, watch pass. No exceptions. Non-negotiable discipline enforcer."
 type: rigid
 ---
 
@@ -260,7 +260,165 @@ If all 5 pass → done. Otherwise → iterate.
 
 ---
 
-## Why TDD
+## Edge Cases & Escalation Paths
+
+### Edge Case 1: Test Is Too Slow (10+ Seconds Per Run, Blocks Development)
+**Situation:** Test is valid and correct, but takes 15+ seconds to run. Each RED-GREEN cycle takes minutes instead of seconds.
+
+**Example:** Database integration test that creates 1000 records and validates queries. Valid test, but too slow for fast feedback loop.
+
+**Do NOT:** Skip the test or reduce test scope because it's slow. Slow tests catch real issues.
+
+**Action:**
+1. Run test once to verify it works (see GREEN)
+2. Identify bottleneck (where does time go?)
+   - Database setup/teardown?
+   - Large data set creation?
+   - Network calls?
+3. Options:
+   - **Option A (Preferred):** Refactor test to be faster without losing coverage
+     - Use fixtures instead of creating data
+     - Mock external services
+     - Reduce data set size (still tests behavior)
+   - **Option B:** Split into two tests
+     - Unit test (fast, < 100ms)
+     - Integration test (slow, but run less frequently)
+4. If cannot optimize: escalate as **NEEDS_CONTEXT** (test infrastructure too slow)
+5. Do NOT reduce verification rigor to gain speed
+
+---
+
+### Edge Case 2: Test Is Flaky (Fails 20% of Time Unpredictably)
+**Situation:** Test passes sometimes, fails sometimes. No clear pattern (timing, state, environment).
+
+**Example:** Test that polls for eventual consistency; sometimes data appears in 10ms, sometimes 500ms. Test has hard-coded 50ms wait.
+
+**Do NOT:** Accept flakiness or increase timeouts. Flakiness is a real bug in code or test.
+
+**Action:**
+1. Run test 10 times in succession; note pass/fail pattern
+2. Classify flakiness type:
+   - **Timing-dependent:** Add explicit waits, remove hard-coded delays
+   - **Order-dependent:** Tests run in different order; state leaks between tests
+   - **Concurrency:** Race condition in code or test
+   - **Environment:** Infrastructure variability (network, database)
+3. Fix root cause (not the test, the code):
+   - Code: add synchronization, remove race condition
+   - Test: add proper setup/teardown, isolate tests
+4. Re-run test 10 times again; must pass all 10
+5. If cannot stabilize: escalate as **BLOCKED** (flaky infrastructure or untestable code)
+
+---
+
+### Edge Case 3: Test Requires Infrastructure Not Available (Database, API Service)
+**Situation:** Test is valid, but requires external service that's not running or accessible.
+
+**Example:** Test for payment gateway integration requires live API connection. API service is down.
+
+**Do NOT:** Skip the test or mock the service permanently. Integration tests must eventually test real integration.
+
+**Action:**
+1. Determine: is the service _always_ required or only for this test?
+   - Always: you need the infrastructure restored before proceeding
+   - Only this test: can you mock it temporarily?
+2. If service can be restored (local database, stub server):
+   - Restore/start the service
+   - Re-run test
+3. If service cannot be restored (external API, vendor service):
+   - **Option A:** Mock the service for now, add comment "TODO: verify with real API"
+   - **Option B:** Escalate as **NEEDS_CONTEXT** (cannot run full integration test)
+   - **Option C:** Split test into unit (mocked) + integration (real API, run later)
+4. Document the dependency in code comments
+5. If mocking: create follow-up task to remove mock and verify against real service
+
+---
+
+### Edge Case 4: Legacy Code Path Has No Way to Unit Test (Tightly Coupled)
+**Situation:** Code to test is tightly coupled to global state, static calls, or framework internals. Cannot unit test without refactoring code itself.
+
+**Example:** Class that calls `Database.getInstance().query()` globally; Database is a singleton with no way to inject a test double.
+
+**Do NOT:** Skip TDD or write test after code. Tight coupling is the problem.
+
+**Action:**
+1. Acknowledge: this code cannot be unit tested in current form
+2. Refactor first (extract dependency, inject it):
+   ```
+   // BEFORE: tightly coupled
+   class UserRepository {
+       def getUser(id) { Database.getInstance().query(...) }
+   }
+   
+   // AFTER: injectable
+   class UserRepository {
+       constructor(database) { this.db = database }
+       def getUser(id) { this.db.query(...) }
+   }
+   ```
+3. Then follow normal TDD: test first, code second
+4. If refactoring is not possible (framework limitation):
+   - Escalate as **NEEDS_CONTEXT** (code untestable, needs architecture change)
+   - Mark code as "legacy, cannot unit test"
+   - Use integration tests instead
+5. Going forward: enforce testable design (dependency injection, loose coupling)
+
+---
+
+### Edge Case 5: Integration Test Required > Unit Test (Distributed System Testing)
+**Situation:** Behavior cannot be verified with unit test alone. Service boundary requires integration test (multiple services, eventual consistency, network behavior).
+
+**Example:** Feature: "Cache invalidated when user data changes". Requires backend write → cache invalidation → frontend read. One service cannot test alone.
+
+**Do NOT:** Force a unit test for inherently distributed behavior. Integration tests are valid TDD.
+
+**Action:**
+1. Recognize: this is an integration test, not a unit test
+2. Follow TDD at integration level:
+   - RED: write integration test (bring up services, exercise end-to-end flow, verify cache behavior)
+   - GREEN: implement feature
+   - REFACTOR: optimize services without breaking integration test
+3. May be slower than unit test (that's expected)
+4. Integration test still drives design (discover contracts, dependencies)
+5. Run integration tests less frequently (as gate, not per-commit), but still TDD
+6. Do NOT skip the test because "it's just integration"
+
+---
+
+## Decision Tree: When to Unit Test vs. Integration Test
+
+**Use this tree to decide which test to write first:**
+
+```
+START: I need to test behavior X
+
+Q1: Does X require multiple services/processes?
+├─ YES → Q2
+└─ NO → UNIT TEST (test single component in isolation)
+
+Q2: Does X depend on eventual consistency, timing, or network?
+├─ YES → INTEGRATION TEST (test end-to-end, multiple services)
+└─ NO → Could be unit test with mocks (see Q3)
+
+Q3: Is the external service/boundary testable in isolation?
+├─ NO → INTEGRATION TEST (no way around it)
+├─ YES, easy to mock → UNIT TEST (mock the boundary)
+└─ YES, but mocking loses important behavior → INTEGRATION TEST (test real behavior)
+
+Q4: Is the integration test too slow (>5 sec)?
+├─ YES → Split: UNIT TEST (fast path) + INTEGRATION TEST (slow path, run separately)
+└─ NO → Single INTEGRATION TEST suffices
+
+DECISION RULE:
+- Unit test for single component logic (validation, calculation, formatting)
+- Integration test for multi-component behavior (contracts, APIs, eventual consistency)
+- Always write test first (RED), regardless of type
+- Fast feedback: prefer unit tests for development
+- Final verification: integration tests before merge
+```
+
+---
+
+Output: **TDD PASS** (test first, minimal code, all tests pass) or **BLOCKED** (test infrastructure broken, untestable legacy code, infrastructure unavailable after attempts to restore)
 
 TDD is not about writing tests. It's about:
 1. **Clarifying requirements** — Test forces you to think through edge cases before coding
@@ -283,3 +441,7 @@ This skill is RIGID: type=rigid. Do not bend it.
 - If you're tempted to refactor outside your task → invoke this skill
 
 TDD is the foundation. Every other discipline depends on it.
+
+---
+
+Note: This version includes edge cases and decision tree for complex testing scenarios (slow tests, flaky tests, infrastructure dependencies, legacy code, integration vs. unit testing).

@@ -1,6 +1,6 @@
 ---
 name: council-multi-repo-negotiate
-description: Master negotiation skill. Invokes all 4 surface reasoning skills, all 5 contract skills, resolves conflicts across surfaces, outputs locked shared-dev-spec.md.
+description: "Master negotiation skill. Invokes all 4 surface reasoning skills, all 5 contract skills, resolves conflicts across surfaces, outputs locked shared-dev-spec.md."
 type: rigid
 requires: [brain-read, reasoning-as-backend, reasoning-as-web-frontend, reasoning-as-app-frontend, reasoning-as-infra, contract-api-rest, contract-event-bus, contract-cache, contract-schema-db, contract-search]
 ---

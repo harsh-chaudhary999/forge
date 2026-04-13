@@ -1,6 +1,6 @@
 ---
 name: product-context-load
-description: WHEN: You have a locked PRD and need to validate the target product exists, load its topology, and list affected projects.
+description: "WHEN: You have a locked PRD and need to validate the target product exists, load its topology, and list affected projects."
 type: rigid
 requires: [brain-read]
 ---

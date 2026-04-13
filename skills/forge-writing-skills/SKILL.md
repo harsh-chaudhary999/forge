@@ -1,6 +1,6 @@
 ---
 name: forge-writing-skills
-description: WHEN: You need to write a new Forge skill or substantially improve an existing one. Methodology for skill authoring — TDD-for-skills workflow, pressure testing, persuasion-grounded design, rigor enforcement.
+description: "WHEN: You need to write a new Forge skill or substantially improve an existing one. Methodology for skill authoring — TDD-for-skills workflow, pressure testing, persuasion-grounded design, rigor enforcement."
 type: rigid
 requires: [forge-skill-anatomy]
 ---

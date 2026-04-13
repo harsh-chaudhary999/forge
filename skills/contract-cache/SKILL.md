@@ -1,6 +1,6 @@
 ---
 name: contract-cache
-description: Negotiate cache contracts (Redis/Memcached). Defines key patterns, TTL strategy, invalidation, stampede prevention, serialization, consistency model.
+description: "Negotiate cache contracts (Redis/Memcached). Defines key patterns, TTL strategy, invalidation, stampede prevention, serialization, consistency model."
 type: rigid
 requires: [brain-read]
 ---
@@ -343,6 +343,189 @@ When implementing a cache contract:
 - [ ] Set up monitoring: cache hit rate, miss rate, latency, evictions
 - [ ] Test under load: verify stampede prevention works
 - [ ] Document in service contract; share with dependent teams
+
+---
+
+## Edge Cases & Escalation Keywords
+
+### Edge Case 1: Key naming collision between two services
+
+**Symptom:** Service A (User Profile) and Service B (User Preferences) both use cache key `user:{user_id}` without namespace. Service A stores `{name: "Alice", age: 30}`. Service B stores `{theme: "dark", notifications_enabled: true}`. On read, Service A gets Service B's data.
+
+**Do NOT:** Assume unique ownership without namespace prefixes.
+
+**Mitigation:**
+- Enforce namespace prefixes in contract: `profile:user:{user_id}`, `preferences:user:{user_id}`
+- Document ownership: "User Profile service owns `profile:*` keys. User Preferences service owns `preferences:*` keys. No cross-ownership."
+- Add validation: If service tries to write/read wrong namespace, reject with error
+- TTL tied to namespace: `profile:*` expires in 1 hour, `preferences:*` expires in 6 hours
+
+**Escalation:** BLOCKED if namespace collision detected. Audit all keys in contract before lock.
+
+---
+
+### Edge Case 2: TTL mismatch creates stale data across services
+
+**Symptom:** Cache contract specifies `user:123:profile` TTL = 60 seconds for freshness. Service A reads at 0s, caches locally for 60s. Service B writes update at 30s. Service A doesn't refetch until 60s, serving stale data for 30s beyond TTL.
+
+**Do NOT:** Assume client-side caching respects server TTL.
+
+**Mitigation:**
+- Lock contract TTL and document its semantics: "TTL is server-side only. Clients must not cache responses locally beyond server TTL."
+- Add cache-control headers: `Cache-Control: max-age=60, must-revalidate` (enforce client-side TTL)
+- Alternative: Use shorter server TTL (30s) + `ETag` for client validation without refetch
+- Document: "If client caches, multiply server TTL by 0.8 to prevent data older than TTL"
+
+**Escalation:** NEEDS_CONTEXT — Do clients implement their own caching? If yes, coordinate TTLs before lock.
+
+---
+
+### Edge Case 3: Data format incompatibility during serialization
+
+**Symptom:** Service A stores user profile as JSON: `{"user_id": 123, "email": "alice@example.com"}`. Service B expects the same key but deserializes it as Msgpack binary. Deserialization fails silently.
+
+**Do NOT:** Assume serialization format is universal.
+
+**Mitigation:**
+- Lock serialization format in contract: "All values use JSON (UTF-8 encoded). No binary formats."
+- Document field naming consistency: "All fields use snake_case: `user_id`, `email`, `created_at` (not userId, createdAt)"
+- Version keys during format migration: `v1:user:123:profile` (JSON) → `v2:user:123:profile` (new format)
+- Validation: Deserialize sample payloads with all consuming services before lock
+
+**Escalation:** BLOCKED if services disagree on serialization. Lock format and validate all services before contract lock.
+
+---
+
+### Edge Case 4: Eviction policy conflict causes unpredictable behavior
+
+**Symptom:** Redis contract specifies `maxmemory-policy: allkeys-lru` (evict least recently used). Service A relies on specific keys never being evicted (expects TTL enforcement). Under memory pressure, Redis evicts Service A's "important" key anyway. Service A crashes.
+
+**Do NOT:** Assume TTL always protects from eviction.
+
+**Mitigation:**
+- Define maxmemory policy in contract: "maxmemory-policy = volatile-ttl (only evict keys with TTL, respect TTL)"
+- Alternative: Use `allkeys-lru` but document: "Under memory pressure, no key is guaranteed. Services must handle missing keys gracefully."
+- Capacity planning: Contract must include memory budget and growth projection
+- SLA: "Eviction rate < 0.1% under normal load. If higher, scale Redis cluster."
+
+**Escalation:** NEEDS_INFRA_CHANGE — If Redis memory insufficient for SLA, BLOCKED until infrastructure upgraded.
+
+---
+
+### Edge Case 5: Cache invalidation semantics differ across services
+
+**Symptom:** Service A deletes `user:123:profile` via direct DEL. Service B published `user.profile_updated` event expecting all consumers to invalidate the key. Service B's event handler tries to delete already-deleted key (no-op in Redis, but log spam). Service C subscribes to event, tries to refetch from cache, gets stale data because event arrived late.
+
+**Do NOT:** Mix direct invalidation and event-based invalidation.
+
+**Mitigation:**
+- Choose ONE invalidation strategy per key:
+  - **Direct**: Service writes to key, owns invalidation via DEL. No events needed.
+  - **Event-based**: Service publishes event, other services subscribe and invalidate. Requires event bus contract.
+- Lock in contract: "user:{id}:profile is invalidated by direct DEL from Profile Service only."
+- Document event delivery guarantee: "Events not guaranteed to arrive before reads. Clients must verify cache freshness via version field."
+
+**Escalation:** NEEDS_COORDINATION — If multiple services invalidate same key, must agree on single strategy before lock.
+
+---
+
+### Edge Case 6: Cache stampede under unexpected traffic spike
+
+**Symptom:** `inventory:{product_id}:stock` TTL = 5 minutes, stampede prevention = xfetch (5% probability at 80% TTL). Under normal load, works fine. Holiday sale causes 100x traffic spike. Xfetch probability insufficient: 1000 requests hit cache simultaneously at 4:00, it expires at 4:05, all 1000 refetch simultaneously, database overloaded.
+
+**Do NOT:** Set stampede prevention probability statically without load headroom.
+
+**Mitigation:**
+- Stampede prevention must scale with load: "Use lock-and-refresh (SETNX) for traffic > 100 req/sec on a key. For lower traffic, xfetch 5% is sufficient."
+- Document load headroom in contract: "Assumes max 100 requests/sec per key. If higher, increase stampede prevention strength."
+- Fallback: "If lock-and-refresh fails, return stale value (serve 1-minute-old data rather than wait)."
+- Monitoring: "Alert if cache miss rate > 1% (possible stampede). Add lock-and-refresh immediately."
+
+**Escalation:** NEEDS_CONTEXT — What's the expected peak load? If >100 req/sec per key, lock-and-refresh required, not xfetch.
+
+---
+
+## Decision Tree: Cache Isolation Strategy
+
+**Q: How many services will access each cache key?**
+
+→ **Single service owns key (User Profile service owns all `profile:*` keys)**
+  - Model: **Owned Cache**
+  - Isolation: Service reads/writes own namespace only
+  - Ownership: Clear, documented in contract
+  - Invalidation: Owner service controls, direct DEL or write-through
+  - Pros: Simple, fast, no coordination needed
+  - Cons: Requires careful namespace enforcement
+  - Risk: Other services accidentally writing wrong keys
+  - Mitigation: Code review + ACLs in Redis (if supported)
+
+→ **Multiple services read, one writes (Inventory service writes, Order/Cart services read)**
+  - Model: **Read-Shared Cache**
+  - Isolation: Writer owns key, readers are read-only
+  - Invalidation: Writer DELs key after mutation
+  - Pros: Decouples services, reduces database load
+  - Cons: Eventual consistency, readers must handle stale data
+  - Consistency: Acceptable staleness depends on key (inventory can be 1min stale, payment cannot)
+  - Mitigation: Lock consistency model in contract, document staleness SLA
+
+→ **Multiple services read AND write same key (Distributed counter)**
+  - Model: **Shared Mutable Cache**
+  - Isolation: Conflict-free data structures only (counters, sets, append-only lists)
+  - Invalidation: Event-based (application-level conflict resolution)
+  - Pros: Highest throughput for high-contention keys
+  - Cons: Complex concurrency, eventual consistency
+  - Risk: Last-write-wins causes lost updates, race conditions
+  - Mitigation: Use Redis INCR/RPUSH (atomic ops), not read-modify-write, version field to detect conflicts
+
+**Decision Flow:**
+```
+Who needs to write to this key?
+├─ One service only
+│  └─ Owned Cache (single namespace)
+│     Clear ownership in contract
+│     Fast, simple invalidation
+│
+├─ One writer, multiple readers
+│  └─ Read-Shared Cache
+│     Define consistency SLA (staleness acceptable?)
+│     Invalidation: writer-controlled
+│     Must document read-after-write latency
+│
+└─ Multiple writers
+   └─ Shared Mutable Cache
+      Use only conflict-free data structures
+      INCR for counters, RPUSH for logs (not read-modify-write)
+      Eventual consistency only
+      Document conflict resolution strategy
+```
+
+**Key Commitment in Contract:**
+```markdown
+# Cache Isolation
+
+## Ownership Model: [Owned | Read-Shared | Shared-Mutable]
+
+### Owned Cache Keys (e.g., profile:user:{id})
+- Owner: Profile Service
+- Writers: Profile Service only
+- Readers: Public (any service can read)
+- Invalidation: Profile Service DELs on update
+- Consistency: Strong (write-through)
+
+### Read-Shared Cache Keys (e.g., inventory:{product_id}:stock)
+- Owner: Inventory Service
+- Writers: Inventory Service only
+- Readers: Order, Cart, Search services (read-only)
+- Invalidation: Inventory Service DELs on stock change
+- Consistency: Eventual (1-minute stale acceptable)
+- SLA: 95% cache hits, <5% miss rate
+
+### Shared Mutable Cache Keys (e.g., analytics:user:{id}:pageview_count)
+- Writers: All services can increment
+- Operation: INCR only (atomic, no read-modify-write)
+- Consistency: Eventual (counter eventually consistent across servers)
+- Conflict resolution: Last-write-wins per INCR (acceptable for metrics)
+```
 
 ---
 

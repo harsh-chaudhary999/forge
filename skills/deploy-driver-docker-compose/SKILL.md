@@ -1,6 +1,6 @@
 ---
 name: deploy-driver-docker-compose
-description: Deploy via Docker Compose. Functions: up(compose_file), health_check(), down(). Supports multiple services.
+description: "Deploy via Docker Compose. Functions: up(compose_file), health_check(), down(). Supports multiple services."
 type: rigid
 requires: [brain-read, eval-driver-api-http]
 ---

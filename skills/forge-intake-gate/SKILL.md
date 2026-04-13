@@ -1,6 +1,6 @@
 ---
 name: forge-intake-gate
-description: HARD-GATE: Every PRD goes through intake (8 questions, locked). No skipping, no exceptions, no "trivial" PRDs.
+description: "HARD-GATE: Every PRD goes through intake (8 questions, locked). No skipping, no exceptions, no \"trivial\" PRDs."
 type: rigid
 ---
 # Intake Gate (HARD-GATE)
@@ -143,4 +143,58 @@ Before locking, verify:
 - [ ] No policy conflicts (or escalated to dreamer)
 - [ ] PRD lock record created in brain (PRDLK decision ID)
 
-Output: **PRD LOCKED** (ready for council) or **BLOCKED** (intake incomplete, policy conflict, cannot resolve vagueness)
+## Edge Cases
+
+### Edge Case 1: PRD is Vague but Stakeholders Insist on Proceeding
+**Situation:** Requirements are ambiguous (e.g., "make the system faster" with no metrics), stakeholder demands we proceed immediately.
+
+**Do NOT:** Lock a vague PRD. Vagueness creates divergent implementations.
+
+**Action:**
+1. During intake-interrogate, flag each vague answer
+2. In Question 4 (acceptance criteria), demand concrete metrics ("faster by what %? in what timeframe?")
+3. In Question 7 (constraints), identify what "fast enough" means
+4. If stakeholder resists quantification: escalate as **NEEDS_CONTEXT**
+5. Dreamer decides: clarify requirements or accept ambiguity risk
+6. Lock only after vagueness is resolved or escalation is documented
+
+---
+
+### Edge Case 2: Required Context Unavailable (No Persona Data, No User Research)
+**Situation:** Intake requires user research or persona data that doesn't exist or is stale.
+
+**Example:** "Improve user onboarding" but persona definitions are 2 years old and no recent user interviews exist.
+
+**Do NOT:** Proceed with outdated context. Requirements built on stale personas diverge from reality.
+
+**Action:**
+1. Flag the missing context during Question 1 (core problem) and Question 6 (success metrics)
+2. Either:
+   - **Option A:** Conduct fresh research/interviews before locking (timeline impact)
+   - **Option B:** Escalate to dreamer with context gap (proceed with risk noted)
+3. If Option B chosen: lock PRD with explicit assumption: "Context based on [date] personas; may need refresh post-launch"
+4. Record decision in brain with context freshness date
+5. Escalation keyword: **NEEDS_CONTEXT**
+
+---
+
+### Edge Case 3: Requirement Conflicts with Existing Product (Breaking Change Risk)
+**Situation:** New requirement fundamentally changes existing behavior or breaks backwards compatibility.
+
+**Example:** "Change password reset flow" but millions of users rely on existing flow; no deprecation plan exists.
+
+**Do NOT:** Lock a breaking-change PRD without explicit approval and migration plan.
+
+**Action:**
+1. During intake, identify in Question 7 (constraints): "Does this break existing behavior? Who is affected?"
+2. In Question 5 (anti-goals): explicit anti-goal: "Must not break current user flows without migration"
+3. If breaking change is necessary:
+   - Require rollback/deprecation plan (Question 7)
+   - Require communication plan (who gets notified?)
+   - Require phased rollout strategy (v1 with toggle, v2 deprecation, v3 removal)
+4. Lock PRD with explicit breaking-change flag
+5. Escalation keyword: **BLOCKED** (until migration plan is concrete)
+
+---
+
+Output: **PRD LOCKED** (ready for council) or **BLOCKED** (intake incomplete, policy conflict, cannot resolve vagueness) or **NEEDS_CONTEXT** (missing prerequisites, context unavailable)

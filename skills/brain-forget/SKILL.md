@@ -1,6 +1,6 @@
 ---
 name: brain-forget
-description: Archive deprecated decisions. Marks old decisions as cold/archived, never deletes. Demotion: warm→cold→archived. Searchable by status.
+description: "Archive deprecated decisions. Marks old decisions as cold/archived, never deletes. Demotion: warm→cold→archived. Searchable by status."
 type: rigid
 requires: [brain-read]
 ---
@@ -1411,20 +1411,138 @@ Timeline: D42 → (6mo) Warm → (6mo) Cold → (1y) Archived; D89 in use
 - Successor references create decision lineage
 - Lessons learned tied to status transition, not decision content
 
-## Workflow Summary
+## Edge Cases
+
+### Edge Case 1: Decision is still referenced (supersession dependency)
+
+**Symptom:** Attempt to archive decision, but other active decisions still reference it as parent or prerequisite.
+
+**Do NOT:** Archive if dependents are still active. Do NOT orphan child decisions.
+
+**Mitigation:**
+1. Check dependents before demotion: `grep -r "parent_decision: D<id>\|depends.*D<id>" ~/forge/brain --include="*.md"`
+2. If dependents found: List them — they must be reviewed/updated before archival
+3. Two paths:
+   - Demote parent only to Warm, not Cold (leave time for children to migrate)
+   - Update all children to point to new parent before archiving old parent
+4. If decision has many dependents: Consider marking Warm instead of Cold (softer deprecation)
+
+**Escalation:** NEEDS_COORDINATION — Decision has active dependents. Cannot archive without updating them first. Notify dependent teams to migrate to successor decision or update parent references.
+
+---
+
+### Edge Case 2: Archived decision needed again (restore from archive)
+
+**Symptom:** Pattern that was archived resurfaces; new context makes archived approach relevant again.
+
+**Do NOT:** Create duplicate decision with same content. Do NOT ignore archived decision.
+
+**Mitigation:**
+1. Search archive for similar decisions: `grep -r "keyword" ~/forge/brain/archive --include="*.md"`
+2. If exact match found: Reactivate by changing `status: archived` → `status: warm` or `status: active`
+3. Add reactivation note: `reactivated_date: <date>`, `reactivation_reason: "Pattern needed again due to <context>"`
+4. Update links if children were reparented during archival
+5. Commit: `decision: reactivate D<id> <title> — pattern relevant again for <new-context>`
+
+**Escalation:** NEEDS_CONTEXT — Archived decision pattern needed again. Verify context has truly changed (not just forgotten). If reactivating, update dependent decisions and document why archived decision is now valid.
+
+---
+
+### Edge Case 3: Archive reason not documented (audit trail gap)
+
+**Symptom:** Decision marked Archived with no explanation of why (missing `archived_reason`, `lessons_learned`).
+
+**Do NOT:** Archive without documenting reason. Do NOT create undocumented archival.
+
+**Mitigation:**
+1. Always include when demoting to Cold or Archived:
+   - `status_reason`: age, superseded_by, outdated, experimental_end, revoked
+   - `lessons_learned`: what worked, what didn't, what we'd do differently
+   - `reactivation_criteria`: when would we reconsider this approach?
+2. For each reason type:
+   - **age**: "Naturally aged out after 24 months"
+   - **superseded**: "Replaced by D<new-id> which uses <new-approach>"
+   - **outdated**: "No longer applicable due to <constraint-change>"
+   - **experimental**: "Experiment concluded: <result>, adopt/reject decision"
+   - **revoked**: "Council revocation: <reason>; migrate to D<replacement>"
+
+**Escalation:** NEEDS_INFRA_CHANGE — If discovered during audit, add retroactive documentation with commit message explaining why decision was archived and what lessons were learned.
+
+---
+
+### Edge Case 4: Multiple decisions can replace this one (parallel supersession)
+
+**Symptom:** Decision being archived but multiple successors exist (no single D<new-id> replaces it).
+
+**Do NOT:** Pick arbitrary replacement. Do NOT leave ambiguous.
+
+**Mitigation:**
+1. Identify replacement candidates: `grep -r "parent: D<id>\|related.*D<id>" ~/forge/brain --include="*.md" | grep -v archived`
+2. If multiple candidates, document each:
+   - `successor_decision_1: D<id1>` — use this for scenario A
+   - `successor_decision_2: D<id2>` — use this for scenario B
+3. Add migration guidance: "Choose successor based on context: If A then D<id1>, if B then D<id2>"
+4. Or: Create NEW consolidation decision that references both predecessors
+
+**Escalation:** NEEDS_COORDINATION — Multiple successors for one decision. Coordinate with teams using original decision to determine which successor applies to their context. May require creating new decision that synthesizes approaches.
+
+---
+
+### Edge Case 5: (EXISTING) Decision being demoted straight to archived in one step
+
+**Symptom:** Attempt to move Active → Archived without passing through Warm and Cold stages.
+
+**Do NOT:** Skip lifecycle stages. Do NOT archive without giving teams transition time.
+
+**Mitigation:**
+1. Enforce lifecycle: Active → Warm (6 mo) → Cold (3 mo) → Archived (12 mo)
+2. Unless explicit council approval for emergency revocation (security, compliance)
+3. Each transition requires:
+   - Evidence (aged, superseded, outdated, experimental, revoked)
+   - Commit message explaining reason
+   - Notification to dependent teams
+4. Shortcut only for revoked decisions (security issue, policy violation)
+
+**Escalation:** NEEDS_CONTEXT — Direct archival skipped lifecycle safeguards. Revert to Warm status and follow proper demotion timeline, OR escalate to council for emergency revocation approval if revocation reason is valid.
+
+---
+
+## Decision Tree: Archive vs Delete Decision
 
 ```
-New Decision
-    ↓ (record with status: Active)
-ACTIVE (0-6 months)
-    ↓ (after 6 months or when new variant emerges)
-WARM (6-9 months)
-    ↓ (after 3+ months or explicit supersession)
-COLD (9 months - 2 years)
-    ↓ (after 1 year of Cold or explicit request)
-ARCHIVED (permanent)
+Decision marked for removal
+    ↓
+Should this decision be permanently deleted from history?
+├─ YES → STOP. Decisions are never deleted. Demote to archived instead.
+└─ NO → Continue below
 
-↑ ← Can reactivate if pattern resurfaces
+Has the decision aged naturally (6mo Active, 3mo Warm, 12mo Cold)?
+├─ YES → Apply Rule 1 (Time-Based): Demote to Archived
+└─ NO → Continue below
+
+Is there a successor decision that replaces it?
+├─ YES → Apply Rule 2 (Supersession): Mark `successor: D<id>`, demote through Warm→Cold→Archived
+└─ NO → Continue below
+
+Did the system context change (constraints, product direction, regulation)?
+├─ YES → Apply Rule 3 (Validity): Document what changed, demote through Warm→Cold
+└─ NO → Continue below
+
+Was this an experiment that concluded?
+├─ YES → Apply Rule 4 (Experimental): Document results, demote through Warm→Cold
+└─ NO → Continue below
+
+Was this decision formally revoked by council (security, policy)?
+├─ YES → Apply Rule 5 (Governance): Urgent notification, may skip to Archived if critical
+└─ NO → Decision remains Active (no demotion rule triggered)
+
+Result:
+- Default lifecycle: Active → Warm (6mo) → Cold (3mo) → Archived (12mo)
+- With successor: mark supersession, follow lifecycle
+- With broken context: mark outdated, follow lifecycle
+- With experimental conclusion: mark experimental_end, follow lifecycle
+- With council revocation: can skip Warm/Cold if critical (security), escalate for approval
+- Never delete: always demote, always document reason, always preserve audit trail
 ```
 
 ---

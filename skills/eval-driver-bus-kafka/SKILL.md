@@ -1,6 +1,6 @@
 ---
 name: eval-driver-bus-kafka
-description: Eval driver for Kafka. Functions: connect(), produce(topic, message), consume(topic, assertion), verify(topic, schema), teardown().
+description: "Eval driver for Kafka. Functions: connect(), produce(topic, message), consume(topic, assertion), verify(topic, schema), teardown()."
 type: rigid
 requires: [brain-read]
 ---
@@ -491,3 +491,311 @@ Requires:
 - Network access to broker(s)
 
 No external npm packages required - uses native Node.js modules only.
+
+---
+
+## Edge Cases with Mitigation
+
+### Edge Case 1: Consumer Group Rebalance During Read
+
+**Scenario:** New consumer joins the same group mid-test, triggering partition rebalance. Existing consumer loses partition assignments.
+
+**Symptom:** `RebalanceInProgressException` thrown during `consume()`. Partial message consumption — some messages read, others missed. Consumer returns 0 messages despite offset lag > 0.
+
+**Do NOT:** Retry the same consume() call without handling the rebalance. This extends the rebalance window and starves the partition.
+
+**Mitigation:**
+1. Detect rebalance via consumer rebalance listener callback
+2. Commit current offsets before partition revocation completes
+3. Wait for rebalance to complete: poll until consumer group state = STABLE (max 30s)
+4. Resume consumption from last committed offset after partition reassignment
+5. If persistent: use manual `assign()` instead of `subscribe()` to bypass group coordination
+
+**Escalation:** `NEEDS_INFRA_CHANGE` if rebalance frequency > 1/minute — indicates broker instability.
+
+---
+
+### Edge Case 2: Offset Lag Spike After Produce
+
+**Scenario:** Message was produced successfully (broker acknowledged), but consumer reads 0 messages.
+
+**Symptom:** `produce()` returns success with offset N. `consume()` returns empty. `kafka-consumer-groups --describe` shows lag = 1 but offset never advances.
+
+**Do NOT:** Assume the message was lost and reproduce. This creates duplicate messages.
+
+**Mitigation:**
+1. Snapshot consumer group committed offset BEFORE produce call
+2. After produce, verify offset exists at expected partition/offset via admin API
+3. Seek consumer to exact partition+offset returned by producer
+4. If offset not found after 5s: verify producer `acks=all` was set, check in-sync replica count
+5. Use explicit `seek()` to read exactly the produced message
+
+**Escalation:** `BLOCKED` if lag > 100 messages and topic replication factor = 1 — data may be unrecoverable.
+
+---
+
+### Edge Case 3: Schema Registry Connection Failure
+
+**Scenario:** Eval uses Avro or Protobuf serialization. Schema Registry is down or unreachable.
+
+**Symptom:** `SchemaRegistryException: Connect refused` during produce. Or: message produced as raw bytes, consumer fails to deserialize.
+
+**Do NOT:** Fall back to raw JSON silently. This masks serialization bugs that will surface in production.
+
+**Mitigation:**
+1. Check Schema Registry connectivity in `connect()` before any produce/consume
+2. For JSON eval scenarios: explicitly set `value.serializer=StringSerializer` to avoid registry dependency
+3. For Avro/Protobuf: fail fast with clear error if registry unreachable
+4. Cache schema locally after first successful fetch (valid for eval session duration)
+5. If Schema Registry is flaky: use local schema file strategy instead
+
+**Escalation:** `NEEDS_INFRA_CHANGE` — Schema Registry is infrastructure; eval cannot proceed without it.
+
+---
+
+### Edge Case 4: Partition Leadership Change
+
+**Scenario:** Kafka broker hosting the partition leader restarts or fails during eval. Leadership election takes 5-30s.
+
+**Symptom:** `NotLeaderOrFollowerException` or `LEADER_NOT_AVAILABLE` error on produce. Fetch errors on consume.
+
+**Do NOT:** Retry immediately in a tight loop. This floods the broker during election and delays recovery.
+
+**Mitigation:**
+1. Catch `NotLeaderOrFollowerException` and wait 500ms before retry
+2. Refresh producer metadata: call `partitionsFor(topic)` to force metadata update
+3. Retry produce up to 3 times with exponential backoff (500ms, 1s, 2s)
+4. Verify broker count after error: if `brokers < replication.factor`, escalate immediately
+5. If partition remains unavailable after 30s: topic is unhealthy, eval cannot proceed
+
+**Escalation:** `NEEDS_CONTEXT` if broker count < 2. `NEEDS_INFRA_CHANGE` if leadership election takes > 30s.
+
+---
+
+### Edge Case 5: Message Deduplication Failure
+
+**Scenario:** Eval expects exactly N messages but consumer reads N+M due to producer retries without idempotency.
+
+**Symptom:** Consumer reads more messages than expected. Duplicate messages have identical content but different offsets.
+
+**Do NOT:** Assert only on message content equality — this masks duplicates.
+
+**Mitigation:**
+1. Enable idempotent producer: `enable.idempotence=true` + `acks=all` + `max.in.flight.requests=5`
+2. Track produced message offsets; assert consumer reads only those exact offsets
+3. For exactly-once semantics: use transactional producer (`transactional.id=eval-{uuid}`)
+4. Assert exact message count, not just content match
+5. In teardown: verify no uncommitted transactional messages remain
+
+**Escalation:** `BLOCKED` if duplicate messages found and idempotency is enabled — indicates broker-level deduplication failure.
+
+---
+
+### Edge Case 6: Topic Does Not Exist
+
+**Scenario:** Eval tries to produce/consume from a topic that hasn't been created yet, or was deleted between test runs.
+
+**Symptom:** `UnknownTopicOrPartitionException` on first produce. Or: `auto.create.topics.enable=false` on broker prevents automatic creation.
+
+**Do NOT:** Enable `auto.create.topics.enable=true` in eval — this creates topics with wrong config.
+
+**Mitigation:**
+1. Verify topic existence in `connect()`: use admin client to list topics
+2. If topic missing and auto-create is required: create with explicit config (partitions, replication, retention)
+3. Create topic with `eval-` prefix to distinguish from production topics
+4. Wait for topic to become AVAILABLE before producing (leader election may take 2-5s)
+5. In teardown: delete eval-prefixed topics to avoid accumulation
+
+**Escalation:** `NEEDS_INFRA_CHANGE` if topic must pre-exist. `NEEDS_CONTEXT` if topic naming is unclear.
+
+---
+
+## Decision Trees and Patterns
+
+### Decision Tree 1: Consumer Offset Strategy
+
+```
+WHAT IS THE EVAL SCENARIO?
+│
+├── Reading messages produced BY THIS TEST RUN
+│   ├── Topic has prior messages (contamination risk)
+│   │   └── STRATEGY: snapshot offset BEFORE produce → seek to snapshot+1 after
+│   │       CONFIG: auto.offset.reset=none, unique consumer group
+│   │
+│   └── Topic is empty (freshly created eval topic)
+│       └── STRATEGY: auto.offset.reset=earliest, subscribe and poll
+│           CONFIG: unique consumer group, cleanup topic after
+│
+├── Verifying messages from a PRIOR PRODUCER (async pipeline)
+│   ├── Producer offset is known
+│   │   └── STRATEGY: seek to exact partition+offset
+│   │       CONFIG: manual assign(), no group coordination
+│   │
+│   └── Producer offset is unknown (only message content known)
+│       └── STRATEGY: read from timestamp (offsetsForTimes)
+│           CONFIG: auto.offset.reset=earliest, scan from known time window
+│
+└── Verifying NO messages were produced (negative assertion)
+    └── STRATEGY: snapshot offset, trigger action, poll for 5s, verify offset unchanged
+        CONFIG: short poll.timeout.ms (100ms), auto.offset.reset=latest
+```
+
+**Key Factors:**
+- Always use unique consumer group per test run to prevent offset contamination
+- `seek()` is more reliable than `auto.offset.reset` for deterministic eval
+- For async pipeline testing: prefer timestamp-based offset lookup
+
+---
+
+### Decision Tree 2: Partition Key Strategy
+
+```
+DOES THE EVAL REQUIRE MESSAGE ORDERING?
+│
+├── YES — ordered processing required
+│   ├── Single consumer scenario
+│   │   └── USE: explicit partition key (e.g., user_id, order_id)
+│   │       VERIFY: all related messages in same partition
+│   │
+│   └── Multi-consumer scenario
+│       └── USE: consistent hash partition key
+│           VERIFY: consumer count ≤ partition count
+│
+├── NO — ordering irrelevant
+│   ├── Load distribution needed
+│   │   └── USE: null key (round-robin distribution)
+│   │       NOTE: offsets non-deterministic; assert by content not position
+│   │
+│   └── Single topic, single producer
+│       └── USE: null key acceptable
+│           NOTE: document in eval that ordering is not asserted
+│
+└── MAYBE — depends on downstream consumer behavior
+    └── CHECK: does consumer assume ordering?
+        IF YES → treat as ordered, use explicit key
+        IF NO  → use null key, document assumption
+```
+
+---
+
+## Common Pitfalls
+
+### Pitfall 1: Shared Consumer Group Across Test Runs
+
+**Mistake:** Using a hardcoded consumer group ID like `eval-consumer` across all test runs.
+
+```javascript
+// WRONG
+const consumer = kafka.consumer({ groupId: 'eval-consumer' });
+```
+
+**Fix:** Generate a unique group ID per test run.
+
+```javascript
+// CORRECT
+const testRunId = `eval-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+const consumer = kafka.consumer({ groupId: testRunId });
+```
+
+**Why it matters:** Committed offsets from previous test runs cause subsequent tests to skip messages, leading to false "0 messages consumed" results.
+
+---
+
+### Pitfall 2: Not Flushing Producer Before Reading
+
+**Mistake:** Reading from consumer immediately after `produce()` before flush completes.
+
+```javascript
+// WRONG
+await produce(kafka, 'test', { data: 'value' });
+const messages = await consume(kafka, 'test', 1000); // may return empty
+```
+
+**Fix:** Always flush producer before switching to consumer.
+
+```javascript
+// CORRECT
+await produce(kafka, 'test', { data: 'value' });
+await producer.flush(); // wait for all messages acknowledged
+const messages = await consume(kafka, 'test', 1000);
+```
+
+**Why it matters:** Messages may still be in the producer's internal buffer when consumer polls, leading to empty reads.
+
+---
+
+### Pitfall 3: Asserting Message Count Without Accounting for Compaction
+
+**Mistake:** Assuming topic message count equals produced message count.
+
+```javascript
+// WRONG — fails on compacted topics
+assert.equal(messages.length, expectedCount);
+```
+
+**Fix:** Use unique keys per eval run; verify by key.
+
+```javascript
+// CORRECT
+const evalKey = `eval-${Date.now()}`;
+await produce(kafka, 'test', { data: 'value' }, evalKey);
+const found = messages.find(m => m.key === evalKey);
+assert.ok(found, `Message with key ${evalKey} not found`);
+```
+
+**Why it matters:** Log compaction removes duplicate-key messages; count-based assertions break on compacted topics.
+
+---
+
+### Pitfall 4: Consumer Group Leak on Test Failure
+
+**Mistake:** Not cleaning up consumer group when test fails mid-run.
+
+```javascript
+// WRONG — no cleanup on error path
+const consumer = kafka.consumer({ groupId: runId });
+await consumer.connect();
+await riskyOperation(); // throws — disconnect never called
+```
+
+**Fix:** Use try/finally for consumer lifecycle.
+
+```javascript
+// CORRECT
+const consumer = kafka.consumer({ groupId: runId });
+try {
+  await consumer.connect();
+  return await riskyOperation();
+} finally {
+  await consumer.disconnect();
+  await adminClient.deleteGroups([runId]);
+}
+```
+
+**Why it matters:** Leaked consumer groups accumulate committed offsets that contaminate future test runs.
+
+---
+
+## Eval Checklist: Kafka Driver
+
+Before marking eval pass for any Kafka-backed feature:
+
+- [ ] Unique consumer group generated for this test run
+- [ ] Consumer group offsets verified as new (no prior commits)
+- [ ] Producer configured with `acks=all` and `enable.idempotence=true`
+- [ ] Schema validated (round-trip serialize/deserialize for Avro/Protobuf)
+- [ ] Producer flushed before consumer poll
+- [ ] Exact partition+offset of produced message verified
+- [ ] Message content asserted (not just existence)
+- [ ] Message count asserted (no duplicates)
+- [ ] Consumer group offsets cleaned up in teardown
+- [ ] Eval-prefixed topic deleted or retained per policy
+
+## Cross-References
+
+- **eval-driver-api-http** — HTTP trigger for message-producing endpoints
+- **eval-product-stack-up** — Bring up Kafka broker before eval
+- **eval-coordinate-multi-surface** — Coordinate Kafka eval with API/DB assertions
+- **deploy-driver-docker-compose** — Kafka + ZooKeeper service definition
+- **reasoning-as-infra** — Event bus architecture patterns and partition sizing
+- **contract-event-bus** — Negotiate event bus contracts for Kafka topics

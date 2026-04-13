@@ -1,6 +1,6 @@
 ---
 name: deploy-driver-systemd
-description: Deploy via systemd. Functions: start(service_name), health_check(service_name), stop(service_name). Requires systemd unit files.
+description: "Deploy via systemd. Functions: start(service_name), health_check(service_name), stop(service_name). Requires systemd unit files."
 type: rigid
 requires: [brain-read, eval-driver-api-http]
 ---

@@ -1,6 +1,6 @@
 ---
 name: contract-api-rest
-description: Negotiate REST API contracts across teams. Defines versioning strategy, endpoint shape, error codes, auth, rate limits, idempotency, deprecation.
+description: "Negotiate REST API contracts across teams. Defines versioning strategy, endpoint shape, error codes, auth, rate limits, idempotency, deprecation."
 type: rigid
 requires: [brain-read]
 ---
@@ -1278,6 +1278,302 @@ Link: </v2/auth/login>; rel="successor-version"
 - Get user profile: < 100ms p99
 - List users: < 500ms p99
 - Error responses: < 50ms p99
+
+---
+
+## Edge Cases & Escalation Keywords
+
+### Edge Case 1: Client request-response size limits exceed network MTU
+
+**Symptom:** API contract specifies large response payloads (>10MB) but clients report frequent timeouts and dropped connections on mobile networks.
+
+**Do NOT:** Assume clients should retry indefinitely or increase timeouts.
+
+**Mitigation:**
+- Add response size limits to contract: `max_response_size: 5MB`
+- Require pagination for large datasets (cursor-based, max 1000 items per page)
+- Compression mandatory: `gzip` for responses > 1MB
+- Document in contract: "Responses exceeding 5MB require explicit pagination support in client"
+
+**Escalation:** NEEDS_CONTEXT — Does client support compression and pagination? If not, BLOCKED until client implementation updated.
+
+---
+
+### Edge Case 2: Token expiration semantics differ across services
+
+**Symptom:** Authentication contract specifies `expires_in: 3600` but service A interprets as "invalidate token after 3600s" and service B interprets as "token valid until epoch_time + 3600". Different behavior under load.
+
+**Do NOT:** Assume all services interpret TTL the same way.
+
+**Mitigation:**
+- Use explicit UTC timestamps: `access_token_expires_at: "2026-01-15T15:30:00Z"` (not relative)
+- Document clock sync requirement: "All services must sync NTP, maximum 5s clock skew"
+- Include `issued_at` timestamp: allows client verification of token age
+- Specify behavior on clock skew: "If server time < token issue time, reject as invalid"
+
+**Escalation:** NEEDS_COORDINATION — Services must verify NTP sync before contract lock.
+
+---
+
+### Edge Case 3: Rate limit headers missing during burst traffic
+
+**Symptom:** API hits rate limit during legitimate burst (e.g., mobile app sync), returns 429 without `Retry-After` header. Client guesses 1s, sends 1000 requests in parallel, making problem worse.
+
+**Do NOT:** Assume clients will honor missing headers or implement smart backoff.
+
+**Mitigation:**
+- Make `Retry-After` and `X-RateLimit-Reset` mandatory in every 429 response
+- `Retry-After` in seconds: `Retry-After: 60`
+- Include millisecond precision in `X-RateLimit-Reset`: `X-RateLimit-Reset: 1610702400123`
+- Document in contract: "429 without Retry-After is client bug — verify with backend team"
+
+**Escalation:** NEEDS_INFRA_CHANGE — If rate limiter cannot emit headers, BLOCKED. Requires rate limiter upgrade.
+
+---
+
+### Edge Case 4: Idempotency key collision across multiple products
+
+**Symptom:** Shared microservices infrastructure. Two products independently choose idempotency key format `{timestamp}-{sequence}`. Keys collide. Charge-payment endpoint applies charge from Product A to Product B's transaction.
+
+**Do NOT:** Trust idempotency keys without namespace prefixes.
+
+**Mitigation:**
+- Require namespaced idempotency keys: `{service}-{product}-{timestamp}-{uuid}`
+  - Example: `payment-jobhai-1610702400-abc123def456`
+  - Prevents cross-product collisions
+- Document in contract: "Idempotency keys must include product prefix"
+- Validate prefix in implementation: if missing or wrong product, reject
+
+**Escalation:** NEEDS_COORDINATION — All services must use agreed idempotency key format. Cannot lock contract until format agreed.
+
+---
+
+### Edge Case 5: Inconsistent field naming in nested objects
+
+**Symptom:** Contract specifies nested error response `details` with `field: string`. Service A sends `details[0].field_name`, Service B sends `details[0].fieldName` (camelCase). Client JSON parsers fail.
+
+**Do NOT:** Assume field naming is self-evident.
+
+**Mitigation:**
+- Lock field naming convention in contract: "All JSON fields use snake_case: `field_name`, `error_code`, `request_id`"
+- Nested objects follow same rule: `details[0].field_name` (not `fieldName`)
+- Example valid response:
+  ```json
+  {
+    "error": "Validation failed",
+    "code": "VALIDATION_ERROR",
+    "details": [
+      {"field_name": "email", "error_message": "Must be valid"}
+    ]
+  }
+  ```
+- List all field names in response schema examples
+
+**Escalation:** BLOCKED if any service deviates. Code review must enforce naming.
+
+---
+
+### Edge Case 6: Partial success semantics for batch endpoints
+
+**Symptom:** Contract defines `POST /v2/users/batch` accepting 100 user records. 95 succeed, 5 fail (email duplicates). Service A returns 400 (rejects entire batch), Service B returns 207 (partial success with error list). Clients implement different batch rollback logic.
+
+**Do NOT:** Leave partial success semantics undefined.
+
+**Mitigation:**
+- Lock response status for batch endpoints:
+  - `200 OK`: All records succeeded
+  - `207 Multi-Status`: Partial success (include per-item status in response)
+  - `400 Bad Request`: Batch syntax error, entire batch rejected
+- Response format for 207:
+  ```json
+  {
+    "status": 207,
+    "summary": {"total": 100, "succeeded": 95, "failed": 5},
+    "items": [
+      {"index": 0, "status": 201, "id": "user_123"},
+      {"index": 47, "status": 409, "error": "EMAIL_DUPLICATE"}
+    ]
+  }
+  ```
+- Document idempotency for partial success: "Retrying with same Idempotency-Key returns same 207 response"
+
+**Escalation:** NEEDS_COORDINATION — Batch semantics must be agreed before lock. Some services may need to re-implement rollback logic.
+
+---
+
+### Edge Case 7: Deprecated endpoint still used by legacy mobile client
+
+**Symptom:** Contract sunsets `/v1/auth/login` on 2027-01-15. 30% of mobile users still on app version from 2025 (6 months old). After sunset, they can't log in. No way to force upgrade.
+
+**Do NOT:** Assume all clients will upgrade before sunset.
+
+**Mitigation:**
+- Extend deprecation period for mobile: 18 months (not 12) due to App Store review delays
+- Set up graceful degradation: After sunset, `/v1/auth/login` redirects to `/v2/auth/login` (307) with migration instructions
+- Monitoring: Track `/v1` usage by client version for 6 months pre-sunset
+- Decision: If >5% traffic on `/v1` at 3 months pre-sunset, delay sunset 3 more months
+- Announce in app: In-app notification 30 days before sunset with forced upgrade reminder
+
+**Escalation:** NEEDS_CONTEXT — What's the oldest app version still in use? If >6 months old, extend deprecation.
+
+---
+
+## Decision Tree 1: API Versioning Strategy
+
+**Q: How will your API evolve over the next 2 years?**
+
+→ **Small changes to response structure (add fields, endpoints)**
+  - Use: **URL Versioning** (`/v1`, `/v2`)
+  - Reason: Explicit in logs, easy to cache, simple routing
+  - Timeline: Launch v2 when breaking change needed (12 months typical)
+  - Cost: Slight URL duplication, but clear and cacheable
+
+→ **Frequent schema evolution, clients control version**
+  - Use: **Header Versioning** (`Accept: application/vnd.api+json;version=2`)
+  - Reason: Cleaner URLs, one code path per logic
+  - Trade-off: Hidden from logs, cache-unfriendly, clients often forget headers
+  - Best for: Clients with sophisticated header support (native apps, browser APIs)
+
+→ **Unstable API (research/beta)**
+  - Use: **Subdomain Versioning** (`v1.api.example.com`, `v2.api.example.com`)
+  - Reason: Separate infrastructure, easier to deprecate
+  - Cost: Additional DNS, TLS certs, CDN configuration
+  - Use when: Running multiple API generations simultaneously
+
+**Decision Flow:**
+```
+Is your API expected to evolve frequently (>2 breaking changes/year)?
+├─ YES  → Use URL versioning (easiest to rotate)
+│        Backward compatibility window: 12 months
+│        Sunset date locked at launch
+│
+└─ NO   → Use Header versioning (simpler URLs)
+         Backward compatibility window: 18 months (allows slower adoption)
+         Sunset date can be flexible within bounds
+```
+
+**Key Commitment in Contract:**
+```markdown
+# Versioning Strategy
+
+- **Method**: [URL | Header | Subdomain] versioning
+- **Active Support Duration**: [12|18|24] months per version
+- **Backward Compatibility**: [All v2.x releases compatible with v2.0 requests]
+- **Sunset Date for v1**: [Explicit ISO 8601 date]
+- **Migration Path**: [Explicit link to v2 migration guide]
+```
+
+---
+
+## Decision Tree 2: Error Contract Definition
+
+**Q: What types of errors must your API handle?**
+
+→ **Standard validation errors only (missing fields, wrong types)**
+  - Response format:
+    ```json
+    {
+      "error": "Validation failed",
+      "code": "VALIDATION_ERROR",
+      "status": 400,
+      "details": [
+        {"field": "email", "message": "Must be valid email format"}
+      ]
+    }
+    ```
+  - Status codes: `400` (validation), `401` (auth), `404` (not found)
+  - Retry policy: No retry on validation errors
+  - Cost: Simple, client-side checks prevent most errors
+
+→ **Validation + custom business errors (duplicate email, quota exceeded)**
+  - Response format:
+    ```json
+    {
+      "error": "Email already registered",
+      "code": "EMAIL_TAKEN",
+      "status": 409,
+      "request_id": "req_abc123",
+      "details": {
+        "field": "email",
+        "message": "Choose a different email address"
+      }
+    }
+    ```
+  - Status codes: `400` (validation), `409` (conflict), `429` (quota), `401`, `404`
+  - Error codes: Domain-specific (`EMAIL_TAKEN`, `QUOTA_EXCEEDED`, `ACCOUNT_DISABLED`)
+  - Retry policy: No retry on `409` (conflict is permanent), retry on `429` with backoff
+  - Cost: More error codes to document and maintain
+
+→ **Validation + business errors + transient failures with retry**
+  - Status codes: All above + `408` (timeout), `502` (bad gateway), `503` (unavailable)
+  - Response includes retry guidance:
+    ```json
+    {
+      "error": "Temporary service unavailable",
+      "code": "SERVICE_UNAVAILABLE",
+      "status": 503,
+      "retry_after_seconds": 60,
+      "request_id": "req_abc123"
+    }
+    ```
+  - Retry policy: `408`, `429`, `502`, `503` are retryable; others are not
+  - Client responsibility: Implement exponential backoff, max 3 retries
+  - Cost: Complex error handling, client confusion without clear docs
+
+**Decision Flow:**
+```
+How many distinct error scenarios must clients handle?
+├─ <10   → Use Standard Error Format
+│        Status codes: 400, 401, 403, 404, 500
+│        One error code per HTTP status
+│
+├─ 10-30 → Use Custom Error Codes
+│        Preserve HTTP status for class (4xx = client, 5xx = server)
+│        Domain-specific codes for handling (EMAIL_TAKEN, QUOTA_EXCEEDED)
+│        Define retry policy per code
+│
+└─ >30   → Use Hierarchical Error Taxonomy
+          Parent category: VALIDATION, AUTH, RESOURCE, SERVER
+          Subcategory: Specific error (INVALID_EMAIL, EMAIL_TAKEN, MISSING_FIELD)
+          Error code: VALIDATION::INVALID_EMAIL
+          Retry policy tied to subcategory
+```
+
+**Key Commitment in Contract:**
+```markdown
+# Error Contract
+
+## Standard Codes (Required)
+- AUTH_REQUIRED (401)
+- AUTH_INVALID (401)
+- INSUFFICIENT_SCOPE (403)
+- INVALID_REQUEST (400)
+- RESOURCE_NOT_FOUND (404)
+- RATE_LIMITED (429)
+- INTERNAL_ERROR (500)
+
+## Custom Codes (Domain-Specific)
+- EMAIL_TAKEN (409)
+- INVALID_EMAIL (400)
+- QUOTA_EXCEEDED (429)
+- [Add domain-specific codes]
+
+## Retry Policy
+- Retryable: 429, 503, 408 (with Retry-After header)
+- Non-retryable: 400, 401, 403, 404, 409
+- Idempotent endpoint: Can retry with Idempotency-Key
+
+## Response Format (All Errors)
+```json
+{
+  "error": "Human message",
+  "code": "MACHINE_CODE",
+  "status": <HTTP status>,
+  "request_id": "req_...",
+  "retry_after": <seconds if retryable>
+}
+```
+```
 
 ---
 

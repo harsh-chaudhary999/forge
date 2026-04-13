@@ -1,6 +1,6 @@
 ---
 name: intake-interrogate
-description: WHEN to invoke: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Asks 5–8 clarifying questions one at a time.
+description: "WHEN to invoke: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Asks 5–8 clarifying questions one at a time."
 type: rigid
 requires: [brain-write]
 ---

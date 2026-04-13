@@ -1,6 +1,6 @@
 ---
 name: eval-judge
-description: WHEN all eval drivers have returned results and you need a final pass/fail verdict. Receives driver outputs from eval-coordinate-multi-surface and renders GREEN/RED/YELLOW judgment.
+description: "WHEN all eval drivers have returned results and you need a final pass/fail verdict. Receives driver outputs from eval-coordinate-multi-surface and renders GREEN/RED/YELLOW judgment."
 type: rigid
 requires: [brain-read]
 ---

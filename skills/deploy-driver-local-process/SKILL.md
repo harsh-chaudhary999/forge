@@ -1,6 +1,6 @@
 ---
 name: deploy-driver-local-process
-description: Deploy local process. Functions: start(project_path, script), health_check(port, endpoint), stop(process_name).
+description: "Deploy local process. Functions: start(project_path, script), health_check(port, endpoint), stop(process_name)."
 type: rigid
 requires: [brain-read, eval-driver-api-http]
 ---

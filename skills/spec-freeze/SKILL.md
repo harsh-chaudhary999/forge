@@ -1,6 +1,6 @@
 ---
 name: spec-freeze
-description: WHEN the shared-dev-spec is locked after council negotiation. Prevents all spec mutations during build phase. Invoke before per-project tech planning begins.
+description: "WHEN the shared-dev-spec is locked after council negotiation. Prevents all spec mutations during build phase. Invoke before per-project tech planning begins."
 type: rigid
 requires: [brain-read, brain-write]
 ---
@@ -150,6 +150,139 @@ If a behavioral change is genuinely required:
   4. If CRITICAL severity (active exploit): escalate to dreamer for emergency freeze override
   5. Dreamer may authorize expedited re-freeze (council async review within 24h)
 - **Fallback:** Emergency freeze override is documented as `SPECFRZ-EMERGENCY` with mandatory post-incident council review
+
+---
+
+## Edge Cases & Escalation Paths
+
+### Edge Case 1: Freeze Lock File Already Exists — Another Process Is Holding the Freeze Lock
+
+**Scenario**: You are attempting to freeze the spec. You create the freeze lock file at `brain/pds/<task-id>/FREEZE.lock` to prevent concurrent freeze operations. However, the file already exists with a timestamp from 8 hours ago, suggesting another freeze process is stuck or crashed.
+
+**Symptom**: `mkdir -p brain/pds/<task-id>/FREEZE.lock` returns "file already exists" or lock file contains old timestamp. You cannot determine if another process still holds the lock or if the process crashed while holding it.
+
+**Do NOT**: Delete the lock file immediately. Another freeze operation may still be in progress, and deleting the lock creates a race condition.
+
+**Mitigation**:
+1. Read the lock file to extract the process ID (PID) and timestamp of the lock holder.
+2. Check if the PID is still running: `ps -p $PID`. If process is running, wait 60 seconds and retry (exponential backoff, max 5 minutes).
+3. If process is NOT running (stale lock), log the orphaned lock event in brain. Remove the stale lock file.
+4. Create a new lock file with current PID and timestamp.
+5. If you cannot determine lock owner, escalate to BLOCKED and notify an administrator to inspect the lock file manually.
+
+**Escalation**: BLOCKED (if lock state is ambiguous and cannot be resolved automatically)
+
+---
+
+### Edge Case 2: PRD Changes After Freeze Declared — Someone Modifies PRD After Freeze Lock Recorded
+
+**Scenario**: You have frozen the spec and written the freeze record to brain with spec hash `abc123`. The freeze is declared. One hour later, a product manager updates `shared-dev-spec.md` to add a new feature field (a behavioral change). The spec file hash is now `def456`, but the freeze record still references `abc123`.
+
+**Symptom**: During build phase, a tech planner runs a verification that compares current spec hash against the freeze record. Hashes do not match. Git diff shows behavioral changes (new fields, modified acceptance criteria) in the spec file since the freeze time.
+
+**Do NOT**: Assume the change is cosmetic and allow the tech plans to proceed. Mismatched hashes indicate unauthorized mutation.
+
+**Mitigation**:
+1. Immediately halt all per-project tech planning that depends on this spec.
+2. Investigate what changed: `git diff abc123 def456 shared-dev-spec.md`
+3. Classify the change: cosmetic (typo, formatting) or behavioral (contract change, scope addition)?
+4. If behavioral: revert the spec to the frozen hash: `git checkout abc123 -- shared-dev-spec.md`
+5. File a change request (SPECCHG-*) if the mutation is justified. Require council re-vote.
+6. If cosmetic: apply the change with SPECFIX-COSMETIC prefix. No re-vote required, but document in brain.
+7. Resume tech planning only after hash verification passes again.
+
+**Escalation**: BLOCKED (unauthorized mutation detected; requires revert or change request)
+
+---
+
+### Edge Case 3: Incomplete Dependencies at Freeze Time — Required Upstream Specs Not Yet Locked
+
+**Scenario**: The product has a dependency hierarchy: shared-schemas spec must be locked before backend-api spec. You attempt to freeze the shared-dev-spec for a feature that includes both projects. However, the shared-schemas spec is still in negotiation (council is still debating the data model). You cannot freeze backend-api because its spec depends on the shared-schemas output.
+
+**Symptom**: Freeze checklist item "All 5 contracts locked (API, events, cache, DB, search)" fails. The API contract references an entity type defined in shared-schemas, but that entity is still marked TBD.
+
+**Do NOT**: Proceed with freeze on incomplete contracts. Downstream tech plans will have dangling references.
+
+**Mitigation**:
+1. Halt the freeze. Do not write freeze record yet.
+2. Identify which upstream specs are not yet locked. Return to `forge-council-gate` to complete negotiation for upstream specs first.
+3. Once upstream specs are locked and frozen, resume the freeze for the dependent spec.
+4. Verify all 5 contracts are now complete (no TBD) before writing the freeze record.
+5. Chain the freeze records: link the dependent spec's freeze record to the upstream freeze record (frozen_depends_on field).
+
+**Escalation**: NEEDS_COORDINATION (upstream specs must be frozen first; requires council sequencing)
+
+---
+
+### Edge Case 4: Recovery From Crashed Freeze State — Previous Freeze Left System in Partial State
+
+**Scenario**: A freeze operation was initiated 6 hours ago. It crashed after committing the spec to git but before writing the freeze record to brain. Now the git repository has a `SPECFREEZE:` commit, but no corresponding freeze record exists in brain. The system is in an ambiguous state: is the spec frozen or not?
+
+**Symptom**: Spec file exists with hash `abc123`. A git commit with message `SPECFREEZE: ...` exists with that hash. But `brain-read --key "specfrz.*"` returns no freeze records. Tech planners don't know if they should treat the spec as frozen or open.
+
+**Do NOT**: Assume the freeze succeeded just because the git commit exists. Partial state means the spec is not fully locked until the brain record is written.
+
+**Mitigation**:
+1. Verify the git commit: `git log --oneline | grep SPECFREEZE`. Confirm the spec hash in the commit.
+2. Check brain: `brain-read --key "specfrz-$(date +%Y-%m-%d)"*"`. If freeze record exists, the freeze is valid.
+3. If freeze record does NOT exist: you have two options:
+   - Option A: Complete the freeze by writing the freeze record now (provide all required fields: spec hash, council surfaces, contracts).
+   - Option B: Revert the spec commit and start the freeze process again.
+4. Choose Option A if the council sign-off is still valid (within 24 hours). Otherwise, Option B (re-negotiate).
+5. Once freeze record is written, mark the recovery in brain with event: "FREEZE_RECOVERY: completed at <timestamp>".
+
+**Escalation**: NEEDS_CONTEXT (requires manual inspection of git commit and decision: complete or retry)
+
+---
+
+### Edge Case 5: Multiple Cosmetic Fixes Accumulating — May Be Behavioral Changes Disguised as Cosmetic
+
+**Scenario**: During build phase, 5 cosmetic fixes have been committed to the spec: fix typo in endpoint name, clarify field description, add missing example, adjust parameter range, reorder sections. Each commit includes `SPECFIX-COSMETIC:` prefix and was approved individually. But the cumulative effect is a significant change to the contract shape.
+
+**Symptom**: Comparing the spec at freeze time to the current spec after 5 cosmetic commits, you notice the API contract has drifted significantly. A field type was "clarified" from `string` to `string (UUID format)`, which is behavioral, not cosmetic.
+
+**Do NOT**: Allow the cosmetic fixes to accumulate without periodic audit. Cosmetic fixes can disguise behavioral changes.
+
+**Mitigation**:
+1. Establish a threshold: after every 3 cosmetic fixes, run an audit: `git diff abc123 HEAD -- shared-dev-spec.md | wc -l`. If diff exceeds 50 lines, escalate.
+2. For each accumulated cosmetic fix, re-classify: is it truly cosmetic (typo, formatting only) or behavioral (contract shape, acceptance criteria)?
+3. If any fix is reclassified as behavioral: revert it and file a change request (SPECCHG-*). Require council re-vote.
+4. Update the spec hash in brain after each revert or major change. Freeze record now references the revised hash.
+5. Resume tech planning only after audit confirms no hidden behavioral changes.
+
+**Escalation**: DONE_WITH_CONCERNS (if cosmetic fixes are legitimate but require documentation) or BLOCKED (if behavioral changes are disguised)
+
+---
+
+## Decision Tree: Freeze Enforcement Scope Selection
+
+```
+┌─ ARE ALL 4 SURFACES IN A SINGLE PRODUCT?
+│  ├─ YES ─→ Scope: SINGLE PROJECT SPEC FREEZE
+│  │  (Lock this project's spec; other projects continue negotiating)
+│  │  (Typical: locking backend-api while web negotiates)
+│  │
+│  └─ NO ─→ ARE ALL CONTRACTS INTERDEPENDENT (API shapes change together)?
+│     ├─ YES ─→ Scope: MULTI-REPO COORDINATED FREEZE
+│     │  (Lock all affected projects' specs together)
+│     │  (All 5 contracts locked simultaneously)
+│     │  (Typical: shared-schemas + backend-api + web freeze together)
+│     │
+│     └─ NO ─→ ARE THERE SEQUENTIAL DEPENDENCIES?
+│        ├─ YES ─→ Scope: SEQUENTIAL FREEZE
+│        │  (Freeze upstream specs first, then downstream)
+│        │  (Freeze order: shared-schemas → backend-api → web → app)
+│        │
+│        └─ UNSURE ─→ Default: MULTI-REPO COORDINATED FREEZE
+│           (Safest default; if specs affect each other, lock together)
+└─ FINAL CHECK: Is the entire product shipping as one unit?
+   ├─ YES ─→ PRODUCT-WIDE FREEZE
+   │  (Freeze all project specs, all contracts, all surfaces together)
+   │
+   └─ NO ─→ Use scope determined above
+```
+
+---
 
 ## Red Flags - STOP
 

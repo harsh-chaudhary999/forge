@@ -1,6 +1,6 @@
 ---
 name: eval-driver-db-mysql
-description: Eval driver for MySQL. Executes queries, verifies results. Functions: setup(), execute(query), verify(assertion), teardown().
+description: "Eval driver for MySQL. Executes queries, verifies results. Functions: setup(), execute(query), verify(assertion), teardown()."
 type: rigid
 requires: [brain-read]
 ---
@@ -282,6 +282,242 @@ await execute(conn, `
 
 await teardown(conn)
 ```
+
+### 7. Schema Mismatch (Migration Not Applied)
+
+**Scenario**: Your eval executes a query against a table that doesn't exist or is missing expected columns because the migration hasn't run.
+
+**Symptom**: `QuerySyntaxError: 1054 (42S22): Unknown table 'products'` or `Unknown column 'sku' in 'field list'`.
+
+**Do NOT**: Assume migrations have run. Do NOT catch the error and silently continue. Do NOT use table names without verification.
+
+**Mitigation**:
+- Always verify schema state before executing dependent queries via `SHOW TABLES` and `DESCRIBE`
+- Create a `verifySchema()` helper that checks all required tables and columns before eval starts
+- Use `IF NOT EXISTS` clauses for idempotent DDL when you control table creation
+- Return clear error messages showing which table/column is missing to aid debugging
+
+**Example**:
+```javascript
+const conn = await setup({ database: 'eval_db' })
+
+// GOOD: Verify schema before using it
+const requiredTables = ['products', 'orders', 'inventory']
+for (const table of requiredTables) {
+  const result = await execute(conn, `SHOW TABLES LIKE '${table}'`)
+  if (result.rows.length === 0) {
+    throw new Error(`BLOCKED: Required table '${table}' does not exist. Run migrations first.`)
+  }
+}
+
+const schemaResult = await execute(conn, "DESCRIBE products")
+const hasSkuColumn = schemaResult.rows.some(col => col.Field === 'sku')
+if (!hasSkuColumn) {
+  throw new Error(`BLOCKED: Column 'sku' missing from products table. Schema incomplete.`)
+}
+
+// Now safe to query
+await execute(conn, "SELECT id, sku FROM products")
+
+// BAD: No verification
+await execute(conn, "SELECT id, sku FROM products")  // Fails if schema incomplete
+```
+
+**Escalation**: `BLOCKED` — Eval cannot proceed without complete schema. Coordinate with infrastructure team to ensure migrations run before eval.
+
+### 8. Deadlock Detection (Concurrent Transactions)
+
+**Scenario**: Two concurrent transactions lock each other in circular wait. Transaction 1 locks row A then tries to lock row B, while Transaction 2 locks row B then tries to lock row A.
+
+**Symptom**: `QueryExecutionError: 1213 (40P01): Deadlock found when trying to get lock; try restarting transaction`.
+
+**Do NOT**: Ignore the deadlock and assume it won't happen in production. Do NOT increase timeout indefinitely. Do NOT leave deadlock-prone code without retry logic.
+
+**Mitigation**:
+- Always lock rows in consistent order (both transactions lock A, then B, not one A-then-B and other B-then-A)
+- Use explicit locks with `FOR UPDATE` and `FOR SHARE` clauses
+- Implement retry logic with exponential backoff for deadlock errors (code 1213)
+- Enable deadlock logging: `SHOW ENGINE INNODB STATUS` to diagnose deadlock graph
+- Test concurrent scenarios explicitly to surface deadlock-prone code
+
+**Example**:
+```javascript
+const conn = await setup({ database: 'eval_db' })
+
+// GOOD: Lock rows in consistent order to prevent deadlock
+await execute(conn, `
+  CREATE TABLE accounts (id INT PRIMARY KEY, balance DECIMAL(10,2))
+`)
+await execute(conn, `
+  INSERT INTO accounts (id, balance) VALUES (1, 100), (2, 200)
+`)
+
+let retries = 0
+const maxRetries = 3
+
+while (retries < maxRetries) {
+  try {
+    await execute(conn, "START TRANSACTION")
+    
+    // Always lock in ID order (1, then 2) - prevents deadlock
+    await execute(conn, `
+      SELECT balance FROM accounts WHERE id = 1 FOR UPDATE
+    `)
+    await execute(conn, `
+      SELECT balance FROM accounts WHERE id = 2 FOR UPDATE
+    `)
+    
+    await execute(conn, `
+      UPDATE accounts SET balance = balance - 50 WHERE id = 1
+    `)
+    await execute(conn, `
+      UPDATE accounts SET balance = balance + 50 WHERE id = 2
+    `)
+    
+    await execute(conn, "COMMIT")
+    break
+  } catch (err) {
+    if (err.code === 1213) {  // Deadlock error
+      retries++
+      if (retries >= maxRetries) {
+        throw new Error(`NEEDS_COORDINATION: Deadlock persists after ${maxRetries} retries. Check for other competing transactions.`)
+      }
+      await new Promise(r => setTimeout(r, 100 * Math.pow(2, retries)))  // Exponential backoff
+    } else {
+      throw err
+    }
+  }
+}
+
+await teardown(conn)
+```
+
+**Escalation**: `NEEDS_COORDINATION` — Deadlock indicates transaction design issue. Coordinate with backend team on lock ordering.
+
+### 9. Replication Lag (Master-Slave Consistency)
+
+**Scenario**: Your eval writes to the master database, then immediately reads from a read-replica. The replica is behind the master and hasn't replicated the change yet.
+
+**Symptom**: `ExecutionError: Verification failed. Expected row after INSERT, but SELECT returned 0 rows from replica`.
+
+**Do NOT**: Assume reads from replicas are always up-to-date. Do NOT ignore replication lag in SLOs. Do NOT hardcode delays as a workaround.
+
+**Mitigation**:
+- Always write to master and verify writes on master before reading from replicas
+- If you must read from replicas, use `SHOW SLAVE STATUS` to check replication lag
+- For critical assertions, read from the master database even if slower
+- Document the acceptable replication lag in your eval scenario comments
+- Use `MASTER_POS_WAIT()` to wait for replica to catch up (requires binary log coordinates)
+
+**Example**:
+```javascript
+const connMaster = await setup({ 
+  host: 'master.db.internal',
+  database: 'eval_db' 
+})
+const connReplica = await setup({ 
+  host: 'replica.db.internal',
+  database: 'eval_db' 
+})
+
+try {
+  // GOOD: Write to master
+  await execute(connMaster, `
+    INSERT INTO products (id, name, sku) VALUES (1, 'Widget', 'SKU-001')
+  `)
+  
+  // Verify write succeeded on master
+  await verify(connMaster, {
+    query: "SELECT name FROM products WHERE id = 1",
+    expected_first_row: { name: 'Widget' }
+  })
+  
+  // Wait for replica to catch up (max 5 seconds)
+  const waitResult = await execute(connMaster, `
+    SELECT MASTER_POS_WAIT(@@global.binlog_file, @@global.binlog_position, 5)
+  `)
+  
+  if (waitResult.rows[0]['MASTER_POS_WAIT()'] === -1) {
+    throw new Error(`NEEDS_INFRA_CHANGE: Replication lag > 5 seconds. Replica not catching up. Check replication status.`)
+  }
+  
+  // Now safe to read from replica
+  await verify(connReplica, {
+    query: "SELECT name FROM products WHERE id = 1",
+    expected_first_row: { name: 'Widget' }
+  })
+} finally {
+  await teardown(connMaster)
+  await teardown(connReplica)
+}
+```
+
+**Escalation**: `NEEDS_INFRA_CHANGE` — If replication lag is excessive, coordinate with infrastructure to increase replica resources or adjust replication settings.
+
+### 10. Query Result Memory Overflow (Large Result Sets)
+
+**Scenario**: A SELECT query returns a massive result set (1M+ rows) that consumes all available memory, causing OOM killer to terminate the process.
+
+**Symptom**: `OutOfMemoryError` or process killed by system OOM killer. Eval hangs and never completes.
+
+**Do NOT**: Load all rows into memory at once. Do NOT assume result sets are small. Do NOT skip pagination for "just this once."
+
+**Mitigation**:
+- Always use `LIMIT` and `OFFSET` for large queries, processing in chunks
+- Use `COUNT(*)` to verify row counts before loading full results
+- For large exports, use `mysql -e "SELECT ..." | gzip > file.sql.gz` to write directly to disk
+- Set reasonable timeout on queries to prevent them from running indefinitely
+- Monitor query execution plan with `EXPLAIN` to ensure queries use indexes
+
+**Example**:
+```javascript
+const conn = await setup({ database: 'eval_db' })
+
+// WRONG: Load 1M rows at once
+// const allRows = await execute(conn, "SELECT * FROM huge_table")
+
+// RIGHT: Paginate through results
+const pageSize = 1000
+let offset = 0
+let totalCount = 0
+
+// First, verify total count
+const countResult = await execute(conn, "SELECT COUNT(*) as cnt FROM huge_table")
+const expectedCount = 1000000
+
+await verify(conn, {
+  query: "SELECT COUNT(*) as cnt FROM huge_table",
+  expected_count: expectedCount,
+  description: `Table should have ${expectedCount} rows`
+})
+
+// Then process in chunks
+while (true) {
+  const batch = await execute(conn, `
+    SELECT id, name FROM huge_table 
+    ORDER BY id
+    LIMIT ${pageSize} OFFSET ${offset}
+  `)
+  
+  if (batch.rows.length === 0) break
+  
+  // Process batch (verify content without holding all in memory)
+  for (const row of batch.rows) {
+    // Verify row format
+    if (!row.id || !row.name) {
+      throw new Error(`DONE_WITH_CONCERNS: Row ${row.id} missing required field`)
+    }
+  }
+  
+  totalCount += batch.rows.length
+  offset += pageSize
+  console.log(`Processed ${totalCount} of ${expectedCount} rows`)
+}
+
+await teardown(conn)
+```
+
+**Escalation**: `DONE_WITH_CONCERNS` — Eval completed but with manual verification of large result sets. Document pagination strategy and memory usage for future evals.
 
 ---
 
@@ -1278,6 +1514,49 @@ const allRows = await execute(conn,
 for (const row of allRows.rows) {
   // Memory exhaustion risk!
 }
+```
+
+---
+
+## Decision Tree: Transaction Isolation Level Selection
+
+When designing your eval scenario, choose the appropriate isolation level based on your data consistency requirements and test objectives.
+
+```
+DO YOU NEED TO TEST CONCURRENT MODIFICATIONS OR RACE CONDITIONS?
+│
+├─ YES → Is perfect isolation required (no dirty reads, phantom reads)?
+│        │
+│        ├─ YES → Use SERIALIZABLE (slowest, but bulletproof)
+│        │        └─ All transactions run in strict sequence
+│        │        └─ No dirty reads, non-repeatable reads, or phantom reads
+│        │        └─ Example: Payment processing, critical account transfers
+│        │
+│        └─ NO → Use REPEATABLE READ (MySQL default, balanced)
+│               └─ Consistent snapshot within transaction
+│               └─ Phantom reads possible but rare in practice
+│               └─ Example: Most evals, multi-step data consistency checks
+│
+└─ NO → Are you doing simple, single-step reads without concurrent modification?
+       │
+       ├─ YES, and speed is critical → Use READ COMMITTED (fast)
+       │                                └─ Non-repeatable reads possible
+       │                                └─ Only for simple scenarios (avoid for eval)
+       │
+       └─ NO, or you're unsure → Stick with REPEATABLE READ (default)
+                                  └─ Safe choice for 95% of eval scenarios
+                                  └─ Minimal performance penalty
+```
+
+**Implementation**:
+```javascript
+// Before START TRANSACTION, set isolation level explicitly
+await execute(conn, `
+  SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ
+`)
+
+await execute(conn, "START TRANSACTION")
+// All reads/writes now use REPEATABLE READ isolation
 ```
 
 ---

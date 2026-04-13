@@ -1,6 +1,6 @@
 ---
 name: brain-read
-description: WHEN: You need to look up product topology, project metadata, past decisions, or contract details from the brain.
+description: "WHEN: You need to look up product topology, project metadata, past decisions, or contract details from the brain."
 type: flexible
 ---
 
@@ -536,6 +536,122 @@ grep -ri "api version" ~/forge/brain | head -20
 # Targeted results
 grep -ri "api.*version" products/*/decisions/ | head -20
 ```
+
+## Edge Cases
+
+### Edge Case 1: Brain not initialized (empty brain/ directory)
+
+**Symptom:** Brain directory exists but contains no decisions, contracts, or products.
+
+**Do NOT:** Proceed with grep search expecting results. Do NOT create decisions in arbitrary locations.
+
+**Mitigation:** Check for brain directory structure before search:
+```bash
+ls -la ~/forge/brain/products/ ~/forge/brain/prds/ ~/forge/brain/decisions/
+# If empty, brain is uninitialized
+```
+
+**Escalation:** NEEDS_INFRA_CHANGE — Brain initialization required before reading. Contact platform team to bootstrap brain with seed decisions and product topology.
+
+---
+
+### Edge Case 2: Decision file not found (grep returns nothing)
+
+**Symptom:** Grep search returns no results or grep reports "No such file or directory".
+
+**Do NOT:** Assume decision doesn't exist. Do NOT search with incorrect paths or typos.
+
+**Mitigation:** 
+1. Verify search path exists: `ls ~/forge/brain/products/<product>/decisions/`
+2. Try broader search: `grep -r "keyword" ~/forge/brain --include="*.md"`
+3. Check for archived decisions: `grep -r "keyword" ~/forge/brain/archive --include="*.md"`
+
+**Escalation:** NEEDS_CONTEXT — Decision may not exist yet, be archived, or be named differently. Use `brain-recall` for fuzzy semantic search instead.
+
+---
+
+### Edge Case 3: Multiple decisions match query (ambiguous results)
+
+**Symptom:** Grep returns 5+ matching decisions; unclear which is authoritative.
+
+**Do NOT:** Pick the first match. Do NOT assume most recent is most relevant.
+
+**Mitigation:**
+1. Narrow search: `grep -r "exact phrase" products/<product>/decisions/ --include="*.md"`
+2. Filter by status: `grep -r "status.*active" products/<product>/decisions/ --include="*.md"`
+3. Check frontmatter for `decision_id:` field to identify canonical versions
+4. Use `brain-why <ID>` to trace provenance if ID is clear
+
+**Escalation:** NEEDS_COORDINATION — Multiple decisions on same topic. Consult brain-link to understand decision graph and relationships. May need decision review/consolidation.
+
+---
+
+### Edge Case 4: Corrupted decision file (invalid YAML or markdown)
+
+**Symptom:** Grep finds file, but file fails to parse (missing frontmatter, broken YAML delimiters).
+
+**Do NOT:** Edit the file without understanding corruption. Do NOT delete file.
+
+**Mitigation:**
+1. Check YAML syntax: `head -20 <file> | grep -E "^---"`
+2. Verify file has opening `---` and closing `---` on separate lines
+3. Use `cat -A <file> | head -20` to check for non-standard characters
+4. Use `brain-read` to validate file structure before proceeding
+
+**Escalation:** BLOCKED — Corrupted decision file cannot be reliably read. Escalate to codebase maintenance team to repair YAML or restore from git history.
+
+---
+
+### Edge Case 5: Brain in wrong repository location
+
+**Symptom:** Grep or cat commands fail with "No such file or directory" or return unexpected results (wrong product).
+
+**Do NOT:** Assume brain paths are relative. Do NOT use different brain locations without explicit verification.
+
+**Mitigation:**
+1. Verify correct brain path: `echo ~/forge/brain`
+2. Confirm location matches git config: `cd ~/forge && git config forge.brain-path`
+3. Check symlinks: `ls -l .claude/brain` (should link to `~/forge/brain`)
+4. Explicit path in all commands: `grep -r "term" ~/forge/brain --include="*.md"`
+
+**Escalation:** NEEDS_INFRA_CHANGE — Brain location is wrong or symlink is broken. Check environment setup or contact platform team to fix path configuration.
+
+---
+
+## Decision Tree: Query Strategy
+
+```
+Need to read from brain?
+    ↓
+Do you know the exact path or filename?
+├─ YES → Use `cat ~/forge/brain/<path>/<file>.md` (direct read)
+└─ NO → Continue below
+
+Do you know the product, service, or contract type?
+├─ YES → Scope grep to that directory: `grep -r "term" ~/forge/brain/products/<product>/ --include="*.md"`
+└─ NO → Continue below
+
+Are you searching for a concept or pattern (not exact phrase)?
+├─ YES → Use `brain-recall` for semantic search (returns ranked, related decisions)
+└─ NO → Continue below
+
+Is the phrase common across multiple files (decision, contract, spec)?
+├─ YES → Add --include filter: `grep -r "term" --include="*decision*.md"` OR `--include="*contract*.md"`
+└─ NO → Use plain `grep -r "term" ~/forge/brain/products --include="*.md"`
+
+Do you need to find decisions by metadata (status, owner, tag)?
+├─ YES → Use grep pattern for YAML fields: `grep -r "^tags:.*auth" ~/forge/brain/products --include="*.md"`
+└─ NO → Continue with phrase search
+
+Are you searching across multiple products or years?
+├─ YES → Expect slow grep (scope to decade first): `grep -r "term" ~/forge/brain/products/*/decisions/202[34]* --include="*.md"`
+└─ NO → Scope to product/type and search
+
+Result: Use the narrowest scope that includes your target. Always use --include="*.md" to avoid logs/temp files.
+If grep is slow or ambiguous, escalate to brain-recall or brain-link.
+```
+
+---
 
 ## Cross-References
 

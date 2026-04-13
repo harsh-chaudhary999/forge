@@ -1,6 +1,6 @@
 ---
 name: forge-trust-code
-description: HARD-GATE: Spec-reviewer reads actual code, doesn't trust implementer report. Verify every claim.
+description: "HARD-GATE: Spec-reviewer reads actual code, doesn't trust implementer report. Verify every claim."
 type: rigid
 ---
 # Do Not Trust The Report
@@ -230,4 +230,71 @@ Before approving PR, verify:
 - [ ] No scope creep (only required features)
 - [ ] Gaps documented (if any exist)
 
-Output: **CODE VERIFIED** (spec met, implementation correct) or **SPEC GAPS FOUND** (implementer must fix before merge)
+## Additional Edge Cases
+
+### Edge Case 1: Code Reviewer Is Unavailable (Vacation, Context Transfer Lag, No SME)
+**Situation:** Spec-reviewer who understands the requirements is unavailable to review code.
+
+**Example:** Spec-reviewer on vacation for 2 weeks; new reviewer unfamiliar with the locked spec; security reviewer unavailable but code touches auth.
+
+**Do NOT:** Merge code without spec review, or do review without understanding the spec.
+
+**Action:**
+1. If primary reviewer unavailable but others exist:
+   - Briefing: spend 30 min explaining locked spec to alternate reviewer
+   - Alternate reviewer reads spec, then reads code
+   - Review proceeds normally
+2. If no qualified reviewer available:
+   - Escalate as **NEEDS_CONTEXT** (reviewer unavailable, code blocked)
+   - Wait for reviewer return or find SME
+3. If code touches sensitive area (auth, payments, compliance):
+   - Do NOT merge without spec review
+   - Escalate; wait for appropriate reviewer
+4. Record in brain: when spec-review was delayed, who did it, any context gaps
+
+---
+
+### Edge Case 2: Code Changes After Approval (Re-Approval Required)
+**Situation:** Reviewer approves code. Then implementer adds more commits. Code is different from what was approved.
+
+**Example:** Code review approves PR. Developer adds "one more optimization" commit. PR now has different implementation than what was reviewed.
+
+**Do NOT:** Merge code that differs from reviewed code, even if "just one more commit"
+
+**Action:**
+1. Detect: compare commit hash from approval vs. current HEAD
+2. If current code differs:
+   - Option A (preferred): Revert non-approved changes, re-review
+   - Option B: Re-review from scratch (may be faster if many changes)
+3. Implementer and reviewer sync:
+   - Spec-reviewer re-reads spec
+   - Spec-reviewer re-reads all code (not just diff)
+   - Re-approve or request changes
+4. Only merge after final approval
+5. Record in brain: what changed, why, who approved final version
+
+---
+
+### Edge Case 3: Security Review Needed but No Security Reviewer Available
+**Situation:** Code touches security-sensitive areas (auth, payments, encryption, compliance) but no security SME is available.
+
+**Example:** Code implements OAuth2 flow; security team is fully staffed on incident response; no one can review for 3 days.
+
+**Do NOT:** Merge security code without security review, even if timeline pressure exists
+
+**Action:**
+1. Identify: does this code need security review?
+   - Auth, crypto, permission checks, financial transactions, PII handling → YES
+   - Database connection, cache warming, logging → probably NO
+2. If security review needed:
+   - Wait for security reviewer to become available
+   - Or: escalate to dreamer for timeline trade-off
+3. If waiting is not possible (deadline hard):
+   - Escalate as **NEEDS_COORDINATION** (security review unavailable, code blocked)
+   - Dreamer decides: delay merge or proceed with risk
+4. If proceeding with risk: document risk in brain (what was not reviewed, why, potential impact)
+5. Create follow-up task: "Post-merge security review when reviewer available"
+
+---
+
+Output: **CODE VERIFIED** (spec met, implementation correct, all reviews complete) or **SPEC GAPS FOUND** (implementer must fix before merge) or **NEEDS_CONTEXT** (reviewer unavailable, spec review incomplete)

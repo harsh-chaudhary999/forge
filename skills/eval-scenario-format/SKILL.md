@@ -1,6 +1,6 @@
 ---
 name: eval-scenario-format
-description: Define YAML format for eval scenarios. Steps: driver action, target, expected result. Executable format for multi-surface eval.
+description: "Define YAML format for eval scenarios. Steps: driver action, target, expected result. Executable format for multi-surface eval."
 type: rigid
 requires: [brain-read]
 ---

@@ -1,6 +1,6 @@
 ---
 name: eval-driver-ios-xctest
-description: Eval driver for iOS via XCTest + xcrun simctl. Functions: connect(simulator_id), launch(bundle_id), tap(target), type(text), swipe(direction, element), assert_element(target), screenshot(), disconnect(). Use when eval scenario has driver=ios-xctest.
+description: "Eval driver for iOS via XCTest + xcrun simctl. Functions: connect(simulator_id), launch(bundle_id), tap(target), type(text), swipe(direction, element), assert_element(target), screenshot(), disconnect(). Use when eval scenario has driver=ios-xctest."
 type: rigid
 requires: [eval-scenario-format]
 ---
@@ -369,3 +369,282 @@ steps:
 | `Element not found` | Accessibility ID missing or screen not ready | Add `assert_element` wait before tap |
 | `System alert blocking` | Permission dialog intercepted interaction | Call `dismiss_alert` before affected action |
 | `SpringBoard crash` | Simulator overloaded | Restart simulator, reduce parallel scenarios |
+
+---
+
+## Edge Cases & Failure Modes
+
+### Edge Case 1: Simulator Not Running or Not Booted
+
+**Scenario**: You attempt to launch an app on a simulator that is not currently running or booted, or the simulator UUID doesn't exist.
+
+**Symptom**: `SimulatorError: Simulator not found` or `xcrun simctl launch` silently fails with exit code 1. App process is never created.
+
+**Do NOT**: Assume the simulator is booted. Do NOT call `launch()` without verifying simulator state. Do NOT use hardcoded simulator IDs that might not exist on this machine.
+
+**Mitigation**:
+- Always call `connect()` first, which performs `xcrun simctl bootstatus` verification
+- Check simulator list before connecting: `xcrun simctl list devices | grep Booted`
+- Use `"default"` as simulator_id to auto-select first booted simulator
+- Verify boot completed before proceeding; wait for Springboard to be ready
+- Add explicit timeout for boot operations (>60 seconds indicates infrastructure issue)
+
+**Example**:
+```javascript
+// GOOD: Verify simulator state before launch
+const simList = await bash("xcrun simctl list devices | grep '(Booted)'")
+if (!simList || simList.length === 0) {
+  throw new Error("BLOCKED: No booted simulator found. Start a simulator first.")
+}
+
+const sim = await connect({ simulator_id: "default" })
+if (sim.state !== "Booted") {
+  throw new Error(`BLOCKED: Simulator ${sim.simulator_id} is not booted (state: ${sim.state})`)
+}
+
+const launchResult = await launch(sim, "com.example.app")
+if (!launchResult.success) {
+  throw new Error(`BLOCKED: Failed to launch app. Check app is built and installed.`)
+}
+
+// BAD: Assume simulator exists
+const sim2 = await connect({ simulator_id: "UUID-that-might-not-exist" })
+```
+
+**Escalation**: `BLOCKED` — Simulator infrastructure not ready. Verify Xcode installation and simulator availability.
+
+---
+
+### Edge Case 2: Test Timeout (Slow UI Rendering or Missing Element)
+
+**Scenario**: Your eval waits for a UI element to appear (via `assert_element` or implicit tap wait), but the element never appears within the 5-second default timeout. This could be due to slow rendering, slow network, or the element genuinely missing.
+
+**Symptom**: `TimeoutError: Element not found within 5000ms` or `assert_element` returns `success: false` after timeout.
+
+**Do NOT**: Increase timeout to 30 seconds as a blanket fix. Do NOT ignore timeout failures; they indicate a real problem. Do NOT assume network latency; profile the app's rendering performance.
+
+**Mitigation**:
+- Use explicit waits before tap: `assert_element(sim, target, timeout)` with adequate timeout (10-15s for slow networks)
+- Profile rendering speed with Xcode Instruments before eval to establish realistic timeouts
+- Check simulator performance: slow simulators (especially iOS 16+) may need longer timeouts
+- Verify element accessibility identifier is present in app code (`UIView.accessibilityIdentifier`)
+- Add intermediate assertions to narrow down where delay occurs (e.g., assert splash screen fades before next element)
+
+**Example**:
+```javascript
+// GOOD: Explicit wait before interaction
+const connResult = await assert_element(sim, {
+  accessibility_id: "splash_screen_fade"
+}, 10)  // Wait 10s for splash to fade
+if (!connResult.found) {
+  throw new Error("NEEDS_CONTEXT: Splash screen did not fade within timeout. App may be slow or hanging.")
+}
+
+// Now safe to interact
+await tap(sim, { accessibility_id: "get_started_button" })
+
+// BAD: Assume element appears instantly
+await tap(sim, { accessibility_id: "some_button" })  // May timeout if not ready
+```
+
+**Escalation**: `NEEDS_CONTEXT` — Profile app rendering performance. Verify element accessibility IDs are configured in app code.
+
+---
+
+### Edge Case 3: Memory Pressure / App Crash During Test
+
+**Scenario**: The iOS app is terminated due to memory pressure (jetsam) or crashes during test execution. This is common in simulators under heavy load or with memory leaks.
+
+**Symptom**: `AppCrashError: App 'com.example.app' was terminated` or `SpringBoard shows crash report dialog` blocking further interactions.
+
+**Do NOT**: Continue test after app crash without restart. Do NOT assume memory pressure won't happen in production. Do NOT leak resources in eval setup (large image loads, etc.).
+
+**Mitigation**:
+- Always wrap eval in try/finally with `disconnect()` to cleanly terminate and restart app
+- Profile memory usage with Xcode before eval; memory leaks will cause crashes under load
+- Reduce parallelism: run fewer eval scenarios concurrently to reduce memory pressure
+- Clear app cache and large resources before running eval: `app.terminate()` + reset keychain
+- Monitor system memory with `xcrun simctl diagnose` to detect resource exhaustion
+
+**Example**:
+```javascript
+// GOOD: Handle app crash gracefully
+const sim = await connect({ simulator_id: "default" })
+try {
+  const launchResult = await launch(sim, "com.example.app")
+  if (!launchResult.success) {
+    throw new Error("BLOCKED: App failed to launch.")
+  }
+  
+  // Run test steps
+  await tap(sim, { accessibility_id: "button" })
+  
+} catch (err) {
+  if (err.message.includes("App") && err.message.includes("terminated")) {
+    // App crashed
+    throw new Error("DONE_WITH_CONCERNS: App crashed during test. Memory leak or jetsam. Profile with Instruments.")
+  }
+  throw err
+} finally {
+  // Always disconnect, even on crash
+  await disconnect(sim, { shutdown: false })
+}
+
+// BAD: Continue after crash
+const sim2 = await connect({ simulator_id: "default" })
+await launch(sim2, "com.example.app")
+await tap(sim2, { accessibility_id: "button" })
+// If app crashes here, no cleanup happens
+```
+
+**Escalation**: `DONE_WITH_CONCERNS` — App crashed. Profile for memory leaks with Xcode Instruments.
+
+---
+
+### Edge Case 4: Simulator State Pollution (Previous Test Left App in Bad State)
+
+**Scenario**: A previous test run left the app in an inconsistent state: cached authentication tokens, persisted user defaults, leftover keychain entries, or unsaved state. The current eval tries to run signup but app thinks user is already logged in.
+
+**Symptom**: `ExecutionError: Expected login screen, but app showed home screen` or weird navigation flows that don't match scenario.
+
+**Do NOT**: Assume app state is clean between eval scenarios. Do NOT skip app reset. Do NOT rely on app's own logout to be complete.
+
+**Mitigation**:
+- Always reset app state before scenario: `app.terminate()` + `xcrun simctl privacy reset` for permissions + clear keychain
+- Use `--reset-contents-and-settings` when booting simulator for completely fresh state
+- Clear app-specific data: defaults, cache, cookies via terminal commands or API
+- For critical scenarios, create fresh test user accounts instead of reusing old ones
+- Verify initial state with assertion before proceeding: `assert_element(sim, { accessibility_id: "login_screen" })`
+
+**Example**:
+```javascript
+// GOOD: Full state reset between scenarios
+const sim = await connect({ simulator_id: "default" })
+
+// Step 1: Terminate app
+await execute(sim, "app.terminate()")
+
+// Step 2: Reset simulator privacy/permissions
+await bash("xcrun simctl privacy reset ${sim.simulator_id} all")
+
+// Step 3: Clear keychain
+await bash("xcrun simctl keychain reset ${sim.simulator_id}")
+
+// Step 4: Relaunch clean
+const launchResult = await launch(sim, "com.example.app")
+
+// Step 5: Verify initial state (login screen should appear)
+await assert_element(sim, {
+  accessibility_id: "login_screen"
+}, 10)
+
+// Now eval is guaranteed to start from clean state
+
+// BAD: Skip cleanup
+const sim2 = await connect({ simulator_id: "default" })
+await launch(sim2, "com.example.app")
+// State from last run might interfere!
+```
+
+**Escalation**: `NEEDS_COORDINATION` — State pollution indicates scenario dependency. Coordinate to ensure each scenario resets state independently.
+
+---
+
+### Edge Case 5: System Alert Blocking Without UIInterruptionMonitor
+
+**Scenario**: A system permission dialog (notification, location, camera) appears unexpectedly, blocking your tap/type actions. Without a registered `UIInterruptionMonitor`, the eval hangs waiting for the alert to dismiss.
+
+**Symptom**: `TimeoutError: Element tap blocked by system alert` or `assert_element` times out because system dialog is covering the target.
+
+**Do NOT**: Assume system alerts won't appear. Do NOT hardcode alert dismissals; use UIInterruptionMonitor. Do NOT ignore permission requests; they're part of UX.
+
+**Mitigation**:
+- Register `UIInterruptionMonitor` BEFORE any action that triggers permissions (camera, location, notifications)
+- Use `dismiss_alert(sim, "Allow")` or `dismiss_alert(sim, "Don't Allow")` based on scenario requirements
+- For multiple alerts, register multiple monitors (one per expected alert)
+- Always dismiss alerts in try/finally to ensure cleanup even if test fails
+- Document which permissions each eval scenario requires
+
+**Example**:
+```javascript
+// GOOD: Expect and handle system alerts
+const sim = await connect({ simulator_id: "default" })
+await launch(sim, "com.example.app")
+
+// Register monitor BEFORE triggering permissions
+// This catches system alerts and dismisses them automatically
+const alertMonitor = {
+  predicate: "type == 'XCUIElementTypeAlert' AND name CONTAINS 'Notification'",
+  button_to_tap: "Allow"
+}
+
+// Now trigger action that causes permission request
+await tap(sim, { accessibility_id: "enable_notifications_button" })
+
+// Handle the alert
+await dismiss_alert(sim, "Allow")
+
+// Verify notification was enabled
+await assert_element(sim, {
+  accessibility_id: "notifications_enabled_badge"
+}, 5)
+
+// BAD: No alert handling
+const sim2 = await connect({ simulator_id: "default" })
+await launch(sim2, "com.example.app")
+await tap(sim2, { accessibility_id: "enable_notifications_button" })
+// System dialog appears but there's no monitor → test hangs!
+```
+
+**Escalation**: `NEEDS_CONTEXT` — System alert handling requires knowledge of permission requests in app flow. Coordinate with app team on which permissions are triggered.
+
+---
+
+## Decision Tree: Test Device Selection
+
+Choose the right device/simulator configuration for your eval based on coverage and speed requirements.
+
+```
+WHAT IS YOUR PRIMARY EVAL GOAL?
+│
+├─ SPEED & ITERATION (during development) → Use iPhone 15 Simulator
+│  │
+│  ├─ Fastest to boot (< 5 seconds)
+│  ├─ Lowest memory overhead (~500MB)
+│  ├─ Sufficient for UI/UX evals
+│  └─ Tip: Re-use same simulator across runs to avoid boot penalty
+│
+├─ COMPATIBILITY (test on multiple iOS versions) → Use REPEATABLE DEVICE MATRIX
+│  │
+│  ├─ iPhone 15 Pro (latest hardware, iOS 17)
+│  ├─ iPhone 12 (mid-cycle, iOS 16)
+│  ├─ iPhone SE (low-end hardware, iOS 15)
+│  └─ Run same eval on all 3 to catch version/hardware-specific bugs
+│
+├─ REAL DEVICE VALIDATION (production confidence) → Use CONNECTED PHYSICAL DEVICE
+│  │
+│  ├─ Network: Real Wi-Fi/LTE, not simulated
+│  ├─ Hardware: Real GPU, real touch response, real memory constraints
+│  ├─ Biometrics: Real Face ID / Touch ID (not simulated)
+│  ├─ Permissions: Real permission dialogs, not test overrides
+│  │
+│  └─ Note: Slower (~30-60s to reconnect), requires physical device
+│
+└─ UNCERTAIN → Default: iPhone 15 Simulator
+   └─ Balanced: Good speed, modern iOS, wide compatibility
+```
+
+**Implementation**:
+```javascript
+// Option 1: Simulator (fast, for iteration)
+const sim = await connect({ simulator_id: "default" })
+
+// Option 2: Specific simulator version (for compatibility)
+const sim12 = await connect({ simulator_id: "iPhone-12-iOS-16" })
+const sim15 = await connect({ simulator_id: "iPhone-15-iOS-17" })
+
+// Option 3: Physical device (for production realism)
+const device = await connect({ simulator_id: "00008120-001E5D001234567A" })  // Device UDID
+```
+
+---

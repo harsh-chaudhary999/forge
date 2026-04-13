@@ -1,54 +1,119 @@
 ---
 name: forge-brain-layout
-description: Brain directory structure, file naming conventions, and query patterns. Look up when writing to or reading from the brain.
+description: "Brain directory structure, file naming conventions, and query patterns. Look up when writing to or reading from the brain."
 type: reference
 ---
 # Brain Layout
+
+## Introduction: Why Brain Structure Matters
+
+The brain is the **immutable decision record** for your entire product. Every choice made during intake, negotiation, evaluation, and deployment is locked into the brain as auditable truth. The brain structure enables three critical capabilities:
+
+1. **Rapid Navigation** — Consistent naming conventions and directory organization mean you can find any decision without searching
+2. **Pattern Discovery** — File naming enables automated pattern matching (decisions by category, date, status)
+3. **Decision Lifecycle Tracking** — Status tracking from draft → review → locked → archived shows the complete evolution of each choice
+
+The brain is **not** a task tracker, issue system, or temporary notes file. It is the permanent record of architecture, product, and engineering decisions that shaped the product.
 
 ## Directory Tree
 
 ```
 ~/forge/brain/
-├── products/
+├── products/                              # All product, PRD, and delivery context
 │   └── {product-slug}/
 │       ├── prd/
 │       │   └── {prd-id}/
 │       │       ├── PRD.md                    # Locked after intake gate
-│       │       ├── council/
+│       │       ├── council/                  # Surface team reasonings
 │       │       │   ├── backend.md            # Backend surface perspective
 │       │       │   ├── web.md                # Web frontend perspective
 │       │       │   ├── app.md                # App frontend perspective
 │       │       │   └── infra.md              # Infrastructure perspective
-│       │       ├── contracts/
+│       │       ├── contracts/                # Service boundaries and contracts
 │       │       │   ├── api-rest.md           # REST API contract
 │       │       │   ├── events-kafka.md       # Kafka event contract
 │       │       │   ├── cache-redis.md        # Redis cache contract
 │       │       │   ├── schema-db.md          # MySQL schema contract
 │       │       │   └── search-es.md          # Elasticsearch contract
 │       │       ├── shared-dev-spec.md        # Locked after spec-freeze
-│       │       ├── tech-plans/
+│       │       ├── tech-plans/               # Per-repo implementation plans
 │       │       │   ├── {repo-name}.md        # One plan per repo
 │       │       │   └── ...
-│       │       ├── evals/
+│       │       ├── evals/                    # Evaluation results and verdicts
 │       │       │   ├── scenarios.md          # Eval scenario definitions
 │       │       │   ├── run-{timestamp}.md    # Individual eval run results
 │       │       │   └── verdict.md            # Final eval-judge verdict
-│       │       ├── dreaming/
+│       │       ├── dreaming/                 # Conflict resolution notes
 │       │       │   ├── inline-{timestamp}.md # Inline conflict resolutions
 │       │       │   └── ...
-│       │       └── learnings/
+│       │       └── learnings/                # Retrospective analysis
 │       │           └── {prd-id}-retrospective.md  # Post-PR dreamer retrospective
-│       └── patterns/
+│       └── patterns/                       # Identified reusable patterns
 │           ├── warm/                         # Seen 1 time
 │           ├── active/                       # Seen 2+ times (same product)
 │           └── candidates/                   # Seen 3+ times (cross-product) → skill candidate
-├── decisions/
-│   ├── D001.md                              # Locked decision record
-│   ├── D002.md
+│
+├── decisions/                              # Global architectural decisions (LOCKED)
+│   ├── architecture/                        # System design decisions (D001-D099)
+│   │   ├── D001_microservice_vs_monolith.md
+│   │   ├── D002_async_event_bus.md
+│   │   └── ...
+│   ├── product/                             # Product feature decisions (D100-D199)
+│   │   ├── D102_session_timeout_strategy.md
+│   │   ├── D150_multi_tenant_isolation.md
+│   │   └── ...
+│   ├── engineering/                         # Implementation decisions (D200-D299)
+│   │   ├── D201_orm_vs_raw_sql.md
+│   │   ├── D250_caching_layer.md
+│   │   └── ...
+│   └── ops/                                 # Operations and infrastructure (D300+)
+│       ├── D301_deployment_strategy.md
+│       ├── D350_monitoring_stack.md
+│       └── ...
+│
+├── drafts/                                 # Proposals under review (not yet locked)
+│   ├── pending/                             # Awaiting council review
+│   │   ├── draft-{author}-{topic}.md
+│   │   └── ...
+│   └── resolved/                            # Reviewed, decision made (ready to lock)
+│       ├── {decision-topic}.md
+│       └── ...
+│
+├── archived/                               # Superseded or deprecated decisions
+│   ├── reasons.txt                          # Index of why decisions were archived
+│   ├── D095_deprecated_auth_flow.md         # Reason: replaced by D102
 │   └── ...
-└── links/
-    └── {source}-to-{target}.md              # Cross-reference links between decisions
+│
+└── README.md                                # Brain overview and navigation guide
 ```
+
+### Directory Annotations
+
+**products/** — Contains all PRD-specific context and delivery artifacts
+- Each product gets its own slug (e.g., `auth-service`, `web-ui`)
+- Each PRD gets a unique ID (e.g., `PRD-20260410-001`)
+- Council, contracts, evals, and learnings are nested under PRD ID
+- Patterns track reusable solutions identified during delivery
+
+**decisions/** — Contains global architectural and engineering decisions
+- Decisions are immutable once locked
+- Numbered sequentially with category ranges (D001-D099 architecture, D100-D199 product, etc.)
+- Each file is a complete record: problem, solution, rationale, alternatives
+- Links to related decisions track dependencies
+
+**drafts/** — Workspace for decisions under review
+- `pending/` holds proposals awaiting council or stakeholder review
+- `resolved/` holds reviewed proposals ready to lock as decisions
+- Same format as locked decisions, but with status=draft
+
+**archived/** — Historical record of superseded decisions
+- `reasons.txt` documents why each decision was archived
+- Links to replacement decision (if superseded) are included in archived file
+- Timestamp of archival is recorded
+
+**links/** — Cross-reference edges between decisions
+- Enables navigation of related decisions
+- Format: `{source}-to-{target}.md` (e.g., `D001-to-D050.md`)
 
 ## File Naming Conventions
 
@@ -62,6 +127,162 @@ type: reference
 | Retrospective | `{prd-id}-retrospective.md` | `PRD-20260410-001-retrospective.md` |
 | Inline dream | `inline-{ISO-timestamp}.md` | `inline-2026-04-10T15-00-00.md` |
 
+## File Format Specifications
+
+### Decision File Format
+
+**Location:** `brain/decisions/{category}/D{NNN}_{topic}.md`
+
+**Example:** `brain/decisions/product/D102_session_timeout_strategy.md`
+
+**Format:**
+
+```markdown
+---
+title: Session Timeout Strategy
+date_locked: 2026-04-10T14:30:00Z
+status: LOCKED
+author: backend-team
+tags: [authentication, session-management, security]
+category: product
+decision_number: D102
+relates_to: [D001, D050, D085]
+---
+
+## Problem
+
+[2-3 paragraphs describing the business or technical problem this decision addresses]
+- What pain points or constraints did we face?
+- Why couldn't existing approaches work?
+
+## Solution
+
+[Clear statement of the chosen solution]
+- [Key decision]
+- [Key decision]
+- [Rationale for this specific choice]
+
+## Rationale
+
+[Detailed explanation of why this solution was chosen]
+- Trade-offs made
+- Risks accepted or mitigated
+- Impact on system architecture
+
+## Alternatives Considered
+
+### Alternative 1: [Name]
+- Pros: ...
+- Cons: ...
+- Why not chosen: ...
+
+### Alternative 2: [Name]
+- Pros: ...
+- Cons: ...
+- Why not chosen: ...
+
+## Implementation Notes
+
+- Language/stack specifics
+- Configuration defaults
+- Expected performance characteristics
+
+## Links
+
+- Related decisions: D001, D050, D085
+- Related PRD: PRD-20260410-001
+- Affected repos: backend-api, auth-service
+```
+
+### Draft File Format
+
+**Location:** `brain/drafts/pending/{topic}.md` or `brain/drafts/resolved/{topic}.md`
+
+**Format:** Same as decision file, but with these differences:
+
+```markdown
+---
+title: [Proposed Decision Topic]
+date_proposed: 2026-04-08T10:00:00Z
+status: DRAFT  # or AWAITING_REVIEW
+author: submitter-name
+tags: [...]
+---
+
+[Same sections as decision file]
+
+## Council Review
+
+### Backend Review
+- Status: APPROVED / PENDING / REJECTED
+- Reviewer: backend-lead
+- Comment: [Feedback]
+
+### Web Review
+- Status: APPROVED / PENDING / REJECTED
+- Reviewer: web-lead
+- Comment: [Feedback]
+
+### App Review
+- Status: APPROVED / PENDING / REJECTED
+- Reviewer: app-lead
+- Comment: [Feedback]
+
+### Infra Review
+- Status: APPROVED / PENDING / REJECTED
+- Reviewer: infra-lead
+- Comment: [Feedback]
+```
+
+### Archived Decision Format
+
+**Location:** `brain/archived/D{NNN}_{topic}.md`
+
+**Format:** Decision file with addition of archival metadata:
+
+```markdown
+---
+title: [Original Title]
+date_locked: 2026-02-01T10:00:00Z
+date_archived: 2026-04-10T14:30:00Z
+status: ARCHIVED
+archive_reason: SUPERSEDED  # or DEPRECATED, OBSOLETE, INCORRECT
+replaced_by: D200  # If superseded
+---
+
+## Archival Note
+
+Reason for archival: [Explanation of why this decision is no longer valid]
+
+Replacement decision: [Link to replacement, if superseded]
+
+Date archived: 2026-04-10
+
+[Original decision content follows...]
+```
+
+### PRD File Format (Product Context)
+
+**Location:** `brain/products/{product-slug}/prd/{prd-id}/PRD.md`
+
+**Status:** LOCKED after intake gate completes
+
+**Contains:**
+- Problem statement
+- Acceptance criteria
+- User journeys
+- Success metrics
+- Scope and constraints
+
+**Related files in same PRD directory:**
+- `council/*.md` — Surface team perspectives (locked after council-gate)
+- `contracts/*.md` — Service boundaries (locked after spec-freeze)
+- `shared-dev-spec.md` — Implementation spec (locked after spec-freeze)
+- `tech-plans/{repo}.md` — Per-repo implementation plans
+- `evals/scenarios.md` — Eval test cases
+- `evals/run-*.md` — Individual eval run results
+- `evals/verdict.md` — Final eval judge verdict
+
 ## Immutability Rules
 
 | File | Locked After | Can Be Changed By |
@@ -72,14 +293,398 @@ type: reference
 | Council surface files | Council gate passes | Re-negotiation only |
 | Contract files | Spec freeze | Re-negotiation only |
 
-## Query Patterns
+## Anti-Patterns: How NOT to Use the Brain
+
+### Anti-Pattern 1: Store Non-Decisions in Brain
+
+**What it looks like:**
+```
+brain/decisions/D500_user_complained_about_feature.md
+brain/decisions/D501_bug_in_production.md
+brain/decisions/D502_performance_regression.md
+```
+
+**Why it's wrong:**
+- Brain is for locked architectural and product decisions
+- Issues, bugs, and complaints are temporary events
+- Task tracker (Jira, GitHub Issues) is the right place for temporary work
+- Brain gets polluted with noise; decision queries become unreliable
+
+**How to fix it:**
+- Store issues in project tracking system
+- Link to decisions from issues (e.g., "This bug violates D102")
+- Only write to brain via `brain-write` skill
+- Enforce `type=decision` in decision frontmatter
+
+**Enforcement:**
+```
+brain-write rejects any record that isn't a deliberate decision
+Only LOCKED, DRAFT, and ARCHIVED status are valid
+```
+
+### Anti-Pattern 2: Use Brain as Task Tracker
+
+**What it looks like:**
+```
+brain/products/auth-service/prd/PRD-20260410-001/
+├── implementation-status.md          # WRONG: task state
+├── jira-tickets.txt                  # WRONG: task list
+└── developer-notes.md                # WRONG: temporary notes
+```
+
+**Why it's wrong:**
+- Brain is immutable; task state changes constantly
+- Task progress belongs in project management tool
+- Brain entries require commits; task updates don't
+- Decision lockdown gets confused with task completion
+
+**How to fix it:**
+- Store task state in Jira/GitHub Projects
+- Reference decisions from task (e.g., "Implement decision D102")
+- Brain contains decisions; tasks implement decisions
+- Use `learnings/` only for post-delivery retrospectives
+
+**Enforcement:**
+```
+Reject PRD mutations after intake-gate
+Reject PRD mutations after spec-freeze
+Use brain-forget to archive, never bulk-delete
+```
+
+### Anti-Pattern 3: Modify Brain Files Directly
+
+**What it looks like:**
+```bash
+# User directly edits a decision file
+vi brain/decisions/D042.md
+git add brain/decisions/D042.md
+git commit -m "fix typo in D042"
+```
+
+**Why it's wrong:**
+- Direct edits bypass lock/unlock/archive workflows
+- Audit trail is lost; no provenance tracking
+- Can't distinguish typo fixes from decision changes
+- brain-why skill can't trace the change
+
+**How to fix it:**
+- Always use `brain-write` skill to lock decisions
+- Use `brain-forget` skill to archive decisions
+- Direct edits are only for bootstrapping (empty brain)
+- All mutations logged in git with structured commit messages
+
+**Enforcement:**
+```
+brain-persist: detects direct edits, raises alert
+Pre-commit hook: warns on direct brain file modifications
+brain-why: traces all changes back to skill invocations
+```
+
+## Edge Cases: How to Handle Unusual Situations
+
+### Edge Case 1: Brain Not Initialized
+
+**Symptom:** `brain/` directory doesn't exist or is not in git
+
+**Root cause:**
+- First-time setup on a repo
+- User cloned without initializing brain
+- Shallow clone that excluded brain/
+
+**Action Plan:**
+
+1. Check if brain directory exists:
+   ```bash
+   ls -la brain/
+   ```
+
+2. If not found, initialize:
+   ```bash
+   mkdir -p brain/decisions/{architecture,product,engineering,ops}
+   mkdir -p brain/drafts/{pending,resolved}
+   mkdir -p brain/archived
+   mkdir -p brain/products
+   mkdir -p brain/links
+   touch brain/README.md
+   git add brain/
+   git commit -m "brain: initialize structure"
+   ```
+
+3. Seed with empty README
+
+**Escalation:** NEEDS_INFRA_CHANGE
+- Document in project setup guide
+- Add to git post-clone hook
+- Include in forge-init script
+
+### Edge Case 2: Brain Corrupted or Lost
+
+**Symptom:** 
+- Brain directory exists but not tracked in git
+- File permissions wrong (not readable)
+- Brain structure partially missing (some categories empty)
+
+**Root cause:**
+- User force-pushed, lost history
+- Brain copied manually without .git
+- Incomplete migration from old system
+
+**Action Plan:**
+
+1. Check git status:
+   ```bash
+   cd brain/
+   git status
+   git log --oneline | head -5
+   ```
+
+2. If not tracked, restore from backup:
+   ```bash
+   git reset --hard origin/main
+   ```
+
+3. If partially missing, check what's gone:
+   ```bash
+   find brain/ -type d | sort
+   ```
+
+4. Recreate missing structure:
+   ```bash
+   mkdir -p brain/decisions/{architecture,product,engineering,ops}
+   mkdir -p brain/drafts/{pending,resolved}
+   ```
+
+5. Verify integrity:
+   ```bash
+   brain-read: verify structure
+   ```
+
+**Escalation:** NEEDS_COORDINATION
+- Notify team of brain state
+- Restore from backup if necessary
+- Document what was lost
+
+### Edge Case 3: Brain in Wrong Directory
+
+**Symptom:**
+- User cloned a different branch
+- Brain exists but in unexpected path
+- Multiple brain directories (confusion)
+
+**Root cause:**
+- User cloned wrong repository
+- Symlink points to wrong location
+- Team forked codebase and split brain structure
+
+**Action Plan:**
+
+1. Verify current directory:
+   ```bash
+   pwd
+   ls -la .git/
+   ```
+
+2. Check where brain actually is:
+   ```bash
+   find . -name "brain" -type d
+   ```
+
+3. If it's a symlink, check target:
+   ```bash
+   ls -la brain/
+   # Shows: brain -> /path/to/real/brain
+   ```
+
+4. Ensure the correct repository:
+   ```bash
+   git remote -v
+   git branch
+   ```
+
+5. Guide to correct location:
+   ```bash
+   # If in wrong repo, clone correct one:
+   git clone https://correct-repo.git
+   cd correct-repo
+   ```
+
+**Escalation:** NEEDS_CONTEXT
+- Document team's brain organization
+- Clarify which repos share brain
+- Update onboarding guide
+
+## Quick Reference Card
+
+| Path Pattern | What It Contains | File Count | Query Tool |
+|---|---|---|---|
+| `decisions/architecture/` | System design (D001-D099) | 50-100 | by design category |
+| `decisions/product/` | Feature decisions (D100-D199) | 100-200 | by feature area |
+| `decisions/engineering/` | Implementation (D200-D299) | 50-100 | by service |
+| `decisions/ops/` | Infrastructure (D300+) | 20-50 | by deployment/ops area |
+| `drafts/pending/` | Awaiting review | <10 | by topic or reviewer |
+| `drafts/resolved/` | Approved, ready to lock | <10 | by topic |
+| `archived/` | Superseded decisions | varies | by archive reason |
+| `products/{slug}/prd/{id}/` | All PRD context | ~50 files | by product + PRD |
+| `products/{slug}/patterns/` | Reusable patterns | 5-20 | by frequency |
+| `links/` | Decision relationships | varies | by source → target |
+
+**Common Queries:**
+
+| Question | Query |
+|---|---|
+| How do I record a new decision? | Use `brain-write` skill |
+| How do I find related decisions? | Check `relates_to` field or use `brain-recall` |
+| Why was this decision made? | Use `brain-why` skill |
+| Is this decision still valid? | Check if it's in `archived/` or `decisions/` |
+| What's the next available decision number? | Count files in `decisions/{category}/` |
+| Can I change a locked decision? | No; create a new decision or archive the old one |
+| How do I archive a decision? | Use `brain-forget` skill |
+
+## Status Lifecycle: Decision States
+
+```
+DRAFT
+  ↓
+AWAITING_REVIEW (in brain/drafts/pending/)
+  ↓ (council approval or rejection)
+  ├→ REJECTED
+  │   └→ Discard (never locked)
+  │
+  └→ APPROVED (in brain/drafts/resolved/)
+      ↓
+      LOCKED (in brain/decisions/{category}/)
+        ↓ (over time, becomes obsolete or replaced)
+        ├→ SUPERSEDED (in brain/archived/)
+        │   └→ Links to replacement decision
+        │
+        ├→ DEPRECATED (in brain/archived/)
+        │   └→ No longer recommended
+        │
+        └→ OBSOLETE (in brain/archived/)
+            └→ No longer applicable
+```
+
+**Timestamps:**
+- `date_proposed`: When draft was created
+- `date_locked`: When decision transitioned to LOCKED
+- `date_archived`: When decision was superseded/deprecated/obsolete
+
+## Cross-References: Related Skills
+
+The forge-brain-layout documents structure. These skills work with the brain:
+
+| Skill | Purpose |
+|---|---|
+| `brain-write` | Create and lock decisions; create drafts for review |
+| `brain-read` | Look up decisions; verify PRD structure |
+| `brain-recall` | Search brain by keyword; find related decisions |
+| `brain-why` | Trace provenance; see who made decision when |
+| `brain-forget` | Archive decisions; mark as superseded/deprecated |
+| `brain-link` | Create edges between related decisions |
+
+**When to use each:**
+
+- **Writing a decision?** → `brain-write`
+- **Need context for a PRD?** → `brain-read`
+- **Searching for decisions?** → `brain-recall`
+- **Curious why a decision was made?** → `brain-why`
+- **Decision is obsolete?** → `brain-forget`
+- **Two decisions are related?** → `brain-link`
+
+## Navigation Patterns
+
+### Navigate by Product Area
+
+To find all decisions and context for a specific product:
+
+```
+brain/products/{product-slug}/prd/{prd-id}/
+├── PRD.md                          # Problem and acceptance criteria
+├── council/                         # How each surface team sees it
+├── contracts/                       # Service boundaries
+├── shared-dev-spec.md              # Implementation specification
+├── tech-plans/                      # Per-repo implementation
+├── evals/                           # Test results
+└── learnings/                       # Retrospective analysis
+```
+
+**Example:** To understand all decisions for auth-service PRD-20260410-001:
+```bash
+ls -la brain/products/auth-service/prd/PRD-20260410-001/
+```
+
+### Navigate by Decision Category
+
+Architecture decisions (foundational system design):
+```
+brain/decisions/architecture/D001.md through D099.md
+```
+
+Product decisions (feature and UX choices):
+```
+brain/decisions/product/D100.md through D199.md
+```
+
+Engineering decisions (implementation approach):
+```
+brain/decisions/engineering/D200.md through D299.md
+```
+
+Operations decisions (deployment, infrastructure, observability):
+```
+brain/decisions/ops/D300.md and above
+```
+
+### Navigate by Decision Status
+
+**LOCKED decisions** (auditable, immutable):
+```
+brain/decisions/{category}/D{NNN}.md
+```
+
+**Drafts awaiting review** (not yet decided):
+```
+brain/drafts/pending/{topic}.md
+```
+
+**Drafts ready to lock** (approved by council):
+```
+brain/drafts/resolved/{topic}.md
+```
+
+**Archived decisions** (superseded or deprecated):
+```
+brain/archived/D{NNN}_{topic}.md
+```
+
+### Navigate by Keyword/Relationship
+
+To find related decisions, check the `relates_to` field in decision files:
+
+```markdown
+---
+relates_to: [D001, D050, D085]
+---
+```
+
+Use brain-recall skill to search by keyword:
+```
+brain-recall: "session timeout"
+```
+
+Use brain-why skill to trace provenance of a decision:
+```
+brain-why: D102
+```
+
+### Query Patterns (Specific Examples)
 
 **Find all decisions for a product:**
 ```
 ~/forge/brain/products/{product-slug}/prd/{prd-id}/
 ```
 
-**Find all eval results:**
+**Find all eval results for a PRD:**
 ```
 ~/forge/brain/products/{product-slug}/prd/{prd-id}/evals/
 ```
@@ -97,6 +702,26 @@ type: reference
 **Find retrospective learnings:**
 ```
 ~/forge/brain/products/{product-slug}/prd/{prd-id}/learnings/
+```
+
+**Find all architecture decisions:**
+```
+~/forge/brain/decisions/architecture/
+```
+
+**Find the latest decisions:**
+```
+ls -lt ~/forge/brain/decisions/**/*.md | head -20
+```
+
+**Find all decisions about authentication:**
+```
+grep -r "authentication" ~/forge/brain/decisions/ --include="*.md"
+```
+
+**Find decisions archived in last 30 days:**
+```
+find ~/forge/brain/archived/ -mtime -30 -name "*.md"
 ```
 
 ## Commit Conventions

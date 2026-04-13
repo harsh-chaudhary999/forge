@@ -1,6 +1,6 @@
 ---
 name: brain-write
-description: WHEN: You need to record a decision, lock a spec, log an eval run, or document learnings in the brain.
+description: "WHEN: You need to record a decision, lock a spec, log an eval run, or document learnings in the brain."
 type: flexible
 ---
 
@@ -576,3 +576,126 @@ superseded_by: D095
 - **Implication:** Set `status:` and `deprecation_planned:` on every decision; brain-forget can't act without these signals
 - **Example:** If D040 (old API versioning strategy) was superseded by D087, set `status: cold` and `deprecation_planned: 2026-12-31`. brain-forget will surface D040 for archival when the date passes
 - **Best practice:** Proactively mark decisions as `warm` or `cold` when you know they're being phased out. Include `superseded_by:` field. Make brain-forget's job easy by giving it clear signals
+
+---
+
+## Edge Cases
+
+### Edge Case 1: File already exists (D001_feature.md exists)
+
+**Symptom:** Decision file exists at target path; write would overwrite it.
+
+**Do NOT:** Overwrite existing decision. Do NOT edit a locked decision directly.
+
+**Mitigation:**
+1. Check if decision is locked: `grep "status:" <existing-file.md> | grep "active\|warm"`
+2. If locked, create NEW decision that supersedes it (set `superseded_by:` in new decision, `superseded_by:` in old)
+3. If file is draft (status: draft), OK to update — but still prefer new decision for clear lineage
+4. Use semantic ID pattern: D001 (original), D001_v2 (revision), or D002 (next decision)
+
+**Escalation:** NEEDS_CONTEXT — Verify whether to overwrite (draft status) or supersede (active/locked status). Consult decision author if unsure.
+
+---
+
+### Edge Case 2: Brain not in git (lost version control)
+
+**Symptom:** `git -C ~/forge/brain status` returns "not a git repository" or fails.
+
+**Do NOT:** Write decision anyway (loses audit trail). Do NOT bypass git.
+
+**Mitigation:**
+1. Check git state: `cd ~/forge/brain && git status`
+2. Verify remote: `git remote -v`
+3. If .git missing, relink: `git clone <remote-url> ~/forge/brain`
+4. If uncommitted changes exist: `git add . && git commit -m "WIP"`
+
+**Escalation:** BLOCKED — Cannot write decision without git backing. Brain must be in git repository. Contact platform team to restore/reinitialize brain repo.
+
+---
+
+### Edge Case 3: Invalid frontmatter (missing required fields)
+
+**Symptom:** Decision file lacks required YAML fields (decision_id, title, status, date, owner).
+
+**Do NOT:** Write incomplete frontmatter. Do NOT assume defaults.
+
+**Mitigation:**
+1. Use template with all required fields (see "Metadata Frontmatter Template" above)
+2. Validate frontmatter before commit: `head -30 <file> | grep -E "^decision_id:|^title:|^status:|^date:|^owner:"`
+3. Use linter if available: `yamllint <file>` (checks YAML syntax)
+
+**Escalation:** NEEDS_CONTEXT — Frontmatter incomplete. Verify all required fields before committing. Use provided template to ensure consistency.
+
+---
+
+### Edge Case 4: Concurrent write conflict (two people writing same decision)
+
+**Symptom:** Git merge conflict on same decision file (both people edited D042.md).
+
+**Do NOT:** Merge conflicted versions. Do NOT lose either person's changes.
+
+**Mitigation:**
+1. Resolve conflict manually: `git status` shows which files have conflicts
+2. Review both versions: `git show :<version-number> <file>` to see both sides
+3. Merge intelligently: Keep both versions' metadata, append one to "supersedes" or "related" field
+4. If both added alternatives/evidence: Consolidate under single decision (not duplicate)
+5. After merge: `git add <file> && git commit -m "resolve: merge concurrent edits to D042"`
+
+**Escalation:** NEEDS_COORDINATION — Concurrent writes to same decision. Coordinate with other author to understand intent. Decide: merge into single decision or split into two related decisions (parent/child).
+
+---
+
+### Edge Case 5: Decision locked too early (stakeholders not consulted)
+
+**Symptom:** Decision marked `status: active` but stakeholders report lack of input or alternative not considered.
+
+**Do NOT:** Lock decision with hidden dissent. Do NOT ignore stakeholder objections.
+
+**Mitigation:**
+1. Check stakeholders field: `grep "stakeholders:" <file>`
+2. If stakeholders missing or incomplete, set `status: draft` and re-circulate
+3. Add approval_status field: confirm all stakeholders reviewed
+4. Use decision review process: circulate to stakeholders before locking
+5. If already locked: downgrade to `status: warm` with note "awaiting stakeholder review"
+
+**Escalation:** NEEDS_COORDINATION — Decision locked without consensus. Downgrade status and re-circulate for review. Document any dissent in decision file (add dissent field with names/concerns).
+
+---
+
+## Decision Tree: Lock vs Draft Strategy
+
+```
+About to write a decision, should you lock it immediately?
+    ↓
+Are all stakeholders present and consulted?
+├─ NO → Set `status: draft`; circulate for review before locking
+└─ YES → Continue below
+
+Have alternatives been evaluated and documented?
+├─ NO → Set `status: draft`; return to evaluate alternatives
+└─ YES → Continue below
+
+Is this decision blocking downstream work?
+├─ YES → Lock immediately (`status: active`); note deadline
+└─ NO → Continue below
+
+Is this a major architectural or API decision?
+├─ YES → Lock only after council review (`status: active`); include council approval in frontmatter
+└─ NO → Continue below
+
+Is this a time-sensitive decision (hot fix, incident response)?
+├─ YES → Lock immediately (`status: active`); document urgency and any shortcuts taken
+└─ NO → Continue below
+
+Is this a standard operational decision (deployment strategy, naming convention)?
+├─ YES → Lock after team alignment (`status: active`)
+└─ NO → Continue below
+
+Result:
+- If any answer suggests incompleteness: `status: draft` + circulate for input
+- If all checks pass and stakeholders aligned: `status: active` + commit with context
+- Milestone-based: lock when blocker is cleared, not when written
+- Default: When in doubt, start as `status: draft` and upgrade after review
+```
+
+---

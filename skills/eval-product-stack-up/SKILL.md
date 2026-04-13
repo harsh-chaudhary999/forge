@@ -1,6 +1,6 @@
 ---
 name: eval-product-stack-up
-description: Bring up entire product stack for eval. Reads forge-product.md, starts services in dependency order, runs health checks, ready for eval scenarios.
+description: "Bring up entire product stack for eval. Reads forge-product.md, starts services in dependency order, runs health checks, ready for eval scenarios."
 type: rigid
 requires: [brain-read]
 ---

@@ -1,6 +1,6 @@
 ---
 name: eval-coordinate-multi-surface
-description: Coordinate multi-driver eval scenarios. Chain web (CDP) → API (HTTP) → DB (MySQL) → cache (Redis) → search (ES) → events (Kafka). Report pass/fail with evidence.
+description: "Coordinate multi-driver eval scenarios. Chain web (CDP) → API (HTTP) → DB (MySQL) → cache (Redis) → search (ES) → events (Kafka). Report pass/fail with evidence."
 type: rigid
 requires: [brain-read]
 ---

@@ -1,6 +1,6 @@
 ---
 name: forge-letter-spirit
-description: HARD-GATE: Follow both letter AND spirit. No rationalizations, no shortcuts, no exceptions.
+description: "HARD-GATE: Follow both letter AND spirit. No rationalizations, no shortcuts, no exceptions."
 type: rigid
 ---
 # Letter Equals Spirit (Foundational)
@@ -177,4 +177,82 @@ Before claiming compliance, verify:
 - [ ] If pressure exists: escalated to dreamer (not rationalized away)
 - [ ] Escalation documented in brain (if any conflict or pressure)
 
-Output: **COMPLIANT** (rule followed, both letter and spirit) or **ESCALATED** (letter/spirit conflict, pressure, or constraint preventing compliance)
+## Additional Edge Cases
+
+### Edge Case 1: Spec Is Ambiguous (Letter and Spirit Diverge)
+**Situation:** Rule text is unclear or contradictory. Literal reading conflicts with apparent intent.
+
+**Example:** Spec says "validate user input" (letter is vague). Spirit seems to be "reject invalid formats" but could also mean "coerce to valid format". Both are valid interpretations.
+
+**Do NOT:** Guess which interpretation is correct. Ambiguity breaks compliance.
+
+**Action:**
+1. Document the ambiguity:
+   - Exact wording of spec
+   - Possible interpretations of letter
+   - What spirit seems to be
+   - Why they conflict
+2. Escalate to spec-owner (dreamer or council):
+   - Ask for clarification: which interpretation is correct?
+   - Or ask to revise spec to remove ambiguity
+3. Wait for clarification before proceeding
+4. Once clarified: document decision in brain
+5. Then comply with clarified spec (both letter and spirit)
+6. Escalation keyword: **NEEDS_CONTEXT** (spec ambiguous, need clarification)
+
+---
+
+### Edge Case 2: Strict Letter Compliance Breaks Spirit (Rule Technically Met, Outcome Wrong)
+**Situation:** Code technically satisfies the letter of the rule/spec but violates the spirit/intent.
+
+**Example:** 
+- Spec: "Cache invalidation when user data changes"
+- Letter interpretation: invalidate cache on ANY data change (even unrelated fields)
+- Spirit: invalidate only relevant data (e.g., if user's email changes, invalidate email cache, not order cache)
+- Code: invalidates entire cache on any change (technically compliant, but wasteful and violates spirit)
+
+**Do NOT:** Ship code that technically complies but violates intent.
+
+**Action:**
+1. Identify: what is the spirit of the rule? (Why does the rule exist?)
+   - Cache invalidation spirit: "avoid stale data without excessive invalidation"
+   - Code: "invalidate everything" violates this spirit (excessive invalidation)
+2. Re-implement to satisfy both letter and spirit:
+   - Invalidate only relevant cache entries
+   - Document the distinction in code comments
+3. Escalate if letter cannot be satisfied AND spirit must be broken:
+   - Escalation keyword: **NEEDS_COORDINATION**
+   - Dreamer clarifies: which is more important?
+4. Document decision in brain: what was changed, why, reasoning
+
+---
+
+### Edge Case 3: Spirit Requires Breaking Letter (Backwards Compatibility Impossible)
+**Situation:** Rule requires breaking change but spirit is about "gradual, non-breaking evolution".
+
+**Example:**
+- Rule: "All user IDs must be 64-bit integers"
+- Letter: change current string IDs to integers (breaking change)
+- Spirit: "maintain backwards compatibility"
+- Letter and spirit conflict directly
+
+**Do NOT:** Rationalize away one or the other. Escalate.
+
+**Action:**
+1. Document the conflict:
+   - Letter requirement (64-bit integer IDs)
+   - Spirit (backwards compatible)
+   - Why they cannot both be true
+2. Propose solutions that satisfy both:
+   - Option A: Support both string and integer IDs (dual mode)
+   - Option B: Deprecation period (string IDs → integer IDs gradually)
+   - Option C: Phased rollout with feature flags
+3. If no hybrid solution exists:
+   - Escalate to dreamer: which is more important?
+   - Dreamer decides: letter takes precedence, or spirit takes precedence
+4. Implement according to dreamer decision
+5. Document decision in brain: what was chosen, why, reasoning
+
+---
+
+Output: **COMPLIANT** (rule followed, both letter and spirit aligned) or **ESCALATED** (letter/spirit conflict requiring clarification, pressure, or architectural constraint preventing compliance)

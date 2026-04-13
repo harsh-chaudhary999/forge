@@ -1,6 +1,6 @@
 ---
 name: forge-worktree-gate
-description: HARD-GATE: Every task gets fresh worktree (D30). No shared state, no cross-contamination.
+description: "HARD-GATE: Every task gets fresh worktree (D30). No shared state, no cross-contamination."
 type: rigid
 ---
 # Worktree Per Task (D30 HARD-GATE)
@@ -201,4 +201,106 @@ After task complete:
 - [ ] Worktree deleted (cleanup)
 - [ ] Cleanup recorded in brain
 
-Output: **WORKTREE CREATED** (ready to implement) or **BLOCKED** (disk space, git permissions, multi-project coordination failed)
+## Additional Edge Cases
+
+### Edge Case 1: Filesystem Space Exhausted (Too Many Worktrees, Disk Full)
+**Situation:** Cannot create fresh worktree because disk is full or storage quota exceeded. Previous worktrees were not cleaned up.
+
+**Example:** `.claude/worktrees/` directory is 500GB; 30 old worktrees with node_modules accumulated. Disk has <10GB free.
+
+**Do NOT:** Work in main branch to save space. Space shortage is a real problem that must be fixed.
+
+**Action:**
+1. Diagnose: which worktrees are consuming space?
+   ```bash
+   du -sh .claude/worktrees/*/
+   ```
+2. Identify old/stale worktrees:
+   - Which tasks are complete (merged to main)?
+   - Which tasks are abandoned or obsolete?
+   - Which worktrees have not been touched in 7+ days?
+3. Cleanup stale worktrees:
+   ```bash
+   rm -rf .claude/worktrees/OLD_TASKID/
+   ```
+4. If cleanup frees enough space: create fresh worktree for current task
+5. If cleanup is insufficient:
+   - Escalate as **BLOCKED** (disk space insufficient)
+   - Escalate to infrastructure: add more disk, implement automatic cleanup
+   - Do NOT proceed with worktree creation until space is restored
+6. Implement cleanup policy:
+   - Auto-delete worktrees after merge + 7 days
+   - Warn when disk usage > 80%
+   - Prevent new worktrees when disk < 10%
+
+---
+
+### Edge Case 2: Git Corrupt in Parent Repo (Cannot Create Worktree)
+**Situation:** Parent repository is corrupt or in bad state. Worktree creation fails because git cannot work with the repo.
+
+**Example:** "fatal: not a git repository" or "corrupted object file" or "git index lock exists"
+
+**Do NOT:** Skip worktree, work in main. Git corruption must be fixed.
+
+**Action:**
+1. Diagnose: is repo actually corrupt?
+   ```bash
+   git fsck --full
+   git status
+   ```
+2. If index lock exists (but no git corruption):
+   ```bash
+   rm .git/index.lock
+   git status  # should work now
+   ```
+3. If shallow clone is the issue:
+   ```bash
+   git fetch --unshallow  # convert to full clone
+   ```
+4. If actual corruption (broken objects):
+   - This is severe. Escalate immediately: **BLOCKED** (git repo corrupted)
+   - Do NOT attempt fixes (may worsen)
+   - Escalate to infrastructure/DevOps to restore from backup
+   - Document: what corruption was found, when, impact
+5. After repair: verify repo is healthy
+   ```bash
+   git fsck --full  # should pass with no errors
+   git log -1  # should show recent commit
+   ```
+6. Then create worktree normally
+
+---
+
+### Edge Case 3: Worktree Cleanup Fails (Stale Files, Permission Issues, Locks)
+**Situation:** Worktree exists but cannot be deleted. Files are in use, permissions prevent deletion, or git locks remain.
+
+**Example:** "Permission denied: .claude/worktrees/TASKID/" or "Cannot delete, files in use by another process" or ".git/HEAD is locked"
+
+**Do NOT:** Leave dirty worktrees around. Accumulation of dirty worktrees blocks future work.
+
+**Action:**
+1. Identify: why won't cleanup work?
+   - Files locked by running process? (kill process, wait for release)
+   - Permission issue? (running as wrong user, file ownership)
+   - Git lock exists? (left from interrupted operation)
+   - Submodule sync incomplete?
+2. If files locked:
+   - Find process: `lsof +D .claude/worktrees/TASKID/`
+   - Kill process: `kill <PID>`
+   - Wait for file descriptors to close
+   - Retry cleanup: `rm -rf .claude/worktrees/TASKID/`
+3. If permission issue:
+   - Check file ownership: `ls -la .claude/worktrees/TASKID/`
+   - Fix ownership (if running as different user): `chown -R $USER .claude/worktrees/TASKID/`
+   - Retry cleanup
+4. If git lock exists:
+   - Remove lock: `rm .claude/worktrees/TASKID/.git/HEAD.lock`
+   - Retry cleanup
+5. If cleanup still fails:
+   - Force delete (use with caution): `rm -rf --force .claude/worktrees/TASKID/`
+   - Document: what was forced, why, what data might be lost
+6. Escalate: **NEEDS_COORDINATION** (cleanup failed, potential data loss, manual intervention required)
+
+---
+
+Output: **WORKTREE CREATED** (ready to implement) or **BLOCKED** (disk space full after cleanup, git repo corrupted, worktree cleanup failed)

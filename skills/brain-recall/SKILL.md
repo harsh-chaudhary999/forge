@@ -1,6 +1,6 @@
 ---
 name: brain-recall
-description: Recall learnings from brain. Hybrid search: grep past decisions, filter by product/project, tag-based retrieval. Example: "How did we handle API versioning last time?"
+description: "Recall learnings from brain. Hybrid search: grep past decisions, filter by product/project, tag-based retrieval. Example: \"How did we handle API versioning last time?\""
 type: rigid
 requires: [brain-read]
 ---

@@ -1,6 +1,6 @@
 ---
 name: eval-translate-english
-description: Convert English user journeys to eval YAML scenarios. Input "User logs in with email and password". Output executable YAML for eval execution.
+description: "Convert English user journeys to eval YAML scenarios. Input \"User logs in with email and password\". Output executable YAML for eval execution."
 type: rigid
 requires: [brain-read]
 ---

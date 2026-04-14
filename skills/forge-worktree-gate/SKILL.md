@@ -1,6 +1,6 @@
 ---
 name: forge-worktree-gate
-description: "HARD-GATE: Every task gets fresh worktree (D30). No shared state, no cross-contamination."
+description: "WHEN: About to start any implementation task. HARD-GATE: Every task gets fresh worktree (D30). No shared state, no cross-contamination."
 type: rigid
 ---
 # Worktree Per Task (D30 HARD-GATE)
@@ -21,6 +21,12 @@ type: rigid
 | "We can do worktree isolation retrospectively if needed" | Retrospective isolation is impossible. Once merged, the bug is live. Isolation is pre-merge, always. |
 | "One task can reuse the worktree from the previous task" | Worktree reuse means state leakage. Previous task's dependency modifications, config changes, cleanup gaps all infect next task. Fresh only. |
 | "Worktrees are overkill for infrastructure or config changes" | Config changes have the most subtle bugs. Fresh environment catches config mistakes that shared main never will. |
+
+## Iron Law
+
+```
+EVERY TASK RUNS IN ITS OWN FRESH WORKTREE. THERE IS NO EXCEPTION. A SHARED WORKTREE IS A SHARED FAILURE MODE.
+```
 
 ## Red Flags — STOP
 
@@ -304,3 +310,13 @@ After task complete:
 ---
 
 Output: **WORKTREE CREATED** (ready to implement) or **BLOCKED** (disk space full after cleanup, git repo corrupted, worktree cleanup failed)
+
+## Checklist
+
+Before starting implementation in worktree:
+
+- [ ] Fresh worktree created for this specific task (not reusing a previous one)
+- [ ] Worktree branched from the correct base (main/master or PR branch)
+- [ ] Dependencies installed in the worktree environment
+- [ ] No state carried over from previous task's worktree
+- [ ] Cleanup plan confirmed: worktree deleted after eval passes or task fails

@@ -1,6 +1,6 @@
 ---
 name: contract-search
-description: "Negotiate search contracts (Elasticsearch). Defines index mapping, analyzer, consistency, update semantics, refresh policy, and reindex procedures."
+description: "WHEN: Council has identified search contract conflicts across services and needs a locked contract. Defines index mapping, analyzer, consistency, update semantics, refresh policy, and reindex procedures."
 type: rigid
 requires: [brain-read]
 ---
@@ -18,6 +18,14 @@ Teaches teams to negotiate Elasticsearch contracts with explicit specifications 
 | "Reindexing is just a background job" | Reindexing without a contract means index name collisions, mapping conflicts, and query routing failures during the migration. The contract must specify: alias strategy, zero-downtime reindex procedure, and rollback plan. |
 | "We don't need analyzers, default is fine" | Default analyzer splits on whitespace and lowercases. "New York" becomes ["new", "york"]. "iPhone" becomes ["iphone"]. If your search contract doesn't specify analyzer behavior, users will get wrong results. |
 | "Index versioning is overkill" | Without index versioning, schema changes require destructive reindexing. With versioning (`products_v1`, `products_v2` behind alias), you can reindex in the background and swap atomically. Contract must include version strategy. |
+
+**If you are thinking any of the above, you are about to violate this skill.**
+
+## Iron Law
+
+```
+NO INDEX IS CREATED BEFORE ITS MAPPING, ANALYZER, AND ALIAS STRATEGY ARE LOCKED IN THE CONTRACT. DYNAMIC MAPPING IS NEVER ACCEPTABLE.
+```
 
 ## Red Flags — STOP
 
@@ -553,4 +561,15 @@ How many services will write to this index?
 - **brain-read**: Retrieve product topology and contracts from the brain
 - **reasoning-as-infra**: Full discussion of Elasticsearch scaling, sharding, cluster topology
 - **code-quality-reviewer**: Review indexing code (consumer, dual-write, bulk API)
+
+## Checklist
+
+Before claiming search contract locked:
+
+- [ ] Explicit field mappings defined for every indexed field (no `dynamic: true`)
+- [ ] Analyzer strategy specified for all text fields
+- [ ] Refresh policy agreed upon and documented for each write surface
+- [ ] Index versioning strategy defined (e.g., `index_v1` behind alias)
+- [ ] Zero-downtime reindex procedure documented with rollback steps
+- [ ] Contract locked and written to brain
 

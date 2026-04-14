@@ -1,6 +1,6 @@
 ---
 name: contract-schema-db
-description: "Negotiate database schema contracts (MySQL). Defines migrations, backward compatibility, indexing, constraints, and safe change procedures."
+description: "WHEN: Council has identified database schema conflicts across services and needs a locked contract. Defines migrations, backward compatibility, indexing, constraints, and safe change procedures."
 type: rigid
 requires: [brain-read]
 ---
@@ -18,6 +18,12 @@ requires: [brain-read]
 | "The ORM handles schema compatibility" | ORMs hide but don't solve backward compatibility. A NOT NULL column added without a default breaks every existing row. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
+
+## Iron Law
+
+```
+NO SCHEMA MIGRATION SHIPS WITHOUT A VERIFIED BACKWARD-COMPATIBLE ROLLBACK PLAN. A MIGRATION WITH NO ROLLBACK IS A MIGRATION THAT WILL CAUSE AN INCIDENT.
+```
 
 ## Red Flags — STOP
 
@@ -971,3 +977,15 @@ How critical is this constraint to data integrity?
 ---
 
 **Escalation**: If multiple services depend on NULL values, escalate to NEEDS_COORD - Services must agree on constraint level before migration.
+
+## Checklist
+
+Before locking a database schema contract:
+
+- [ ] All new columns have explicit NOT NULL/NULL declared with rationale
+- [ ] All foreign key constraints reference the correct table and column
+- [ ] All indexes specified with type and rationale (covering, partial, composite)
+- [ ] Migration plan included for every schema change (additive before destructive)
+- [ ] Rollback procedure defined for every destructive migration step
+- [ ] Constraint level chosen (DB-enforced vs app-enforced vs dual-layer) with rationale
+- [ ] No schema change marked TBD or "to be decided later"

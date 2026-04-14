@@ -1,6 +1,6 @@
 ---
 name: pr-set-coordinate
-description: "Raise coordinated PRs in merge order. Depends-on links. Wait for merge before next. Output: all PRs merged, feature ready."
+description: "WHEN: Eval has passed and branches are ready to merge across multiple repos. Raise coordinated PRs in merge order with depends-on links. HARD-GATE: Wait for each merge before raising the next."
 type: rigid
 requires: [brain-read, brain-write]
 ---
@@ -18,6 +18,12 @@ requires: [brain-read, brain-write]
 | "I'll raise all PRs now and sort out order later" | Raising PRs without order invites someone to merge out of sequence. Raise in order, wait for merge, then raise the next. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
+
+## Iron Law
+
+```
+EVERY PR IN A COORDINATED SET MERGES IN STRICT DEPENDENCY ORDER. NO PR IS RAISED BEFORE ITS DEPENDENCY MERGES. NO PR MERGES WITHOUT EVAL PASSING FIRST. PARTIAL DEPLOYMENT IS BROKEN DEPLOYMENT.
+```
 
 ## Red Flags — STOP
 
@@ -675,6 +681,17 @@ Action: Resolve conflicts manually, then retry merge
 - **D24:** HARD-GATE tags on non-skippable steps
 - **Phase 5.1:** PR Set Coordinate (this skill)
 - **Merge Order Pattern:** Dependency-aware serial merge (no parallelization of dependent PRs)
+
+## Checklist
+
+Before claiming PR set complete:
+
+- [ ] Eval passed (GREEN verdict) before any PR was raised
+- [ ] PRs raised in strict dependency order (no parallel PR creation)
+- [ ] Every PR includes `depends-on` links to upstream PRs
+- [ ] Each merge confirmed complete before the next PR was raised
+- [ ] No PR in the set merged while another was failing review or checks
+- [ ] Brain updated with all PR URLs, merge order, and merge timestamps
 
 ---
 

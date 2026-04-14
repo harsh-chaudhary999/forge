@@ -7,6 +7,22 @@ requires: [brain-read]
 
 # Reasoning as Backend
 
+## Anti-Pattern Preamble
+
+| Rationalization | Why It Fails |
+|---|---|
+| "We'll add auth later" | Endpoints without auth ship insecure. Auth is a contract, not an afterthought. Every endpoint must state its auth mechanism before council closes. |
+| "SLOs can be defined after build" | Unspecified SLOs mean no eval criteria. Build completes and eval has nothing to measure against. Concrete numbers now or wasted eval later. |
+| "The schema can evolve" | Schema changes after shipping require migrations. Every unplanned migration is a production risk and a rolling-deploy hazard. |
+| "We can decide sync vs async later" | Sync vs async is an architectural decision. Changing it after clients integrate requires coordinating every consumer. Lock it at council. |
+| "Error codes are obvious" | Every client that parses errors will implement its own interpretation. Specify error shapes or get inconsistent error handling across all surfaces. |
+
+## Iron Law
+
+```
+BACKEND REASONING COVERS ALL API CONTRACTS, MIGRATION PLANS, AND SLOs BEFORE COUNCIL CLOSES. AN ENDPOINT WITHOUT AUTH, VERSIONING, OR ERROR CODES IS AN INCOMPLETE CONTRACT.
+```
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:
@@ -989,3 +1005,15 @@ When reviewing other surfaces' proposals:
 - Is there any data that needs to be consistent across services? (if yes, are we handling it correctly?)
 - What happens if a dependency is down/slow/broken? (have we tested each fallback?)
 - Are async events guaranteed to process in order? (or do we need idempotency deduplication?)
+
+## Checklist
+
+Before submitting backend reasoning to council:
+
+- [ ] All API endpoints have version, auth mechanism, request/response schema, and full error code set
+- [ ] All data model changes include migration steps and rollback procedure
+- [ ] All async patterns specify partition key, DLQ, retry policy, and dead-letter behavior
+- [ ] All performance SLOs are in concrete numbers (p95/p99 latency and throughput)
+- [ ] Service boundaries are defined with no circular dependencies
+- [ ] Cache TTLs and invalidation triggers are locked
+- [ ] No endpoint marked TBD, "to be defined," or "similar to existing"

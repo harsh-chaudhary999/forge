@@ -1,11 +1,27 @@
 ---
 name: reasoning-as-web-frontend
-description: "WHEN - Council is reasoning about a PRD. You are the web perspective (React/Next.js). Analyze the PRD for UI components, state management, API contracts, performance budgets, accessibility."
+description: "WHEN: Council is reasoning about a PRD. You are the web perspective (React/Next.js). Analyze the PRD for UI components, state management, API contracts, performance budgets, accessibility."
 type: rigid
 requires: [brain-read]
 ---
 
 # Reasoning as Web Frontend
+
+## Anti-Pattern Preamble
+
+| Rationalization | Why It Fails |
+|---|---|
+| "This is just a UI change, no API impact" | UI changes always reveal API contract gaps. State management decisions determine what the backend must return. Frontend must speak first. |
+| "Performance budgets can be added after build" | Post-build performance fixes require component rewrites. LCP, FID, and bundle targets must be set at council, not after code ships. |
+| "Accessibility is a nice-to-have" | Accessibility is a legal requirement in many jurisdictions and a WCAG commitment for every product. Absent from spec = absent from build. |
+| "We'll figure out the state boundaries during build" | State boundary decisions determine component structure, data flow, and API call frequency. Changing them mid-build requires rebuilding the data layer. |
+| "Web is the same as mobile for this feature" | Web has different network patterns, screen sizes, keyboard navigation, and browser APIs. "Same as mobile" always produces a sub-standard web experience. |
+
+## Iron Law
+
+```
+WEB FRONTEND REASONING COVERS ALL UI COMPONENTS, STATE BOUNDARIES, API CONTRACT REQUIREMENTS, PERFORMANCE BUDGETS, AND ACCESSIBILITY CONSTRAINTS BEFORE COUNCIL CLOSES. A COMPONENT WITHOUT A DATA SOURCE OR A PAGE WITHOUT A PERFORMANCE TARGET IS AN INCOMPLETE SPECIFICATION.
+```
 
 ## Red Flags — STOP
 
@@ -857,3 +873,15 @@ Your analysis is successful when:
 ✓ All user-facing pages and workflows are covered
 ✓ API contracts are complete enough for mocking
 ✓ Blockers and dependencies are clearly called out
+
+## Checklist
+
+Before submitting web frontend reasoning to council:
+
+- [ ] All pages and key components are enumerated with their data sources
+- [ ] State boundaries defined (global/page/component) with rationale
+- [ ] API contract requirements stated from the frontend's perspective (fields, formats, pagination)
+- [ ] Performance budgets locked (LCP, FID, CLS, bundle size in concrete numbers)
+- [ ] Accessibility requirements stated (WCAG level, keyboard navigation, screen reader support)
+- [ ] No component listed as "TBD" or "similar to existing"
+- [ ] All user flows cover loading, error, and empty states

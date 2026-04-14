@@ -1,6 +1,6 @@
 ---
 name: forge-letter-spirit
-description: "HARD-GATE: Follow both letter AND spirit. No rationalizations, no shortcuts, no exceptions."
+description: "WHEN: A Forge rule or skill is being applied. HARD-GATE: Follow both letter AND spirit. No rationalizations, no shortcuts, no exceptions."
 type: rigid
 ---
 # Letter Equals Spirit (Foundational)
@@ -21,6 +21,12 @@ type: rigid
 | "The spirit wants us to be careful, I'm being careful, so the letter is optional" | Being careful is not the same as following the rule. Both are required. Careful AND compliant. |
 | "This is internal-only, the rule doesn't apply to internal work" | The rule is unchanged by audience. Apply the rule everywhere or retract the rule. No hidden exceptions. |
 | "The rule is a good-to-have, not a must-have, so I can skip it if pressed for time" | No rule is a good-to-have in Forge. All rules are must-haves. If time pressure is real, escalate (don't rationalize). |
+
+## Iron Law
+
+```
+FOLLOW BOTH THE LETTER AND THE SPIRIT. A TECHNICALLY COMPLIANT SHORTCUT THAT VIOLATES INTENT IS A VIOLATION. RATIONALIZATIONS DO NOT BECOME EXCEPTIONS.
+```
 
 ## Red Flags — STOP
 
@@ -256,3 +262,13 @@ Before claiming compliance, verify:
 ---
 
 Output: **COMPLIANT** (rule followed, both letter and spirit aligned) or **ESCALATED** (letter/spirit conflict requiring clarification, pressure, or architectural constraint preventing compliance)
+
+## Checklist
+
+Before claiming compliance:
+
+- [ ] Rule applied in full — not a subset or paraphrased version
+- [ ] Intent of the rule honored, not just the literal text
+- [ ] No rationalizations accepted as exceptions
+- [ ] If letter/spirit conflict detected: escalated, not silently resolved
+- [ ] Compliance documented if non-obvious

@@ -1,6 +1,6 @@
 ---
 name: tech-plan-write-per-project
-description: "Convert shared-dev-spec into per-project tech plans. Output: 1 plan per repo with bite-sized tasks (exact files, complete code, exact bash commands)."
+description: "WHEN: Shared-dev-spec is frozen and per-project tech plans must be written before dev-implementer dispatch. Output: 1 plan per repo with bite-sized tasks (exact files, complete code, exact bash commands)."
 type: rigid
 requires: [brain-read]
 ---
@@ -19,6 +19,12 @@ requires: [brain-read]
 | "I'll reference the spec instead of repeating details" | The implementer (dev-implementer subagent) works in an isolated worktree with only the plan. Self-contained tasks prevent NEEDS_CONTEXT status. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
+
+## Iron Law
+
+```
+EVERY TASK IN A TECH PLAN IS SELF-CONTAINED, COMPLETE, AND EXECUTABLE IN ISOLATION. NO PLACEHOLDERS. NO PSEUDOCODE. NO "SEE SPEC" REFERENCES. THE PLAN IS THE ONLY THING THE DEV-IMPLEMENTER READS.
+```
 
 ## Red Flags — STOP
 
@@ -998,3 +1004,15 @@ This example shows how each task:
 3. Includes a test command and expected output
 4. Has a standard commit message
 5. Respects dependencies (Task 2 depends on Task 1)
+
+## Checklist
+
+Before handing plans to tech-plan-self-review:
+
+- [ ] One plan file written per affected repo (not one shared plan)
+- [ ] Shared-dev-spec frozen (spec-freeze) before writing began
+- [ ] Every spec requirement has at least one task that implements it
+- [ ] All code in task blocks is complete and runnable (no `TODO`, no pseudocode)
+- [ ] Each task has exact file paths (relative to project root)
+- [ ] Test task precedes implementation task for each feature (TDD order)
+- [ ] External dependencies identified and flagged if unresolvable

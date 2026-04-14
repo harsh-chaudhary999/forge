@@ -1,11 +1,30 @@
 ---
 name: contract-api-rest
-description: "Negotiate REST API contracts across teams. Defines versioning strategy, endpoint shape, error codes, auth, rate limits, idempotency, deprecation."
+description: "WHEN: Council has identified REST API conflicts across surfaces and needs a locked contract. Negotiates versioning strategy, endpoint shape, error codes, auth, rate limits, idempotency, and deprecation across all consumer teams."
 type: rigid
 requires: [brain-read]
 ---
 
 # Contract-API-REST Skill
+
+## Anti-Pattern Preamble: REST Contract Failures
+
+| "Rationalization" | Counter-truth |
+|---|---|
+| "The backend team knows best, they'll design the API" | Every consumer surface has constraints the backend team doesn't know about. Mobile has size limits, web has CORS restrictions, infra has routing rules. Unilateral API design guarantees at least one surface will hit a wall during implementation. |
+| "We'll figure out versioning after launch, the API is simple now" | There is no such thing as an API that stays simple. Once clients exist, changing the contract costs 10x more than designing versioning upfront. Launch with /v1 or pay the migration tax forever. |
+| "Error codes are just HTTP status codes, no need to document them" | HTTP status codes tell clients the class of failure. They cannot tell clients whether to retry, show a user-facing message, or escalate. Without machine-readable error codes in the contract, every consumer invents its own error handling logic. |
+| "We'll add rate limits later when we need them" | Rate limits added after launch require client changes to handle 429s. Clients that were never designed to back off will hammer the API, get blocked, and file bugs. Rate limit contracts must be in place before the first client ships. |
+| "Authentication is obvious — just use JWT" | JWTs have expiry, rotation, scope, and clock-skew semantics that differ across implementations. If the contract doesn't specify exactly how tokens are issued, validated, and refreshed, every service will implement different assumptions. |
+| "Idempotency is only for payment endpoints" | Any mutating endpoint called over an unreliable network needs idempotency. Mobile clients on flaky connections will retry POST requests. Without an idempotency key contract, retries cause duplicate creates, double-charges, or duplicate emails. |
+
+**If you are thinking any of the above, you are about to violate this skill.**
+
+## Iron Law
+
+```
+NO ENDPOINT MAY BE IMPLEMENTED UNTIL ITS CONTRACT — VERSIONING, SHAPE, ERROR CODES, AUTH, RATE LIMITS, AND IDEMPOTENCY — HAS BEEN NEGOTIATED AND SIGNED OFF BY EVERY CONSUMER SURFACE. CODE THAT PRECEDES CONTRACT IS TECH DEBT FROM THE FIRST COMMIT.
+```
 
 ## Red Flags — STOP
 
@@ -1672,4 +1691,17 @@ How many distinct error scenarios must clients handle?
 3. Mobile team checks error handling
 4. PM confirms timeline and sunset date
 5. All teams sign off on contract
+
+## Checklist
+
+Before claiming completion:
+
+- [ ] All endpoints have a versioning strategy defined (URL path `/v1`, header, or content-type — one strategy, applied consistently)
+- [ ] Error codes are standardized in a single envelope format agreed across all consumer teams
+- [ ] Authentication mechanism is locked (JWT, API key, OAuth) with token lifetime, rotation, and clock-skew tolerances specified
+- [ ] Rate limit values are set per endpoint or per client tier, with all required headers (`X-RateLimit-*`, `Retry-After`) documented
+- [ ] Every mutating endpoint (POST/PUT/PATCH) has idempotency semantics specified: key format, TTL, and behavior on duplicate
+- [ ] Deprecation timeline is written into the contract: notice date, sunset date, migration guide URL
+- [ ] All consumer surfaces (backend, web, app) have signed off on the contract shape before it is locked
+- [ ] Backward compatibility guarantees are written explicitly: what changes are safe in minor versions, what requires a major bump
 

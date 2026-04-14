@@ -23,6 +23,12 @@ This skill provides a complete iOS app automation driver using XCTest UI Testing
 
 4. **"We tested Android, iOS is the same"** — Incorrect. iOS has distinct permission dialogs (system alerts via UIInterruptionMonitor), different lifecycle (foreground/background/suspended), and different element locators (accessibility identifiers vs resource IDs).
 
+## Iron Law
+
+```
+EVERY iOS EVAL SCENARIO FOLLOWS: connect() → verify booted → launch(bundle_id) → interact → assert_element → screenshot → disconnect(). NO SCENARIO SKIPS teardown. NO ASSERTION IS NON-SPECIFIC. UIInterruptionMonitor IS REGISTERED BEFORE ANY SYSTEM-ALERT-TRIGGERING ACTION.
+```
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:
@@ -648,3 +654,14 @@ const device = await connect({ simulator_id: "00008120-001E5D001234567A" })  // 
 ```
 
 ---
+
+## Checklist
+
+Before running an iOS XCTest eval scenario:
+
+- [ ] Simulator `Booted` status verified via `xcrun simctl list devices` before `launch()`
+- [ ] App state cleared from prior scenario (`app.terminate()` + `xcrun simctl privacy reset`)
+- [ ] `UIInterruptionMonitor` registered before any action that triggers system alerts
+- [ ] All assertions target named accessibility identifiers or exact element predicates
+- [ ] `screenshot()` called and file path recorded in scenario output
+- [ ] `disconnect()` called in all paths (success, failure, timeout)

@@ -1,6 +1,6 @@
 ---
 name: eval-driver-cache-redis
-description: "Eval driver for Redis via RESP protocol. Functions: connect(), execute(command), verify(key, assertion), teardown()."
+description: "WHEN: Eval scenario requires cache state verification against Redis. Functions: connect(), execute(command), verify(key, assertion), teardown()."
 type: rigid
 requires: [brain-read]
 ---
@@ -87,6 +87,22 @@ Evaluation driver for Redis cache state verification during test execution. Supp
 - MUST audit client count before and after eval
 
 ---
+
+## Iron Law
+
+```
+EVERY CACHE ASSERTION VERIFIES BOTH KEY EXISTENCE AND VALUE — EXISTENCE ALONE IS NOT EVIDENCE. TEARDOWN ALWAYS RUNS AND REMOVES ALL EVAL KEYS.
+```
+
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Assertion checks only that a key exists, not its value** — Key existence without value verification misses TTL-reset bugs, wrong serialization, and stale data. STOP. Verify key value and TTL together.
+- **`teardown()` is skipped when eval fails** — Orphaned keys pollute subsequent evals and cause false positives. STOP. Teardown must run unconditionally in a finally block.
+- **TTL is not verified after SET** — A key with wrong TTL will expire during the next eval and cause intermittent failures. STOP. Verify TTL immediately after every write that sets expiry.
+- **Connection is assumed open without verifying `ping`** — Redis connections drop silently under timeout or network partition. STOP. Always verify connection with `PING` before issuing eval commands.
+- **Eval assumes in-memory state from a previous eval** — Evals must be independent. STOP. Always set up required state in the current eval's setup phase.
 
 ## Overview
 
@@ -910,7 +926,7 @@ const cleanup = async () => {
 
 ---
 
-## Eval Checklist: Redis Driver
+## Checklist
 
 - [ ] Unique key prefix generated for this test run
 - [ ] Target Redis instance verified (not production)

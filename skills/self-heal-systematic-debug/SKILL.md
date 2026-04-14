@@ -19,6 +19,12 @@ requires: [brain-read]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Iron Law
+
+```
+FIX ONE THING AT A TIME. INVESTIGATE FIRST, HYPOTHESIZE SECOND, FIX THIRD, VERIFY FOURTH. NO EXCEPTIONS TO THE ORDER. NO BATCHED FIXES. NO VERIFICATION SKIPPED.
+```
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:
@@ -577,3 +583,14 @@ tail -50 app.log
 ## Quick Reference Card
 
 **Remember:** Evidence → Hypothesis → Minimal Fix → Verification. Follow the chain.
+
+## Checklist
+
+Before claiming the bug is fixed:
+
+- [ ] Investigate phase completed — logs, stack traces, request/response read before any fix
+- [ ] Hypothesis written down explicitly (not assumed) and tied to evidence
+- [ ] Fix is minimal — touches the smallest possible scope (single file if possible)
+- [ ] Verification run — failing test/eval re-run and passes after fix
+- [ ] Related tests pass (not just the one that was failing)
+- [ ] Fix committed with descriptive message explaining the root cause

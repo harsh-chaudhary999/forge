@@ -23,6 +23,12 @@ type: rigid
 | "I can just describe what passed instead of showing logs" | Logs are the only source of truth. Descriptions are filtered through human interpretation. |
 | "Running verification a second time would just duplicate effort" | Running verification confirms repeatability. Flaky tests need investigation. Do not skip. |
 
+## Iron Law
+
+```
+RUN THE VERIFICATION COMMAND AND OBSERVE THE OUTPUT BEFORE CLAIMING SUCCESS. CONFIDENCE IS NOT EVIDENCE — OBSERVED OUTPUT IS EVIDENCE.
+```
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:
@@ -240,3 +246,14 @@ Before claiming success, complete all items:
 ---
 
 Output: **PASS** (with evidence from working tools) or **BLOCKED** (verification tool broken, output unreadable, infrastructure down, unresolvable flakiness)
+
+## Checklist
+
+Before claiming a task complete:
+
+- [ ] Verification command executed and raw output observed (not summarized)
+- [ ] Test count is equal to or higher than the previous run (no silent skips)
+- [ ] Full test suite run, not a subset
+- [ ] No "should pass" or "confident it works" language used — evidence shown
+- [ ] Infrastructure is reachable (DB, cache, services confirmed up before testing)
+- [ ] If human found an issue not caught by verification: test added to prevent recurrence

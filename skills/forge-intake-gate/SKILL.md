@@ -1,6 +1,6 @@
 ---
 name: forge-intake-gate
-description: "HARD-GATE: Every PRD goes through intake (8 questions, locked). No skipping, no exceptions, no \"trivial\" PRDs."
+description: "WHEN: A new PRD arrives for implementation. HARD-GATE: Every PRD goes through intake (8 questions, locked). No skipping, no exceptions, no \"trivial\" PRDs."
 type: rigid
 ---
 # Intake Gate (HARD-GATE)
@@ -21,6 +21,12 @@ type: rigid
 | "We can do intake retrospectively if something goes wrong" | Intake prevents the wrong. Retrospective interrogation doesn't undo shipped bugs. |
 | "No one will notice if we skip intake on this one" | Skipping intake once makes it easy to skip twice. Systems degrade through exceptions. |
 | "This is internal-only, not user-facing, so less rigor" | Internal changes affect platform reliability. Risk doesn't scale with audience. |
+
+## Iron Law
+
+```
+ALL 8 INTAKE QUESTIONS MUST BE ANSWERED AND SCOPE LOCKED BEFORE THE PRD ADVANCES TO COUNCIL. PARTIAL INTAKE IS NO INTAKE.
+```
 
 ## Red Flags — STOP
 
@@ -198,3 +204,13 @@ Before locking, verify:
 ---
 
 Output: **PRD LOCKED** (ready for council) or **BLOCKED** (intake incomplete, policy conflict, cannot resolve vagueness) or **NEEDS_CONTEXT** (missing prerequisites, context unavailable)
+
+## Checklist
+
+Before claiming intake complete:
+
+- [ ] All 8 intake questions answered (no skipped, no TBD answers)
+- [ ] Scope boundaries explicitly defined
+- [ ] Success criteria measurable and agreed upon
+- [ ] PRD locked and written to brain
+- [ ] Conductor notified that PRD is ready for Council

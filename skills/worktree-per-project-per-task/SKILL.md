@@ -17,6 +17,12 @@ type: rigid
 | "Cleanup later is fine" | Stale worktrees waste disk; cleanup must be deterministic and automated |
 | "One worktree per repo is enough" | A single task spans multiple projects; each needs its own isolated branch |
 
+## Iron Law
+
+```
+EVERY DEV-IMPLEMENTER TASK RUNS IN A FRESH WORKTREE BASED ON MAIN. NO TASK SHARES A WORKTREE WITH ANOTHER. NO TASK STARTS BEFORE ITS WORKTREE IS CREATED AND VERIFIED.
+```
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:
@@ -596,3 +602,14 @@ Worktrees are **not branches**. They are independent filesystem checkouts of the
 - **D22:** Controller passes full task text inline
 - **D24:** HARD-GATE tags on non-skippable steps
 - **D26:** TodoWrite-required checklists on multi-step process skills
+
+## Checklist
+
+Before dispatching dev-implementer to any project:
+
+- [ ] Fresh worktree created for every affected project (not reused from prior task)
+- [ ] Each worktree branched from `main`/`master` (not from another feature branch)
+- [ ] Worktree paths are unique per task — no two tasks share a directory
+- [ ] Dependencies installed in each worktree independently (no shared node_modules)
+- [ ] Cleanup plan confirmed: worktree deleted unconditionally after eval passes or task fails
+- [ ] Dev-implementer dispatched only after worktrees are verified (not before)

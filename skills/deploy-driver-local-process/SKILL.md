@@ -1,11 +1,28 @@
 ---
 name: deploy-driver-local-process
-description: "Deploy local process. Functions: start(project_path, script), health_check(port, endpoint), stop(process_name)."
+description: "WHEN: Deployment target is a local Node.js process. Provides start(project_path, script), health_check(port, endpoint), and stop(process_name)."
 type: rigid
 requires: [brain-read, eval-driver-api-http]
 ---
 
 # Deploy Driver for Local Process
+
+## Anti-Pattern Preamble: Why Agents Skip health_check() After start()
+
+| Rationalization | The Truth |
+|---|---|
+| "ps shows the process running, so it's ready" | Process in `ps` means the shell forked successfully. It does NOT mean the application bound its port or is accepting traffic. Always call `health_check()` after `start()`. |
+| "health checks add latency — we'll skip them in quick eval cycles" | A skipped health check reports deployment success while the process is still initializing or has already crashed. Silent failures cost 10x more to debug. |
+| "nohup guarantees the process stays up" | `nohup` detaches from terminal but does not guarantee execution. Missing env vars, wrong PATH, or write-permission failures cause silent exit after nohup returns. |
+| "stop() can be skipped if the eval already failed" | A leaked process holds its port. The next `start()` call will fail with EADDRINUSE, causing a confusing failure that looks like a different bug. |
+| "environment variables from the dev shell will be present" | CI/CD shells do not source `~/.bashrc` or `~/.profile`. Env vars that work locally are silently absent in CI. All required env vars must be set explicitly before `start()`. |
+| "SIGTERM always terminates the process cleanly" | Processes can trap SIGTERM and ignore it, or be in uninterruptible sleep. SIGKILL must always be the fallback after a grace period. |
+
+## Iron Law
+
+```
+EVERY local process MUST BE VERIFIED ALIVE VIA health_check() AGAINST ITS HTTP ENDPOINT BEFORE DECLARING DEPLOYMENT COMPLETE. A PROCESS APPEARING IN ps IS NOT SUFFICIENT.
+```
 
 Deploy and manage local Node.js processes via npm scripts. Tracks process IDs, performs HTTP health checks, and gracefully terminates processes. Supports rapid deployment cycles with proper resource cleanup and health verification.
 
@@ -1147,3 +1164,15 @@ Deploy Driver for Local Process provides reliable, safe process management with 
 6. **Testability**: all functions must work in clean environment (CI/CD containers).
 
 Use this driver for development, testing, and light production workloads. For heavy production with strict availability requirements, consider deploy-driver-pm2-ssh or deploy-driver-docker-compose.
+
+## Checklist
+
+Before claiming completion:
+
+- [ ] Port availability verified with `lsof` before `start()` — no silent bind failures
+- [ ] All required environment variables set explicitly before `start()` — no shell inheritance assumed
+- [ ] `health_check()` called after `start()` and returned HTTP 200 — not just ps success
+- [ ] Process stdout/stderr redirected to a log file and path recorded in scenario output
+- [ ] `stop()` called unconditionally in teardown — both success and failure paths covered
+- [ ] No zombie processes remain after `stop()` — verified with `ps aux` check
+- [ ] Process PID verified via `ps` after capture from `$!` — not relying on shell job PID alone

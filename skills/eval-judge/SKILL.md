@@ -7,9 +7,13 @@ requires: [brain-read]
 
 # Eval Judge (HARD-GATE)
 
-**Iron Law:** NO CODE MERGES WITHOUT EVAL GREEN.
-
 The eval-judge is the terminal gate in the eval pipeline. It receives results from every eval driver (API, DB, cache, search, message bus, web, mobile), applies the judgment algorithm, and emits a verdict. No human, no agent, and no rationalization overrides a RED verdict.
+
+## Iron Law
+
+```
+THE JUDGE NEVER ISSUES GREEN WITHOUT EVIDENCE FROM EVERY DRIVER — NO VERDICT IS EMITTED UNTIL RESULTS FROM ALL EXPECTED DRIVERS ARE RECEIVED AND CLASSIFIED.
+```
 
 ## Anti-Pattern Preamble: Why Agents Fabricate Green Verdicts
 

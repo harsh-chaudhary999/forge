@@ -19,6 +19,12 @@ requires: [brain-read, reasoning-as-backend, reasoning-as-infra]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Iron Law
+
+```
+APP FRONTEND REASONING COVERS OFFLINE-FIRST PATTERNS, API VERSION COMPATIBILITY, PUSH NOTIFICATION SCHEMAS, AND PLATFORM DIFFERENCES (iOS/ANDROID) BEFORE COUNCIL CLOSES. AN APP SURFACE THAT SAYS "SAME AS WEB" HAS NOT REASONED — IT HAS DEFERRED.
+```
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:
@@ -1314,3 +1320,15 @@ Write to `~/forge/brain/prds/<task-id>/council/app.md`:
 - CRDT: Conflict-free replicated data types for automatic merge
 - Idempotency: Safe replay of mutations
 - Causality Tracking: Maintain order during network delays
+
+## Checklist
+
+Before submitting app frontend reasoning to council:
+
+- [ ] Offline-first strategy defined (which data is cached, which requires network)
+- [ ] Sync conflict resolution strategy specified (last-write-wins, server-authoritative, or CRDT)
+- [ ] API version compatibility documented (minimum supported API version, deprecation handling)
+- [ ] Push notification payload schema fully defined
+- [ ] iOS and Android platform differences explicitly addressed
+- [ ] Battery and bandwidth impact assessed with concrete constraints
+- [ ] No mobile concern deferred as "same as web" or "handle later"

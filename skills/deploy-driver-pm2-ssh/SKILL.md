@@ -1,6 +1,6 @@
 ---
 name: deploy-driver-pm2-ssh
-description: "Deploy via PM2 over SSH. Functions: connect(ssh_config), start(project_path, script), health_check(port, endpoint), stop(project_name)."
+description: "WHEN: Deployment target is a remote server managed via PM2 over SSH. Provides connect(ssh_config), start(project_path, script), health_check(port, endpoint), and stop(project_name)."
 type: rigid
 requires: [brain-read]
 ---
@@ -106,6 +106,12 @@ The following rationalizations **WILL BLOCK** your deployment. These are not edg
 - MUST verify rollback metrics (latency, error rate) against baseline before declaring rollback complete.
 
 ---
+
+## Iron Law
+
+```
+EVERY PM2 SSH DEPLOYMENT VALIDATES SSH CONNECTIVITY WITH A NO-OP COMMAND, VERIFIES THE HOST KEY FINGERPRINT, CONFIRMS NO PRIOR VERSION IS RUNNING, STARTS THE PROCESS, AND FOLLOWS WITH A HEALTH CHECK. stop() IS CALLED IN ALL PATHS. CONFIDENCE THAT IT WORKED IS NOT A HEALTH CHECK.
+```
 
 ## Architecture
 
@@ -1101,3 +1107,14 @@ This skill integrates with other Forge skills for complete deployment reasoning:
 - PM2 Documentation: https://pm2.keymetrics.io/
 - SSH2 Protocol: RFC 4254
 - HTTP Health Check Best Practices: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+
+## Checklist
+
+Before declaring deployment complete:
+
+- [ ] SSH connectivity validated with a no-op `echo ok` command before any deploy step
+- [ ] Host key fingerprint validated against known whitelist on `connect()`
+- [ ] No prior version running on target port (verified before `start()`)
+- [ ] `start()` followed immediately by `health_check()` against application HTTP endpoint
+- [ ] Application logs retrieved if health check fails
+- [ ] `stop()` called unconditionally in cleanup (success and failure paths)

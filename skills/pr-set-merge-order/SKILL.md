@@ -30,6 +30,12 @@ Given N coordinated PRs across multiple repos, this skill builds a dependency gr
 
 ---
 
+## Iron Law
+
+```
+THE MERGE ORDER IS DETERMINED BY THE DEPENDENCY GRAPH, NOT INTUITION. NO PARALLEL MERGES. NO SKIPPED WAIT GATES. EVERY MERGE WAITS FOR THE PREVIOUS MERGE'S CI TO PASS.
+```
+
 ## HARD-GATE: NO PARALLEL MERGES — STRICT DEPENDENCY ORDER ONLY
 
 Every merge in the chain MUST wait for the previous merge to complete AND its post-merge CI to pass before the next merge begins. No exceptions. No "they're independent enough." If the dependency graph says A before B, A merges first. Period.
@@ -343,6 +349,18 @@ Before handing off to pr-set-coordinate, verify:
 - [ ] Order reviewed: schemas first, then backends, then frontends
 
 Output: **MERGE ORDER LOCKED** (sequence validated, ready for pr-set-coordinate) or **BLOCKED** (issue identified, must resolve before proceeding)
+
+## Checklist
+
+Before handing off to pr-set-coordinate:
+
+- [ ] Dependency graph built from contract definitions (schema, API, event, cache) — not guessed
+- [ ] Topological sort executed; output count matches affected project count (no cycles)
+- [ ] No orphan PRs — every affected project appears exactly once in the order
+- [ ] All dependency targets present in the affected set (no missing PRs)
+- [ ] Conflict detection passed — all PRs mergeable against current main
+- [ ] Wait gates defined between every consecutive merge step
+- [ ] Merge order recorded in brain (`merge_order.sequence` and `merge_order.validated_at`)
 
 ---
 

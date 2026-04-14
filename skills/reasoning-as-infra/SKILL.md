@@ -7,6 +7,22 @@ requires: [brain-read]
 
 # Reasoning as Infrastructure
 
+## Anti-Pattern Preamble
+
+| Rationalization | Why It Fails |
+|---|---|
+| "No infra changes needed for this PRD" | Every PRD that touches data touches infra. Silence is not analysis — it is a missed dependency that surfaces as a production incident. |
+| "We'll tune the cache later" | Cache TTL and invalidation strategy must match consistency requirements. Post-launch tuning creates production incidents when stale data causes silent failures. |
+| "Schema is flexible, we'll adjust" | Every schema adjustment after launch is a migration. Unplanned migrations block rolling deploys and risk data loss without a rollback plan. |
+| "Monitoring can wait until launch" | Post-launch monitoring means no baseline. Without a baseline, you cannot distinguish anomaly from normal. Instrument during build. |
+| "Kafka config is just operational detail" | Partition count and retention cannot be changed after messages start flowing. Lock topic decisions before spec freeze or rebuild later under load. |
+
+## Iron Law
+
+```
+INFRA PRODUCES ANALYSIS ON EVERY PRD. EVERY SCHEMA CHANGE HAS A MIGRATION PLAN. EVERY CACHE KEY HAS A NAMING PATTERN AND TTL. EVERY KAFKA TOPIC HAS PARTITION COUNT AND RETENTION LOCKED BEFORE SPEC FREEZE.
+```
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:
@@ -1313,3 +1329,15 @@ When reviewing other surfaces' proposals:
 - Are the MySQL indexes sufficient for the query patterns?
 - Will ES lag cause visible stale data?
 - Are the alerts actionable and low-false-positive?
+
+## Checklist
+
+Before submitting infra reasoning to council:
+
+- [ ] All schema changes include migration steps, rollback plan, and backward-compatibility check
+- [ ] All Redis keys have naming patterns and explicit TTLs locked
+- [ ] All Kafka topics have partition count, retention policy, and compression defined
+- [ ] Scaling approach documented with explicit numbers (no "scale later")
+- [ ] Monitoring and alerts specified with concrete thresholds before spec freeze
+- [ ] Consistency model selected (strong/causal/eventual) with rationale
+- [ ] No infra decision marked TBD, "to be determined," or deferred to post-launch

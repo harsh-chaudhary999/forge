@@ -1,3 +1,10 @@
+---
+name: eval-driver-api-http
+description: "WHEN: Eval scenario requires HTTP API request/response verification. Minimal HTTP driver for eval. Functions: setup(config), call(method, path, body), verify(response, assertion), teardown()."
+type: rigid
+requires: [eval-scenario-format]
+---
+
 # eval-driver-api-http Skill
 
 **Minimal HTTP Driver for Eval**
@@ -13,6 +20,23 @@ This skill provides a minimal HTTP driver for evaluating API endpoints. It handl
 2. **"We can mock HTTP responses"** — Mocking network behavior is dangerous. Mocks hide real failure modes: connection resets, partial reads, slow networks vs. timeouts, retry exhaustion, certificate validation failures. Eval must exercise real network conditions. Mock *data*, not *transport*.
 
 3. **"Network timeouts don't matter for eval"** — Timeouts are performance contracts between client and server. Setting wrong timeouts creates false positives (tests pass locally, fail in production under load) or false negatives (tests timeout, production succeeds). Timeout configuration must be derived from observed P95 latency + buffer, not guesses.
+
+## Iron Law
+
+```
+EVERY HTTP EVAL ASSERTION VERIFIES SPECIFIC STATUS CODE, RESPONSE BODY FIELDS, AND CONTENT-TYPE. NO ASSERTION IS "STATUS 2xx IS ENOUGH." TIMEOUTS ARE DERIVED FROM P95 LATENCY DATA, NOT DEFAULTS. teardown() IS CALLED IN ALL PATHS.
+```
+
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Assertion checks only that status code is 2xx without verifying response body** — A 200 OK with an empty body or error payload in the body is not a passing eval. STOP. Every assertion must verify specific response body fields.
+- **Timeout is set to the driver default without consulting P95 latency data** — Default timeouts (5000ms) may mask slow endpoints or cause false timeouts on valid but slower responses. STOP. Set timeout to observed P95 latency + 50% buffer for each endpoint.
+- **`teardown()` is not called after scenario completes** — An HTTP driver with open keep-alive connections will prevent subsequent scenarios from connecting to the same port. STOP. Always call `teardown()` in all paths.
+- **Eval sends requests against a live production URL** — Eval exercises edge cases and failure modes that can corrupt or modify production data. STOP. Eval must always target a dedicated eval environment.
+- **Certificate validation is suppressed without documentation** — `rejectUnauthorized: false` silently disables SSL verification and hides certificate issues. STOP. Fix the certificate issue, not the check.
+- **Response body is compared by stringification instead of field-by-field** — JSON field order and whitespace vary by serializer. String comparison produces false failures. STOP. Parse the response and assert on individual fields.
 
 ## Overview
 
@@ -758,3 +782,14 @@ Catch encoding errors early:
 - [ ] Check Content-Type charset matches actual encoding
 - [ ] Test with edge case payloads (empty objects, null, large strings)
 - [ ] Log request body on 4xx errors for debugging
+
+## Checklist
+
+Before running an HTTP API eval scenario:
+
+- [ ] Target URL points to eval environment (not production)
+- [ ] Timeout derived from P95 latency data, not default value
+- [ ] Assertions verify specific status code AND specific response body fields
+- [ ] Response body compared field-by-field, not by string equality
+- [ ] Certificate validation is enabled (not suppressed with rejectUnauthorized: false)
+- [ ] `teardown()` called in all paths (success, failure, timeout)

@@ -1,6 +1,6 @@
 ---
 name: eval-scenario-format
-description: "Define YAML format for eval scenarios. Steps: driver action, target, expected result. Executable format for multi-surface eval."
+description: "WHEN: Writing eval scenarios for a new PRD or feature. Defines the YAML format — driver action, target, expected result — for multi-surface eval execution."
 type: rigid
 requires: [brain-read]
 ---
@@ -22,6 +22,12 @@ Before skipping scenarios, understand what you're risking. The following rationa
 **Authority principle:** These truths come from 20+ years of post-mortems where "we skipped eval" was the root cause.
 
 ---
+
+## Iron Law
+
+```
+EVERY SCENARIO HAS ONE USER JOURNEY, CONCRETE EXPECTED VALUES IN EVERY STEP, EXPLICIT FAILURE POLICIES FOR EXTERNAL SERVICE CALLS, AND IS COMMITTED TO BRAIN BEFORE EVAL RUNS. A SCENARIO WITH HARDCODED DELAYS, PROSE ASSERTIONS, OR MULTI-JOURNEY SCOPE IS NOT A SCENARIO — IT IS A FLAKY TEST WAITING TO HAPPEN.
+```
 
 ## Red Flags — STOP
 
@@ -944,3 +950,15 @@ Convert JavaScript automation to declarative `web-cdp` actions with structured e
 
 ### From Postman Collections
 Map Postman requests to `api-http` call/verify actions with response validation.
+
+## Checklist
+
+Before committing an eval scenario file to brain:
+
+- [ ] Each scenario covers exactly one user journey (no compound scenarios)
+- [ ] Every `expected:` field contains a concrete, machine-verifiable value (no prose)
+- [ ] No hardcoded `wait: Ns` delays — explicit condition polling used instead
+- [ ] Every step calling an external service has `on_failure: stop` or `on_failure: continue`
+- [ ] All `driver:` values verified against the product's eval stack in `forge-product.md`
+- [ ] At least one failure or error path scenario exists alongside every happy path
+- [ ] Scenario file committed to `~/forge/brain/prds/<task-id>/` before eval invocation

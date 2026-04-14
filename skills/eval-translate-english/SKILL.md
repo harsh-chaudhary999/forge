@@ -1,6 +1,6 @@
 ---
 name: eval-translate-english
-description: "Convert English user journeys to eval YAML scenarios. Input \"User logs in with email and password\". Output executable YAML for eval execution."
+description: "WHEN: A user journey is described in English and must be converted into executable eval YAML. Input: plain English flow. Output: executable YAML scenario with driver actions, targets, and expected results."
 type: rigid
 requires: [brain-read]
 ---
@@ -19,6 +19,12 @@ If you notice any of these, STOP and do not proceed:
 - **Scenario covers only the happy path with no error cases** — Real eval requires negative paths. STOP. Generate at least one failure or edge case scenario alongside every happy path.
 - **English description is one sentence covering multiple independent flows** — Multi-flow descriptions produce multi-step YAML that can't isolate failures. STOP. Break into one YAML scenario per user journey.
 - **Translated YAML references a driver (web, api, db) that is not in the product's eval stack** — Untestable scenarios produce false confidence. STOP. Verify driver availability against forge-product.md before generating.
+
+## Iron Law
+
+```
+EVERY TRANSLATED SCENARIO HAS CONCRETE EXPECTED VALUES IN EVERY STEP, ONE USER JOURNEY PER SCENARIO, AT LEAST ONE FAILURE PATH ALONGSIDE EVERY HAPPY PATH, AND ALL DRIVERS VERIFIED AGAINST THE PRODUCT EVAL STACK. ENGLISH VAGUENESS IS NEVER PRESERVED IN THE YAML OUTPUT.
+```
 
 ## Purpose
 
@@ -2093,3 +2099,15 @@ Steps marked with `review_needed: true` should be manually verified before execu
 - [ ] Parallel step execution (independent steps run concurrently)
 - [ ] Screenshot capture on failure
 - [ ] Performance assertions (step completes in < X ms)
+
+## Checklist
+
+Before submitting a translated YAML scenario:
+
+- [ ] Every `expected:` field contains a concrete, machine-verifiable value (no prose like "user sees their order")
+- [ ] One YAML scenario per user journey (no multi-flow scenarios)
+- [ ] At least one failure or error path scenario generated alongside every happy path
+- [ ] All element selectors use `data-testid`, ARIA role, or stable aria-label (not CSS classes)
+- [ ] All drivers verified against `forge-product.md` eval stack before generating
+- [ ] No vague English terms preserved ("eventually", "somehow", "at some point")
+- [ ] Scenario committed to brain before eval is invoked

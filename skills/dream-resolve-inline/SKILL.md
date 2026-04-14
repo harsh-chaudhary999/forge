@@ -25,6 +25,12 @@ Before resolving any cross-service conflict, reject these rationalizations:
 
 ---
 
+## Iron Law
+
+```
+EVERY CROSS-SERVICE CONFLICT IS TRACED TO THE LOCKED SPEC BEFORE ANY RESOLUTION IS CHOSEN. RECENCY IS NOT CORRECTNESS. "CLOSE ENOUGH" IS NOT RESOLVED. NO RESOLUTION SHIPS WITHOUT A BRAIN RECORD.
+```
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:

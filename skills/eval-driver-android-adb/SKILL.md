@@ -1,3 +1,10 @@
+---
+name: eval-driver-android-adb
+description: "WHEN: Eval scenario requires Android app interaction or assertion. Eval driver for Android via ADB + UIAutomator. Functions: connect(device_id), launch(package), tap(target), type(text), swipe(direction), assert_element(target), screenshot(), disconnect()."
+type: rigid
+requires: [eval-scenario-format]
+---
+
 # eval-driver-android-adb Skill
 
 **Phase 3.4: Eval Driver for Android via ADB + UIAutomator**
@@ -29,6 +36,23 @@ The eval-driver-android-adb skill enables:
 4. **"UI is separate from API eval"** — Incorrect. Mobile eval requires end-to-end validation: launch app, navigate UI, trigger API calls, verify data flow and UI state. Separating UI from API testing misses integration failures.
 
 These blockers protect against incomplete evaluations. Challenge them during eval planning.
+
+## Iron Law
+
+```
+EVERY ANDROID EVAL SCENARIO FOLLOWS: connect() → verify device ready → launch(package) → interact → assert_element → screenshot → disconnect(). disconnect() IS CALLED IN ALL PATHS. NO ASSERTION IS NON-SPECIFIC. APP STATE IS CLEARED BETWEEN SCENARIOS.
+```
+
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **Device/emulator readiness is not verified before `launch()`** — ADB may report a device as connected while it is still booting. STOP. Verify the device is fully ready (`adb wait-for-device` + boot animation check) before calling `launch()`.
+- **Assertions use generic element count or non-specific predicates** — An assertion that `clickableElements.length > 0` will pass on any screen including error screens. STOP. Every assertion must target a specific resource ID, content description, or exact text value.
+- **`disconnect()` is not called after scenario completes** — Leaving an ADB connection open locks the device port and can prevent subsequent scenarios from connecting. STOP. Always call `disconnect()` in a teardown block, even if the scenario fails.
+- **App state from a prior scenario is not cleared** — Leftover session tokens, shared preferences, or cached data from scenario N will contaminate scenario N+1. STOP. Terminate the app and clear app data between scenarios.
+- **`screenshot()` is called but the image is not linked in eval evidence** — Screenshots without file path references in the output are invisible to the eval judge. STOP. Every `screenshot()` call must record the file path in the scenario output.
+- **ANR dialogs are dismissed without logging** — An ANR indicates the app's main thread was blocked. Dismissing it silently hides a testable bug. STOP. Log the ANR occurrence and record it as a FAIL before dismissing.
 
 ## Architecture
 
@@ -1672,3 +1696,14 @@ if (ui.success) {
   console.error(`UI dump failed: ${ui.error}`);
 }
 ```
+
+## Checklist
+
+Before running an Android ADB eval scenario:
+
+- [ ] Device/emulator readiness verified (not just ADB connected — fully booted)
+- [ ] App state cleared from prior scenario (terminate + clear data)
+- [ ] All assertions target specific resource IDs, content descriptions, or exact text
+- [ ] ANR dialogs monitored and logged (not silently dismissed)
+- [ ] `screenshot()` called and file path recorded in scenario output
+- [ ] `disconnect()` called in all paths (success, failure, timeout)

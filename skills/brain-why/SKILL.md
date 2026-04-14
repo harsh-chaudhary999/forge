@@ -1,6 +1,6 @@
 ---
 name: brain-why
-description: "Trace provenance of any decision. Shows why, when, by whom, evidence, alternatives, outcome."
+description: "WHEN: You need to trace the full provenance of a specific decision — who made it, when, why, and what alternatives were considered. Shows why, when, by whom, evidence, alternatives, outcome."
 type: rigid
 requires: [brain-read]
 ---
@@ -18,6 +18,12 @@ requires: [brain-read]
 | "The alternative section is empty, so there was only one option" | Missing alternatives means the decision wasn't fully explored, not that no alternatives existed. Flag it. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
+
+## Iron Law
+
+```
+TRACE EVERY DECISION TO ITS RECORDED SOURCE BEFORE ACTING ON IT. AN UNDOCUMENTED DECISION HAS NO AUTHORITY — ABSENCE OF EVIDENCE IS NOT EVIDENCE OF CORRECTNESS.
+```
 
 ## Red Flags — STOP
 
@@ -1400,3 +1406,14 @@ Result:
 ```
 
 **Output Format:** Structured markdown with 5 main sections, dependencies, lessons, and patterns.
+
+## Checklist
+
+Before claiming provenance trace complete:
+
+- [ ] Decision ID located in brain files (not reconstructed from memory or git log)
+- [ ] Full decision chain traced to root decision
+- [ ] Alternatives section reviewed; empty alternatives section flagged as incomplete
+- [ ] Evidence and contemporaneous reasoning documented as output
+- [ ] Linked decisions and downstream lessons surfaced
+- [ ] Circular or broken references flagged and escalated

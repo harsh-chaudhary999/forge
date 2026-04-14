@@ -1,6 +1,6 @@
 ---
 name: self-heal-locate-fault
-description: "Diagnose which service failed in eval. Parse eval output, identify failure point, collect logs. Output: fault diagnosis with evidence."
+description: "WHEN: An eval scenario has failed. Parse eval output, trace the failure chain backwards to the root service, and collect logs and state as evidence."
 type: rigid
 requires: [brain-read]
 ---
@@ -18,6 +18,12 @@ requires: [brain-read]
 | "Multiple services failed, so it's an environment issue" | Multi-service failures often have a single root cause (e.g., one service returning bad data that cascades). Find the first failure in the chain. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
+
+## Iron Law
+
+```
+FAULT LOCATION TRACES THE FAILURE CHAIN BACKWARDS TO THE FIRST FAILURE IN THE TIMELINE. THE LAST SERVICE TO LOG AN ERROR IS NOT THE ROOT. FOLLOW REQUEST IDs AND TIMESTAMPS — NOT INTUITION.
+```
 
 ## HARD-GATE Anti-Patterns (Critical Enforcement)
 
@@ -672,6 +678,17 @@ START: Fault Fingerprint Type Identified?
 - Maintain chain of evidence for audit trails
 
 ---
+
+## Checklist
+
+Before handing fault diagnosis to self-heal-triage:
+
+- [ ] Failure chain traced backwards from failing assertion to root service (not just last log entry)
+- [ ] Request ID used to correlate logs across services
+- [ ] Exception stack unwrapped to root cause (not stopped at user-facing error message)
+- [ ] Timestamps compared across services (clock skew corrected if >100ms gap detected)
+- [ ] Evidence collected: logs, stack trace, request/response, DB state, cache state as applicable
+- [ ] Fault diagnosis written in structured YAML format
 
 ## Cross-References
 

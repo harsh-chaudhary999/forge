@@ -1,6 +1,6 @@
 ---
 name: brain-recall
-description: "Recall learnings from brain. Hybrid search: grep past decisions, filter by product/project, tag-based retrieval. Example: \"How did we handle API versioning last time?\""
+description: "WHEN: You are about to make a decision and need to check if prior art or past learnings exist. Recall decisions, patterns, and gotchas from the brain before proceeding."
 type: rigid
 requires: [brain-read]
 ---
@@ -18,6 +18,12 @@ requires: [brain-read]
 | "Recall is optional — I can decide without it" | Every decision that ignores prior learnings risks repeating gotchas. Recall is the cheapest way to avoid known failure modes. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
+
+## Iron Law
+
+```
+BEFORE ACTING ON ANY DECISION, SEARCH THE BRAIN FIRST. MEMORY IS NOT A SUBSTITUTE FOR EVIDENCE — THE BRAIN IS THE ONLY AUTHORITATIVE RECORD.
+```
 
 ## Red Flags — STOP
 
@@ -1286,4 +1292,15 @@ query_embedding=$(call_claude_api "API versioning")
 - [x] Brain growth projections and migration path
 - [x] No placeholders or draft language
 - [x] Production-ready guidance
+
+## Checklist
+
+Before claiming recall is complete:
+
+- [ ] Brain directory searched with at least 3 distinct query terms
+- [ ] Cross-product search performed (not limited to current product)
+- [ ] All matches reviewed by relevance, not just the most recent
+- [ ] Zero-result queries retried with broader synonyms and domain-level tags
+- [ ] Hybrid search used where applicable (grep → brain-read → brain-why for deep provenance)
+- [ ] Recall findings documented before the decision proceeds
 

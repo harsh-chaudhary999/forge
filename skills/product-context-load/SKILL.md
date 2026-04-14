@@ -19,6 +19,12 @@ requires: [brain-read]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Iron Law
+
+```
+PRODUCT CONTEXT IS LOADED FROM THE BRAIN FILE ON EVERY INVOCATION — NEVER FROM MEMORY OR CHAT HISTORY. WRONG TOPOLOGY MEANS WRONG CONTRACTS, WRONG PLANS, AND WRONG EVAL.
+```
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:
@@ -175,3 +181,14 @@ Given a product slug (from the locked PRD), load and validate:
    ```
 
 Next: Council reasoning.
+
+## Checklist
+
+Before advancing to council:
+
+- [ ] Product slug validated — `~/forge/brain/products/<slug>/product.md` exists
+- [ ] All listed repos validated — each path exists on disk
+- [ ] Circular dependencies checked — topological sort passes without cycles
+- [ ] All contracts loaded — api-rest, schema-mysql, cache, event, search as applicable
+- [ ] Incompatible version constraints identified and escalated if found
+- [ ] context-loaded.md written and committed to `~/forge/brain/prds/<task-id>/`

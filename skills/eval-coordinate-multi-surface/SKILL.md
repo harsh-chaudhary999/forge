@@ -1,6 +1,6 @@
 ---
 name: eval-coordinate-multi-surface
-description: "Coordinate multi-driver eval scenarios. Chain web (CDP) → API (HTTP) → DB (MySQL) → cache (Redis) → search (ES) → events (Kafka). Report pass/fail with evidence."
+description: "WHEN: A multi-surface eval scenario needs to be executed across web, API, DB, cache, search, and event bus layers. Coordinate multi-driver eval scenarios. Chain web (CDP) → API (HTTP) → DB (MySQL) → cache (Redis) → search (ES) → events (Kafka). Report pass/fail with evidence."
 type: rigid
 requires: [brain-read]
 ---
@@ -32,6 +32,12 @@ Teams rationalize away multi-surface eval, thinking single-layer testing is suff
 - False belief: Staging catches what eval misses
 - Reality: In eval you can recreate the bug in 20 minutes. In staging you'll spin up 6 services, wait for warm cache, reproduce race condition 1 in 20 tries, spend 8 hours. Multi-surface eval makes bugs reproducible.
 - Cost of ignoring: Cascade failure: API timeout → web hangs → user refreshes → duplicate POST → orphaned transaction → data corruption.
+
+## Iron Law
+
+```
+EVERY SURFACE IN THE SCENARIO MUST BE DRIVEN IN ORDER — NO SURFACE IS SKIPPED EVEN IF ALL PRIOR SURFACES PASSED. A SCENARIO THAT SKIPS ANY SURFACE IS NOT A MULTI-SURFACE EVAL.
+```
 
 ## Red Flags — STOP
 
@@ -1591,3 +1597,16 @@ Example:
 - **eval-driver-cache-redis**: Redis client for cache verification
 - **eval-driver-search-es**: Elasticsearch client for search verification
 - **eval-driver-bus-kafka**: Kafka client for event verification
+
+## Checklist
+
+Before claiming completion:
+
+- [ ] All surfaces listed in the scenario YAML have been driven (none skipped)
+- [ ] Surfaces were executed in scenario-defined order (not reordered or short-circuited)
+- [ ] Every step produced a concrete evidence entry (not empty or "N/A")
+- [ ] DB and cache verified after every write-triggering web or API action
+- [ ] Scenario timeout is at or below the SLA defined in shared-dev-spec
+- [ ] All service health checks passed before first scenario step executed
+- [ ] stack-down called unconditionally after scenario completes (pass or fail)
+- [ ] Multi-surface result payload passed to eval-judge for final verdict

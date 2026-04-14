@@ -1,6 +1,6 @@
 ---
 name: eval-driver-bus-kafka
-description: "Eval driver for Kafka. Functions: connect(), produce(topic, message), consume(topic, assertion), verify(topic, schema), teardown()."
+description: "WHEN: Eval scenario requires Kafka message verification. Functions: connect(), produce(topic, message), consume(topic, assertion), verify(topic, schema), teardown()."
 type: rigid
 requires: [brain-read]
 ---
@@ -21,6 +21,12 @@ Evaluation driver for Apache Kafka using the wire protocol. Produces and consume
 | "We can share topics across tests" | Shared topics mean one test's messages pollute another's assertions. Use unique topic names per test or unique consumer groups with explicit offset management. |
 
 ---
+
+## Iron Law
+
+```
+TEARDOWN ALWAYS RUNS — EVEN WHEN EVAL FAILS. NO ORPHANED CONSUMER GROUPS OR UNCOMMITTED OFFSETS SURVIVE AFTER EVAL COMPLETES.
+```
 
 ## Red Flags — STOP
 
@@ -799,3 +805,14 @@ Before marking eval pass for any Kafka-backed feature:
 - **deploy-driver-docker-compose** — Kafka + ZooKeeper service definition
 - **reasoning-as-infra** — Event bus architecture patterns and partition sizing
 - **contract-event-bus** — Negotiate event bus contracts for Kafka topics
+
+## Checklist
+
+Before claiming Kafka eval complete:
+
+- [ ] `connect()` succeeded and broker is reachable
+- [ ] All produced messages verified consumed within assertion timeout
+- [ ] Schema validation passed for all message payloads
+- [ ] Offset committed after successful consumption assertions
+- [ ] `teardown()` called unconditionally — no orphaned consumer groups remaining
+- [ ] Topic deleted or retained per documented eval policy

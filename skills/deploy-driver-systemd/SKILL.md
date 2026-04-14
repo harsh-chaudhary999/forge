@@ -1,6 +1,6 @@
 ---
 name: deploy-driver-systemd
-description: "Deploy via systemd. Functions: start(service_name), health_check(service_name), stop(service_name). Requires systemd unit files."
+description: "WHEN: Deployment target is a Linux server managed by systemd. Functions: start(service_name), health_check(service_name), stop(service_name). Requires systemd unit files."
 type: rigid
 requires: [brain-read, eval-driver-api-http]
 ---
@@ -12,6 +12,12 @@ Production deployment driver for systemd-managed services on Linux systems. Mana
 ## HARD-GATE: Anti-Pattern Preambles
 
 The following rationalizations **WILL BLOCK** your deployment. These are not edge cases—they are guaranteed failure modes that will surface in production.
+
+## Iron Law
+
+```
+EVERY SYSTEMD SERVICE IS VERIFIED HEALTHY VIA HEALTH CHECK AFTER START. A SERVICE THAT IS "ACTIVE" IN SYSTEMD IS NOT A SERVICE THAT IS READY TO SERVE TRAFFIC.
+```
 
 ## Red Flags — STOP
 
@@ -1600,3 +1606,14 @@ Typical operation durations (on modern hardware):
 - Unit file reload becomes slow if > 1000 units present
 
 ---
+
+## Checklist
+
+Before claiming deployment complete:
+
+- [ ] systemd unit file exists and passes `systemd-analyze verify`
+- [ ] `start()` completed without errors
+- [ ] `health_check()` returned healthy response from application HTTP endpoint
+- [ ] Application logs checked for startup errors (`journalctl -u <service>`)
+- [ ] `stop()` called during cleanup (even on failure paths)
+- [ ] No previous version of the service left running on the target port

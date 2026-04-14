@@ -1,6 +1,6 @@
 ---
 name: forge-council-gate
-description: "HARD-GATE: Every locked PRD goes through Council (4 surfaces + 5 contracts negotiated). No skipping."
+description: "WHEN: A PRD has been locked by intake and needs Council negotiation. HARD-GATE: Every locked PRD goes through Council (4 surfaces + 5 contracts negotiated). No skipping."
 type: rigid
 ---
 # Council Gate (HARD-GATE)
@@ -21,6 +21,12 @@ type: rigid
 | "Just one surface can't attend council this sprint, we'll get them next time" | All 4 surfaces must be present. Missing surface = missing veto. No exceptions. |
 | "The contracts are defined by the previous system, we can't change them" | Every contract is renegotiable. If the new PRD requires a different contract, negotiate it. Don't lock to old contracts. |
 | "We already negotiated with stakeholders, council is redundant" | Stakeholder agreement != technical consensus. Council surfaces conflicts in tech that stakeholder agreement misses. |
+
+## Iron Law
+
+```
+NO IMPLEMENTATION STARTS BEFORE COUNCIL COMPLETES. A SHARED-DEV-SPEC WITH ANY UNRESOLVED TBD OR MISSING CONTRACT IS NOT A LOCKED SPEC — IT IS A DRAFT.
+```
 
 ## Red Flags — STOP
 
@@ -238,3 +244,13 @@ Before locking spec, verify:
 ---
 
 Output: **SPEC LOCKED** (ready for per-project tech planning) or **BLOCKED** (deadlock without dreamer input, incomplete attendance, unresolvable conflict awaiting follow-up research)
+
+## Checklist
+
+Before claiming council complete:
+
+- [ ] All 4 surfaces (backend, web frontend, app frontend, infra) attended and produced outputs
+- [ ] All 5 contracts negotiated (REST API, event bus, cache, DB schema, search)
+- [ ] All cross-surface conflicts resolved — none deferred to implementation
+- [ ] shared-dev-spec.md has no TBD fields
+- [ ] spec-freeze invoked after spec is written to brain

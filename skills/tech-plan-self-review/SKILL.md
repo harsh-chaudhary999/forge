@@ -1,6 +1,6 @@
 ---
 name: tech-plan-self-review
-description: "Verify per-project tech plans against shared-dev-spec. Check: all requirements covered, no placeholders, complete code, exact commands, clear outputs."
+description: "WHEN: A per-project tech plan has been written and needs verification before dispatch to dev-implementer. Check all requirements covered, no placeholders, complete code, exact commands."
 type: rigid
 requires: [brain-read]
 ---
@@ -8,6 +8,12 @@ requires: [brain-read]
 # Tech Plan Self-Review Skill
 
 This skill verifies technical implementation plans against their corresponding shared-dev-spec before dispatch to dev-implementers. It catches incomplete specifications, placeholder code, missing tests, and malformed commit messages.
+
+## Iron Law
+
+```
+EVERY TECH PLAN IS VERIFIED AGAINST THE FROZEN SHARED-DEV-SPEC LINE BY LINE BEFORE DISPATCH. A PLAN WITH A PLACEHOLDER OR TODO IS NOT A PLAN — IT IS UNFINISHED WORK. DISPATCH NOTHING THAT FAILS THIS REVIEW.
+```
 
 ## Anti-Pattern Preamble: Why Plans Get Rubber-Stamped
 
@@ -338,3 +344,15 @@ When submitting review results:
 - Warnings can be fixed during implementation if agreed by implementer
 - Clear, complete plans reduce back-and-forth during development
 - Exact specs + exact tests = faster implementation + fewer bugs
+
+## Checklist
+
+Before approving a tech plan for dispatch:
+
+- [ ] Every spec requirement in shared-dev-spec is covered by at least one task
+- [ ] No `TODO`, `TBD`, `FIXME`, or `...` in any code block
+- [ ] All tasks have exact file paths (not vague "add to the service")
+- [ ] All bash commands are complete with flags, paths, and environment variables
+- [ ] Each task has a concrete test command and expected output (not "verify it works")
+- [ ] Commit messages are specific (not "update code" or "misc changes")
+- [ ] Tasks are ordered: test task before implementation task for each feature (TDD)

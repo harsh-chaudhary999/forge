@@ -1,6 +1,6 @@
 ---
 name: deploy-driver-docker-compose
-description: "Deploy via Docker Compose. Functions: up(compose_file), health_check(), down(). Supports multiple services."
+description: "WHEN: Deployment target is Docker Compose. Provides up(compose_file), health_check(), and down() for multi-service orchestration."
 type: rigid
 requires: [brain-read, eval-driver-api-http]
 ---
@@ -8,6 +8,23 @@ requires: [brain-read, eval-driver-api-http]
 # Deploy Driver: Docker Compose
 
 Deployment driver for Docker Compose-based service orchestration. Brings up services with `docker-compose up`, performs health checks via container inspection and HTTP endpoints, and tears down with `docker-compose down`. Handles multi-service startup ordering, dependency validation, and graceful cleanup.
+
+## Anti-Pattern Preamble: Why Agents Skip Health Checks After docker-compose up
+
+| Rationalization | The Truth |
+|---|---|
+| "docker ps shows all containers running, so the stack is ready" | Container running state means the process started. It does NOT mean the service is accepting requests. Always call `health_check()` after `up()`. |
+| "depends_on in docker-compose handles startup ordering" | `depends_on` guarantees container start order, not readiness. Service B may try to connect to Service A before A finishes initialization. |
+| "health checks slow down deployment — we can skip them in CI" | A deployment that skips health checks will report success while the stack is broken. CI failures caught late are 10x more expensive to diagnose. |
+| "docker-compose down cleans everything up automatically" | Without `-v`, named volumes persist. Stale database volumes cause schema mismatch failures on the next `up()`. Always use `down -v`. |
+| "container restart policy means transient crashes self-heal" | Restart policy helps long-term stability, not deployment correctness. A crash loop during deployment means the config is wrong — not transient. |
+| "network timeouts don't happen between containers on the same bridge network" | Bridge network DNS resolution and iptables rules can cause connection timeouts under resource pressure. Retry logic is required for service-to-service calls. |
+
+## Iron Law
+
+```
+EVERY docker-compose up() MUST BE FOLLOWED BY health_check() BEFORE DECLARING DEPLOYMENT COMPLETE. NEVER MARK A STACK HEALTHY BASED ON CONTAINER STATE ALONE.
+```
 
 ## HARD-GATE: Anti-Pattern Preambles
 
@@ -1292,3 +1309,15 @@ This skill works with:
 For production deployments, see related skills:
 - `deploy-driver-k8s` - Kubernetes orchestration
 - `eval-product-stack-up` - Full product stack coordination
+
+## Checklist
+
+Before claiming completion:
+
+- [ ] `up()` called with explicit compose file path — no default file assumed
+- [ ] `health_check()` called for every service after `up()` — not skipped for "simple" stacks
+- [ ] Health check verified service readiness via HTTP endpoint, not just container state
+- [ ] Container restart count monitored for first 30 seconds — no silent crash loops
+- [ ] `down()` called with `-v` flag — named volumes removed, no stale state persists
+- [ ] All services confirmed healthy before deployment success reported
+- [ ] Log output captured from failed health checks — diagnosis not blind

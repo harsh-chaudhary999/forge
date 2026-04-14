@@ -1,6 +1,6 @@
 ---
 name: eval-product-stack-up
-description: "Bring up entire product stack for eval. Reads forge-product.md, starts services in dependency order, runs health checks, ready for eval scenarios."
+description: "WHEN: Eval is about to run and the full product stack must be brought up first. Reads forge-product.md, starts services in dependency order, runs health checks, confirms stack is ready for eval scenarios."
 type: rigid
 requires: [brain-read]
 ---
@@ -32,6 +32,12 @@ Orchestrates startup of entire product stack for evaluation. Reads product topol
    - Truth: Partial failures are your worst enemy. They look like bugs in code when they're infrastructure. You ship broken code because infrastructure masked the issue.
    - Consequence: A/B test: 99% uptime vs 100% uptime. The 1% failure rate is where all the subtle bugs hide. You test against 99% uptime and miss them.
    - Standard: All critical services must be healthy before proceeding. No partial stacks. If any service fails, fail fast with detailed error.
+
+## Iron Law
+
+```
+EVERY STACK-UP READS forge-product.md FRESH, STARTS SERVICES IN TOPOLOGICAL DEPENDENCY ORDER, AND WAITS FOR ALL HEALTH CHECKS TO PASS BEFORE DECLARING READY. NO EVAL SCENARIO RUNS AGAINST A PARTIAL STACK. NO HEALTH CHECK IS SKIPPED.
+```
 
 ## Red Flags — STOP
 
@@ -1238,3 +1244,14 @@ On eval completion or failure:
 - Use graceful or forceful shutdown patterns (above)
 - Preserve logs and volumes for debugging
 - Clean up temp directories and processes
+
+## Checklist
+
+Before declaring stack ready for eval:
+
+- [ ] `forge-product.md` read fresh at start of this stack-up (not cached from prior run)
+- [ ] Services started in topological dependency order (infra before services)
+- [ ] All service health checks returned healthy (no skipped checks)
+- [ ] Total stack startup completed under 30 seconds
+- [ ] No partial stack — all critical services verified ready
+- [ ] Stack-up log available for debugging if any eval scenario fails

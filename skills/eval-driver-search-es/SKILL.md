@@ -1,6 +1,6 @@
 ---
 name: eval-driver-search-es
-description: "Eval driver for Elasticsearch via REST. Functions: connect(), index(doc), search(query), verify(assertion), teardown()."
+description: "WHEN: Eval scenario requires search index state verification. Eval driver for Elasticsearch via REST. Functions: connect(), index(doc), search(query), verify(assertion), teardown()."
 type: rigid
 requires: [brain-read]
 ---
@@ -85,6 +85,12 @@ REST-based evaluation driver for Elasticsearch search index testing. Verifies se
 - MUST track mapping version in eval scenario and verify version before searching
 - MUST implement rollback plan if re-index fails (delete index, re-index from source)
 - MUST verify mapping change via GET `/{index}/_mapping` before asserting on new fields
+
+## Iron Law
+
+```
+EVERY ELASTICSEARCH EVAL SCENARIO REFRESHES THE INDEX BEFORE ANY SEARCH ASSERTION. EVERY SEARCH ASSERTION VERIFIES SPECIFIC FIELD VALUES, RESULT POSITION, AND SCORE — NOT JUST HIT COUNT. teardown() IS CALLED IN ALL PATHS.
+```
 
 ## Red Flags — STOP
 
@@ -858,3 +864,14 @@ Before marking eval pass for any Elasticsearch-backed feature:
 - No explicit mapping control (uses dynamic mapping by default)
 - Verification is point-in-time (no time-range assertions)
 - Errors are synchronous; no async retry logic
+
+## Checklist
+
+Before running an Elasticsearch eval scenario:
+
+- [ ] Index refreshed (`?refresh=wait_for` or `POST _refresh`) before every search assertion
+- [ ] Assertions verify specific field values and result position — not just hit count > 0
+- [ ] `min_score` threshold set and verified in search results
+- [ ] `teardown()` called in all paths (success, failure, timeout)
+- [ ] Cluster health verified as `green` or `yellow` before scenario begins
+- [ ] Mapping verified via `GET /{index}/_mapping` before assertions on new fields

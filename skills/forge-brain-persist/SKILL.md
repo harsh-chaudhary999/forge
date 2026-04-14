@@ -1,6 +1,6 @@
 ---
 name: forge-brain-persist
-description: "HARD-GATE: Every decision auditable, traceable, retrievable. Brain is immutable record of truth."
+description: "WHEN: A decision needs to be recorded in the brain. HARD-GATE: Every decision auditable, traceable, retrievable. Brain is immutable record of truth."
 type: rigid
 ---
 # Brain Persistence (Immutable Record)
@@ -21,6 +21,12 @@ type: rigid
 | "The brain is for big architecture decisions, not everyday choices" | Every decision shapes the product. Record all: architecture, config, prioritization, trade-offs, small fixes. |
 | "We document everything in Confluence/Notion, that's the brain" | External docs get stale. The brain is source of truth. Link Confluence to brain, not the reverse. |
 | "No one needs to know the details, just the final decision" | Reasoning is as important as conclusion. Future trade-offs require understanding original context. Record both. |
+
+## Iron Law
+
+```
+EVERY DECISION IS WRITTEN TO BRAIN BEFORE THE TASK MOVES FORWARD. AN UNDOCUMENTED DECISION DOES NOT EXIST — IF IT IS NOT IN THE BRAIN, IT NEVER HAPPENED.
+```
 
 ## Red Flags — STOP
 
@@ -333,3 +339,13 @@ Post-deployment:
 ---
 
 Output: **DECISION RECORDED** (auditable, traceable, retrievable in brain, committed to git) or **BLOCKED** (can't persist, merge conflict, brain not in git, data corruption)
+
+## Checklist
+
+Before claiming decision recorded:
+
+- [ ] Decision file written with full frontmatter (id, date, product, type, status)
+- [ ] Reasoning and alternatives documented — not just the conclusion
+- [ ] Decision committed to brain git repo
+- [ ] brain-link called to connect this decision to related decisions
+- [ ] Decision retrievable via brain-recall with at least 2 query terms

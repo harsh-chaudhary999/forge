@@ -1,6 +1,6 @@
 ---
 name: eval-driver-web-cdp
-description: "Eval driver for web UI via Chrome DevTools Protocol. Functions: launch(), navigate(), interact(click/type/scroll), screenshot(), getDOM(), teardown()."
+description: "WHEN: Eval scenario requires web UI interaction or assertion. Automates browser via Chrome DevTools Protocol. Functions: launch(), navigate(), interact(click/type/scroll), screenshot(), getDOM(), teardown()."
 type: rigid
 requires: [brain-read]
 ---
@@ -8,6 +8,22 @@ requires: [brain-read]
 # Eval Driver: Web UI via Chrome DevTools Protocol (CDP)
 
 Automates browser interactions and state inspection using Chrome DevTools Protocol. Provides a programmatic interface for launching headless Chrome, navigating URLs, interacting with UI elements, capturing screenshots, and extracting DOM state.
+
+## Anti-Pattern Preamble
+
+| Rationalization | Why It Fails |
+|---|---|
+| "If the page loads, the eval passes" | A page can load with empty data, error state, or partial render. Load event fires before content is populated. Every scenario must assert on specific content. |
+| "CSS selectors are fine for targeting elements" | CSS selectors break on visual refactors that don't change behavior. Use `data-testid`, ARIA roles, or labels. Test IDs are contracts; class names are not. |
+| "teardown() can be skipped if the test fails" | An unclosed Chrome process holds the debug port. The next scenario cannot connect. teardown() must run in all paths — success, failure, and timeout. |
+| "Screenshots are optional evidence" | If an assertion fails and there is no screenshot, debugging the failure requires re-running the scenario. Capture evidence every time. |
+| "Timing issues are flakiness, not bugs" | Timing issues are bugs in the eval script. Use explicit wait conditions (networkIdle, element visible) — not fixed sleeps — so failures are deterministic. |
+
+## Iron Law
+
+```
+EVERY CDP SCENARIO FOLLOWS: launch() → navigate() → wait-for-load → interact → assert-specific-content → screenshot → teardown(). teardown() IS CALLED IN ALL PATHS. NO ASSERTION IS NON-SPECIFIC. NO INTERACTION HAPPENS BEFORE LOAD STATE IS CONFIRMED.
+```
 
 ## Red Flags — STOP
 
@@ -1399,3 +1415,14 @@ chrome-remote-interface@^0.32.0  (or puppeteer/other CDP client)
 - Accessibility tree extraction
 - Shadow DOM support
 - Cookie/storage management
+
+## Checklist
+
+Before running a CDP eval scenario:
+
+- [ ] `launch()` called with explicit viewport dimensions matching target device class
+- [ ] `navigate()` followed by explicit wait for load state (networkIdle or DOMContentLoaded)
+- [ ] All element targeting uses `data-testid`, ARIA role, or stable aria-label (not CSS class selectors)
+- [ ] Every assertion verifies specific text, attribute, or element state — not just presence
+- [ ] `screenshot()` called and file path recorded in scenario output
+- [ ] `teardown()` called in all paths (success, failure, timeout)

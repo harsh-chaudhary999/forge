@@ -1,6 +1,6 @@
 ---
 name: contract-event-bus
-description: "Negotiate event bus contracts (Kafka/RMQ). Defines topic schema, versioning, idempotency, ordering, retention, consumer groups, dead-letter queues."
+description: "WHEN: Council has identified event bus conflicts across services and needs a locked contract. Negotiates topic schema, versioning, idempotency, ordering, retention, consumer groups, and dead-letter queues before any producer or consumer is written."
 type: rigid
 requires: [brain-read]
 ---
@@ -8,6 +8,25 @@ requires: [brain-read]
 # Contract Event Bus Skill
 
 Teaches teams to negotiate Kafka/event-bus contracts systematically. Covers schema versioning, topic design, consumer guarantees, idempotency, and ordering semantics. Output is a locked event bus contract that all producers and consumers sign off on.
+
+## Anti-Pattern Preamble: Why Event Bus Contracts Are Skipped
+
+| Rationalization | The Truth |
+|---|---|
+| "We'll define the topic schema during implementation" | Implementation-time schema decisions cause producer/consumer drift. Schema must be agreed before any code is written or the contract is already broken. |
+| "At-least-once is fine, the consumer will handle duplicates" | Consumers cannot handle duplicates they don't know are coming. The contract must specify delivery semantics AND the deduplication strategy before consumer code is written. |
+| "We don't need a dead-letter queue yet" | The first poison message will block the partition indefinitely without a DLQ. The DLQ must be defined at contract time, not after production incidents. |
+| "Topic naming can be generic, we'll namespace it later" | Generic topic names cause cross-domain collisions. Naming is a contract decision — changing it after producers are live requires coordinated migration. |
+| "Schema evolution is a later problem" | Schema evolution policy (forward/backward/full compatibility) must be defined before the first message is produced. Retrofitting compatibility is painful and breaking. |
+| "Consumer groups can be named by convention" | Unnamed or ad-hoc consumer group names cause offset loss on restarts and rebalancing failures. Consumer group IDs are part of the contract. |
+
+**If you are thinking any of the above, you are about to violate this skill.**
+
+## Iron Law
+
+```
+NO PRODUCER OR CONSUMER IS WRITTEN BEFORE THE TOPIC SCHEMA, DELIVERY SEMANTICS, AND CONSUMER GROUP CONTRACT ARE LOCKED. AN UNCONTRACTED EVENT BUS IS AN UNTESTABLE SYSTEM.
+```
 
 ## Red Flags — STOP
 
@@ -817,3 +836,17 @@ Is duplicate processing acceptable?
 - **brain-read:** Load topology and existing contracts
 - **reasoning-as-infra:** Design Kafka cluster topology and resource allocation
 - **code-review:** Review producer/consumer implementations for idempotency + offset handling
+
+## Checklist
+
+Before claiming event bus contract locked:
+
+- [ ] Topic naming follows domain.entity.action convention (e.g., `payments.order.paid`)
+- [ ] Payload schema defined in formal format (Avro, Protobuf, or JSON Schema)
+- [ ] Delivery semantics specified (at-least-once, exactly-once, or at-most-once)
+- [ ] Idempotency strategy documented for all consumers
+- [ ] Dead-letter queue defined with routing rules and alert thresholds
+- [ ] Retention period set based on slowest consumer's expected lag
+- [ ] Consumer group IDs specified with stable, service-namespaced names
+- [ ] Schema evolution/compatibility policy documented
+- [ ] Contract locked and written to brain

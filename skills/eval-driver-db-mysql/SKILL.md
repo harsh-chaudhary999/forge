@@ -1,6 +1,6 @@
 ---
 name: eval-driver-db-mysql
-description: "Eval driver for MySQL. Executes queries, verifies results. Functions: setup(), execute(query), verify(assertion), teardown()."
+description: "WHEN: Eval scenario requires database state verification. Executes queries, verifies results. Functions: setup(), execute(query), verify(assertion), teardown()."
 type: rigid
 requires: [brain-read]
 ---
@@ -26,6 +26,12 @@ Provides a complete driver for executing and verifying SQL queries against MySQL
 6. **"Query timeouts don't matter for eval"** — WRONG. A slow query can timeout, leaving locks or orphaned transactions. Deadlocks also trigger timeouts. **Investigate slow queries; don't just increase timeout.**
 
 ---
+
+## Iron Law
+
+```
+TEARDOWN ALWAYS RUNS AND RESTORES CLEAN STATE — EVERY EVAL LEAVES THE DATABASE IN THE SAME STATE IT FOUND IT. NO EVAL LEAVES TEST DATA BEHIND.
+```
 
 ## Red Flags — STOP
 
@@ -1568,3 +1574,13 @@ await execute(conn, "START TRANSACTION")
 - `contract-schema-db`: Negotiate database schema contracts
 
 ---
+
+## Checklist
+
+Before claiming MySQL eval complete:
+
+- [ ] `setup()` ran and schema state verified before any queries
+- [ ] All assertions verify both row existence AND data values
+- [ ] Transactional isolation confirmed (no dirty reads between eval steps)
+- [ ] `teardown()` called unconditionally — test data removed and DB in clean state
+- [ ] No eval leaves behind uncommitted transactions or orphaned rows

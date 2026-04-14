@@ -1,6 +1,6 @@
 ---
 name: forge-eval-gate
-description: "HARD-GATE: Nothing merges without eval passing. E2E product eval is the final gate."
+description: "WHEN: Implementation is complete and PRs are ready to merge. HARD-GATE: Nothing merges without eval passing. E2E product eval is the final gate."
 type: rigid
 ---
 # Eval Gate (HARD-GATE)
@@ -21,6 +21,12 @@ type: rigid
 | "The performance test results look good from the code, we don't need eval" | Code metrics don't equal runtime behavior. Network latency, contention, GC pauses all appear at runtime, not in code. |
 | "Eval caught a flaky test, we can just remove the flaky test" | A flaky test is a symptom of real behavior. Removing the test hides the problem. Fix the underlying flakiness. |
 | "This change doesn't touch user flows, eval isn't critical" | Internal changes affect reliability. All changes affect user experience eventually (latency, availability, correctness). Eval all. |
+
+## Iron Law
+
+```
+NOTHING MERGES WITHOUT EVAL PASSING. A PASSING TEST SUITE IS NOT A PASSING EVAL. EVAL IS THE ONLY PROOF THE SYSTEM WORKS END-TO-END.
+```
 
 ## Red Flags — STOP
 
@@ -259,3 +265,13 @@ Before merging, verify:
 ---
 
 Output: **EVAL PASS** (ready to merge) or **DONE_WITH_CONCERNS** (passes with warnings, must be documented) or **BLOCKED** (eval failing after 3 retries, infrastructure down, scale/perf infeasible, eval hangs)
+
+## Checklist
+
+Before claiming eval gate passed:
+
+- [ ] Eval ran against committed code (not in-progress work)
+- [ ] All scenario surfaces returned results
+- [ ] eval-judge returned GREEN or DONE_WITH_CONCERNS with documented concerns
+- [ ] Self-heal attempted on any failures before declaring BLOCKED
+- [ ] Eval verdict written to brain before PRs are raised

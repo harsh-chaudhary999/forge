@@ -1,6 +1,6 @@
 ---
 name: forge-trust-code
-description: "HARD-GATE: Spec-reviewer reads actual code, doesn't trust implementer report. Verify every claim."
+description: "WHEN: Spec review is required after implementation. HARD-GATE: Spec-reviewer reads actual code, doesn't trust implementer report. Verify every claim."
 type: rigid
 ---
 # Do Not Trust The Report
@@ -21,6 +21,12 @@ type: rigid
 | "No one filed a bug, so the implementation must be correct" | Absence of bug reports is not proof of correctness. You're testing early. Don't assume production feedback replaces review. |
 | "I did a spot-check of key functions, that's sufficient" | Spot-checks miss edge cases, error handling, and integration points. Read all relevant code. |
 | "The implementer said they checked the spec, so I don't need to" | Self-review is the weakest form of review. Verify independently. Always. |
+
+## Iron Law
+
+```
+SPEC REVIEWERS READ ACTUAL CODE — NEVER TRUST THE IMPLEMENTER'S REPORT. "IT WORKS" IS NOT EVIDENCE. VERIFIED OUTPUT IS EVIDENCE.
+```
 
 ## Red Flags — STOP
 
@@ -298,3 +304,13 @@ Before approving PR, verify:
 ---
 
 Output: **CODE VERIFIED** (spec met, implementation correct, all reviews complete) or **SPEC GAPS FOUND** (implementer must fix before merge) or **NEEDS_CONTEXT** (reviewer unavailable, spec review incomplete)
+
+## Checklist
+
+Before claiming code verified:
+
+- [ ] Actual code files read — not implementer's summary or description
+- [ ] Every spec claim verified against code (not assumed correct)
+- [ ] Error handling and edge cases inspected
+- [ ] All spec requirements traceable to code implementation
+- [ ] Review findings written to brain if significant gaps found

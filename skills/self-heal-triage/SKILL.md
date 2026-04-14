@@ -1,6 +1,6 @@
 ---
 name: self-heal-triage
-description: "Classify failure: flaky (timing), bad test (wrong), real bug (code broken), environment (service down). Output: classification with evidence."
+description: "WHEN: An eval scenario has failed and a fault has been located. Classify the failure type — flaky, bad test, real bug, or environment — with evidence and confidence score."
 type: rigid
 requires: [brain-read]
 ---
@@ -115,6 +115,12 @@ Triage always has a strongest signal if you weight properly.
 ---
 
 **If you are thinking any of the above, you are about to violate this skill.**
+
+## Iron Law
+
+```
+TRIAGE COMPLETES BEFORE ANY FIX IS APPLIED. CLASSIFY WITH EVIDENCE AT MEDIUM OR HIGHER CONFIDENCE OR ESCALATE. A CLASSIFICATION WITHOUT EVIDENCE IS A GUESS — GUESSES WASTE SELF-HEAL LOOP ATTEMPTS.
+```
 
 ## Red Flags — STOP
 
@@ -802,6 +808,17 @@ START: Classification complete, confidence score calculated
 ---
 
 ## Cross-References
+
+## Checklist
+
+Before routing to a fix strategy:
+
+- [ ] Failure message and error type extracted from eval output
+- [ ] At least 3 data points collected before classifying as flaky (not single-occurrence)
+- [ ] Classification supported by primary evidence pattern (timeout, assertion, exception, connection)
+- [ ] Confidence score is MEDIUM (≥60%) or higher — LOW triggers escalation, not fix
+- [ ] Evidence and confidence score documented in triage output
+- [ ] Fix strategy routed based on classification (not assumed)
 
 **Related Skills in Self-Heal Workflow:**
 

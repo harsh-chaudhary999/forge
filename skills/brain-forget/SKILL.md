@@ -1,6 +1,6 @@
 ---
 name: brain-forget
-description: "Archive deprecated decisions. Marks old decisions as cold/archived, never deletes. Demotion: warm→cold→archived. Searchable by status."
+description: "WHEN: A decision is being superseded, deprecated, or has aged out. Archive it without deletion — marks as warm→cold→archived with full audit trail."
 type: rigid
 requires: [brain-read]
 ---
@@ -18,6 +18,12 @@ requires: [brain-read]
 | "I'll demote it straight to archived" | The demotion lifecycle exists to catch premature archival. Active → Warm → Cold → Archived. Each step requires evidence. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
+
+## Iron Law
+
+```
+NEVER DELETE A DECISION. EVERY DEPRECATED DECISION MUST BE ARCHIVED WITH ITS FULL CONTEXT, DEMOTION REASON, AND LESSONS LEARNED COMMITTED TO GIT SO THE AUDIT TRAIL IS PERMANENTLY PRESERVED.
+```
 
 ## Red Flags — STOP
 
@@ -1548,3 +1554,15 @@ Result:
 ---
 
 **Related Skills:** brain-read, brain-write, brain-remember
+
+## Checklist
+
+Before claiming completion:
+
+- [ ] No decision file was deleted — only status fields updated
+- [ ] Demotion followed the correct lifecycle stage (Active → Warm → Cold → Archived), not a single jump
+- [ ] Every dependent decision checked via brain-read before demotion
+- [ ] Demotion commit message specifies which decision, from what status, to what status, and why
+- [ ] `lessons_learned` and `status_reason` fields are populated in the decision file
+- [ ] Successor decision (if applicable) is linked via `successor:` field
+- [ ] Affected teams notified of the demotion per the communication protocol for the rule applied

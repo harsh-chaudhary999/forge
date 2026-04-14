@@ -1,6 +1,6 @@
 ---
 name: brain-link
-description: "Create semantic edges between decisions. Link concepts across products/projects/time. Query: \"All API versioning patterns\" or \"All eventual-consistency decisions\"."
+description: "WHEN: You are writing a new decision, superseding an old one, or querying relationships across decisions. Create semantic edges between decisions and link concepts across products/projects/time."
 type: rigid
 requires: [brain-read]
 ---
@@ -69,6 +69,12 @@ requires: [brain-read]
 ---
 
 **If you are thinking any of the above, you are about to violate this skill.**
+
+## Iron Law
+
+```
+EVERY SEMANTIC EDGE MUST INCLUDE A DECLARED LINK TYPE, DIRECTIONALITY, AND PROVENANCE (WHEN IT WAS CREATED AND WHY). A LINK WITHOUT THESE THREE ELEMENTS IS NOT A LINK — IT IS NOISE THAT CORRUPTS THE DECISION GRAPH.
+```
 
 ## Red Flags — STOP
 
@@ -913,3 +919,15 @@ Future enhancements:
 - **Edge Cases**: 5 edge cases with escalation paths (Section 11)
 - **Decision Trees**: Link type selection and directionality (Section 12)
 - **Related Skills**: brain-write, brain-why, brain-recall, brain-forget (Section 14)
+
+## Checklist
+
+Before claiming completion:
+
+- [ ] Both source and target decision IDs verified to exist in the brain via brain-read before creating any link
+- [ ] Every link has an explicit `link_type` — never left as untyped or defaulting to "related"
+- [ ] Directionality is correct — `replaces` and `variant` are directional; `conflicts`, `complements`, `related` are bidirectional (reverse link created)
+- [ ] Link includes provenance: `when` it was created and `why` the relationship exists
+- [ ] If a `supersedes` link was created, the superseded decision's status was updated to `superseded` via brain-forget or brain-write
+- [ ] No graph cycles introduced — traversal from source does not loop back to source
+- [ ] Links were created immediately at decision time, not batched after multiple decisions were written

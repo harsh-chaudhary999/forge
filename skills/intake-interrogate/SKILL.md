@@ -1,15 +1,29 @@
 ---
 name: intake-interrogate
-description: "WHEN to invoke: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Asks 5–8 clarifying questions one at a time."
+description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Asks 5–8 clarifying questions one at a time."
 type: rigid
 requires: [brain-write]
 ---
 
 # Intake Interrogation — PRD Lock
 
-## Anti-Pattern: "I Can Infer This"
+## Anti-Pattern Preamble
 
-You cannot. The biggest projects fail because teams assume they agree on a spec and discover otherwise in code review. Intake enforces lock. No exceptions. No "trivial" shortcuts.
+| Rationalization | Why It Fails |
+|---|---|
+| "I can infer this from context" | You cannot. The biggest projects fail because teams assume they agree on a spec and discover otherwise in code review. Intake enforces lock. No exceptions. |
+| "This question is obviously answered by the PRD" | PRDs describe intent, not decisions. Intake extracts explicit, locked answers — not interpretations of intent. Ambiguous PRDs become arguments in code review. |
+| "Asking all 8 questions takes too long" | Skipping intake questions takes longer — each unanswered question becomes an assumption that fails during implementation or eval. |
+| "The user said TBD, that's fine for now" | TBD answers cannot be locked. A PRD with TBD success criteria cannot be evaluated. Push for specifics or block the PRD until resolved. |
+| "I'll ask multiple questions at once to save time" | Multi-question dumps produce short, shallow answers. One question at a time forces thought and produces lockable answers. |
+
+**If you are thinking any of the above, you are about to violate this skill.**
+
+## Iron Law
+
+```
+ALL 8 INTAKE QUESTIONS MUST BE ANSWERED WITH CONCRETE, LOCKED ANSWERS BEFORE THE PRD ADVANCES TO COUNCIL. A TBD ANSWER IS NO ANSWER. PARTIAL INTAKE IS NO INTAKE.
+```
 
 ## HARD-GATE
 
@@ -210,3 +224,14 @@ git -C ~/forge/brain commit -m "intake: lock PRD for <task-id>"
 ```
 
 Next: Council reasoning to negotiate contracts across surfaces.
+
+## Checklist
+
+Before claiming intake complete:
+
+- [ ] All 8 questions answered (no TBD, no skipped, no "we'll figure it out")
+- [ ] Each answer confirmed in the user's own words and written back for approval
+- [ ] Contradictions between answers detected and resolved before locking
+- [ ] prd-locked.md written to `~/forge/brain/prds/<task-id>/` and committed to brain
+- [ ] Success criteria are measurable and testable (not behavioral descriptions)
+- [ ] Rollback plan is concrete (not "revert the commit")

@@ -1,6 +1,6 @@
 ---
 name: contract-cache
-description: "Negotiate cache contracts (Redis/Memcached). Defines key patterns, TTL strategy, invalidation, stampede prevention, serialization, consistency model."
+description: "WHEN: Council has identified cache design conflicts across surfaces and needs a locked contract. Negotiates key patterns, TTL strategy, invalidation, stampede prevention, serialization, and consistency model across all services."
 type: rigid
 requires: [brain-read]
 ---
@@ -8,6 +8,12 @@ requires: [brain-read]
 # contract-cache Skill
 
 Teaches teams to negotiate Redis/Memcached cache contracts. Covers key structure, TTL strategy, invalidation patterns, cache stampede prevention, and serialization for production cache systems.
+
+## Iron Law
+
+```
+EVERY CACHE KEY'S TTL AND INVALIDATION STRATEGY MUST BE NEGOTIATED AT COUNCIL AND LOCKED IN THE CONTRACT BEFORE ANY IMPLEMENTATION BEGINS. NO SERVICE MAY UNILATERALLY CHOOSE ITS OWN TTL OR INVALIDATION LOGIC FOR SHARED KEYS.
+```
 
 ## Anti-Pattern Preamble: Cache Contract Failures
 
@@ -343,6 +349,19 @@ When implementing a cache contract:
 - [ ] Set up monitoring: cache hit rate, miss rate, latency, evictions
 - [ ] Test under load: verify stampede prevention works
 - [ ] Document in service contract; share with dependent teams
+
+## Checklist
+
+Before claiming completion:
+
+- [ ] Every cache key in the contract has an explicit TTL value — no "default", no "TBD", no "same as session"
+- [ ] Each key has exactly one owner service documented — no two services listed as writers to the same key
+- [ ] Stampede prevention strategy is specified per high-traffic key (lock-and-refresh, xfetch, or stale fallback)
+- [ ] Fallback behavior when cache is unavailable is documented for every key type (fail fast vs. degrade to DB reads)
+- [ ] All key patterns include a namespace prefix that uniquely identifies the owning service
+- [ ] Invalidation trigger is a programmatic event tied to a specific data mutation — not "on deploy" or "manually"
+- [ ] Serialization format and field naming convention are locked and agreed by all consuming services
+- [ ] Consistency model is documented per key (strong, eventual, or probabilistic) with staleness SLA
 
 ---
 

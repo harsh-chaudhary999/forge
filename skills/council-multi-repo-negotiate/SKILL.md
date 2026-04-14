@@ -1,6 +1,6 @@
 ---
 name: council-multi-repo-negotiate
-description: "Master negotiation skill. Invokes all 4 surface reasoning skills, all 5 contract skills, resolves conflicts across surfaces, outputs locked shared-dev-spec.md."
+description: "WHEN: A locked PRD needs to be negotiated across all surfaces before implementation begins. Invokes all 4 surface reasoning skills, all 5 contract skills, resolves conflicts, outputs locked shared-dev-spec.md."
 type: rigid
 requires: [brain-read, reasoning-as-backend, reasoning-as-web-frontend, reasoning-as-app-frontend, reasoning-as-infra, contract-api-rest, contract-event-bus, contract-cache, contract-schema-db, contract-search]
 ---
@@ -19,6 +19,12 @@ requires: [brain-read, reasoning-as-backend, reasoning-as-web-frontend, reasonin
 | "I'll lock the spec now and amend it later if needed" | Amendments after spec-freeze require full re-negotiation. Get it right in council or pay the re-negotiation cost. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
+
+## Iron Law
+
+```
+NO IMPLEMENTATION STARTS BEFORE ALL 4 SURFACES HAVE REASONED AND ALL 5 CONTRACTS ARE LOCKED. A PARTIAL COUNCIL IS NOT A COUNCIL.
+```
 
 ## Red Flags — STOP
 
@@ -537,3 +543,14 @@ This marks the spec as immutable in the brain.
 - **Escalation**: Unresolved conflicts are escalated to dreamer, not left hanging
 - **Immutability**: Once locked, the shared-dev-spec cannot be modified without explicit unlock + re-negotiation
 - **Next Phase**: Output of this skill feeds directly into Phase 2.11 (tech-planning), which breaks the spec into implementation tasks
+
+## Checklist
+
+Before claiming council complete:
+
+- [ ] All 4 surfaces (backend, web frontend, app frontend, infra) produced reasoning outputs
+- [ ] All 5 contracts negotiated (REST API, event bus, cache, DB schema, search)
+- [ ] No TBD fields remain in shared-dev-spec
+- [ ] All cross-surface conflicts resolved — none deferred to implementation
+- [ ] shared-dev-spec.md locked and written to brain via brain-write
+- [ ] spec-freeze invoked to prevent post-council mutations

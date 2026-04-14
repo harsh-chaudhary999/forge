@@ -20,6 +20,12 @@ requires: [intake-interrogate, product-context-load, brain-read, brain-write]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Iron Law
+
+```
+THE ORCHESTRATOR IS THE SINGLE SOURCE OF STATE. NO PHASE IS SKIPPED, NO TRANSITION IS UNAUTHORIZED, AND NO SUBAGENT ESCALATION IS IGNORED.
+```
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:
@@ -895,3 +901,14 @@ conductor_state task_id=<id>
 1. **Post-PR Dreamer:** Triggered by PR merge hook. Scores every decision (inline, council, eval, self-heal).
 2. **Retrospective Scoring:** Dreamer compares actual performance to predicted.
 3. **Brain Learning:** Decisions logged, future conductors learn from past runs.
+
+## Checklist
+
+Before claiming orchestration complete:
+
+- [ ] PRD locked in brain before council was dispatched
+- [ ] All 4 surfaces reasoned and all 5 contracts locked before build dispatch
+- [ ] All subagent statuses resolved (no NEEDS_CONTEXT or BLOCKED outstanding) before eval
+- [ ] Eval returned GREEN before any PRs were raised
+- [ ] conductor.log committed with all phase transitions, subagent dispatches, and escalations
+- [ ] Dreamer retrospective triggered post-merge

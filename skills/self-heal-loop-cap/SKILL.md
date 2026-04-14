@@ -19,6 +19,12 @@ requires: [brain-read]
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Iron Law
+
+```
+THE SELF-HEAL LOOP CAPS AT 3 ATTEMPTS. EACH ATTEMPT REQUIRES A FULL LOCATE → TRIAGE → FIX → VERIFY CYCLE WITH FRESH EVIDENCE. AFTER 3 FAILURES, ESCALATE — DO NOT RETRY.
+```
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:
@@ -581,6 +587,17 @@ All Retries Exhausted:
   message: "API endpoint still returning 500 after 3 fix attempts.
            Likely requires manual debugging or infrastructure changes."
 ```
+
+## Checklist
+
+Before declaring BLOCKED and escalating:
+
+- [ ] Attempt counter verified — exactly 3 full locate → triage → fix → verify cycles completed
+- [ ] Fresh evidence collected on each attempt (not reusing stale logs from attempt 1)
+- [ ] Same fix strategy not repeated — each attempt used a distinct diagnosis angle
+- [ ] Each verify step ran the full original failing eval scenario (not abbreviated)
+- [ ] All three attempts documented with fix description and result
+- [ ] Escalation report includes: failing scenario, all fixes tried, failure evidence per attempt
 
 ## Cross-References
 

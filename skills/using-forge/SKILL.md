@@ -238,6 +238,12 @@ Process (intake/council) → Implementation (plan/build/review) → Reference (b
 **Key Check:**
 If two skills apply and order is ambiguous, check the `requires` field in both skill files. The skill with no requires often runs first.
 
+## Iron Law
+
+```
+WHEN THERE IS A 1% CHANCE A SKILL APPLIES, INVOKE IT BEFORE ANY RESPONSE. PROCESS SKILLS FIRST. IMPLEMENTATION SKILLS SECOND. SUBAGENTS EXECUTE THEIR TASK AND REPORT STATUS — THEY DO NOT RE-RUN THE BOOTSTRAP.
+```
+
 ## Where Things Live
 
 - **Brain:** `~/forge/brain/` (git repo, source of truth)
@@ -265,3 +271,14 @@ Process skills first (intake, conductor), then implementation skills (council, e
 4. **dreamer** — Inline conflict resolution + retrospective scoring.
 
 Everything else is skills.
+
+## Checklist
+
+Before responding to any user message:
+
+- [ ] Checked if any skill applies (even at 1% probability)
+- [ ] Process skills invoked before implementation skills
+- [ ] Skill file read fresh — not relying on memory
+- [ ] All applicable skills in requires chain satisfied before invoking target skill
+- [ ] If subagent: bootstrap instructions ignored, task spec executed directly
+- [ ] If user waived a skill: deviation documented and risks flagged

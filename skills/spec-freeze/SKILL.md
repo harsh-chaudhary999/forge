@@ -10,6 +10,12 @@ requires: [brain-read, brain-write]
 
 Once the shared-dev-spec is frozen, it is immutable. Any behavioral change requires a full council re-vote with evidence. No exceptions, no "small tweaks," no scope additions.
 
+## Iron Law
+
+```
+NO SPEC CHANGES AFTER FREEZE WITHOUT FULL COUNCIL RE-NEGOTIATION. A SMALL TWEAK TO A FROZEN SPEC IS A SPEC CHANGE. URGENCY IS NOT AUTHORIZATION.
+```
+
 ## Anti-Pattern Preamble: Why Agents Try to Change Specs After Freeze
 
 | Rationalization | The Truth |
@@ -284,7 +290,7 @@ If a behavioral change is genuinely required:
 
 ---
 
-## Red Flags - STOP
+## Red Flags — STOP
 
 Stop immediately and escalate if you observe any of the following:
 

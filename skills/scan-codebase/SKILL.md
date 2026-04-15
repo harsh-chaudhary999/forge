@@ -519,12 +519,218 @@ Create one file per top-level module directory + one for each Tier 1 hub.
 - [[index]] — Module map
 ```
 
-### 4.7 — Commit after each project role
+### 4.7 — Diff against prior scan (re-scan only)
+
+When a `SCAN.json` already existed before this run (i.e. this is a re-scan, not first scan), produce a diff summary before overwriting:
+
+```bash
+# Read prior scan metadata
+PRIOR_FILES=$(cat ~/forge/brain/products/<slug>/codebase/SCAN.json 2>/dev/null | grep '"source_files"' | grep -o '[0-9]*')
+PRIOR_COMMIT=$(cat ~/forge/brain/products/<slug>/codebase/SCAN.json 2>/dev/null | grep '"commit"' | grep -o '"[a-f0-9]*"' | tr -d '"')
+PRIOR_DATE=$(cat ~/forge/brain/products/<slug>/codebase/SCAN.json 2>/dev/null | grep '"scanned_at"' | grep -o '"[^"]*"' | tail -1 | tr -d '"')
+
+CURRENT_FILES=$(wc -l < /tmp/forge_scan_source_files.txt)
+CURRENT_COMMIT=$(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || echo "unknown")
+
+# Compare module counts
+PRIOR_MODULES=$(ls ~/forge/brain/products/<slug>/codebase/modules/ 2>/dev/null | wc -l)
+
+echo "=== Scan Diff ==="
+echo "Prior scan: $PRIOR_DATE (commit $PRIOR_COMMIT, $PRIOR_FILES files)"
+echo "This scan:  $(date -u +"%Y-%m-%dT%H:%M:%SZ") (commit $CURRENT_COMMIT, $CURRENT_FILES files)"
+echo ""
+echo "File count change: $((CURRENT_FILES - PRIOR_FILES)) files ($([ $((CURRENT_FILES - PRIOR_FILES)) -gt 0 ] && echo '+')$((CURRENT_FILES - PRIOR_FILES)))"
+
+# Git log between prior and current commit for change summary
+if [ "$PRIOR_COMMIT" != "unknown" ] && [ "$PRIOR_COMMIT" != "$CURRENT_COMMIT" ]; then
+  echo ""
+  echo "Commits since prior scan:"
+  git -C "$REPO" log --oneline "$PRIOR_COMMIT".."$CURRENT_COMMIT" 2>/dev/null | head -10
+fi
+```
+
+Write diff summary into `index.md` under a `## Changes Since Last Scan` section:
+
+```markdown
+## Changes Since Last Scan
+
+> Prior scan: <prior-date> (commit <prior-sha>)
+> This scan: <current-date> (commit <current-sha>)
+
+- File count: <prior> → <current> (<delta>)
+- Commits included: <N commits since prior scan>
+
+### New Modules (files with 0 prior refs now appearing as hubs)
+- `<new-module>` — first seen in this scan
+
+### Removed Hubs (files that dropped below threshold)
+- `<removed-module>` — no longer referenced by 3+ files
+
+### API Surface Changes
+- <N> new endpoints detected
+- <N> endpoints no longer found (may have been removed or renamed)
+```
+
+This section is overwritten on every re-scan. First scans do not include this section.
+
+### 4.8 — Commit after each project role
 
 ```bash
 cd ~/forge/brain
 git add products/<slug>/codebase/
 git commit -m "scan: map <slug>/<role> codebase — <file-count> files, <hub-count> hubs"
+```
+
+---
+
+## Phase 5: Cross-Repo Relationship Layer (Multi-Repo Workspaces Only)
+
+**Skip if workspace has only one repo.** Run after all individual repo scans are complete.
+
+This phase identifies the architectural seams between repos — the contracts, shared types, and communication patterns that cross repo boundaries. This is the most valuable architectural data for multi-repo planning and the data most likely to be missing without an explicit scan phase.
+
+### 5.1 — API call detection (consumer → provider)
+
+Find where one repo calls another's HTTP API:
+
+```bash
+# In web and mobile repos, find backend API base URLs and fetch patterns
+for repo in <web-repo> <mobile-repo>; do
+  echo "=== API calls from: $repo ==="
+  grep -rn \
+    "fetch(\|axios\.\|http\.get\|http\.post\|requests\.get\|requests\.post\|http\.NewRequest\|retrofit\|Dio\(\)" \
+    "$repo" \
+    --include="*.ts" --include="*.js" --include="*.py" --include="*.go" --include="*.dart" --include="*.kt" \
+    | grep -v node_modules | grep -v test | grep -v spec \
+    | grep -v "localhost\|127\.0\.0\.1\|example\.com" \
+    | head -50
+done
+```
+
+### 5.2 — Shared type / schema detection
+
+Find types, interfaces, or schemas that appear in multiple repos (shared contracts):
+
+```bash
+# Extract exported interface/type names from each repo
+for repo in <all-repos>; do
+  echo "=== Types from: $repo ==="
+  grep -rhn \
+    "^export interface \|^export type \|^export class \|^type \|^interface " \
+    "$repo" \
+    --include="*.ts" \
+    | sed 's/^[0-9]*://' \
+    | grep -v node_modules
+done > /tmp/forge_scan_all_types.txt
+
+# Find type names that appear in 2+ repos (shared types)
+sort /tmp/forge_scan_all_types.txt | uniq -d | head -30
+```
+
+### 5.3 — Environment variable cross-reference
+
+Environment variables are often the contract between repos (service URLs, API keys, feature flags):
+
+```bash
+for repo in <all-repos>; do
+  echo "=== Env vars from: $repo ==="
+  grep -rhn \
+    "process\.env\.\|os\.environ\.\|os\.Getenv\|System\.getenv\|dotenv" \
+    "$repo" \
+    --include="*.ts" --include="*.js" --include="*.py" --include="*.go" --include="*.java" --include="*.kt" \
+    | grep -v node_modules | grep -v test \
+    | sed 's/.*process\.env\.\([A-Z_]*\).*/\1/' \
+    | sort | uniq
+done
+```
+
+### 5.4 — Event/message bus cross-reference
+
+Find event producers and consumers across repos:
+
+```bash
+# Producer patterns
+for repo in <all-repos>; do
+  echo "=== Events produced by: $repo ==="
+  grep -rhn \
+    "publish(\|produce(\|emit(\|sendMessage\|kafkaProducer\|channel\.send\|rabbitMQ\.publish" \
+    "$repo" \
+    --include="*.ts" --include="*.py" --include="*.go" --include="*.java" --include="*.kt" \
+    | grep -v node_modules | grep -v test | head -20
+done
+
+# Consumer patterns
+for repo in <all-repos>; do
+  echo "=== Events consumed by: $repo ==="
+  grep -rhn \
+    "subscribe(\|consume(\|\.on(\|kafkaConsumer\|channel\.receive\|rabbitMQ\.consume\|@KafkaListener" \
+    "$repo" \
+    --include="*.ts" --include="*.py" --include="*.go" --include="*.java" --include="*.kt" \
+    | grep -v node_modules | grep -v test | head -20
+done
+```
+
+### 5.5 — Write cross-repo map
+
+Write to `~/forge/brain/products/<slug>/codebase/cross-repo.md`:
+
+```markdown
+# Cross-Repo Relationships: <slug>
+
+> Automatically extracted — verify against actual API contracts in brain/products/<slug>/contracts/
+
+## API Calls (Consumer → Provider)
+
+| From | To | Pattern | Notes |
+|---|---|---|---|
+| [[web]] | [[backend]] | REST HTTP | `fetch('/api/...')` — 23 call sites |
+| [[app]] | [[backend]] | REST HTTP | Retrofit client — 18 call sites |
+
+## Shared Types
+
+Types that appear in 2+ repos — these are implicit contracts:
+
+| Type Name | Defined In | Used By |
+|---|---|---|
+| `User` | [[backend]]/src/types | [[web]], [[app]] |
+| `OrderStatus` | [[shared]] | [[backend]], [[web]], [[app]] |
+
+> ⚠️ Shared types not in a shared package are a fragility risk — consider extracting to shared/
+
+## Environment Variable Contracts
+
+Variables that cross repo boundaries:
+
+| Variable | Set By | Read By | Purpose |
+|---|---|---|---|
+| `API_BASE_URL` | infra/env | [[web]], [[app]] | Backend API root |
+| `JWT_SECRET` | infra/env | [[backend]] | Auth token signing |
+
+## Event Bus (Producer → Consumer)
+
+| Event | Produced By | Consumed By | Channel |
+|---|---|---|---|
+| `order.created` | [[backend]] | [[backend]]/notifications | Kafka |
+
+## Integration Risk Areas
+
+> Patterns that are likely to cause cross-repo bugs:
+
+- **Implicit type sharing** — `<type>` in [[repo-a]] and [[repo-b]] are different structs named the same. Risk: silent deserialization failure.
+- **Direct URL hardcoding** — `<N>` call sites use hardcoded backend URL instead of `API_BASE_URL`. Risk: breaks on env change.
+- **Missing consumer** — Event `<event>` is produced but no consumer found in any repo. Risk: silent data loss.
+
+## Related
+
+- [[index]] — Per-repo module maps
+- [[patterns]] — Architecture patterns detected per repo
+```
+
+Commit after cross-repo layer:
+```bash
+cd ~/forge/brain
+git add products/<slug>/codebase/cross-repo.md
+git commit -m "scan: cross-repo relationships for <slug> — <N> API call patterns, <N> shared types"
 ```
 
 ---
@@ -739,8 +945,9 @@ rm -f /tmp/forge_scan_*.txt
 | 3.4 | Test name extraction | `grep` | 0 |
 | 3.5 | API route extraction | `grep -rn` | 0 |
 | 4 | Brain write | Write per file | Low |
+| 5 | Cross-repo layer | `grep` across all repos | 0 (grep) + Low (write) |
 
-**Token budget target:** <15K tokens per repo. If you exceed this, you skipped the exclusions.
+**Token budget target:** <15K tokens per repo + <5K for cross-repo layer. If you exceed this, you skipped the exclusions.
 
 ---
 

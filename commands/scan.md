@@ -107,11 +107,29 @@ Scan complete: <slug>
   │   └── ...             (<N> total modules)
   ├── patterns.md         (<N> patterns detected)
   ├── api-surface.md      (<N> endpoints)
-  └── gotchas.md          (<N> edge cases, <N> TODOs)
+  ├── gotchas.md          (<N> edge cases, <N> TODOs)
+  └── cross-repo.md       (<N> cross-repo API patterns, <N> shared types)  ← multi-repo only
 
 Token usage: ~<N>K tokens (<well-within budget> / over budget — see concerns below)
 
 Ready to plan? Run: /intake
+```
+
+**On re-scan, also show a diff summary:**
+
+```
+Changes since last scan (<N> days ago, commit <prior-sha> → <current-sha>):
+  → File count: 184 → 201 (+17 new source files)
+  → New hubs:   notification-service (6 refs)
+  → Dropped:    legacy-auth (2 refs — below threshold)
+  → API changes: +3 endpoints, -1 endpoint
+  → Commits:    8 commits since prior scan
+```
+
+If no changes detected (same file count, same commit SHA):
+```
+  No structural changes detected since last scan.
+  SCAN.json timestamp updated.
 ```
 
 If over token budget (>15K):

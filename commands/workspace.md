@@ -221,6 +221,12 @@ After scan completes, show final confirmation:
 cat ~/forge/brain/products/<slug>/product.md
 ```
 
+Read `SCAN.json` to get scan age:
+
+```bash
+cat ~/forge/brain/products/<slug>/codebase/SCAN.json 2>/dev/null
+```
+
 Show a summary:
 
 ```
@@ -232,6 +238,11 @@ Show a summary:
    → app       ~/jh/app        (dart + flutter)
 
    Infrastructure: ⚠️  not configured — run /workspace add-infra <slug> before /eval
+
+   Codebase scan:
+   → Last scanned: 3 days ago (commit a1b2c3d)    ← if scan exists and fresh
+   → ⚠️  12 days old — refresh before next council: /scan <slug>   ← if stale (7-30 days)
+   → ❌  No scan found — run /scan <slug> to map codebase         ← if no scan
 
    Brain activity:
    → PRDs: 2 locked

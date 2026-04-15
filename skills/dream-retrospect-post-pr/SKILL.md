@@ -180,9 +180,40 @@ Commit with message: `brain: retrospective for {prd-id} (score: X/25)`
 ### Edge Case 5: Retrospective Contradicts Prior Learning
 **Action:** Update the prior learning with new evidence. Don't create conflicting entries. Brain should converge, not diverge.
 
+## Post-Retrospective: Scan Refresh
+
+After writing the retrospective, the codebase has changed — PRs merged means modules added, dependencies changed, API surface updated. The brain scan is now stale.
+
+**REQUIRED: Trigger a codebase scan refresh after every retrospective.**
+
+```bash
+# Check scan age
+cat ~/forge/brain/products/<slug>/codebase/SCAN.json 2>/dev/null | grep scanned_at
+
+# Re-run scan (always after PR merge — codebase changed)
+# Invoke scan-codebase skill for each repo in the product
+```
+
+**Why this matters:**
+- The next `/intake` or `/council` session will load stale module maps if scan isn't refreshed
+- New modules added by this feature won't appear in hub scoring
+- Architecture patterns may have shifted (e.g., a new service was introduced)
+- `product-context-load` will flag a staleness warning — preempt it here
+
+**Scan failure handling:**
+- If scan fails or is blocked (e.g., repo not accessible): write `scan-status: STALE` into the retrospective file and flag in the retrospective output
+- Do NOT fail the retrospective because the scan failed — retrospective is independent
+- Escalation: `DONE_WITH_CONCERNS` if scan could not be refreshed
+
+**Commit convention for post-retrospective scan:**
+```bash
+git -C ~/forge/brain commit -m "scan: refresh after <prd-id> merge — <N> files, <N> hubs"
+```
+
 ## Cross-References
 
 - **brain-write**: For persisting retrospective to brain
 - **brain-recall**: For checking prior patterns before writing new ones
 - **conductor-orchestrate**: Signals when to invoke retrospective
 - **forge-writing-skills**: For promoting patterns to skill candidates
+- **scan-codebase**: Invoked after retrospective to refresh brain's module map

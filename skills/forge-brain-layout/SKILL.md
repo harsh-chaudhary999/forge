@@ -48,6 +48,16 @@ The brain is **not** a task tracker, issue system, or temporary notes file. It i
 │       │       │   └── ...
 │       │       └── learnings/                # Retrospective analysis
 │       │           └── {prd-id}-retrospective.md  # Post-PR dreamer retrospective
+│       ├── codebase/                       # Codebase knowledge graph (from /scan)
+│       │   ├── SCAN.json                     # Scan metadata: timestamp, commit SHA, file count
+│       │   ├── index.md                      # Architecture style, module map, entry points
+│       │   ├── patterns.md                   # Detected architecture patterns with evidence
+│       │   ├── api-surface.md                # REST endpoints, exported symbols, event schemas
+│       │   ├── gotchas.md                    # TODOs, FIXMEs, test-case-derived edge cases
+│       │   ├── cross-repo.md                 # Cross-repo API calls, shared types, env contracts
+│       │   └── modules/                      # One .md per module/feature directory
+│       │       ├── <module-name>.md          # Exports, imports, dependents, edge cases
+│       │       └── ...
 │       └── patterns/                       # Identified reusable patterns
 │           ├── warm/                         # Seen 1 time
 │           ├── active/                       # Seen 2+ times (same product)
@@ -525,6 +535,7 @@ brain-why: traces all changes back to skill invocations
 | `drafts/resolved/` | Approved, ready to lock | <10 | by topic |
 | `archived/` | Superseded decisions | varies | by archive reason |
 | `products/{slug}/prd/{id}/` | All PRD context | ~50 files | by product + PRD |
+| `products/{slug}/codebase/` | Module map, patterns, API surface, cross-repo | 10-50 | by module or topic |
 | `products/{slug}/patterns/` | Reusable patterns | 5-20 | by frequency |
 | `links/` | Decision relationships | varies | by source → target |
 
@@ -581,6 +592,7 @@ The forge-brain-layout documents structure. These skills work with the brain:
 | `brain-why` | Trace provenance; see who made decision when |
 | `brain-forget` | Archive decisions; mark as superseded/deprecated |
 | `brain-link` | Create edges between related decisions |
+| `scan-codebase` | Populate `codebase/` directory with module maps, patterns, API surface |
 
 **When to use each:**
 

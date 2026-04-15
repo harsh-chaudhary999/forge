@@ -247,9 +247,23 @@ WHEN THERE IS A 1% CHANCE A SKILL APPLIES, INVOKE IT BEFORE ANY RESPONSE. PROCES
 ## Where Things Live
 
 - **Brain:** `~/forge/brain/` (git repo, source of truth)
-- **Product config:** `forge-product.md` (one per product, describes repos, roles, services)
+- **Product config:** `~/forge/brain/products/<slug>/product.md` (repos, roles, infra)
+- **Codebase scan:** `~/forge/brain/products/<slug>/codebase/` (module map, patterns, API surface)
 - **Skills:** `~/.claude/skills/<skill-name>/SKILL.md`
 - **Subagents:** `~/.claude/agents/<agent-name>.md`
+
+## Onboarding an Existing Project
+
+If you are starting Forge on a **codebase that already exists** (not greenfield):
+
+1. Run `/workspace` to register repos and create `product.md` — scan runs automatically
+2. If scan was skipped or is stale, run `/scan <slug>` before council
+3. `product-context-load` will warn you if the scan is absent or >7 days old
+4. `forge-council-gate` will check scan freshness before each council session
+
+The codebase scan gives surface agents architecture context they cannot derive from the PRD alone. Skipping it means council will produce tech plans that may conflict with the existing structure.
+
+**Scan staleness rule:** <7 days = fresh. 7-30 days = warn. >30 days = prompt to refresh before council.
 
 ## Subagent STOP
 

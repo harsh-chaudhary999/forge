@@ -42,6 +42,35 @@ If you notice any of these, STOP and do not proceed:
 
 ## Detailed Workflow
 
+### Pre-Council: Codebase Scan Freshness Check (Existing Codebases)
+
+Before preparing council materials, check whether a codebase scan exists and is fresh. Council surface agents need the module map to reason about where to place new code, which hubs will be affected, and what the existing architecture patterns are.
+
+```bash
+SCAN_FILE=~/forge/brain/products/<slug>/codebase/SCAN.json
+if [ -f "$SCAN_FILE" ]; then
+  SCAN_DATE=$(cat "$SCAN_FILE" | grep '"scanned_at"' | grep -o '"[0-9T:Z-]*"' | tr -d '"')
+  SCAN_AGE=$(( ( $(date -u +%s) - $(date -d "$SCAN_DATE" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$SCAN_DATE" +%s 2>/dev/null) ) / 86400 ))
+  echo "Codebase scan: $SCAN_DATE ($SCAN_AGE days ago)"
+else
+  echo "Codebase scan: NOT FOUND"
+fi
+```
+
+**Decision:**
+
+| Situation | Action |
+|---|---|
+| Scan not found AND this is a greenfield product (first PRD) | No scan needed. Proceed to council. |
+| Scan not found AND this is an existing codebase | Warn surface agents: ⚠️ No codebase scan. Surface agents will reason without architecture context — tech plans may conflict with existing structure. Recommend: run `/scan <slug>` before council. Do NOT block council. |
+| Scan is <7 days old | Surface scan context to agents. Proceed to council. |
+| Scan is 7-30 days old | Warn: ⚠️ Scan is N days old — refresh recommended (`/scan <slug>`). Do NOT block council if user acknowledges. |
+| Scan is >30 days old | Prompt user: "Codebase scan is N days old. Running council on stale architecture data risks tech plans that don't fit the codebase. Refresh now? (yes / proceed anyway)" |
+
+**Never block council** — the scan gate is advisory. Flag staleness, provide the data you have, proceed.
+
+---
+
 ### Gather Inputs (Pre-Council)
 - **Input:** Locked PRD (from intake-gate)
 - **Action:** Prepare council materials
@@ -155,6 +184,7 @@ The skill will:
 Before locking spec, verify:
 
 - [ ] Locked PRD provided (from intake-gate)
+- [ ] Codebase scan checked — fresh (<7 days), stale (warned), or absent (warned with greenfield exception)
 - [ ] Council materials prepared (agenda, 1-pager, constraints)
 - [ ] `/council-multi-repo-negotiate` skill invoked
 - [ ] All 4 surfaces attended (backend, web, app, infra)

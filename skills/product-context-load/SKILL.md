@@ -68,7 +68,30 @@ Given a product slug (from the locked PRD), load and validate:
    # ... etc
    ```
 
-6. **Output**
+6. **Load codebase scan if present**
+
+   After loading contracts, check for a codebase scan:
+   ```bash
+   ls ~/forge/brain/products/<slug>/codebase/SCAN.json 2>/dev/null
+   ```
+
+   If found, read and surface key scan data into context:
+   ```bash
+   cat ~/forge/brain/products/<slug>/codebase/SCAN.json
+   cat ~/forge/brain/products/<slug>/codebase/index.md
+   ```
+
+   Extract and record:
+   - **Last-scanned timestamp** — warn if older than 7 days: `⚠️ Codebase scan is N days old — run /scan to refresh before planning`
+   - **Architecture style** — include in context-loaded.md so council surfaces get it
+   - **Tier 1 hubs** — files referenced by 5+ modules (architectural load-bearing structures)
+   - **Module count** — scope indicator for tech plan complexity
+
+   If codebase scan is absent:
+   - Add a note to context-loaded.md: `⚠️ No codebase scan found — run /scan <slug> before council to give surface agents architecture context`
+   - Do NOT block or fail — scan is advisory, not required for first-time setup
+
+7. **Output**
    Write to `~/forge/brain/prds/<task-id>/context-loaded.md`:
    ```markdown
    # Product Context Loaded
@@ -87,10 +110,17 @@ Given a product slug (from the locked PRD), load and validate:
 
    **Deployment:** pm2-ssh to shopapp-prod-1
 
+   **Codebase Scan:** last-scanned 2026-04-15 (0 days ago)
+   - Architecture: layered (controller → service → repository)
+   - Modules: 14 (6 Tier 1 hubs: auth, database, user-service, payment, order, notification)
+   - ⚠️ Recommend refreshing before next council: `/scan shopapp`
+   <!-- OR if scan absent: -->
+   - ⚠️ No scan found — run `/scan shopapp` before council
+
    Validation: ✅ All repos exist, ✅ no circular deps, ✅ contracts coherent
    ```
 
-7. **Commit**
+8. **Commit**
    ```bash
    git -C ~/forge/brain add prds/<task-id>/context-loaded.md
    git -C ~/forge/brain commit -m "context: load product topology for <task-id>"
@@ -191,4 +221,5 @@ Before advancing to council:
 - [ ] Circular dependencies checked — topological sort passes without cycles
 - [ ] All contracts loaded — api-rest, schema-mysql, cache, event, search as applicable
 - [ ] Incompatible version constraints identified and escalated if found
+- [ ] Codebase scan checked — either loaded (with staleness warning if >7 days) or absence flagged in context-loaded.md
 - [ ] context-loaded.md written and committed to `~/forge/brain/prds/<task-id>/`

@@ -589,21 +589,50 @@ git commit -m "scan: map <slug>/<role> codebase — <file-count> files, <hub-cou
 
 This phase identifies the architectural seams between repos — the contracts, shared types, and communication patterns that cross repo boundaries. This is the most valuable architectural data for multi-repo planning and the data most likely to be missing without an explicit scan phase.
 
-### 5.1 — API call detection (consumer → provider)
+### 5.1 — API call detection (any repo → any repo)
 
-Find where one repo calls another's HTTP API:
+Find where any repo calls another service's HTTP API. **Scan ALL repos** — not just web/mobile. Microservices call other microservices. A Java consumer service calls a Node backend. A Go service calls another Go service.
 
 ```bash
-# In web and mobile repos, find backend API base URLs and fetch patterns
-for repo in <web-repo> <mobile-repo>; do
-  echo "=== API calls from: $repo ==="
+# Scan ALL repos for outbound HTTP calls — every language, every client library
+for repo in <all-repos>; do
+  echo "=== API calls from: $(basename $repo) ==="
+
+  # TypeScript / JavaScript (fetch, axios, got, superagent, ky, needle)
   grep -rn \
-    "fetch(\|axios\.\|http\.get\|http\.post\|requests\.get\|requests\.post\|http\.NewRequest\|retrofit\|Dio\(\)" \
-    "$repo" \
-    --include="*.ts" --include="*.js" --include="*.py" --include="*.go" --include="*.dart" --include="*.kt" \
-    | grep -v node_modules | grep -v test | grep -v spec \
-    | grep -v "localhost\|127\.0\.0\.1\|example\.com" \
-    | head -50
+    "fetch(\|axios\.\|got\.\|superagent\.\|ky\.\|needle\." \
+    "$repo" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
+    | grep -v node_modules | grep -v test | grep -v spec | head -30
+
+  # Java (RestTemplate, WebClient, OkHttp, HttpClient, Feign interfaces)
+  grep -rn \
+    "restTemplate\.\|webClient\.\|HttpClient\.\|OkHttpClient\.\|\.exchange(\|\.getForObject(\|\.postForObject(\|@FeignClient" \
+    "$repo" --include="*.java" \
+    | grep -v test | grep -v Test | head -20
+
+  # Kotlin (Ktor client, Fuel, Retrofit annotations on consumer interfaces)
+  grep -rn \
+    "client\.get\|client\.post\|Fuel\.get\|Fuel\.post\|@GET(\|@POST(\|@PUT(\|@DELETE(" \
+    "$repo" --include="*.kt" \
+    | grep -v test | head -20
+
+  # Python (requests, httpx, aiohttp)
+  grep -rn \
+    "requests\.get\|requests\.post\|requests\.put\|requests\.delete\|httpx\.get\|httpx\.post\|aiohttp\." \
+    "$repo" --include="*.py" \
+    | grep -v test | grep -v _test | head -20
+
+  # Go (net/http, resty, go-resty)
+  grep -rn \
+    "http\.Get(\|http\.Post(\|http\.NewRequest(\|resty\.\|client\.R()" \
+    "$repo" --include="*.go" \
+    | grep -v _test.go | head -20
+
+  # Dart / Flutter (Dio, http package)
+  grep -rn \
+    "dio\.get\|dio\.post\|dio\.put\|dio\.delete\|http\.get\|http\.post" \
+    "$repo" --include="*.dart" \
+    | grep -v test | head -20
 done
 ```
 
@@ -670,51 +699,153 @@ for repo in <all-repos>; do
 done
 ```
 
-### 5.5 — Route-to-callsite correlation (backend route ↔ frontend call)
+### 5.5 — Route-to-callsite correlation (backend route ↔ any-repo call)
 
-This is the join between Phase 3.5 (backend route table) and Phase 5.1 (frontend call sites). It produces the most actionable cross-repo data: which frontend call maps to which backend route, and which calls have no matching route (broken contracts).
+This is the join between Phase 3.5 (backend route table) and Phase 5.1 (call sites across ALL repos). It produces the most actionable cross-repo data: which call site maps to which backend route, and which calls have no matching route (broken contracts).
 
-**Step 1 — Extract URL strings from frontend call sites:**
+**Scope: ALL repos, not just web/mobile.** Microservices call other services. A Java consumer may call a Node backend. A backend service may call another backend microservice. Every repo is a potential API consumer.
 
-```bash
-# Pull literal URL strings out of fetch/axios/http calls in web and mobile repos
-for repo in <web-repo> <mobile-repo>; do
-  repo_name=$(basename "$repo")
-  echo "=== URL strings from: $repo_name ==="
-  grep -rn \
-    "fetch(\|axios\.get(\|axios\.post(\|axios\.put(\|axios\.delete(\|axios\.patch(\|http\.get(\|http\.post(" \
-    "$repo" \
-    --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.dart" --include="*.kt" \
-    | grep -v node_modules | grep -v test | grep -v spec \
-    | grep -oE "(fetch|axios\.[a-z]+|http\.[a-z]+)\(['\`\"]([^'\`\"]+)['\`\"]" \
-    | grep -oE "['\`\"][^'\`\"]+['\`\"]" \
-    | tr -d "'\`\"" \
-    | grep "^/" \
-    | sort | uniq \
-    | sed "s|^|$repo_name\t|"
-done > /tmp/forge_scan_fe_urls.txt
-
-echo "Frontend URL strings extracted: $(wc -l < /tmp/forge_scan_fe_urls.txt)"
-cat /tmp/forge_scan_fe_urls.txt
-```
-
-**Step 2 — Extract URL strings with file+line context (for the correlation table):**
+**Step 1 — Extract URL strings from ALL repo call sites (language-aware):**
 
 ```bash
-# Richer extraction: keep file:line for each call site
-for repo in <web-repo> <mobile-repo>; do
+# ── TypeScript / JavaScript / Node (fetch, axios, got, superagent) ──────────
+for repo in <all-repos>; do
   repo_name=$(basename "$repo")
   grep -rn \
-    "fetch(\|axios\.get(\|axios\.post(\|axios\.put(\|axios\.delete(\|axios\.patch(" \
+    "fetch(\|axios\.\|got\.\|superagent\.\|request\.\|needle\.\|ky\." \
     "$repo" \
-    --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.dart" \
+    --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
     | grep -v node_modules | grep -v test | grep -v spec \
     | grep -E "['\`\"]/" \
     | sed "s|$repo/||" \
-    | grep -oE "([^:]+:[0-9]+).*['\`\"]([/][^'\`\"?#]+)" \
-    | awk -F'\t' '{print REPO"/"$1"\t"$2}' REPO="$repo_name" \
-    2>/dev/null
-done > /tmp/forge_scan_callsite_map.txt
+    | sed "s|^|$repo_name\t|"
+done > /tmp/forge_scan_js_calls.txt
+
+# ── Java (RestTemplate, WebClient, OkHttp, HttpClient, Feign annotations) ───
+for repo in <all-repos>; do
+  repo_name=$(basename "$repo")
+  # RestTemplate / WebClient URL string literals
+  grep -rn \
+    "restTemplate\.\|webClient\.\|HttpClient\.\|OkHttpClient\.\|\.exchange(\|\.getForObject(\|\.postForObject(" \
+    "$repo" --include="*.java" \
+    | grep -v test | grep -v Test \
+    | sed "s|$repo/||" | sed "s|^|$repo_name\t|"
+
+  # Feign client interface @GetMapping/@PostMapping etc. (these ARE the route definitions)
+  grep -rn \
+    "@GetMapping\|@PostMapping\|@PutMapping\|@DeleteMapping\|@PatchMapping\|@RequestMapping" \
+    "$repo" --include="*.java" \
+    | grep -i "feign\|client\|Client" \
+    | sed "s|$repo/||" | sed "s|^|$repo_name/feign\t|"
+done >> /tmp/forge_scan_java_calls.txt
+
+# ── Kotlin (Ktor, Fuel, Retrofit annotations) ────────────────────────────────
+for repo in <all-repos>; do
+  repo_name=$(basename "$repo")
+  grep -rn \
+    "client\.get(\|client\.post(\|client\.put(\|client\.delete(\|Fuel\.get(\|Fuel\.post(\|\.get<\|\.post<" \
+    "$repo" --include="*.kt" \
+    | grep -v test | grep -v Test \
+    | sed "s|$repo/||" | sed "s|^|$repo_name\t|"
+
+  # Retrofit annotations on interfaces
+  grep -rn \
+    "@GET(\|@POST(\|@PUT(\|@DELETE(\|@PATCH(" \
+    "$repo" --include="*.kt" \
+    | grep -v test \
+    | sed "s|$repo/||" | sed "s|^|$repo_name/retrofit\t|"
+done >> /tmp/forge_scan_kotlin_calls.txt
+
+# ── Python (requests, httpx, aiohttp) ────────────────────────────────────────
+for repo in <all-repos>; do
+  repo_name=$(basename "$repo")
+  grep -rn \
+    "requests\.get(\|requests\.post(\|requests\.put(\|requests\.delete(\|httpx\.get(\|httpx\.post(\|aiohttp\." \
+    "$repo" --include="*.py" \
+    | grep -v test | grep -v "_test" \
+    | sed "s|$repo/||" | sed "s|^|$repo_name\t|"
+done >> /tmp/forge_scan_python_calls.txt
+
+# ── Go (http.Get, http.Post, http.NewRequest, resty, go-resty) ───────────────
+for repo in <all-repos>; do
+  repo_name=$(basename "$repo")
+  grep -rn \
+    "http\.Get(\|http\.Post(\|http\.NewRequest(\|resty\.\|client\.R()\.Get(" \
+    "$repo" --include="*.go" \
+    | grep -v "_test.go" \
+    | sed "s|$repo/||" | sed "s|^|$repo_name\t|"
+done >> /tmp/forge_scan_go_calls.txt
+
+# ── Dart/Flutter (Dio, http package) ─────────────────────────────────────────
+for repo in <all-repos>; do
+  repo_name=$(basename "$repo")
+  grep -rn \
+    "dio\.get(\|dio\.post(\|dio\.put(\|dio\.delete(\|http\.get(\|http\.post(" \
+    "$repo" --include="*.dart" \
+    | grep -v test \
+    | sed "s|$repo/||" | sed "s|^|$repo_name\t|"
+done >> /tmp/forge_scan_dart_calls.txt
+
+cat /tmp/forge_scan_js_calls.txt /tmp/forge_scan_java_calls.txt \
+    /tmp/forge_scan_kotlin_calls.txt /tmp/forge_scan_python_calls.txt \
+    /tmp/forge_scan_go_calls.txt /tmp/forge_scan_dart_calls.txt \
+    > /tmp/forge_scan_all_callsites.txt
+
+echo "Total call sites across all repos and languages: $(wc -l < /tmp/forge_scan_all_callsites.txt)"
+```
+
+**Step 2 — Extract literal URL strings with file:line context:**
+
+```bash
+# For each language, extract the actual URL path string from the call
+# TS/JS: look for string arguments starting with '/' or config constants
+grep -oE "(fetch|axios\.[a-z]+|got\.[a-z]+)\(['\`\"]([/][^'\`\"?# ]+)" \
+  /tmp/forge_scan_js_calls.txt \
+  | grep -oE "['\`\"][/][^'\`\"?# ]+" | tr -d "'\`\"" > /tmp/forge_scan_url_strings.txt
+
+# Java: RestTemplate URL strings, Feign @*Mapping values
+grep -oE '"(/[^"?# ]+)"' /tmp/forge_scan_java_calls.txt \
+  | tr -d '"' >> /tmp/forge_scan_url_strings.txt
+
+# Feign @GetMapping("...") annotations — these are consumer-side route declarations
+grep -oE '@[A-Z][a-z]+Mapping\("([^"]+)"' /tmp/forge_scan_kotlin_calls.txt \
+  | grep -oE '"[^"]+"' | tr -d '"' >> /tmp/forge_scan_url_strings.txt
+
+# Python requests.get("..."), requests.post("...")
+grep -oE "(requests|httpx)\.[a-z]+\(['\"]([/][^'\"?# ]+)" \
+  /tmp/forge_scan_python_calls.txt \
+  | grep -oE "['\"][/][^'\"?# ]+" | tr -d "'\"" >> /tmp/forge_scan_url_strings.txt
+
+sort -u /tmp/forge_scan_url_strings.txt > /tmp/forge_scan_fe_urls.txt
+echo "Unique URL paths extracted: $(wc -l < /tmp/forge_scan_fe_urls.txt)"
+cat /tmp/forge_scan_fe_urls.txt
+```
+
+**Step 3 — Normalize backend route table for matching:**
+
+```bash
+# /tmp/forge_scan_api_routes.txt was built in Phase 3.5
+# Normalize :param placeholders to a regex-friendly pattern for matching
+# Format each line: METHOD  /route/path  file:line  handler
+grep -E "@Get|@Post|@Put|@Delete|@Patch|router\.(get|post|put|delete|patch)|app\.(get|post|put|delete|patch)|r\.(GET|POST|PUT|DELETE)" \
+  /tmp/forge_scan_api_routes.txt \
+  | sed \
+    -e "s/.*@Get('\([^']*\)').*/GET\t\1/" \
+    -e "s/.*@Post('\([^']*\)').*/POST\t\1/" \
+    -e "s/.*@Put('\([^']*\)').*/PUT\t\1/" \
+    -e "s/.*@Delete('\([^']*\)').*/DELETE\t\1/" \
+    -e "s/.*@Patch('\([^']*\)').*/PATCH\t\1/" \
+    -e "s/.*router\.get('\([^']*\)'.*/GET\t\1/" \
+    -e "s/.*router\.post('\([^']*\)'.*/POST\t\1/" \
+    -e "s/.*app\.get('\([^']*\)'.*/GET\t\1/" \
+    -e "s/.*app\.post('\([^']*\)'.*/POST\t\1/" \
+    -e "s/.*@GetMapping(\"\([^\"]*\)\").*/GET\t\1/" \
+    -e "s/.*@PostMapping(\"\([^\"]*\)\").*/POST\t\1/" \
+    -e "s/.*@RequestMapping.*\"\([^\"]*\)\".*/MULTI\t\1/" \
+  > /tmp/forge_scan_be_routes_normalized.txt
+
+echo "Backend routes normalized: $(wc -l < /tmp/forge_scan_be_routes_normalized.txt)"
+cat /tmp/forge_scan_be_routes_normalized.txt
 ```
 
 **Step 3 — Normalize backend route table for matching:**
@@ -806,10 +937,15 @@ Write to `~/forge/brain/products/<slug>/codebase/cross-repo.md` using data from 
 
 ## API Calls (Consumer → Provider)
 
-| From | To | Pattern | Matched Routes | Unmatched |
-|---|---|---|---|---|
-| [[web]] | [[backend]] | REST HTTP | 22/23 call sites matched | 1 broken (`/api/v1/feed`) |
-| [[app]] | [[backend]] | REST HTTP | 18/18 call sites matched | 0 broken |
+> Covers ALL repos — microservice-to-microservice calls included.
+
+| From | Language/Client | To | Pattern | Matched Routes | Unmatched |
+|---|---|---|---|---|---|
+| [[web]] | TypeScript / axios | [[backend]] | REST HTTP | 22/23 matched | 1 broken (`/api/v1/feed`) |
+| [[app]] | Dart / Dio | [[backend]] | REST HTTP | 18/18 matched | 0 broken |
+| [[consumer-service]] | Java / RestTemplate | [[core-backend]] | REST HTTP | 14/15 matched | 1 broken (`/api/v1/legacy`) |
+| [[consumer-service]] | Java / Feign | [[core-backend]] | REST HTTP | 6/6 matched | 0 broken |
+| [[order-service]] | Go / http.Get | [[inventory-service]] | REST HTTP | 4/4 matched | 0 broken |
 
 ## Shared Types
 

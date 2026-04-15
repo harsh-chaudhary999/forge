@@ -71,6 +71,74 @@ Each step carries a `failure_mode` from the scenario definition:
 | `continue` | Record failure, proceed to next step. |
 | `log` | Record failure as warning, proceed. Does not affect verdict unless critical. |
 
+### Phase 3.5: Evidence Confidence Calibration
+
+Before aggregating to a verdict, each driver result passes through a confidence gate. Evidence quality determines whether a FAIL is surfaced as-is or flagged for investigation.
+
+This gate applies **only to surfacing findings in the report** — it does NOT change the verdict logic. A FAIL with LOW confidence still produces RED. Confidence calibration affects how findings are communicated, not whether failures count.
+
+**Confidence tiers:**
+
+| Tier | Score | Definition | Treatment |
+|---|---|---|---|
+| HIGH | ≥ 0.80 | Direct evidence: HTTP status code, exact assertion value, DB row count, queue offset delta | Surface as-is with full evidence |
+| MODERATE | 0.60–0.79 | Indirect evidence: timing-sensitive assertion, partial state, inferred from absence | Surface with caveat: `(moderate confidence — verify manually)` |
+| LOW | < 0.60 | No direct evidence: timeout with no error, empty error field, circumstantial | Surface in a separate `Low-Confidence Signals` section — do NOT block verdict on these alone |
+
+**Assigning confidence:**
+
+```
+Driver returned a non-2xx HTTP status with exact status code?
+  → HIGH
+
+Driver returned exact assertion value mismatch (expected X, got Y)?
+  → HIGH
+
+Driver returned error with full stack trace?
+  → HIGH
+
+Driver returned timeout or connection refused with no further detail?
+  → MODERATE (service may be slow, not broken)
+
+Step failed with empty `error` field and no evidence string?
+  → LOW (driver bug or data gap — flag for driver investigation)
+
+Step failed after retry with inconsistent outcomes (FAIL, PASS, FAIL)?
+  → MODERATE (flaky classification applies separately)
+
+Performance SLA breach with measured duration_ms vs sla_ms?
+  → HIGH (numeric, deterministic)
+
+Performance advisory with no sla_ms defined in scenario?
+  → LOW (no agreed threshold, do not surface as failure)
+```
+
+**Output addition for Phase 5:** Each entry in `evidence_summary` gains a `confidence` field:
+
+```yaml
+evidence_summary:
+  - scenario: SC-AUTH-001
+    step: 3
+    driver: eval-driver-api-http
+    status: FAIL
+    evidence: "HTTP 401 — expected 200"
+    classification: FAIL_CRITICAL
+    confidence: HIGH          # ← new field
+```
+
+Low-confidence signals appear in a dedicated section at the end of the verdict report, clearly separated from verdict-determining failures:
+
+```yaml
+low_confidence_signals:
+  - scenario: SC-CACHE-002
+    step: 5
+    driver: eval-driver-cache-redis
+    status: FAIL
+    evidence: ""
+    note: "Empty evidence field — driver may not have received response. Investigate driver health before attributing to product code."
+    confidence: LOW
+```
+
 ### Phase 4: Aggregate to Verdict
 
 Scan all classified steps and determine the overall verdict:
@@ -118,6 +186,14 @@ retry_history:
     attempts: <int>
     outcomes: [PASS, FAIL, FAIL, ...]
 decision_id: <EVALJUDGE-YYYY-MM-DD-HH | null>
+low_confidence_signals:
+  - scenario: <scenario-id>
+    step: <step-number>
+    driver: <driver-name>
+    status: <FAIL|ERROR>
+    evidence: <string | "">
+    note: <explanation of why confidence is low and what to investigate>
+    confidence: LOW
 ```
 
 ## Adjudication Rules
@@ -166,6 +242,9 @@ Before emitting the final verdict, verify:
 - [ ] YELLOW verdicts include full non-critical failure documentation
 - [ ] Evidence field populated for every FAIL and ERROR step
 - [ ] Performance SLA checked where `sla_ms` is defined in scenario
+- [ ] Confidence calibration applied to every FAIL/ERROR step (HIGH / MODERATE / LOW assigned)
+- [ ] LOW confidence signals moved to `low_confidence_signals` section — not mixed with verdict-determining failures
+- [ ] MODERATE confidence findings tagged with `(moderate confidence — verify manually)`
 - [ ] Verdict output is valid YAML matching the schema in Phase 5
 - [ ] Decision recorded in brain for YELLOW and RED verdicts
 - [ ] Affected services list is accurate (derived from driver + scenario metadata)

@@ -80,8 +80,9 @@ install_claude_code() {
   cp    "${FORGE_DIR}/gemini-extension.json"  "${plugin_dir}/gemini-extension.json"
   cp -r "${FORGE_DIR}/.claude-plugin"        "${plugin_dir}/.claude-plugin"
 
-  chmod +x "${plugin_dir}/hooks/session-start"
-  chmod +x "${plugin_dir}/hooks/run-hook.cmd"
+  # Make hook scripts executable (graceful — not all files may exist)
+  find "${plugin_dir}/hooks" -type f \( -name "*.sh" -o -name "session-start" -o -name "run-hook.cmd" \) -exec chmod +x {} \; 2>/dev/null || true
+  find "${plugin_dir}/.claude-plugin" -name "*.cjs" -exec chmod +x {} \; 2>/dev/null || true
 
   local installed_file="${HOME}/.claude/plugins/installed_plugins.json"
   local entry="{
@@ -176,8 +177,8 @@ install_cursor() {
   cp    "${FORGE_DIR}/CLAUDE.md"          "${plugin_dir}/CLAUDE.md"
   cp -r "${FORGE_DIR}/.cursor-plugin"     "${plugin_dir}/.cursor-plugin"
 
-  chmod +x "${plugin_dir}/hooks/session-start"
-  chmod +x "${plugin_dir}/hooks/run-hook.cmd"
+  # Make hook scripts executable (graceful — not all files may exist)
+  find "${plugin_dir}/hooks" -type f \( -name "*.sh" -o -name "session-start" -o -name "run-hook.cmd" \) -exec chmod +x {} \; 2>/dev/null || true
 
   echo "  Done: ${plugin_dir}"
   echo "  Note: Restart Cursor to activate."

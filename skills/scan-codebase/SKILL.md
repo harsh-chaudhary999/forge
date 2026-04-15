@@ -585,18 +585,18 @@ File path: `~/forge/brain/products/<slug>/codebase/structure.md`
 
 ## Repository Tree
 
-```
-<repo-name>/                          (root)
-├── <dir1>/                           → [[modules/<role>-<dir1>]]
-│   ├── <subdir1>/                    → [[modules/<role>-<subdir1>]]
-│   │   ├── <ClassA>.ts               → [[classes/<role>-<ClassA>]]
-│   │   └── <ClassB>.ts               → [[classes/<role>-<ClassB>]]
-│   └── <file>.ts                     → [[modules/<role>-<stem>]]
-├── <dir2>/                           → [[modules/<role>-<dir2>]]
-│   └── <file>.ts                     → [[modules/<role>-<stem>]]
-├── package.json / go.mod / pom.xml
-└── README.md
-```
+> Written as a nested list — NOT a code block. Obsidian does not parse `[[wikilinks]]` inside fenced code blocks, so a code block tree produces zero graph edges.
+
+- `<repo-name>/`
+  - `<dir1>/` → [[modules/<role>-<dir1>]]
+    - `<subdir1>/` → [[modules/<role>-<subdir1>]]
+      - `<ClassA>.ts` → [[classes/<role>-<ClassA>]]
+      - `<ClassB>.ts` → [[classes/<role>-<ClassB>]]
+    - `<file>.ts` → [[modules/<role>-<stem>]]
+  - `<dir2>/` → [[modules/<role>-<dir2>]]
+    - `<file>.ts` → [[modules/<role>-<stem>]]
+  - `package.json` / `go.mod` / `pom.xml`
+  - `README.md`
 
 > Omit: `node_modules/`, `dist/`, `build/`, `__pycache__/`, `.git/`, test fixtures
 

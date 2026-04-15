@@ -108,7 +108,7 @@ Scan complete: <slug>
   ├── patterns.md         (<N> patterns detected)
   ├── api-surface.md      (<N> endpoints)
   ├── gotchas.md          (<N> edge cases, <N> TODOs)
-  └── cross-repo.md       (<N> cross-repo API patterns, <N> shared types)  ← multi-repo only
+  └── cross-repo.md       (<N> routes correlated, <N> broken contracts, <N> shared types)  ← multi-repo only
 
 Token usage: ~<N>K tokens (<well-within budget> / over budget — see concerns below)
 

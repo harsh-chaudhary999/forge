@@ -670,21 +670,146 @@ for repo in <all-repos>; do
 done
 ```
 
-### 5.5 — Write cross-repo map
+### 5.5 — Route-to-callsite correlation (backend route ↔ frontend call)
 
-Write to `~/forge/brain/products/<slug>/codebase/cross-repo.md`:
+This is the join between Phase 3.5 (backend route table) and Phase 5.1 (frontend call sites). It produces the most actionable cross-repo data: which frontend call maps to which backend route, and which calls have no matching route (broken contracts).
+
+**Step 1 — Extract URL strings from frontend call sites:**
+
+```bash
+# Pull literal URL strings out of fetch/axios/http calls in web and mobile repos
+for repo in <web-repo> <mobile-repo>; do
+  repo_name=$(basename "$repo")
+  echo "=== URL strings from: $repo_name ==="
+  grep -rn \
+    "fetch(\|axios\.get(\|axios\.post(\|axios\.put(\|axios\.delete(\|axios\.patch(\|http\.get(\|http\.post(" \
+    "$repo" \
+    --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.dart" --include="*.kt" \
+    | grep -v node_modules | grep -v test | grep -v spec \
+    | grep -oE "(fetch|axios\.[a-z]+|http\.[a-z]+)\(['\`\"]([^'\`\"]+)['\`\"]" \
+    | grep -oE "['\`\"][^'\`\"]+['\`\"]" \
+    | tr -d "'\`\"" \
+    | grep "^/" \
+    | sort | uniq \
+    | sed "s|^|$repo_name\t|"
+done > /tmp/forge_scan_fe_urls.txt
+
+echo "Frontend URL strings extracted: $(wc -l < /tmp/forge_scan_fe_urls.txt)"
+cat /tmp/forge_scan_fe_urls.txt
+```
+
+**Step 2 — Extract URL strings with file+line context (for the correlation table):**
+
+```bash
+# Richer extraction: keep file:line for each call site
+for repo in <web-repo> <mobile-repo>; do
+  repo_name=$(basename "$repo")
+  grep -rn \
+    "fetch(\|axios\.get(\|axios\.post(\|axios\.put(\|axios\.delete(\|axios\.patch(" \
+    "$repo" \
+    --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.dart" \
+    | grep -v node_modules | grep -v test | grep -v spec \
+    | grep -E "['\`\"]/" \
+    | sed "s|$repo/||" \
+    | grep -oE "([^:]+:[0-9]+).*['\`\"]([/][^'\`\"?#]+)" \
+    | awk -F'\t' '{print REPO"/"$1"\t"$2}' REPO="$repo_name" \
+    2>/dev/null
+done > /tmp/forge_scan_callsite_map.txt
+```
+
+**Step 3 — Normalize backend route table for matching:**
+
+```bash
+# /tmp/forge_scan_api_routes.txt was built in Phase 3.5
+# Normalize :param placeholders to a regex-friendly pattern for matching
+# Format each line: METHOD  /route/path  file:line  handler
+grep -E "@Get|@Post|@Put|@Delete|@Patch|router\.(get|post|put|delete|patch)|app\.(get|post|put|delete|patch)|r\.(GET|POST|PUT|DELETE)" \
+  /tmp/forge_scan_api_routes.txt \
+  | sed \
+    -e "s/.*@Get('\([^']*\)').*/GET\t\1/" \
+    -e "s/.*@Post('\([^']*\)').*/POST\t\1/" \
+    -e "s/.*@Put('\([^']*\)').*/PUT\t\1/" \
+    -e "s/.*@Delete('\([^']*\)').*/DELETE\t\1/" \
+    -e "s/.*@Patch('\([^']*\)').*/PATCH\t\1/" \
+    -e "s/.*router\.get('\([^']*\)'.*/GET\t\1/" \
+    -e "s/.*router\.post('\([^']*\)'.*/POST\t\1/" \
+    -e "s/.*app\.get('\([^']*\)'.*/GET\t\1/" \
+    -e "s/.*app\.post('\([^']*\)'.*/POST\t\1/" \
+  > /tmp/forge_scan_be_routes_normalized.txt
+
+echo "Backend routes normalized: $(wc -l < /tmp/forge_scan_be_routes_normalized.txt)"
+cat /tmp/forge_scan_be_routes_normalized.txt
+```
+
+**Step 4 — Join: match each frontend URL against backend route table:**
+
+This step is done by the model (not bash) — bash regex matching for `:param` normalization is brittle. Read both files and produce the correlation:
+
+For each URL in `/tmp/forge_scan_fe_urls.txt`:
+1. Strip query strings (`?key=val`) and hash fragments
+2. Try exact match against backend routes
+3. If no exact match, try pattern match — replace `:param`, `{param}`, `[param]` with `*` wildcard and match
+4. Record: `MATCHED` (exact or pattern), `UNMATCHED` (no backend route found), or `AMBIGUOUS` (matches 2+ routes)
+
+Flag these specifically:
+- **UNMATCHED** frontend URLs → broken contract (frontend calls a route that doesn't exist in backend)
+- Routes in backend with zero frontend call sites → orphan routes (may be internal, may be dead code)
+
+**Step 5 — Output correlation results to temp file:**
+
+Write `/tmp/forge_scan_route_correlation.txt` with this structure (tab-separated):
+```
+STATUS  FE_REPO  FE_URL  MATCH_TYPE  BE_FILE  BE_ROUTE  BE_METHOD
+MATCHED  web  /api/users/profile  exact  backend/src/routes/users.ts:18  /api/users/profile  GET
+MATCHED  app  /api/orders  pattern  backend/src/routes/orders.ts:42  /api/orders/:id  GET
+UNMATCHED  web  /api/legacy/feed  -  -  -  -
+ORPHAN  -  -  -  backend/src/routes/admin.ts:7  /api/admin/metrics  GET
+```
+
+---
+
+### 5.6 — Write cross-repo map
+
+Write to `~/forge/brain/products/<slug>/codebase/cross-repo.md` using data from all prior Phase 5 steps. Include the route correlation table from 5.5.
 
 ```markdown
 # Cross-Repo Relationships: <slug>
 
 > Automatically extracted — verify against actual API contracts in brain/products/<slug>/contracts/
 
+## Route Correlation Map (Frontend Call → Backend Route)
+
+> Built by joining Phase 3.5 (backend routes) with Phase 5.1 (frontend call sites).
+> `MATCHED` = confirmed route exists. `UNMATCHED` = broken contract. `ORPHAN` = backend route with no known caller.
+
+| Status | Caller | URL Called | Match Type | Backend File | Backend Route |
+|---|---|---|---|---|---|
+| ✅ MATCHED | `web/src/hooks/useUser.ts:34` | `GET /api/users/profile` | exact | `backend/src/routes/users.ts:18` | `GET /api/users/profile` |
+| ✅ MATCHED | `web/src/pages/orders.tsx:67` | `GET /api/orders/123` | pattern | `backend/src/routes/orders.ts:42` | `GET /api/orders/:id` |
+| ✅ MATCHED | `app/lib/api/auth.dart:12` | `POST /api/auth/login` | exact | `backend/src/routes/auth.ts:9` | `POST /api/auth/login` |
+| ❌ UNMATCHED | `web/src/utils/legacy.ts:88` | `GET /api/v1/feed` | — | — | — |
+| 🔍 ORPHAN | — | — | — | `backend/src/routes/admin.ts:7` | `GET /api/admin/metrics` |
+
+### Broken Contracts (UNMATCHED — action required)
+
+> These frontend calls have no matching backend route. Likely causes: route was renamed, removed, or never implemented.
+
+- `web/src/utils/legacy.ts:88` → `GET /api/v1/feed` — no backend route matches. Check if renamed to `/api/v2/feed`.
+
+### Orphan Routes (no known frontend caller)
+
+> These backend routes have no detected frontend call site. May be internal, webhook-only, or dead code.
+
+- `backend/src/routes/admin.ts:7` → `GET /api/admin/metrics` — no caller found in web or app repos.
+
+---
+
 ## API Calls (Consumer → Provider)
 
-| From | To | Pattern | Notes |
-|---|---|---|---|
-| [[web]] | [[backend]] | REST HTTP | `fetch('/api/...')` — 23 call sites |
-| [[app]] | [[backend]] | REST HTTP | Retrofit client — 18 call sites |
+| From | To | Pattern | Matched Routes | Unmatched |
+|---|---|---|---|---|
+| [[web]] | [[backend]] | REST HTTP | 22/23 call sites matched | 1 broken (`/api/v1/feed`) |
+| [[app]] | [[backend]] | REST HTTP | 18/18 call sites matched | 0 broken |
 
 ## Shared Types
 
@@ -716,21 +841,35 @@ Variables that cross repo boundaries:
 
 > Patterns that are likely to cause cross-repo bugs:
 
+- **Broken contracts** — `<N>` frontend call sites have no matching backend route. See "Broken Contracts" above.
 - **Implicit type sharing** — `<type>` in [[repo-a]] and [[repo-b]] are different structs named the same. Risk: silent deserialization failure.
 - **Direct URL hardcoding** — `<N>` call sites use hardcoded backend URL instead of `API_BASE_URL`. Risk: breaks on env change.
 - **Missing consumer** — Event `<event>` is produced but no consumer found in any repo. Risk: silent data loss.
+- **Orphan routes** — `<N>` backend routes have no frontend caller. Risk: dead code or undocumented internal API.
+
+## Summary Stats
+
+> Quick health check for cross-repo integration:
+
+- Frontend call sites: <N total>
+- Matched routes: <N> (<pct>%)
+- Broken contracts (UNMATCHED): <N> ⚠️
+- Orphan backend routes: <N>
+- Shared types (implicit contracts): <N>
+- Event producers: <N> | consumers: <N>
 
 ## Related
 
 - [[index]] — Per-repo module maps
 - [[patterns]] — Architecture patterns detected per repo
+- [[api-surface]] — Full backend API surface
 ```
 
 Commit after cross-repo layer:
 ```bash
 cd ~/forge/brain
 git add products/<slug>/codebase/cross-repo.md
-git commit -m "scan: cross-repo relationships for <slug> — <N> API call patterns, <N> shared types"
+git commit -m "scan: cross-repo relationships for <slug> — <N> routes correlated, <N> broken contracts, <N> shared types"
 ```
 
 ---

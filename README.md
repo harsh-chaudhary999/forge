@@ -2,7 +2,7 @@
 
 > Plug-and-play multi-repo product orchestration plugin. Takes a PRD and ships it end-to-end across any product stack.
 
-Forge takes a single PRD (Product Requirements Document) and ships the entire feature across multiple repos: it locks scope through intake, negotiates contracts between services, generates bite-sized tech plans, builds with TDD in isolated worktrees, runs end-to-end eval across your whole stack, auto-heals failures, reviews code, raises coordinated PRs in dependency order, and writes every decision to a searchable brain. 63 skills, 4 subagents, 15 slash commands.
+Forge takes a single PRD (Product Requirements Document) and ships the entire feature across multiple repos: it locks scope through intake, negotiates contracts between services, generates bite-sized tech plans, builds with TDD in isolated worktrees, runs end-to-end eval across your whole stack, auto-heals failures, reviews code, raises coordinated PRs in dependency order, and writes every decision to a searchable brain. 64 skills, 4 subagents, 15 slash commands.
 
 ---
 
@@ -48,7 +48,7 @@ Forge loads on session start. After restart, verify:
 /forge-status
 ```
 
-You should see Forge context injected with all 63 skills available.
+You should see Forge context injected with all 64 skills available.
 
 ---
 
@@ -82,6 +82,9 @@ PRD → Intake → Council → Spec Freeze → Tech Plans → Build → Eval →
 - **No runtime plugin dependencies.** Forge skills are self-contained markdown. They work offline.
 - **Every decision is auditable.** The brain is a git repo. Every decision has provenance: who, when, why, evidence, alternatives.
 - **Anti-pattern preambles on every skill.** Each skill starts with a rationalization table that closes loopholes before they open.
+- **350+ edge cases with escalation paths.** Every skill documents failure scenarios with Symptom, Do NOT, Mitigation, and escalation keywords (BLOCKED / NEEDS_CONTEXT / NEEDS_COORDINATION / NEEDS_INFRA_CHANGE).
+- **Decision trees for complex judgment calls.** 29+ skills include ASCII decision trees for choosing between strategies (e.g. cache isolation approach, transaction isolation level, PR merge strategy).
+- **Iron Law enforcement on every rigid skill.** Non-negotiable MUST rules in ALL CAPS. If the rule says write the test first, there is no exception.
 
 ---
 
@@ -375,14 +378,14 @@ Extracts patterns (what worked), gotchas (what failed), and opportunities (what 
 
 ```
 forge/
-├── skills/             # 63 Forge skills (SKILL.md with YAML frontmatter)
+├── skills/             # 64 Forge skills (SKILL.md with YAML frontmatter)
 │   ├── conductor-orchestrate/    # Master state machine
 │   ├── intake-interrogate/       # PRD intake (8 questions)
 │   ├── council-multi-repo-negotiate/  # Multi-surface negotiation
 │   ├── forge-tdd/                # TDD discipline (Iron Law)
 │   ├── eval-judge/               # Final eval verdict
 │   ├── self-heal-locate-fault/   # Fault diagnosis
-│   └── ...                       # 57 more skills
+│   └── ...                       # 58 more skills
 ├── agents/             # 4 subagents
 │   ├── dev-implementer/          # Builds code with TDD
 │   ├── spec-reviewer/            # Verifies code matches spec
@@ -421,7 +424,18 @@ requires: [other-skill]
 - **flexible**: Adapt principles to context. Technique skills (negotiation, planning).
 - **reference**: Explain concepts. No prescription. Glossaries, templates.
 
-All rigid and flexible skills include an **anti-pattern preamble** — a table of 5+ rationalizations with rebuttals that closes loopholes before they open.
+All rigid and flexible skills follow a standardised format:
+
+| Section | Purpose |
+|---|---|
+| **Anti-Pattern Preamble** | Table of 5+ rationalizations agents use to skip the skill, with rebuttals. Closes loopholes before they open. |
+| **Iron Law** | Non-negotiable MUST rules in ALL CAPS. No exceptions permitted. |
+| **Red Flags — STOP** | 5+ observable signals that mean stop immediately and do not proceed. |
+| **Edge Cases** | 3–7 failure scenarios per skill: Symptom, Do NOT, Mitigation steps, Escalation keyword. |
+| **Decision Trees** | ASCII flowcharts for the primary judgment calls (present in 29+ skills). |
+| **Checklist** | End-of-skill verification checklist before marking step complete. |
+
+Escalation keywords used across skills: `BLOCKED` · `NEEDS_CONTEXT` · `NEEDS_COORDINATION` · `NEEDS_INFRA_CHANGE` · `DONE_WITH_CONCERNS`
 
 ### Subagents
 
@@ -464,7 +478,7 @@ The brain at `~/forge/brain/` is a git repo of markdown files. Every decision, s
 
 ### Skills not found
 
-1. Verify skill files exist: `ls ~/forge/skills/*/SKILL.md | wc -l` (should be 63)
+1. Verify skill files exist: `ls ~/forge/skills/*/SKILL.md | wc -l` (should be 64)
 2. Check YAML frontmatter is valid in each SKILL.md
 3. For Antigravity: verify symlinks exist: `ls ~/forge/.agent/skills/ | wc -l`
 

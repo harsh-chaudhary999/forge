@@ -373,11 +373,14 @@ External dependencies that shape the architecture:
 
 ### 4.3 — modules/<name>.md format
 
+**Naming convention:** Files are named `<role>-<module>.md` — e.g. `backend-users.md`, `web-useUser.md`, `consumer-service-UserClient.md`. The role prefix is mandatory. It makes cross-repo wikilinks unambiguous in the Obsidian graph — `[[backend-users]]` is a different node from `[[web-users]]`.
+
 Create one file per top-level module directory + one for each Tier 1 hub.
 
 ```markdown
 # Module: <name>
 
+**Repo:** <role> (`<repo-path>`)
 **Path:** `<relative/path/from/repo/root>`
 **Layer:** <controller | service | repository | domain | infrastructure | util | config>
 **Language:** <language>
@@ -390,17 +393,31 @@ Create one file per top-level module directory + one for each Tier 1 hub.
 
 | Symbol | Type | Used by |
 |---|---|---|
-| `<ClassName>` | class | [[modules/<consumer>]], [[modules/<consumer2>]] |
-| `<functionName>` | function | [[modules/<consumer>]] |
+| `<ClassName>` | class | [[<role>-<consumer>]], [[<role>-<consumer2>]] |
+| `<functionName>` | function | [[<role>-<consumer>]] |
 
-## Imports (dependencies)
+## Imports (within repo)
 
-- [[modules/<dep>]] — `<what it uses from dep>`
+- [[<role>-<dep>]] — `<what it uses from dep>`
 - `<external-package>` — <what it's used for>
 
-## Imported by (dependents)
+## Imported by (within repo)
 
-- [[modules/<dep>]] — `<why it needs this module>`
+- [[<role>-<dep>]] — `<why it needs this module>`
+
+## Calls (cross-repo)
+
+> Routes this module calls in other repos — backfilled by Phase 5.5 after correlation runs.
+> Leave blank on first pass. Phase 5.5 will patch this section.
+
+- `<METHOD> <path>` → [[<other-role>-<module>]] (`<other-repo>/src/routes/file.ts:<line>`)
+
+## Called By (cross-repo)
+
+> Modules in other repos that call routes defined here — backfilled by Phase 5.5.
+> Leave blank on first pass. Phase 5.5 will patch this section.
+
+- [[<caller-role>-<module>]] (`<caller-repo>/src/hooks/file.ts:<line>`) → `<METHOD> <path>`
 
 ## Documented Edge Cases
 
@@ -415,6 +432,8 @@ Create one file per top-level module directory + one for each Tier 1 hub.
 
 - `<file:line>` — `<comment text>`
 ```
+
+**Important:** The `## Calls (cross-repo)` and `## Called By (cross-repo)` sections are written as empty stubs during Phase 4. Phase 5.5 Step 6 fills them in after correlation is complete. Do NOT attempt to fill them during Phase 4 — the correlation data doesn't exist yet.
 
 ### 4.4 — patterns.md format
 
@@ -890,12 +909,71 @@ Flag these specifically:
 
 Write `/tmp/forge_scan_route_correlation.txt` with this structure (tab-separated):
 ```
-STATUS  FE_REPO  FE_URL  MATCH_TYPE  BE_FILE  BE_ROUTE  BE_METHOD
-MATCHED  web  /api/users/profile  exact  backend/src/routes/users.ts:18  /api/users/profile  GET
-MATCHED  app  /api/orders  pattern  backend/src/routes/orders.ts:42  /api/orders/:id  GET
-UNMATCHED  web  /api/legacy/feed  -  -  -  -
-ORPHAN  -  -  -  backend/src/routes/admin.ts:7  /api/admin/metrics  GET
+STATUS  CALLER_REPO  CALLER_FILE  CALLER_LINE  CALLER_MODULE  URL  MATCH_TYPE  BE_REPO  BE_FILE  BE_LINE  BE_MODULE  BE_ROUTE  BE_METHOD
+MATCHED  web  src/hooks/useUser.ts  34  web-useUser  /api/users/profile  exact  backend  src/routes/users.ts  18  backend-users  /api/users/profile  GET
+MATCHED  app  lib/api/auth.dart  12  app-authClient  /api/auth/login  exact  backend  src/routes/auth.ts  9  backend-auth  /api/auth/login  POST
+MATCHED  consumer-service  src/client/UserClient.java  55  consumer-service-UserClient  /api/users/profile  pattern  core-backend  src/routes/users.ts  18  core-backend-users  /api/users/:id  GET
+UNMATCHED  web  src/utils/legacy.ts  88  web-legacy  /api/v1/feed  -  -  -  -  -  -  -
+ORPHAN  -  -  -  -  -  -  backend  src/routes/admin.ts  7  backend-admin  /api/admin/metrics  GET
 ```
+
+**Module name derivation rule:** `<role>-<stem>` where stem = filename without extension, lowercased, with path separators replaced by `-` for files more than 1 level deep. Examples:
+- `web/src/hooks/useUser.ts` → `web-useUser`
+- `backend/src/routes/users.ts` → `backend-users`
+- `consumer-service/src/client/UserClient.java` → `consumer-service-UserClient`
+
+---
+
+**Step 6 — Patch module files with cross-repo wikilinks (CRITICAL — this creates the Obsidian graph edges):**
+
+For every `MATCHED` row in `/tmp/forge_scan_route_correlation.txt`, patch two brain files:
+
+**6a — Patch the CALLER module file** (`~/forge/brain/products/<slug>/codebase/modules/<CALLER_MODULE>.md`):
+
+Find the `## Calls (cross-repo)` section (written as empty stub in Phase 4.3) and append:
+```markdown
+- `<BE_METHOD> <BE_ROUTE>` → [[<BE_MODULE>]] (`<BE_REPO>/<BE_FILE>:<BE_LINE>`)
+```
+
+Example — patching `modules/web-useUser.md`:
+```markdown
+## Calls (cross-repo)
+
+- `GET /api/users/profile` → [[backend-users]] (`backend/src/routes/users.ts:18`)
+- `PUT /api/users/profile` → [[backend-users]] (`backend/src/routes/users.ts:31`)
+```
+
+**6b — Patch the PROVIDER module file** (`~/forge/brain/products/<slug>/codebase/modules/<BE_MODULE>.md`):
+
+Find the `## Called By (cross-repo)` section and append:
+```markdown
+- [[<CALLER_MODULE>]] (`<CALLER_REPO>/<CALLER_FILE>:<CALLER_LINE>`) → `<BE_METHOD> <BE_ROUTE>`
+```
+
+Example — patching `modules/backend-users.md`:
+```markdown
+## Called By (cross-repo)
+
+- [[web-useUser]] (`web/src/hooks/useUser.ts:34`) → `GET /api/users/profile`
+- [[app-authClient]] (`app/lib/api/auth.dart:89`) → `GET /api/users/profile`
+- [[consumer-service-UserClient]] (`consumer-service/src/client/UserClient.java:55`) → `GET /api/users/:id`
+```
+
+**6c — Handle UNMATCHED rows** — patch only the caller file, note the broken contract:
+
+In `modules/<CALLER_MODULE>.md` → `## Calls (cross-repo)`:
+```markdown
+- `GET /api/v1/feed` → ❌ NO MATCHING BACKEND ROUTE FOUND — broken contract
+```
+
+**6d — Handle ORPHAN rows** — patch the provider file with a note:
+
+In `modules/<BE_MODULE>.md` → `## Called By (cross-repo)`:
+```markdown
+> ⚠️ No callers found in any repo scan. May be: internal/webhook-only, dead code, or called via dynamic URL construction not detectable by grep.
+```
+
+**Why this step matters:** These wikilinks create the actual graph edges in Obsidian. Without them, cross-repo.md is a flat table no one navigates. With them, clicking any module node in the graph immediately shows every cross-repo dependency — you can trace a call from a Java consumer interface to a Node route to its DB query in three clicks.
 
 ---
 
@@ -908,18 +986,20 @@ Write to `~/forge/brain/products/<slug>/codebase/cross-repo.md` using data from 
 
 > Automatically extracted — verify against actual API contracts in brain/products/<slug>/contracts/
 
-## Route Correlation Map (Frontend Call → Backend Route)
+## Route Correlation Map (Caller Module → Backend Module)
 
-> Built by joining Phase 3.5 (backend routes) with Phase 5.1 (frontend call sites).
+> Built by joining Phase 3.5 (backend routes) with Phase 5.1 (call sites across all repos).
+> Wikilinks here create the actual Obsidian graph edges — each `[[module]]` reference is a navigable node.
 > `MATCHED` = confirmed route exists. `UNMATCHED` = broken contract. `ORPHAN` = backend route with no known caller.
 
-| Status | Caller | URL Called | Match Type | Backend File | Backend Route |
+| Status | Caller Module | Caller File:Line | Method + URL | Backend Module | Backend File:Line |
 |---|---|---|---|---|---|
-| ✅ MATCHED | `web/src/hooks/useUser.ts:34` | `GET /api/users/profile` | exact | `backend/src/routes/users.ts:18` | `GET /api/users/profile` |
-| ✅ MATCHED | `web/src/pages/orders.tsx:67` | `GET /api/orders/123` | pattern | `backend/src/routes/orders.ts:42` | `GET /api/orders/:id` |
-| ✅ MATCHED | `app/lib/api/auth.dart:12` | `POST /api/auth/login` | exact | `backend/src/routes/auth.ts:9` | `POST /api/auth/login` |
-| ❌ UNMATCHED | `web/src/utils/legacy.ts:88` | `GET /api/v1/feed` | — | — | — |
-| 🔍 ORPHAN | — | — | — | `backend/src/routes/admin.ts:7` | `GET /api/admin/metrics` |
+| ✅ MATCHED | [[web-useUser]] | `web/src/hooks/useUser.ts:34` | `GET /api/users/profile` | [[backend-users]] | `backend/src/routes/users.ts:18` |
+| ✅ MATCHED | [[web-OrdersPage]] | `web/src/pages/orders.tsx:67` | `GET /api/orders/:id` | [[backend-orders]] | `backend/src/routes/orders.ts:42` |
+| ✅ MATCHED | [[app-authClient]] | `app/lib/api/auth.dart:12` | `POST /api/auth/login` | [[backend-auth]] | `backend/src/routes/auth.ts:9` |
+| ✅ MATCHED | [[consumer-service-UserClient]] | `consumer-service/src/client/UserClient.java:55` | `GET /api/users/:id` | [[core-backend-users]] | `core-backend/src/routes/users.ts:18` |
+| ❌ UNMATCHED | [[web-legacy]] | `web/src/utils/legacy.ts:88` | `GET /api/v1/feed` | — | — |
+| 🔍 ORPHAN | — | — | `GET /api/admin/metrics` | [[backend-admin]] | `backend/src/routes/admin.ts:7` |
 
 ### Broken Contracts (UNMATCHED — action required)
 
@@ -949,12 +1029,12 @@ Write to `~/forge/brain/products/<slug>/codebase/cross-repo.md` using data from 
 
 ## Shared Types
 
-Types that appear in 2+ repos — these are implicit contracts:
+Types that appear in 2+ repos — these are implicit contracts. Each wikilink is a navigable module node.
 
 | Type Name | Defined In | Used By |
 |---|---|---|
-| `User` | [[backend]]/src/types | [[web]], [[app]] |
-| `OrderStatus` | [[shared]] | [[backend]], [[web]], [[app]] |
+| `User` | [[backend-types]] | [[web-useUser]], [[web-UserProfile]], [[app-authClient]] |
+| `OrderStatus` | [[shared-types]] | [[backend-orders]], [[web-OrdersPage]], [[app-orderList]] |
 
 > ⚠️ Shared types not in a shared package are a fragility risk — consider extracting to shared/
 

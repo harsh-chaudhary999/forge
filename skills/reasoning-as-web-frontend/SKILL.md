@@ -55,6 +55,66 @@ You represent:
 - **Accessibility** - WCAG compliance, keyboard navigation, screen readers
 - **Web platform constraints** - Browser compatibility, networking, device considerations
 
+## Design Input Processing (Figma / Screenshots)
+
+**Before running the Analysis Framework**, check if design assets were provided. Design assets are optional but change what you can produce — with them, you move from spec-derived reasoning to spec-validated reasoning.
+
+### If a Figma URL is provided
+
+Figma share links (`figma.com/file/...` or `figma.com/design/...`) are not directly readable. Request the user to:
+
+```
+Please export the relevant frames as PNG files and provide the file paths,
+OR share the Figma file key so I can guide extraction.
+```
+
+If the user provides a Figma file key, they can export via Figma's REST API:
+```
+GET https://api.figma.com/v1/files/{file_key}
+Authorization: Bearer {personal_access_token}
+```
+The response JSON contains the full component tree — if the user pastes this, extract the node hierarchy, component names, and frame structure from it.
+
+### If screenshots or exported PNGs are provided
+
+Read each image using the Read tool. Extract:
+
+1. **Component inventory** — What UI elements are visible? (buttons, forms, modals, cards, tables, navigation bars, sidebars)
+2. **Layout structure** — Grid layout, sidebar + main, full-width, tabbed? Responsive breakpoints visible?
+3. **Interaction states shown** — Empty state, loading state, error state, success state, hover/active states?
+4. **Navigation flow** — What routes are implied? Breadcrumbs, back buttons, step indicators?
+5. **Typography & spacing** — Heading hierarchy (H1/H2/H3), font sizes, spacing density (compact vs comfortable)
+6. **Color tokens** — Primary/secondary/destructive action colors, background variants, border colors
+7. **Data density** — How many items per page? Pagination or infinite scroll? Table or card grid?
+8. **Form complexity** — Number of fields, field types (text, select, file upload, date picker), validation feedback shown
+
+### Design → Contract Implications
+
+After extracting the above, flag design decisions that force backend contract requirements:
+
+| Design Observation | Contract Implication |
+|---|---|
+| Search box with real-time results | `GET /search?q=...` needs ≤100ms response or debounce + loading state |
+| File upload button visible | Backend must define `max_file_size`, `accepted_types`, upload endpoint |
+| Pagination with page numbers | API must return `total_count` + `page` + `per_page` |
+| Infinite scroll | API must support cursor-based pagination (`cursor`, `has_next`) |
+| Avatar/image for every list item | Backend must return `avatar_url` per item; broken images need fallback |
+| "Last updated N minutes ago" timestamps | API must return ISO timestamps; client does relative formatting |
+| Multi-step form (wizard) | State must survive page refresh — needs either session storage or draft API |
+| Bulk select + action | API must support batch operations endpoint |
+
+### Design Gap Analysis
+
+After reading the design assets, compare what's shown against the PRD text:
+
+- **In design but not in PRD** — Flag as scope clarification needed (UI implies a feature the PRD didn't specify)
+- **In PRD but not in design** — Flag as design gap (feature is specified but UI flow is unclear)
+- **Design contradicts PRD** — Flag as conflict (e.g., PRD says "no file upload", design shows upload button)
+
+Include a `## Design Gap Analysis` section in your output when design assets are provided.
+
+---
+
 ## Analysis Framework
 
 Analyze every PRD systematically across 5 dimensions:

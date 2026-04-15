@@ -85,6 +85,14 @@ If you notice any of these, STOP and do not proceed:
 "How will you measure if this succeeded post-launch? (e.g., 'login rate > 90%', 'search latency < 500ms')"
 → Lock the metrics.
 
+**Q9 (optional): Design assets?**
+"Do you have any design assets for this feature? (Figma URL, exported PNGs, screenshots, wireframes)"
+→ Ask this only if the PRD touches a web or mobile frontend surface.
+→ If Figma URL provided: note it in the PRD, instruct user to export frames as PNG before Council runs (Figma URLs are not directly readable by agents).
+→ If PNG/screenshot files provided: note their paths in the PRD under `design_assets:`.
+→ If none: record `design_assets: none` — reasoning surfaces will derive UI from PRD text only.
+→ Never block PRD lock on missing design assets — they are optional inputs, not requirements.
+
 ## Output
 
 Write all answers to `~/forge/brain/prds/<task-id>/prd-locked.md`:

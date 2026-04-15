@@ -39,6 +39,80 @@ If you notice any of these, STOP and do not proceed:
 
 You are the mobile app team (Android/iOS). Given a locked PRD, reason about user-facing behavior, data consistency, offline capabilities, and platform constraints. This reasoning focuses on the app frontend's role in distributed system reliability.
 
+---
+
+## Design Input Processing (Figma / Screenshots)
+
+**Before running the Screens & Navigation analysis**, check if design assets were provided. Design assets are optional but shift the output from spec-derived screen inventory to design-validated screen inventory.
+
+### If a Figma URL is provided
+
+Figma share links are not directly readable. Request the user to export frames:
+
+```
+Please export the relevant screens as PNG files (File → Export → select frames → PNG)
+and provide the file paths. Alternatively, share the Figma file key and personal access
+token so I can guide API extraction.
+```
+
+If they provide the Figma REST API response JSON:
+```
+GET https://api.figma.com/v1/files/{file_key}
+Authorization: Bearer {personal_access_token}
+```
+Parse the `document` → `pages` → `frames` hierarchy to extract screen names, component structure, and prototype connections between screens.
+
+### If screenshots or exported PNGs are provided
+
+Read each image using the Read tool. For mobile, extract:
+
+1. **Screen inventory** — List every distinct screen visible (onboarding, home, detail, settings, modals, bottom sheets)
+2. **Navigation pattern** — Bottom tab bar? Side drawer? Stack navigation? Tab + stack hybrid?
+3. **Platform signals** — iOS design language (SF Symbols, native pickers, swipe-to-delete)? Material Design (FAB, chips, snackbars)?
+4. **Gesture interactions visible** — Swipe left/right, pull-to-refresh, pinch-to-zoom, long press menu?
+5. **States shown** — Empty state, loading skeleton, error screen, offline banner, permission prompt?
+6. **Form inputs** — Native date pickers? Custom keyboard types? Camera/gallery access implied?
+7. **Content density** — List rows, card grids, media-heavy (image/video previews)?
+8. **Notification entry points** — Deep links implied by notification tap-to-open patterns?
+
+### Design → Mobile Contract Implications
+
+| Design Observation | Mobile Contract Implication |
+|---|---|
+| Bottom tab bar with 4+ items | Tab state must persist across sessions (last active tab) |
+| Pull-to-refresh on list | API must support `If-None-Match` / ETags or cursor-based pagination for diff |
+| "Last seen online" / presence | WebSocket or polling contract — define interval and fallback |
+| Photo upload from camera/gallery | Permission model: iOS `NSCameraUsageDescription`, Android `READ_MEDIA_IMAGES` |
+| Video playback inline | Bandwidth budget: streaming vs download; background audio session needed? |
+| Map with pins | Location permission: always vs when-in-use; clustering at zoom levels |
+| Biometric login button | iOS FaceID/TouchID + Android BiometricPrompt — platform-specific APIs |
+| Push notification icon in UI | Notification permission prompt — iOS requires explicit prompt timing decision |
+| Deep link from notification | URL scheme or Universal Link / App Link must be defined |
+| Offline-capable list | Sync strategy must be defined before locking (last-write-wins, server-auth, CRDT) |
+
+### Design → Screen Inventory
+
+After reading the design assets, produce a validated screen list that replaces the spec-derived list in Section 1:
+
+```
+Screens confirmed from design assets:
+  ✅ OnboardingScreen       — 3-step wizard, skip button on step 1-2, no skip on step 3
+  ✅ HomeScreen             — Bottom tab, feed list, FAB for new post
+  ✅ DetailScreen           — Hero image, comment section, like/share actions
+  ⚠️  SettingsScreen        — Visible in design but NOT in PRD — flag for scope confirmation
+  ❌  ProfileEditScreen     — In PRD but NOT in design — design gap, request mockup
+```
+
+### Design Gap Analysis
+
+Flag every discrepancy between design and PRD as a blocker or advisory:
+
+- **In design but not in PRD** → scope clarification required before Council can lock
+- **In PRD but not in design** → design gap; mobile surface cannot commit to implementation without visual spec
+- **Design contradicts PRD** → explicit conflict, must resolve before spec freeze
+
+---
+
 ## 1. Screens & Navigation
 
 What screens? What flows?

@@ -168,7 +168,7 @@ Generate `~/forge/brain/products/<slug>/product.md` from the scan results:
 # Determined during /council — leave blank for now
 ```
 
-Then confirm:
+Then confirm and auto-trigger codebase scan:
 
 ```
 ✅ Workspace created: ~/forge/brain/products/<slug>/product.md
@@ -179,6 +179,36 @@ Then confirm:
    → app      (~/jh/app)
 
    Infrastructure: not configured yet (add before /eval)
+```
+
+### Step 5b — Auto-scan all repos (REQUIRED after product.md is created)
+
+**REQUIRED SKILL:** Invoke `scan-codebase` skill for each registered repo automatically.
+Do NOT wait for the user to ask — the codebase map is needed for planning.
+
+Run silently (no verbose output), announce progress briefly:
+
+```
+Scanning codebase... (grep/find phase — no token cost)
+  → backend: 184 source files, 6 hubs detected
+  → web: 312 source files, 9 hubs detected
+  → app: 89 source files, 4 hubs detected
+
+Writing brain files...
+```
+
+After scan completes, show final confirmation:
+
+```
+✅ Workspace ready: <slug>
+
+   3 repos registered and scanned:
+   → backend  (~/jh/backend)  → brain/products/<slug>/codebase/
+   → web      (~/jh/web)      → brain/products/<slug>/codebase/
+   → app      (~/jh/app)      → brain/products/<slug>/codebase/
+
+   Infrastructure: not configured yet (add before /eval)
+   Codebase scan: ✅ done (re-run any time: /scan <slug>)
 
    Ready to start planning? Run: /intake
 ```

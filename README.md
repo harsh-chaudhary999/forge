@@ -106,9 +106,32 @@ Per-platform guides with prerequisites, verification steps, and troubleshooting:
 
 ---
 
-## Describing Your Product
+## Getting Started with an Existing Project
 
-Before Forge can orchestrate your product, you need one file: `forge-product.md`. This tells Forge what repos exist, what role each plays, how to start/stop them, and what infrastructure they use.
+If you already have repos, this is the only command you need to start:
+
+```
+/workspace
+```
+
+Forge will ask:
+1. What's the product name?
+2. What repos? (paste GitHub URLs or local paths)
+3. What role does each play? (backend / web / mobile)
+
+That's it. No ports, no DB credentials, no framework config. You can start planning immediately after.
+
+Infrastructure details (MySQL, Redis, ports) are only needed when you run `/eval`. Add them later with:
+
+```
+/workspace add-infra <your-slug>
+```
+
+---
+
+## Describing Your Product (Manual)
+
+If you prefer to write the product file yourself, you need one file: `forge-product.md`. This tells Forge what repos exist, what role each plays, how to start/stop them, and what infrastructure they use.
 
 ### forge-product.md Template
 
@@ -356,6 +379,7 @@ Extracts patterns (what worked), gotchas (what failed), and opportunities (what 
 
 | Command | What It Does |
 |---|---|
+| `/workspace` | Create or open a workspace from existing repos (minimal setup — repos and roles only) |
 | `/forge` | Run full pipeline: PRD to shipped PRs |
 | `/intake` | Start PRD intake (8 questions, lock scope) |
 | `/council` | Multi-surface contract negotiation |

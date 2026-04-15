@@ -158,11 +158,12 @@ Generate `~/forge/brain/products/<slug>/product.md` from the scan results:
 - branch: main
 
 ## Infrastructure
-# ── Add when ready for eval ──────────────────────────────────────────
+# ── Optional — only needed for DB/cache/queue-dependent eval scenarios ──
 # Run: /workspace add-infra <slug>
 #
 # Forge will ask about DB, cache, message bus, and ports at that point.
-# You do not need this to run /intake, /council, or /plan.
+# You do not need this to run /intake, /council, /plan, or even /eval.
+# Eval scenarios requiring unconfigured infra are marked N/A, not failed.
 
 ## Merge Order
 # Determined during /council — leave blank for now
@@ -178,7 +179,7 @@ Then confirm and auto-trigger codebase scan:
    → web      (~/jh/web)
    → app      (~/jh/app)
 
-   Infrastructure: not configured yet (add before /eval)
+   Infrastructure: not configured (optional — add with /workspace add-infra <slug>)
 ```
 
 ### Step 5b — Auto-scan all repos (REQUIRED after product.md is created)
@@ -207,7 +208,7 @@ After scan completes, show final confirmation:
    → web      (~/jh/web)      → brain/products/<slug>/codebase/
    → app      (~/jh/app)      → brain/products/<slug>/codebase/
 
-   Infrastructure: not configured yet (add before /eval)
+   Infrastructure: not configured (optional — add with /workspace add-infra <slug>)
    Codebase scan: ✅ done (re-run any time: /scan <slug>)
 
    Ready to start planning? Run: /intake
@@ -237,7 +238,7 @@ Show a summary:
    → web       ~/jh/web        (typescript + next)
    → app       ~/jh/app        (dart + flutter)
 
-   Infrastructure: ⚠️  not configured — run /workspace add-infra <slug> before /eval
+   Infrastructure: not configured (optional) — add with /workspace add-infra <slug> for DB/cache eval
 
    Codebase scan:
    → Last scanned: 3 days ago (commit a1b2c3d)    ← if scan exists and fresh
@@ -252,14 +253,14 @@ Show a summary:
 Then ask: **"What would you like to do?"**
 - Start a new feature → `/intake`
 - Look up past decisions → `/recall`
-- Configure infra for eval → `/workspace add-infra <slug>`
+- Configure optional DB/cache infra → `/workspace add-infra <slug>`
 - Check full status → `/forge-status`
 
 ---
 
 ### Step 7 — add-infra (`/workspace add-infra <slug>`)
 
-Only triggered when the user is ready to run `/eval`. Ask one at a time:
+Only triggered when the user explicitly wants to configure DB/cache/queue for eval. Infra is optional — eval runs without it (infra-dependent scenarios are marked N/A, not failed). Ask one at a time:
 
 1. **"What database?"** — MySQL / PostgreSQL / MongoDB / SQLite / none
 2. **"What cache?"** — Redis / Memcached / none

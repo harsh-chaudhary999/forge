@@ -7,7 +7,9 @@ requires: [brain-read]
 
 # Eval Product Stack Up
 
-Orchestrates startup of entire product stack for evaluation. Reads product topology from forge-product.md, starts infrastructure (MySQL, Redis, Kafka, Elasticsearch) and all services in correct dependency order, validates health checks, and reports readiness.
+Orchestrates startup of the product stack for evaluation. Reads product topology from product.md, starts only the infrastructure and services that are **configured** in the product file, validates health checks, and reports readiness.
+
+**Infrastructure is optional.** If no infra (DB, Redis, Kafka, Elasticsearch) is configured in product.md, stack-up skips infra startup and runs eval against services only. Eval scenarios that require unconfigured infra are automatically skipped and marked N/A — they do not cause an eval failure.
 
 ## Anti-Pattern Preamble: No Rationalizations
 
@@ -29,15 +31,27 @@ Orchestrates startup of entire product stack for evaluation. Reads product topol
    - Standard: Health checks are non-negotiable. Default timeout: 5 seconds per service. Total stack startup < 30s.
 
 4. **"Partial failures are fine, we can test what's up"**
-   - Truth: Partial failures are your worst enemy. They look like bugs in code when they're infrastructure. You ship broken code because infrastructure masked the issue.
-   - Consequence: A/B test: 99% uptime vs 100% uptime. The 1% failure rate is where all the subtle bugs hide. You test against 99% uptime and miss them.
-   - Standard: All critical services must be healthy before proceeding. No partial stacks. If any service fails, fail fast with detailed error.
+   - Truth: There is a critical distinction between two types of partial stacks:
+     - **By design** (infra not configured in product.md) → VALID. Skip that infra. Eval the rest. Mark dependent scenarios N/A.
+     - **By failure** (infra configured but failed to start) → INVALID. This is a real failure. Fail fast.
+   - Consequence of conflating the two: agents either block all eval because Redis isn't configured (too strict) or silently eval against a broken stack (too loose).
+   - Standard: If infra is **absent from product.md**, skip it gracefully. If infra is **in product.md but fails to start**, fail fast with detailed error.
 
 ## Iron Law
 
 ```
-EVERY STACK-UP READS forge-product.md FRESH, STARTS SERVICES IN TOPOLOGICAL DEPENDENCY ORDER, AND WAITS FOR ALL HEALTH CHECKS TO PASS BEFORE DECLARING READY. NO EVAL SCENARIO RUNS AGAINST A PARTIAL STACK. NO HEALTH CHECK IS SKIPPED.
+EVERY STACK-UP READS product.md FRESH AND STARTS EXACTLY WHAT IS CONFIGURED — NO MORE, NO LESS.
+CONFIGURED SERVICES THAT FAIL TO START = HARD FAILURE. UNCONFIGURED SERVICES = GRACEFUL SKIP.
+HEALTH CHECKS ARE NEVER SKIPPED FOR CONFIGURED SERVICES.
+EVAL SCENARIOS REQUIRING UNCONFIGURED INFRA ARE MARKED N/A, NOT FAILED.
 ```
+
+**Infra tiers (all optional unless configured in product.md):**
+- Tier 1 — Application services (backend, web, mobile): Always required if in product.md
+- Tier 2 — Relational DB (MySQL, PostgreSQL, SQLite): Optional. Skip if not configured.
+- Tier 3 — Cache (Redis, Memcached): Optional. Skip if not configured.
+- Tier 4 — Message bus (Kafka, RabbitMQ): Optional. Skip if not configured.
+- Tier 5 — Search (Elasticsearch, OpenSearch): Optional. Skip if not configured.
 
 ## Red Flags — STOP
 
@@ -48,7 +62,7 @@ If you notice any of these, STOP and do not proceed:
 - **Services are started in alphabetical or arbitrary order instead of dependency order** — Service B depending on Service A will fail to connect if A is not yet healthy. STOP. Resolve the dependency graph and start in topological order: infrastructure first, then services that depend on it.
 - **`stack-down` is not called when eval fails** — Services left running from a failed eval contaminate the next run with leftover data, open connections, and consumed offsets. STOP. `stack-down` must be called unconditionally in the cleanup path, whether eval passed or failed.
 - **Health check is a TCP port probe only (port accepting connections)** — A port open means the OS socket is bound, not that the application is ready. STOP. Health checks must be HTTP endpoint checks (or equivalent application-level readiness probes) that verify the application is actually serving requests.
-- **Stack-up is declared successful before every service in `forge-product.md` is verified** — A stack that is missing a service will produce eval failures that look like code bugs. STOP. Every service listed in the product topology must be health-checked before reporting stack ready.
+- **Stack-up is declared successful before every *configured* service is verified** — A stack missing a configured service will produce eval failures that look like code bugs. STOP. Every service listed in product.md must pass its health check. Services *not* listed in product.md are not started and not checked — that is correct behaviour, not a bug.
 
 ## Overview
 
@@ -427,14 +441,20 @@ if (!deps.valid) {
 }
 console.log("Startup order:", deps.order);
 
-// Step 3: Start infrastructure
-console.log("Starting infrastructure...");
-const infraResult = startInfrastructure(topology);
-if (infraResult.status !== "success") {
-  console.error("Infrastructure startup failed:", infraResult.failures);
-  process.exit(1);
+// Step 3: Start infrastructure (only what is configured)
+if (topology.infrastructure && Object.keys(topology.infrastructure).length > 0) {
+  console.log("Starting configured infrastructure...");
+  const infraResult = startInfrastructure(topology);
+  if (infraResult.status !== "success") {
+    // Only fail if a CONFIGURED service failed to start
+    console.error("Infrastructure startup failed:", infraResult.failures);
+    process.exit(1);
+  }
+  console.log("Infrastructure started:", Object.keys(infraResult.services));
+} else {
+  console.log("No infrastructure configured — skipping infra startup.");
+  console.log("Scenarios requiring DB/Redis/Kafka will be marked N/A.");
 }
-console.log("Infrastructure started:", Object.keys(infraResult.services));
 
 // Step 4: Start services in dependency order
 console.log("Starting services...");

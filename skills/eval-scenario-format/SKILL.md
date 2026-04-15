@@ -7,19 +7,70 @@ requires: [brain-read]
 
 # Eval Scenario Format
 
-## Why Scenarios Matter: Blocking Rationalizations
+## Anti-Pattern Preamble: Why Scenario Authors Write Broken Scenarios
 
-Before skipping scenarios, understand what you're risking. The following rationalizations are red flags masking deeper engineering debt:
+### Anti-Pattern 1: "Scenarios are flaky, let's skip eval and ship"
 
-| Rationalization | The Truth |
-|---|---|
-| "Scenarios are flaky, let's skip eval and ship" | Flakiness in scenarios is a symptom, not a reason to skip. It's telling you something is timing-dependent or non-deterministic. Triage it: Is it a slow API? A race condition? Network timing? Fix the root cause, don't hide it. |
-| "Our system is too complex for scenarios" | Complexity is exactly why scenarios matter. Scenarios catch integration breaks that unit tests miss. Without them, you discover bugs in production. Simple systems need unit tests; complex systems need scenarios. |
-| "API tests are enough, we don't need UI scenarios" | API tests don't catch UI state mismanagement, race conditions, or timing issues that emerge only in the full stack. A 200 OK from your API doesn't prove the UI rendered correctly or that the user's browser event fired. |
-| "Scenarios slow down development" | Without scenarios, you merge broken code and debug in production. Scenarios cost 2-5 hours upfront per feature; production firefighting costs 20+ hours. You're choosing between two time investments. Pick the one that pays you back. |
-| "We'll add scenarios after launch" | You won't. Window of opportunity closes the moment code is live. Eval is only safe, fast, and useful during development. Post-launch, you're always one prod outage away from "ship now, test later." Don't set that trap. |
+**Why This Fails:** Flakiness is a symptom of a real problem — timing dependency, race condition, or non-determinism. Skipping eval because scenarios are flaky means shipping code with an unresolved race condition. The flakiness in CI becomes an incident in production, where you have no retry button.
 
-**Authority principle:** These truths come from 20+ years of post-mortems where "we skipped eval" was the root cause.
+**Enforcement (MUST):**
+1. MUST triage flakiness before skipping — identify the root cause (slow API? Race condition? Timing window?)
+2. MUST use `retry` policy with exponential backoff for legitimately timing-sensitive assertions
+3. MUST set timeouts at P95 latency, not P50 — scenarios fail on slow CI runners because authors use happy-path timing
+4. MUST document flaky steps as known flaky with root cause if they cannot be immediately fixed
+5. MUST NOT mark a scenario as passing if it fails on 2+ consecutive runs without a code fix
+
+---
+
+### Anti-Pattern 2: "Our system is too complex for scenarios"
+
+**Why This Fails:** Complexity is exactly why scenarios matter. Complex systems have more integration surfaces where things break silently. Unit tests miss integration failures. "Too complex for scenarios" is a rationalization for "I don't know how to isolate the behavior I want to test" — which is a skill gap, not a system property.
+
+**Enforcement (MUST):**
+1. MUST scope each scenario to one user journey — complexity comes from trying to cover too much in one scenario
+2. MUST use `driver: "api-http"` as the primary surface for complex backend interactions — isolate DB and cache as secondary assertions
+3. MUST break complex flows into multiple scenarios: authentication, then authorization, then data access
+4. MUST use `setup` and `teardown` to isolate test data — complexity often comes from state leaking between scenarios
+5. MUST NOT use `# too complex to test` as a comment — document the blocking constraint and raise it to the team
+
+---
+
+### Anti-Pattern 3: "API tests are enough, we don't need UI scenarios"
+
+**Why This Fails:** A 200 OK from the API does not prove the UI rendered correctly, that browser events fired, or that the state machine transitioned properly. Frontend bugs that manifest as wrong UI state — loading spinner stuck, error message not shown, form not cleared after submit — are invisible to API tests.
+
+**Enforcement (MUST):**
+1. MUST include at least one `driver: "web-cdp"` or `driver: "android-adb"` scenario for any feature with UI state
+2. MUST assert UI state transitions explicitly: element visible → interaction → element state changed
+3. MUST NOT assume API success implies UI success — the frontend can optimistically update before the API call returns
+4. MUST include negative UI cases: what does the UI show when the API returns 4xx? 5xx?
+5. MUST NOT skip mobile scenarios for features that have mobile clients — `web-cdp` and `android-adb` scenarios are not interchangeable
+
+---
+
+### Anti-Pattern 4: "I'll use a hardcoded delay instead of a wait condition"
+
+**Why This Fails:** Hardcoded delays are wrong in both directions. Too short: the assertion fails on slow CI runners. Too long: the scenario takes 10x longer than necessary. Hardcoded delays mask timing bugs that become production incidents. `sleep(2000)` in a scenario means the developer did not understand when the system was ready.
+
+**Enforcement (MUST):**
+1. MUST use `action: "wait"` with a `condition` (selector, network-idle, url-match) instead of hardcoded delays
+2. MUST set `timeout_ms` to the SLA of the async operation, not a guess
+3. MUST use polling retry patterns for eventually-consistent operations (cache, search index, event bus)
+4. MUST NOT use `delay_ms` as a top-level step — only use `delay_ms` inside `retry` backoff configuration
+5. MUST document why a particular timeout value was chosen: `timeout_ms: 5000  # Elasticsearch reindex SLA is 3s, +2s buffer`
+
+---
+
+### Anti-Pattern 5: "Prose assertions are fine — I'll verify it 'looks right'"
+
+**Why This Fails:** Prose assertions ("verify the user sees a success message") are not assertions — they are test intentions. The eval driver cannot execute prose. Scenarios with prose assertions fail silently: the driver either skips them or guesses. When a scenario with prose passes, you have no evidence the behavior was verified.
+
+**Enforcement (MUST):**
+1. MUST use machine-readable assertions in every step: `expected.status`, `expected.body`, `expected.selector`, `expected.db_query`
+2. MUST include exact expected values: `expected.body.user.email: "alice@example.com"`, not `expected.body.user.email: "some email"`
+3. MUST assert negative cases explicitly: `expected.body.error: "invalid_credentials"`, not "some error"
+4. MUST NOT use `expected: {}` (empty assertion) — every step must assert something or it is a non-step
+5. MUST run `eval-scenario-format` validation before committing scenarios — the format validator catches missing assertions
 
 ---
 

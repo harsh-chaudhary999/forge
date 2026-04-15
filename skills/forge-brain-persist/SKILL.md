@@ -338,6 +338,40 @@ Post-deployment:
 
 ---
 
+---
+
+### Edge Case 4: Duplicate Decision ID Attempted (Same ID Written Twice)
+
+**Situation:** Agent attempts to write a new decision with ID D042, but D042 already exists in the brain with different content (different feature, different date).
+
+**Do NOT:** Overwrite the existing decision. ID collisions corrupt the audit trail.
+
+**Action:**
+1. Read the existing D042 to understand what it records
+2. If the new decision is truly different, assign the next available ID (D043, D044...)
+3. If the new decision is an update to D042 (same feature, new information), create D042-amendment instead
+4. If the existing D042 is stale/wrong and should be replaced, invoke `brain-forget` on D042 first, then write D043 with a `replaces: D042` link
+5. Never write two decisions to the same ID path — the last write wins and prior content is lost without trace
+6. Escalation: NEEDS_CONTEXT — if the ID conflict suggests a wider brain indexing problem (gaps, skips, non-sequential IDs), surface it to the dreamer
+
+---
+
+### Edge Case 5: Decision Requires Multi-Repo Attribution (Two Teams, One Decision)
+
+**Situation:** A shared architectural decision (e.g., "all services use JWT for authentication") affects the backend, mobile, and web repos. The decision was made jointly by backend and mobile leads. Who owns the brain record?
+
+**Do NOT:** Write the decision into only one repo's brain files. Shared decisions without shared attribution create knowledge silos.
+
+**Action:**
+1. Write the decision to the product-level brain (not repo-level): `~/forge/brain/products/<slug>/decisions/`
+2. Set `type: cross-repo-architecture` in the frontmatter
+3. List all affected repos in a `scope:` field: `scope: [backend, web, mobile]`
+4. Link the decision from each repo's relevant module brain file using `brain-link`
+5. If each repo needs repo-specific implementation notes, write separate `D042-backend-impl.md` and `D042-mobile-impl.md` that reference the parent D042
+6. Escalation: NEEDS_COORDINATION — notify all surface leads that a shared decision has been recorded and they are responsible for implementation in their respective repos
+
+---
+
 Output: **DECISION RECORDED** (auditable, traceable, retrievable in brain, committed to git) or **BLOCKED** (can't persist, merge conflict, brain not in git, data corruption)
 
 ## Checklist

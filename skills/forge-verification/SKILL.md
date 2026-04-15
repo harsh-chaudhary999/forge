@@ -247,6 +247,40 @@ Before claiming success, complete all items:
 
 Output: **PASS** (with evidence from working tools) or **BLOCKED** (verification tool broken, output unreadable, infrastructure down, unresolvable flakiness)
 
+---
+
+### Edge Case 4: Test Count Drops Between Runs (Silent Test Deletion)
+
+**Symptom:** Verification passes on run N (47 tests, all pass). On run N+1 after a code change, 44 tests pass — but the implementer claims "nothing was deleted." The 3 missing tests were silently removed.
+
+**Do NOT:** Accept a passing run if the test count has decreased without a documented reason.
+
+**Action:**
+1. Compare test counts between the prior run and the current run — flag any decrease
+2. Ask the implementer: which tests were removed, and why? Require a commit that shows the deletion
+3. If tests were removed because they were "duplicates" or "flaky," require evidence before accepting the removal
+4. If tests were removed because the feature was descoped, verify against the spec that the descope was intentional
+5. A decrease in test count is a red flag, not a neutral fact — treat it as BLOCKED until explained
+6. Escalation: BLOCKED if test count decreases without justification committed to git
+
+---
+
+### Edge Case 5: Verification Passes Locally but CI Shows Different Results
+
+**Symptom:** Local `npm test` shows 47/47 passing. CI pipeline shows 41/47 with 6 failures. The implementer argues "it works on my machine."
+
+**Do NOT:** Accept local verification as evidence when CI contradicts it.
+
+**Action:**
+1. CI is authoritative — it runs in a clean environment without local dev state
+2. Identify the failing tests in CI output — they often fail due to environment differences (missing env vars, different Node version, different file permissions)
+3. Require the implementer to reproduce CI failures locally: `CI=true npm test` or use the same env vars as CI
+4. Do not approve or merge until CI passes — "works locally" is not verification evidence
+5. Common CI-only failures: hardcoded localhost references, missing `.env` entries, implicit dependency on global tools not in CI
+6. Escalation: BLOCKED until CI passes; NEEDS_COORDINATION if CI infrastructure itself is broken (not the code)
+
+---
+
 ## Checklist
 
 Before claiming a task complete:

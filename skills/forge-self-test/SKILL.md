@@ -1519,6 +1519,37 @@ git status | grep "CONFLICT"
 
 ---
 
+### Edge Case 4: Self-Test Passes but Seed Product Doesn't Match Real-World Complexity
+
+**Symptom:** All 5 self-test phases pass against the ShopApp seed product, but when Forge is applied to a real product (e.g., a multi-repo fintech app with 5 services), it fails at the council or eval phase.
+
+**Do NOT:** Treat a seed product pass as a guarantee that Forge handles all product shapes correctly.
+
+**Action:**
+1. Identify which real-world aspect caused failure: multi-repo coordination? Missing driver? Contract negotiation complexity?
+2. Add a pressure scenario to the seed product that covers the failing pattern
+3. Re-run self-test with the new scenario before declaring Forge healthy
+4. Document the gap: what class of products does the current self-test NOT cover?
+5. Escalation: DONE_WITH_CONCERNS — Forge works for the tested shape; coverage gaps must be documented
+
+---
+
+### Edge Case 5: Phase N Passes in Self-Test but Phase N+1 Has Wrong Input
+
+**Symptom:** Phase 2 (Council) passes self-test. Phase 3 (Build) fails because the shared-dev-spec.md produced by Phase 2 is malformed or missing a required field that Phase 3 depends on.
+
+**Do NOT:** Debug Phase 3 in isolation — the root cause is Phase 2's output format.
+
+**Action:**
+1. Read the shared-dev-spec.md produced by Phase 2 — verify it contains all required fields for Phase 3
+2. Identify the schema mismatch: which field is missing or malformed?
+3. Fix Phase 2's output format (not Phase 3's input parsing)
+4. Re-run Phase 2 → Phase 3 sequence to verify the fix is end-to-end
+5. Add an assertion to the self-test that validates Phase 2 output before Phase 3 starts
+6. Escalation: NEEDS_CONTEXT — provide the malformed spec and expected schema to the dreamer
+
+---
+
 ## Cross-References: Skills & Concepts Used in Self-Test
 
 **Core Pipeline Skills:**

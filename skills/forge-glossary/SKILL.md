@@ -437,3 +437,45 @@ Key locked decisions:
 
 **Self-Heal Skills:**
 `self-heal-locate-fault`, `self-heal-triage`, `self-heal-systematic-debug`, `self-heal-loop-cap`
+
+---
+
+## Edge Cases
+
+### Edge Case 1: Term Used with a Different Meaning Outside Forge
+
+**Symptom:** A user asks about "council" expecting a human committee or a governance process, not the Forge contract-negotiation phase between domain reasoning surfaces.
+
+**Do NOT:** Explain the Forge term without acknowledging the ambiguity.
+
+**Action:** When a term from the glossary collides with a common industry term (Council, Surface, Driver, Dream, Conductor), clarify the Forge-specific meaning upfront: "In Forge, 'Council' refers to the multi-surface contract negotiation phase — not a human committee. It's executed by 4 AI reasoning surfaces negotiating 5 service contracts."
+
+**Escalation:** If the user's intent is genuinely unclear (asking about a human council process vs. the Forge phase), ask once: "Do you mean the Forge council phase, or are you asking about a governance process outside Forge?"
+
+---
+
+### Edge Case 2: Term Appears in Brain Files or SKILL.md with Slightly Different Phrasing
+
+**Symptom:** A brain decision file says "negotiation round" where this glossary says "Council." A skill says "triage phase" where the glossary says "Self-Heal Triage." The user asks which is authoritative.
+
+**Do NOT:** Guess or arbitrarily prefer the glossary over the source file.
+
+**Action:** The source skill (`self-heal-triage/SKILL.md`, `forge-council-gate/SKILL.md`) is always authoritative for behavior. The glossary is authoritative for naming and definition. If they conflict on behavior, the skill wins. If they conflict on the name of a concept, the glossary wins. Document the discrepancy and suggest it be reconciled.
+
+**Escalation:** NEEDS_CONTEXT if the phrasing difference implies a behavioral difference (e.g., glossary says "max 3 retries" but a skill says "max 5 retries" — that is a real conflict, not just a naming difference).
+
+---
+
+### Edge Case 3: New Forge Term Encountered That Is Not in This Glossary
+
+**Symptom:** A skill, agent, or brain file uses a term like "pressure scenario," "seeder," or "gate bypass" that does not appear in this glossary.
+
+**Do NOT:** Invent a definition or silently treat it as undefined.
+
+**Action:**
+1. Search for the term in `skills/` and `agents/` with grep to find the canonical context in which it's used
+2. If found in a SKILL.md, derive the definition from the usage context
+3. If not found anywhere, treat it as a candidate for a missing glossary entry and surface it to the dreamer
+4. Do not propagate undefined terminology into brain decisions without clarifying its meaning first
+
+**Escalation:** NEEDS_CONTEXT — request a definition from the skill author before proceeding with work that depends on this term.

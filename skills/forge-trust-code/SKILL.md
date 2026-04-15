@@ -305,6 +305,38 @@ Before approving PR, verify:
 
 Output: **CODE VERIFIED** (spec met, implementation correct, all reviews complete) or **SPEC GAPS FOUND** (implementer must fix before merge) or **NEEDS_CONTEXT** (reviewer unavailable, spec review incomplete)
 
+---
+
+### Edge Case 4: Code Implements More Than the Spec (Over-Delivery)
+
+**Symptom:** Spec requires feature X. Code delivers X plus an unsolicited admin panel, a new API endpoint, and a database migration. The extra work is well-written, but the spec did not ask for it.
+
+**Do NOT:** Accept over-delivery silently. Extra code is extra surface area, extra risk, extra review burden.
+
+**Action:**
+1. Identify every code change that does not map to a spec requirement — list them explicitly
+2. Flag each as an unspecified addition: "SPEC GAP: `admin/routes.ts` and the `/admin/dashboard` endpoint have no corresponding spec requirement"
+3. Do not approve the extras on the grounds that they seem useful — scope decisions belong to Council, not implementation
+4. Return to implementer: remove the extras OR raise a new PRD for them
+5. Escalation: DONE_WITH_CONCERNS if dreamer explicitly accepts the extras; SPEC_GAPS_FOUND if extras are not acknowledged
+
+---
+
+### Edge Case 5: Spec and Code Agree, But Both Are Wrong (Spec Defect)
+
+**Symptom:** Code implements exactly what the spec says. But the spec itself has a bug: it says `DELETE /users/:id` should return 200 with the deleted user's body, but REST convention and the existing API contract define 204 No Content for deletes.
+
+**Do NOT:** Approve the code because it matches the spec. Spec defects become product bugs.
+
+**Action:**
+1. When reviewing, cross-check spec requirements against the existing `contract-api-rest` brain decisions and industry conventions
+2. If the spec conflicts with an existing brain decision (e.g., D011 defines delete behavior), flag the spec defect explicitly
+3. Do not approve code that implements a spec that contradicts a locked brain decision
+4. Return the spec defect to the dreamer: "Code is correct per spec, but spec conflicts with D011. One of them must change."
+5. Escalation: NEEDS_COORDINATION — the spec defect must be corrected before code review continues
+
+---
+
 ## Checklist
 
 Before claiming code verified:

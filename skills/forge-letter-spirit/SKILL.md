@@ -263,6 +263,38 @@ Before claiming compliance, verify:
 
 Output: **COMPLIANT** (rule followed, both letter and spirit aligned) or **ESCALATED** (letter/spirit conflict requiring clarification, pressure, or architectural constraint preventing compliance)
 
+---
+
+### Edge Case 4: New Forge Version Changes the Spirit of an Existing Rule
+
+**Symptom:** A rule in CLAUDE.md says "no hardcoded delays" (letter). The spirit was originally "prevent flaky tests." A new Forge update adds context: the rule now explicitly allows hardcoded delays in integration teardown steps where services need time to flush. An agent enforcing the old spirit would reject valid teardown code.
+
+**Do NOT:** Apply the spirit as remembered from a prior session — spirits evolve with rule updates.
+
+**Action:**
+1. Always read the current CLAUDE.md before evaluating any rule compliance
+2. If a new clarification changes the spirit, update your enforcement: the clarification is authoritative
+3. If existing brain decisions were made under the old spirit, flag them as potentially stale: "D019 was decided under the old spirit of this rule — may need re-evaluation"
+4. Do not retroactively re-enforce old spirit against code that was already approved under the new interpretation
+5. Escalation: NEEDS_CONTEXT if the rule update's intent is unclear — ask the dreamer before enforcing a changed spirit
+
+---
+
+### Edge Case 5: Rule Letter Is Clear but Spirit Is Silent on the Current Scenario
+
+**Symptom:** Rule says "commit after every task" (letter clear). The spirit is presumably "maintain reviewable history." But the current scenario is a hotfix where 5 one-line changes to the same file are needed. Should they be 5 commits or 1?
+
+**Do NOT:** Invent a spirit interpretation that overrides the letter without evidence.
+
+**Action:**
+1. When the spirit is silent on the specific scenario, default to following the letter exactly
+2. Only deviate from the letter if applying it literally produces an outcome that clearly contradicts the stated purpose of the rule
+3. For the hotfix example: 5 commits is correct per the letter — one commit per task. The spirit (reviewable history) is served by 5 focused commits, not violated
+4. If you believe the letter is producing a bad outcome, escalate to the dreamer for explicit guidance rather than self-interpreting the spirit
+5. Escalation: NEEDS_CONTEXT — request the dreamer's preference when the spirit is genuinely ambiguous for the scenario
+
+---
+
 ## Checklist
 
 Before claiming compliance:

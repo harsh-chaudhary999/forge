@@ -337,6 +337,20 @@ When submitting review results:
 
 ---
 
+### Edge Case 5: Tech Plan Is Correct but Spec Has Changed Since Plan Was Written
+
+**Diagnosis**: Tech plan was written on day 1. On day 3, Council amended the shared-dev-spec (a cache contract changed, an API field was renamed). The tech plan still references the old field names and the old cache contract. The plan is now stale.
+
+**Response**:
+- **Detect**: Before self-review, check the spec's last-modified timestamp against the plan's creation timestamp. If spec is newer, diff carefully.
+- **Reconcile**: For each changed spec field, find the task that implements it and update the task's code, file path, and test assertions
+- **Do NOT** approve a plan against a stale spec — implementation against the wrong spec creates bugs that survive code review
+- **Document**: Note in the plan header: "Reconciled with spec amendment [date]: changed X → Y in tasks 3, 7, and 9"
+
+**Escalation**: NEEDS_CONTEXT - If the spec change is large enough that more than 30% of tasks need updating, the plan should be rewritten rather than patched. Escalate to the dreamer to confirm scope before rewriting.
+
+---
+
 ## Notes for Dev-Implementers
 
 - This skill is a gate: tech plans must pass self-review before dispatch

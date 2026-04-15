@@ -311,6 +311,39 @@ After task complete:
 
 Output: **WORKTREE CREATED** (ready to implement) or **BLOCKED** (disk space full after cleanup, git repo corrupted, worktree cleanup failed)
 
+---
+
+### Edge Case 4: Worktree Branch Diverged from Main During Long-Running Task
+
+**Symptom:** Task was started in a worktree 3 days ago. Meanwhile, 12 commits landed on main (a security hotfix, an API change). The worktree branch is now 12 commits behind main, and the task's code touches files modified by those commits.
+
+**Do NOT:** Ignore the divergence and continue working — the merge conflict will be larger and more complex the longer it's ignored.
+
+**Action:**
+1. Before resuming work in any worktree older than 24 hours, check divergence: `git log --oneline HEAD..origin/main`
+2. If behind by more than 5 commits or if main touched the same files: rebase the worktree branch before continuing
+3. If there are conflicts during rebase: resolve them before writing new code — do not stack new work on top of unresolved conflicts
+4. After rebasing, re-run verification to confirm no regressions from the main commits
+5. Escalation: NEEDS_COORDINATION if a main commit changed the API contract the task depends on — the task spec may need updating before implementation continues
+
+---
+
+### Edge Case 5: Task Requires Multiple Repos but Worktrees Are in Different Repos
+
+**Symptom:** A cross-repo task requires synchronized changes to `backend/` and `web/`. Two separate worktrees are created — one in each repo. But the changes must land together (atomic across repos) to not break the running product.
+
+**Do NOT:** Merge one repo's worktree before the other is ready — partial cross-repo merges break integration.
+
+**Action:**
+1. Coordinate merge order per the product.md `Merge Order` field — typically backend first, then frontend
+2. Both worktrees should be complete and verified independently before either is merged
+3. After merging the first repo, immediately start the eval for the combined state — don't wait for the second merge
+4. If the first merge causes eval to fail (because the second repo isn't merged yet), that is expected — document as "partial merge, second repo pending"
+5. Merge the second repo within the same session to minimize the window where the system is in a partially-migrated state
+6. Escalation: NEEDS_COORDINATION — notify all surface leads before the first merge so they're aware a partial state window exists
+
+---
+
 ## Checklist
 
 Before starting implementation in worktree:

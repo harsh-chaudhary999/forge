@@ -996,6 +996,38 @@ feat: register profile routes in main app
 
 ---
 
+### Edge Case 4: Tech Plan Has Cross-Repo Task Ordering Conflict
+
+**Diagnosis**: Project A's task 3 requires a type from Project B's task 5. But the merge order puts Project A first. The tech plan as written cannot execute without breaking the dependency.
+
+**Do NOT:** Silently reorder tasks across repos without flagging the cycle.
+
+**Action:**
+1. Identify the cross-repo dependency: which task in which project depends on output from another project?
+2. Check if the dependency is a compile-time type, a runtime API call, or a shared contract
+3. For compile-time types: require shared/common package task to complete first — update merge order
+4. For runtime API: the dependency is satisfied at runtime, not compile-time — no task reordering needed, just document
+5. For shared contracts: extract the shared type to a `shared/` or `lib/` project task that runs before both dependent tasks
+6. Escalation: NEEDS_COORDINATION — cross-repo task ordering must be approved by both project leads
+
+---
+
+### Edge Case 5: Spec Has No Clear Test Boundary (Integration vs Unit)
+
+**Diagnosis**: The shared-dev-spec defines a feature that spans multiple services (e.g., "user creates order, inventory decrements, notification sent"). The tech plan needs tests, but it's unclear which service owns which assertion.
+
+**Do NOT:** Duplicate assertions across all services, or skip cross-service assertions entirely.
+
+**Action:**
+1. Each service owns assertions for its own state changes only (inventory service asserts decrement, not the notification)
+2. The eval scenario (not the unit test) owns end-to-end assertions across services
+3. Unit tests: pure function behavior, mocked external calls
+4. Integration tests (within a service): real DB/cache, mocked external service clients
+5. Eval scenarios: real services, real infrastructure, no mocks
+6. Escalation: NEEDS_CONTEXT if a service boundary is ambiguous — ask the conductor which service owns the shared state
+
+---
+
 ## End of Example
 
 This example shows how each task:

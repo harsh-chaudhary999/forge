@@ -205,6 +205,38 @@ Before locking, verify:
 
 Output: **PRD LOCKED** (ready for council) or **BLOCKED** (intake incomplete, policy conflict, cannot resolve vagueness) or **NEEDS_CONTEXT** (missing prerequisites, context unavailable)
 
+---
+
+### Edge Case 4: Stakeholder Answers Contradict Each Other Mid-Intake
+
+**Symptom:** Question 3 answer (scope) conflicts with Question 7 answer (success criteria) — e.g., "no new UI" was agreed in scope, but success criteria includes a metric visible only in a UI component.
+
+**Do NOT:** Accept both answers and defer the conflict to Council. Contradictions in the PRD create ambiguous contracts downstream.
+
+**Action:**
+1. Surface the contradiction explicitly: "Answer to Q3 says no new UI. Answer to Q7 requires a UI metric. These cannot both be true."
+2. Ask the stakeholder to resolve: either expand scope to include UI, or change the success metric
+3. Do not lock the PRD until the contradiction is resolved
+4. Document the resolution in the PRD with a note: "Scope conflict between Q3 and Q7 resolved on [date]: [resolution]"
+5. Escalation: **BLOCKED** if stakeholder cannot resolve the contradiction without external sign-off
+
+---
+
+### Edge Case 5: PRD Is Submitted for the Second Time with Scope Expansion
+
+**Symptom:** A previously locked PRD for feature X is re-submitted with additional scope (e.g., "also add Y while we're at it"). The re-submission is framed as a minor update.
+
+**Do NOT:** Treat scope expansion as an amendment. Any scope change to a locked PRD requires a full restart.
+
+**Action:**
+1. Reject the re-submission as a PRD amendment — locked PRDs are immutable
+2. Create a new PRD for the new scope (Y), with its own intake run
+3. Evaluate whether Y is a dependency of X or independent — if dependency, Y's intake must complete before X's council
+4. If X's implementation is already in progress, assess impact of the new PRD on in-flight work
+5. Escalation: **NEEDS_COORDINATION** — notify the dreamer that the in-flight feature may need to pause while Y's intake runs
+
+---
+
 ## Checklist
 
 Before claiming intake complete:

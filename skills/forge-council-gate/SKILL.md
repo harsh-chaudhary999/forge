@@ -275,6 +275,38 @@ Before locking spec, verify:
 
 Output: **SPEC LOCKED** (ready for per-project tech planning) or **BLOCKED** (deadlock without dreamer input, incomplete attendance, unresolvable conflict awaiting follow-up research)
 
+---
+
+### Edge Case 4: Surface Produces a Contract That Conflicts with an Existing Brain Decision
+
+**Symptom:** The backend surface proposes a new REST API contract (e.g., `POST /auth/mfa/enable`) but a prior brain decision D007 defines `POST /auth/2fa/setup` for the same intent. The new contract would create a naming collision or semantic overlap.
+
+**Do NOT:** Allow the new contract to land without resolving the conflict with the prior decision.
+
+**Action:**
+1. Load the prior decision with `brain-read` — read D007 in full, including its rationale
+2. If the new contract is compatible (different resource, different intent), proceed — document the distinction
+3. If the new contract supersedes D007, invoke `brain-forget` to retire D007 and document the supersession reason
+4. If the contracts conflict (same resource, different semantics), surface the conflict to all surfaces before locking
+5. Escalation: **NEEDS_CONTEXT** — the surface that proposed the conflicting contract must justify why the prior decision is being overridden
+
+---
+
+### Edge Case 5: Spec Is Locked but a Surface Later Discovers It Cannot Implement Its Contract
+
+**Symptom:** Council locked the spec with `shared-dev-spec.md`. Two days later, the mobile surface discovers the agreed event bus contract requires a native library not available on iOS.
+
+**Do NOT:** Let the surface silently deviate from the spec during implementation. And do NOT let it quietly drop the feature.
+
+**Action:**
+1. This is a post-lock discovery — requires a council amendment, not an implementation decision
+2. The surface raises a `council_amendment` request to the dreamer: "iOS cannot implement X because Y"
+3. If the amendment is minor (alternative protocol, same semantics), run a focused council re-negotiation between the mobile and infra surfaces only
+4. If the amendment is significant (feature scope changes), re-run full council for affected contracts
+5. Escalation: **NEEDS_COORDINATION** — all surfaces must acknowledge the amendment before implementation continues
+
+---
+
 ## Checklist
 
 Before claiming council complete:

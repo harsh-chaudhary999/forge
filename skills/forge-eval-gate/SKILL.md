@@ -266,6 +266,38 @@ Before merging, verify:
 
 Output: **EVAL PASS** (ready to merge) or **DONE_WITH_CONCERNS** (passes with warnings, must be documented) or **BLOCKED** (eval failing after 3 retries, infrastructure down, scale/perf infeasible, eval hangs)
 
+---
+
+### Edge Case 4: Eval Passes on Retry But Not First Run (Intermittent Flakiness)
+
+**Symptom:** Eval fails on run 1 with a timing assertion or connection error, passes on run 2 with no code change. Dreamer wants to treat this as a pass.
+
+**Do NOT:** Accept a retry pass as evidence of correctness. A pass on retry after an unexplained first-run failure is evidence of flakiness, not correctness.
+
+**Action:**
+1. Classify the failure as FAIL_FLAKY per `eval-judge` rules — requires 3 retries with mixed outcomes
+2. Invoke `self-heal-locate-fault` with flaky flag to identify the root cause (race condition, timing window, state leak)
+3. Require a root-cause fix before accepting eval pass as gate-clearing evidence
+4. If root cause is in the eval scenario itself (not product code), fix the scenario and re-run
+5. Escalation: **DONE_WITH_CONCERNS** if flakiness is scenario-level and documented; **BLOCKED** if product code is the cause and no fix is applied
+
+---
+
+### Edge Case 5: Eval Passes but Coverage Is Incomplete (Missing Surface)
+
+**Symptom:** Eval completes with GREEN verdict but only the API driver ran — mobile driver was not configured, web driver was skipped, or a scenario surface was excluded.
+
+**Do NOT:** Accept partial surface coverage as full eval gate passage.
+
+**Action:**
+1. Check that all surfaces defined in the scenario file were actually executed by a driver
+2. If a driver was skipped intentionally (e.g., mobile not applicable to this feature), the scenario file must explicitly mark those steps as `status: SKIP` with `reason: not_applicable`
+3. If a driver was skipped due to missing configuration, treat as BLOCKED — configure the driver before re-running
+4. Emit DONE_WITH_CONCERNS if a non-critical surface was skipped with documented reason
+5. Escalation: **BLOCKED** if a critical surface (API or DB) has zero coverage
+
+---
+
 ## Checklist
 
 Before claiming eval gate passed:

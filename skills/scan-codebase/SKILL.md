@@ -311,6 +311,40 @@ while IFS= read -r file; do
 done < /tmp/forge_scan_tier2.txt
 ```
 
+### 3.3a — Class/method/attribute extraction from hub reads
+
+As you process hub files in 3.2 and 3.3, extract class-level structure for Phase 4.3a. No extra file reads needed — parse the lines already read.
+
+For each hub file, note the following patterns inline (record as mental model, not as a new tool call):
+
+**Classes / types to capture:**
+- `class <Name>`, `interface <Name>`, `type <Name> =`, `abstract class <Name>`
+- `struct <Name>`, `data class <Name>`, `@dataclass class <Name>`, `type <Name> struct`
+- Swift: `class <Name>`, `struct <Name>`, `protocol <Name>`
+
+**Methods to capture (public/exported only):**
+- `def <name>(`, `async def <name>(`, `fun <name>(`, `func <name>(`
+- `public <returnType> <name>(`, `async <name>(`, `export function <name>(`
+- `<name>(<params>): <returnType>` (TypeScript method syntax)
+- Constructor: `constructor(`, `__init__(self`, `init(`, `func init(`
+
+**Properties/attributes to capture:**
+- `this.<prop> =`, `readonly <prop>`, `private <prop>:`, `protected <prop>:`
+- `@property`, `var <name>:`, `val <name>:`, `let <name>:`, `const <name> =`
+- Go struct fields: lines within `type <Name> struct { ... }`
+
+**Record as structured data** for use in Phase 4.3a:
+```
+File: <path>
+Class: <ClassName>
+  Methods: methodA(params): ReturnType, methodB(): void
+  Properties: propA: string (readonly), propB: number
+```
+
+Only record classes from Tier 1 and Tier 2 hub files. Leaf files contribute to the import graph only.
+
+---
+
 ### 3.4 — Test name extraction (zero token body reads)
 
 ```bash
@@ -405,9 +439,17 @@ External dependencies that shape the architecture:
 
 ## Related Brain Files
 
+- [[structure]] — Directory tree with wikilinks to every module
 - [[patterns]] — Architecture patterns detected
 - [[api-surface]] — Public API endpoints
 - [[gotchas]] — Documented edge cases
+
+## Key Classes
+
+> Top classes across this repo — each is a graph node in `classes/`.
+
+- [[classes/<role>-<ClassName>]] — `<one-line purpose>`
+- [[classes/<role>-<ClassName2>]] — `<one-line purpose>`
 ```
 
 ### 4.3 — modules/<name>.md format
@@ -427,6 +469,14 @@ Create one file per top-level module directory + one for each Tier 1 hub.
 ## Purpose
 
 <One-paragraph description synthesized from: docstrings, README mentions, hub file top comments>
+
+## Classes
+
+> Significant classes defined in this module. Each is a node in the Obsidian graph.
+
+| Class | Type | Description |
+|---|---|---|
+| [[classes/<role>-<ClassName>]] | class / interface / struct | <one-line purpose> |
 
 ## Exports
 
@@ -473,6 +523,105 @@ Create one file per top-level module directory + one for each Tier 1 hub.
 ```
 
 **Important:** The `## Calls (cross-repo)` and `## Called By (cross-repo)` sections are written as empty stubs during Phase 4. Phase 5.5 Step 6 fills them in after correlation is complete. Do NOT attempt to fill them during Phase 4 — the correlation data doesn't exist yet.
+
+### 4.3a — classes/<role>-<ClassName>.md format
+
+Create one file per significant class extracted in 3.3a. A class is "significant" if it was found in a Tier 1 or Tier 2 hub file.
+
+File path: `~/forge/brain/products/<slug>/codebase/classes/<role>-<ClassName>.md`
+
+The `classes/` directory is what makes the Obsidian graph show method-level and attribute-level nodes. Without these files there are no class nodes to connect to in the graph.
+
+```markdown
+# Class: <ClassName>
+
+**Module:** [[modules/<role>-<module>]]
+**File:** `<relative/path/from/repo/root>`
+**Language:** <language>
+**Type:** <class | interface | abstract class | struct | data class | protocol | type>
+
+## Purpose
+
+<One-sentence description from the class docstring, comment block above the class, or synthesized from method names>
+
+## Methods
+
+| Method | Signature | Notes |
+|---|---|---|
+| `<methodName>` | `<methodName>(<paramName>: <Type>): <ReturnType>` | |
+| `constructor` | `constructor(<params>)` | |
+
+> Only list public/exported methods. Omit private helpers unless they are the primary logic of the class.
+
+## Properties / Attributes
+
+| Property | Type | Notes |
+|---|---|---|
+| `<propName>` | `<type>` | readonly / required / optional |
+
+## Relationships
+
+- **Extends:** [[classes/<role>-<ParentClass>]] *(if applicable)*
+- **Implements:** [[classes/<role>-<InterfaceName>]] *(if applicable)*
+- **Used by:** [[modules/<role>-<consumer>]], [[modules/<role>-<consumer2>]]
+
+## Location in Structure
+
+[[structure]] → `<directory/path>/` → [[modules/<role>-<module>]] → `<ClassName>`
+```
+
+**Skip a class if:** it has 0 public methods (pure data container with no behaviour) AND no other module imports it directly by class name. These are implementation details, not architectural nodes.
+
+### 4.3b — structure.md format
+
+`structure.md` is the directory-tree backbone of the Obsidian graph. Every module and class node links back to it, giving the mindmap its hierarchy. Without this file the graph is a flat soup of nodes with no spatial structure.
+
+File path: `~/forge/brain/products/<slug>/codebase/structure.md`
+
+```markdown
+# File Structure: <repo-name> (<role>)
+
+> Directory hierarchy with links to module files. This is the map — navigate from here to any module or class.
+
+## Repository Tree
+
+```
+<repo-name>/                          (root)
+├── <dir1>/                           → [[modules/<role>-<dir1>]]
+│   ├── <subdir1>/                    → [[modules/<role>-<subdir1>]]
+│   │   ├── <ClassA>.ts               → [[classes/<role>-<ClassA>]]
+│   │   └── <ClassB>.ts               → [[classes/<role>-<ClassB>]]
+│   └── <file>.ts                     → [[modules/<role>-<stem>]]
+├── <dir2>/                           → [[modules/<role>-<dir2>]]
+│   └── <file>.ts                     → [[modules/<role>-<stem>]]
+├── package.json / go.mod / pom.xml
+└── README.md
+```
+
+> Omit: `node_modules/`, `dist/`, `build/`, `__pycache__/`, `.git/`, test fixtures
+
+## Directory Index
+
+| Directory | Purpose | Modules |
+|---|---|---|
+| `<dir1>/` | <what this layer contains — e.g. "HTTP controllers"> | [[modules/<role>-<m1>]], [[modules/<role>-<m2>]] |
+| `<dir2>/` | <e.g. "Business logic services"> | [[modules/<role>-<m3>]] |
+| `<dir3>/` | <e.g. "Database access layer"> | [[modules/<role>-<m4>]] |
+
+## Entry Points
+
+| File | Module | Boots |
+|---|---|---|
+| `<path/to/main.ts>` | [[modules/<role>-<stem>]] | HTTP server on port <N> |
+| `<path/to/worker.ts>` | [[modules/<role>-<stem>]] | Background job runner |
+
+## Related
+
+- [[index]] — Module map overview
+- [[patterns]] — Architecture patterns
+```
+
+**How to write the tree:** Use the file inventory from Phase 1 (`/tmp/forge_scan_source_files.txt`) grouped by directory. Do not read additional files. Reconstruct the directory structure from the paths alone — you already have them.
 
 ### 4.4 — patterns.md format
 
@@ -635,9 +784,20 @@ This section is overwritten on every re-scan. First scans do not include this se
 
 ```bash
 cd ~/forge/brain
+# Verify expected output files were created
+echo "=== Output summary ==="
+echo "Modules: $(ls products/<slug>/codebase/modules/ 2>/dev/null | wc -l) files"
+echo "Classes: $(ls products/<slug>/codebase/classes/ 2>/dev/null | wc -l) files"
+echo "Structure: $([ -f products/<slug>/codebase/structure.md ] && echo 'present' || echo 'MISSING')"
+echo "API surface: $([ -f products/<slug>/codebase/api-surface.md ] && echo 'present' || echo 'MISSING')"
+
 git add products/<slug>/codebase/
-git commit -m "scan: map <slug>/<role> codebase — <file-count> files, <hub-count> hubs"
+git commit -m "scan: map <slug>/<role> codebase — <file-count> files, <hub-count> hubs, <class-count> classes"
 ```
+
+**If `classes/` has 0 files** and hub reads included class-bearing code: do NOT skip. Go back and extract at least the top 3-5 classes from the Tier 1 hubs. The `classes/` directory is mandatory for a meaningful Obsidian graph — flat module-only output does not produce a navigable mindmap.
+
+**If `structure.md` is missing:** do NOT proceed to Phase 5 or commit. Write it now using the file paths already in `/tmp/forge_scan_source_files.txt` — no additional reads needed.
 
 ---
 

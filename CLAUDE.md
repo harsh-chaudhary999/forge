@@ -24,6 +24,11 @@ requires: [other-skill-name]
 ---
 ```
 
+## Execution Rules (Non-Negotiable)
+
+- **Never write scripts to `/tmp` and execute them.** Run all bash commands inline. Writing `/tmp/verify.sh`, `/tmp/check.sh`, `/tmp/final_check.sh` etc. and then running them is forbidden — it obscures what's being executed, creates untracked side effects, and requires extra permission approvals. If a command is complex, run it directly as a multi-line heredoc or chained pipeline.
+- **`/tmp` is only for data files, never for scripts.** Intermediate data files (e.g. scan output, temp lists) are acceptable. Executable scripts written to `/tmp` are not.
+
 ## Key Constraints
 
 - D5: No third-party agent frameworks. No LangChain, Playwright, Puppeteer.

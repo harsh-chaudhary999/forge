@@ -180,7 +180,27 @@ install_cursor() {
   # Make hook scripts executable (graceful — not all files may exist)
   find "${plugin_dir}/hooks" -type f \( -name "*.sh" -o -name "session-start" -o -name "run-hook.cmd" \) -exec chmod +x {} \; 2>/dev/null || true
 
+  # Write global Cursor rules so Forge loads in ANY project opened in Cursor
+  # Cursor reads ~/.cursor/rules/forge.mdc as a global always-on rule
+  local global_rules_dir="${HOME}/.cursor/rules"
+  mkdir -p "${global_rules_dir}"
+  cat > "${global_rules_dir}/forge.mdc" << 'RULES'
+---
+description: Forge — multi-repo product orchestration plugin
+alwaysApply: true
+---
+
+You have the Forge plugin installed. Forge skills, agents, and commands are available in every session.
+
+The Forge plugin is installed at: ~/.cursor/plugins/local/forge
+
+Key commands: /workspace /intake /council /plan /build /eval /heal /review /dream /forge-status
+
+On every session start: read ~/.cursor/plugins/local/forge/skills/using-forge/SKILL.md and follow its bootstrap instructions.
+RULES
+
   echo "  Done: ${plugin_dir}"
+  echo "  Global Cursor rules: ${global_rules_dir}/forge.mdc (loads in every project)"
   echo "  Note: Restart Cursor to activate."
 }
 

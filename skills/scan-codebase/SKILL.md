@@ -104,6 +104,15 @@ Run these bash commands for **each repo** in the workspace. Collect all output b
 ```bash
 REPO=<repo-path>
 
+# Detect git submodule paths to exclude from scan
+SUBMODULE_PATHS=$(git -C "$REPO" submodule --quiet foreach 'echo $displaypath' 2>/dev/null)
+
+# Build exclusion pattern for submodule directories
+SUBMODULE_EXCLUDES=""
+for sm in $SUBMODULE_PATHS; do
+  SUBMODULE_EXCLUDES="$SUBMODULE_EXCLUDES | grep -v \"$sm/\""
+done
+
 # All source files, excluding noise
 find "$REPO" -type f \( \
   -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" \
@@ -121,6 +130,7 @@ find "$REPO" -type f \( \
 | grep -v "\.min\." \
 | grep -v "\.spec\." \
 | grep -v "\.test\." \
+| eval "grep -v node_modules $SUBMODULE_EXCLUDES" \
 | sort > /tmp/forge_scan_source_files.txt
 
 # Test files — separately (for gotchas extraction)
@@ -134,7 +144,26 @@ echo "Test files: $(wc -l < /tmp/forge_scan_test_files.txt)"
 
 ### 1.2 — Module boundary detection
 
+> **Monorepo detection:** Before scanning, check if the repo is a Turborepo/Nx/Lerna/pnpm workspace monorepo. If it is, treat each package as a separate logical repo for the purposes of module naming and brain file organization.
+
 ```bash
+# Detect monorepo structure
+IS_MONOREPO=false
+MONOREPO_PACKAGES=""
+
+if [ -f "$REPO/turbo.json" ] || [ -f "$REPO/nx.json" ] || [ -f "$REPO/lerna.json" ]; then
+  IS_MONOREPO=true
+  # Find package directories (packages/, apps/, libs/ are common roots)
+  MONOREPO_PACKAGES=$(find "$REPO" -maxdepth 3 -name "package.json" \
+    | grep -v node_modules | grep -v "^$REPO/package.json" \
+    | xargs dirname | sort)
+  echo "Monorepo detected. Packages:"
+  echo "$MONOREPO_PACKAGES"
+  echo ""
+  echo "Scan each package as a separate logical repo. Use package directory name as role prefix."
+  echo "Example: packages/api/src/users.ts → api-users.md"
+fi
+
 # Top-level directories (excluding config/infra noise)
 find "$REPO" -maxdepth 2 -type d \
   | grep -v node_modules | grep -v "\.git" | grep -v __pycache__ \
@@ -228,6 +257,16 @@ echo "Tier 2 hubs: $(wc -l < /tmp/forge_scan_tier2.txt)"
 - Maximum 20 Tier 1 hub reads per repo
 - Maximum 30 Tier 2 hub reads per repo
 - If more than 20 Tier 1 hubs exist, read only the top 20 by reference count
+
+**Token budget enforcement — what to cut when approaching 15K tokens:**
+
+Cut in this order (stop as soon as you are back under budget):
+
+1. **Drop Tier 2 hub reads** — skip all Tier 2 reads for this repo. Import graph data still goes into module files.
+2. **Reduce Tier 1 reads from 150 → 60 lines** — read only the first 60 lines of each Tier 1 hub.
+3. **Skip test name extraction (3.4)** — gotchas.md gets only TODO/FIXME content, no test-derived edge cases.
+4. **Skip Phase 5 for this repo** — cross-repo layer is deferred; note in index.md: `> ⚠️ Phase 5 skipped — token budget reached. Cross-repo relationships not mapped.`
+5. **NEVER:** Skip Phase 1 (it costs 0 tokens), skip SCAN.json, or skip writing index.md — these are mandatory even on the tightest budget.
 
 ---
 
@@ -652,8 +691,34 @@ for repo in <all-repos>; do
     "dio\.get\|dio\.post\|dio\.put\|dio\.delete\|http\.get\|http\.post" \
     "$repo" --include="*.dart" \
     | grep -v test | head -20
+
+  # Ruby (Net::HTTP, HTTParty, Faraday, RestClient)
+  grep -rn \
+    "Net::HTTP\.\|HTTParty\.\|Faraday\.new\|RestClient\.\|\.get(\|\.post(\|\.put(\|\.delete(" \
+    "$repo" --include="*.rb" \
+    | grep -v test | grep -v spec | head -20
+
+  # Swift (URLSession, Alamofire)
+  grep -rn \
+    "URLSession\.\|AF\.\|Alamofire\.\|dataTask(with\|URLRequest(" \
+    "$repo" --include="*.swift" \
+    | grep -v test | grep -v Test | head -20
+
+  # tRPC (client.procedure.query / client.procedure.mutate patterns)
+  grep -rn \
+    "trpc\.\|createTRPCClient\|\.query(\|\.mutate(\|\.useQuery(\|\.useMutation(" \
+    "$repo" --include="*.ts" --include="*.tsx" \
+    | grep -v node_modules | grep -v test | grep -v spec | head -20
+
+  # gRPC stub calls (generated client method calls)
+  grep -rn \
+    "Stub(\|\.stub\.\|grpc\.unary\|grpc\.invoke\|ServicePromiseClient\|\.call(" \
+    "$repo" --include="*.ts" --include="*.js" --include="*.java" --include="*.kt" --include="*.go" \
+    | grep -v node_modules | grep -v test | grep -v Test | head -20
 done
 ```
+
+> **tRPC / gRPC note:** These protocols don't emit plain HTTP path strings. tRPC call sites reference procedure names (e.g. `trpc.user.getById.query()`), not URLs. gRPC call sites reference stub method names. For these, the route correlation in Phase 5.5 cannot use URL matching — instead, note the call sites in `cross-repo.md` under a separate section `## tRPC / gRPC Call Sites` with the procedure/method names. Match them manually against the router/proto definition files.
 
 ### 5.2 — Shared type / schema detection
 
@@ -838,6 +903,33 @@ grep -oE "(requests|httpx)\.[a-z]+\(['\"]([/][^'\"?# ]+)" \
 sort -u /tmp/forge_scan_url_strings.txt > /tmp/forge_scan_fe_urls.txt
 echo "Unique URL paths extracted: $(wc -l < /tmp/forge_scan_fe_urls.txt)"
 cat /tmp/forge_scan_fe_urls.txt
+
+# ── Dynamic URLs (template literals / variable concatenation) — flag for manual review ──
+# These cannot be statically extracted — the path is built at runtime from env vars or state
+for repo in <all-repos>; do
+  repo_name=$(basename "$repo")
+  # Template literals: fetch(`${BASE_URL}/path`) or axios.get(`${API_URL}/users`)
+  grep -rn \
+    "fetch(\`\${\\|axios\.[a-z]*(\`\${\|got\.[a-z]*(\`\${\|requests\.[a-z]*(f\"\|httpx\.[a-z]*(f\"" \
+    "$repo" \
+    --include="*.ts" --include="*.tsx" --include="*.js" --include="*.py" \
+    | grep -v node_modules | grep -v test | grep -v spec \
+    | sed "s|$repo/||" | sed "s|^|$repo_name\t|"
+  # Concatenation: baseURL + '/path' or API_BASE_URL + endpoint
+  grep -rn \
+    "baseURL\s*+\|API_BASE_URL\s*+\|API_URL\s*+\|BASE_URL\s*+" \
+    "$repo" \
+    --include="*.ts" --include="*.tsx" --include="*.js" \
+    | grep -v node_modules | grep -v test \
+    | sed "s|$repo/||" | sed "s|^|$repo_name\t|"
+done > /tmp/forge_scan_dynamic_urls.txt
+
+if [ -s /tmp/forge_scan_dynamic_urls.txt ]; then
+  echo ""
+  echo "⚠️  Dynamic URLs detected — path not extractable by grep (template literals / variable concatenation):"
+  wc -l < /tmp/forge_scan_dynamic_urls.txt
+  echo "These call sites will NOT appear in URL correlation. Document in cross-repo.md under '## Dynamic URL Call Sites (Manual Review Required)'"
+fi
 ```
 
 **Step 3 — Normalize backend route table for matching:**
@@ -861,30 +953,6 @@ grep -E "@Get|@Post|@Put|@Delete|@Patch|router\.(get|post|put|delete|patch)|app\
     -e "s/.*@GetMapping(\"\([^\"]*\)\").*/GET\t\1/" \
     -e "s/.*@PostMapping(\"\([^\"]*\)\").*/POST\t\1/" \
     -e "s/.*@RequestMapping.*\"\([^\"]*\)\".*/MULTI\t\1/" \
-  > /tmp/forge_scan_be_routes_normalized.txt
-
-echo "Backend routes normalized: $(wc -l < /tmp/forge_scan_be_routes_normalized.txt)"
-cat /tmp/forge_scan_be_routes_normalized.txt
-```
-
-**Step 3 — Normalize backend route table for matching:**
-
-```bash
-# /tmp/forge_scan_api_routes.txt was built in Phase 3.5
-# Normalize :param placeholders to a regex-friendly pattern for matching
-# Format each line: METHOD  /route/path  file:line  handler
-grep -E "@Get|@Post|@Put|@Delete|@Patch|router\.(get|post|put|delete|patch)|app\.(get|post|put|delete|patch)|r\.(GET|POST|PUT|DELETE)" \
-  /tmp/forge_scan_api_routes.txt \
-  | sed \
-    -e "s/.*@Get('\([^']*\)').*/GET\t\1/" \
-    -e "s/.*@Post('\([^']*\)').*/POST\t\1/" \
-    -e "s/.*@Put('\([^']*\)').*/PUT\t\1/" \
-    -e "s/.*@Delete('\([^']*\)').*/DELETE\t\1/" \
-    -e "s/.*@Patch('\([^']*\)').*/PATCH\t\1/" \
-    -e "s/.*router\.get('\([^']*\)'.*/GET\t\1/" \
-    -e "s/.*router\.post('\([^']*\)'.*/POST\t\1/" \
-    -e "s/.*app\.get('\([^']*\)'.*/GET\t\1/" \
-    -e "s/.*app\.post('\([^']*\)'.*/POST\t\1/" \
   > /tmp/forge_scan_be_routes_normalized.txt
 
 echo "Backend routes normalized: $(wc -l < /tmp/forge_scan_be_routes_normalized.txt)"
@@ -917,10 +985,18 @@ UNMATCHED  web  src/utils/legacy.ts  88  web-legacy  /api/v1/feed  -  -  -  -  -
 ORPHAN  -  -  -  -  -  -  backend  src/routes/admin.ts  7  backend-admin  /api/admin/metrics  GET
 ```
 
-**Module name derivation rule:** `<role>-<stem>` where stem = filename without extension, lowercased, with path separators replaced by `-` for files more than 1 level deep. Examples:
-- `web/src/hooks/useUser.ts` → `web-useUser`
-- `backend/src/routes/users.ts` → `backend-users`
-- `consumer-service/src/client/UserClient.java` → `consumer-service-UserClient`
+**Module name derivation rule:** `<role>-<stem>` where stem = filename without extension, lowercased.
+
+**Collision rule:** Common filenames (`index`, `main`, `app`, `server`, `utils`, `helpers`, `types`, `config`, `client`, `handler`, `middleware`) appear in many directories within the same repo and will collide. For these names, prefix with the immediate parent directory: `<role>-<parent>-<stem>`.
+
+Examples:
+- `web/src/hooks/useUser.ts` → `web-useUser` (unique name, no prefix needed)
+- `backend/src/routes/users.ts` → `backend-users` (unique name, no prefix needed)
+- `backend/src/auth/index.ts` → `backend-auth-index` (collision-prone name, parent included)
+- `backend/src/middleware/index.ts` → `backend-middleware-index` (collision-prone, different parent)
+- `consumer-service/src/client/UserClient.java` → `consumer-service-UserClient` (unique name)
+
+**Detection:** Before writing a module file, check if the name already exists in `modules/`. If it does, apply the parent-directory prefix to both the existing and new file to disambiguate.
 
 ---
 

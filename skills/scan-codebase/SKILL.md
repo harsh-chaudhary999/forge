@@ -239,8 +239,8 @@ grep -c "\.dart$" /tmp/forge_scan_source_files.txt && echo "Dart files"
 
 From `forge_scan_hub_scores.txt`, identify:
 
-**Tier 1 Hubs** (referenced by 5+ files) — read top 150 lines in Phase 3
-**Tier 2 Hubs** (referenced by 3-4 files) — read top 80 lines in Phase 3
+**Tier 1 Hubs** (referenced by 5+ files) — read in full in Phase 3
+**Tier 2 Hubs** (referenced by 3-4 files) — read in full in Phase 3
 **Leaf files** (referenced by 0-2 files) — extract only from import graph, do NOT read body
 
 ```bash
@@ -253,28 +253,13 @@ awk '$1 >= 3 && $1 < 5 {print $2}' /tmp/forge_scan_hub_scores.txt > /tmp/forge_s
 echo "Tier 2 hubs: $(wc -l < /tmp/forge_scan_tier2.txt)"
 ```
 
-**Cap enforcement:**
-- Maximum 20 Tier 1 hub reads per repo
-- Maximum 30 Tier 2 hub reads per repo
-- If more than 20 Tier 1 hubs exist, read only the top 20 by reference count
-
-**Token budget enforcement — what to cut when approaching 15K tokens:**
-
-Cut in this order (stop as soon as you are back under budget):
-
-1. **Drop Tier 2 hub reads** — skip all Tier 2 reads for this repo. Import graph data still goes into module files.
-2. **Reduce Tier 1 reads from 150 → 60 lines** — read only the first 60 lines of each Tier 1 hub.
-3. **Skip test name extraction (3.4)** — gotchas.md gets only TODO/FIXME content, no test-derived edge cases.
-4. **Skip Phase 5 for this repo** — cross-repo layer is deferred; note in index.md: `> ⚠️ Phase 5 skipped — token budget reached. Cross-repo relationships not mapped.`
-5. **NEVER:** Skip Phase 1 (it costs 0 tokens), skip SCAN.json, or skip writing index.md — these are mandatory even on the tightest budget.
-
 ---
 
-## Phase 3: Semantic Enrichment (Targeted Reads)
+## Phase 3: Semantic Enrichment (Full Reads)
 
-Read files in this priority order. Read only the specified line ranges.
+Read files in this priority order. Read each file in full.
 
-### 3.1 — Always read (zero token restriction)
+### 3.1 — Always read
 
 These are documentation files, not code. Read fully:
 
@@ -285,12 +270,12 @@ for doc in README.md CONTRIBUTING.md ARCHITECTURE.md docs/architecture.md docs/d
 done
 ```
 
-### 3.2 — Tier 1 hub reads (top 150 lines only)
+### 3.2 — Tier 1 hub reads (full file)
 
 ```bash
 while IFS= read -r file; do
   echo "=== $file ==="
-  head -150 "$file"
+  cat "$file"
   echo ""
 done < /tmp/forge_scan_tier1.txt
 ```
@@ -301,19 +286,19 @@ Extract from each hub:
 - JSDoc/docstrings on exported items
 - `// TODO`, `// FIXME`, `// HACK`, `// NOTE` comments
 
-### 3.3 — Tier 2 hub reads (top 80 lines only)
+### 3.3 — Tier 2 hub reads (full file)
 
 ```bash
 while IFS= read -r file; do
   echo "=== $file ==="
-  head -80 "$file"
+  cat "$file"
   echo ""
 done < /tmp/forge_scan_tier2.txt
 ```
 
 ### 3.3a — Class/method/attribute extraction from hub reads
 
-As you process hub files in 3.2 and 3.3, extract class-level structure for Phase 4.3a. No extra file reads needed — parse the lines already read.
+As you process hub files in 3.2 and 3.3, extract class-level structure for Phase 4.3a. Hub files are read in full so no class buried deep in a file will be missed.
 
 For each hub file, note the following patterns inline (record as mental model, not as a new tool call):
 

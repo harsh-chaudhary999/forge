@@ -213,9 +213,9 @@ EOF
 **Step 5a.2 — Copy Obsidian config from Forge template:**
 
 ```bash
-FORGE_DIR=$(find ~/.claude/plugins ~/.cursor/plugins ~/.config/gemini/plugins \
+FORGE_DIR=$(find ~/.claude/plugins ~/.cursor/plugins ~/.cursor/plugins/local ~/.config/gemini/plugins \
   -path "*/forge/brain-template" -type d 2>/dev/null | head -1 | sed 's|/brain-template||')
-# Fallback: common direct clone locations
+# Fallback: common direct clone locations (covers a forge git clone without plugin layout)
 [ -z "$FORGE_DIR" ] && FORGE_DIR=$(find ~/forge ~/Videos/forge -maxdepth 1 -name "brain-template" -type d 2>/dev/null | head -1 | sed 's|/brain-template||')
 
 mkdir -p ~/forge/brain/.obsidian
@@ -247,6 +247,24 @@ git -C ~/forge/brain commit -m "chore: initialize brain as Obsidian vault"
 If **all** of `app.json`, `graph.json`, `workspace.json`, `core-plugins.json`, and `appearance.json` already exist under `~/forge/brain/.obsidian/`, skip Step 5a.2 silently (still run 5a.1 / 5a.3 / 5a.4 as needed for git and README).
 
 **Troubleshooting (vault still won’t open):** Fully quit Obsidian and open **exactly** `~/forge/brain` (the folder containing `README.md`, `products/`, and `.obsidian/` — not `products/<slug>`). Flatpak/Snap sandboxes may block paths under `~/forge/`; grant filesystem access (Flatseal) or use AppImage/deb, or on Windows + WSL use `\\wsl$\…\forge\brain`.
+
+**Obsidian URIs / `xdg-open` “unable to find vault or the path”:**
+
+- `obsidian://open?path=…` — `path` must be an **absolute path to a markdown file inside** the vault (Obsidian resolves the vault as an ancestor of that file). Using `path=` for the vault directory alone is invalid.
+- Prefer `obsidian://open?vault=<vaultId>&file=<relative/note.md>` where `vaultId` is listed in `~/.config/obsidian/obsidian.json`. Per-vault UI state lives in `~/.config/obsidian/<vaultId>.json`; if that file is missing you can see ENOENT until you open the vault once in Obsidian or seed a minimal JSON like another vault’s sibling file.
+- That config lives under **the user’s home directory**, not in `~/forge/brain/` — the Forge plugin does not ship or modify it.
+
+**Repair an existing brain that only has partial `.obsidian/` (one-liner):**
+
+```bash
+FORGE_DIR="$(find ~/.cursor/plugins ~/.cursor/plugins/local ~/.claude/plugins ~/.config/gemini/plugins \
+  -path '*/forge/brain-template' -type d 2>/dev/null | head -1 | sed 's|/brain-template||')"
+BT="$FORGE_DIR/brain-template/.obsidian"
+mkdir -p ~/forge/brain/.obsidian
+cp "$BT/"{app.json,graph.json,workspace.json,core-plugins.json,appearance.json} ~/forge/brain/.obsidian/
+```
+
+(Adjust `FORGE_DIR` if your canonical Forge checkout lives outside plugin caches.)
 
 ---
 

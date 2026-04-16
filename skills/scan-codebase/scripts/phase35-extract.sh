@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # Forge scan-codebase: Phase 3.4-3.5 — Test name extraction + API route extraction
 #
-# Usage: bash /path/to/forge/skills/scan-codebase/scripts/phase35-extract.sh <REPO_PATH>
+# Usage: bash .../phase35-extract.sh <REPO_PATH> [append]
+#
+# Multi-repo: run once per repo. First repo: no second arg (truncates API routes file).
+# Later repos: pass "append" so routes accumulate in /tmp/forge_scan_api_routes.txt.
+# If you always use "append" without truncating first, the file grows unbounded — start
+# with a fresh run for the first repo, or run `: > /tmp/forge_scan_api_routes.txt` once.
 #
 # Prerequisite: phase1-inventory.sh must have been run first (needs forge_scan_test_files.txt)
 #
@@ -15,8 +20,10 @@ _fs_scripts=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck disable=SC1091
 . "$_fs_scripts/_forge-scan-log.sh"
 
-REPO="${1:?Usage: $0 <repo-path>}"
-forge_scan_log_start phase35-extract "repo=$REPO"
+REPO="${1:?Usage: $0 <repo-path> [append]}"
+APPEND_ROUTES="${2:-}"
+_repo_slug=$(basename "$REPO")
+forge_scan_log_start phase35-extract "repo=$REPO append_routes=${APPEND_ROUTES:-no}"
 
 echo "════════════════════════════════════════════════════════"
 echo "FORGE SCAN — Phase 3.4-3.5: Test Names + API Routes"
@@ -48,9 +55,17 @@ forge_scan_log_stat "phase=3.4 test_files=$(wc -l < /tmp/forge_scan_test_files.t
 echo ""
 echo "[3.5] Extracting API routes..."
 
+if [ "$APPEND_ROUTES" = "append" ]; then
+  forge_scan_log_step "phase=3.5 appending_api_routes repo=$_repo_slug"
+else
+  : > /tmp/forge_scan_api_routes.txt
+  forge_scan_log_step "phase=3.5 reset_api_routes_file repo=$_repo_slug"
+fi
+
 grep -rn \
   "@Get\|@Post\|@Put\|@Delete\|@Patch\
 \|@GetMapping\|@PostMapping\|@PutMapping\|@DeleteMapping\|@PatchMapping\|@RequestMapping\
+\|@Controller\|@Route\
 \|router\.get\|router\.post\|router\.put\|router\.delete\|router\.patch\
 \|app\.get\|app\.post\|app\.put\|app\.delete\|app\.patch\
 \|r\.GET\|r\.POST\|r\.PUT\|r\.DELETE\|r\.PATCH\
@@ -59,8 +74,9 @@ grep -rn \
   "$REPO" \
   --include="*.ts" --include="*.py" --include="*.go" \
   --include="*.java" --include="*.kt" --include="*.js" --include="*.jsx" \
-  | grep -v node_modules | grep -v dist | grep -v test | grep -v spec \
-  2>/dev/null > /tmp/forge_scan_api_routes.txt || true
+  | grep -v node_modules | grep -v dist \
+  | grep -Ev '/(test|tests|__tests__|e2e|spec)/|\.test\.|\.spec\.|/testing/' \
+  2>/dev/null | sed "s|^|${_repo_slug}\t|" >> /tmp/forge_scan_api_routes.txt || true
 
 echo "  API routes found: $(wc -l < /tmp/forge_scan_api_routes.txt)"
 echo ""

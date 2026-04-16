@@ -103,7 +103,7 @@ codebase/
 | Script | Phase | What it does |
 |---|---|---|
 | `skills/scan-codebase/scripts/phase1-inventory.sh <REPO>` | 1.1 – 1.6 | Full inventory: file list, hub scores, type/method/function/UI symbols |
-| `skills/scan-codebase/scripts/phase35-extract.sh <REPO>` | 3.4 – 3.5 | Test name strings + API route extraction |
+| `skills/scan-codebase/scripts/phase35-extract.sh <REPO> [append]` | 3.4 – 3.5 | Test name strings + API route extraction (`append` merges routes from multiple repos into one file — **required** for cross-repo correlation) |
 | `skills/scan-codebase/scripts/phase4-brain-write.sh <REPO> <BRAIN_CODEBASE_DIR> <ROLE>` | 4.3a/c/e/b | Auto-generate ALL stub brain nodes (classes, functions, pages, modules) from Phase 1 inventory — no LLM needed |
 | `skills/scan-codebase/scripts/phase5-cross-repo.sh <repo1> [repo2...]` | 5.1 – 5.4 | Cross-repo HTTP call sites, shared types, env vars, event producers/consumers |
 | `skills/scan-codebase/scripts/cleanup.sh` | End | Remove all `/tmp/forge_scan_*.txt` files |
@@ -116,6 +116,7 @@ codebase/
 FORGE_SCRIPTS=$(find \
   ~/.claude/plugins \
   ~/.cursor/plugins \
+  ~/.cursor/plugins/local \
   ~/.config/gemini/plugins \
   -path "*/scan-codebase/scripts" -type d 2>/dev/null | head -1)
 # Fallback: we're running inside the forge repo itself
@@ -741,15 +742,21 @@ Implements: IUserService
 
 ### 3.4 — Test name extraction + 3.5 — API route extraction
 
-Run the pre-written Phase 3.4-3.5 script:
+Run the pre-written Phase 3.4-3.5 script **once per repo**.
 
 ```bash
 bash "$FORGE_SCRIPTS/phase35-extract.sh" "$REPO"
+# For every additional repo in the same product scan:
+bash "$FORGE_SCRIPTS/phase35-extract.sh" "$OTHER_REPO" append
 ```
+
+**HARD-GATE (multi-repo):** `/tmp/forge_scan_api_routes.txt` must contain routes from **every** repo that defines HTTP APIs (typically backend + any BFF). The script **truncates** that file on the first run and **appends** on `append`. If you only run phase35 on the web repo last, the file will contain **only web routes** and Phase 5.5 will show almost no FE↔BE matches — that is a common cause of “one cross-repo link” graphs.
+
+Recommended order: **backend first** (no `append`), then web, mobile, etc. with `append`.
 
 This writes:
 - `/tmp/forge_scan_test_names.txt` — test name strings (used for `gotchas.md`)
-- `/tmp/forge_scan_api_routes.txt` — all route decorators and router patterns (used for `api-surface.md` and Phase 5.5 route correlation)
+- `/tmp/forge_scan_api_routes.txt` — all route decorators and router patterns (used for `api-surface.md` and Phase 5.5 route correlation). Each line is prefixed with `<repo-basename>\t` after aggregation.
 
 Read the script output for the route breakdown by HTTP method before proceeding to Phase 4.
 
@@ -1497,6 +1504,8 @@ git commit -m "scan: map <slug>/<role> codebase — <file-count> files, <hub-cou
 
 This phase identifies the architectural seams between repos — the contracts, shared types, and communication patterns that cross repo boundaries. This is the most valuable architectural data for multi-repo planning and the data most likely to be missing without an explicit scan phase.
 
+**Correlation quality:** If `cross-repo.md` shows almost no `MATCHED` rows while the backend has hundreds of routes, verify (1) `phase35-extract.sh` was run with **`append`** for every route-defining repo so `/tmp/forge_scan_api_routes.txt` is not overwritten, and (2) `/tmp/forge_scan_fe_urls.txt` is non-trivial after `phase5-cross-repo.sh` (many SPAs use `$fetch`, `api.`, or quoted `/api/...` paths — the script harvests those; dynamic template URLs still need manual rows).
+
 ### 5.1 – 5.4 — Run the pre-written cross-repo script
 
 Run the pre-written Phase 5 script, passing all repo paths:
@@ -1804,7 +1813,9 @@ fi
 **Step 3 — Normalize backend route table for matching:**
 
 ```bash
-# /tmp/forge_scan_api_routes.txt was built in Phase 3.5
+# /tmp/forge_scan_api_routes.txt was built in Phase 3.5 (possibly multiple repos; each line may start with `repo\t`)
+# Strip optional leading repo column for sed-only pipelines, or keep it for tables:
+#   cut -f2- /tmp/forge_scan_api_routes.txt | grep -E ...
 # Normalize :param placeholders to a regex-friendly pattern for matching
 # Format each line: METHOD  /route/path  file:line  handler
 grep -E "@Get|@Post|@Put|@Delete|@Patch|router\.(get|post|put|delete|patch)|app\.(get|post|put|delete|patch)|r\.(GET|POST|PUT|DELETE)" \

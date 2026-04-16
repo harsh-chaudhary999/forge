@@ -3,8 +3,9 @@
 #
 # Usage: bash /path/to/forge/skills/scan-codebase/scripts/phase5-cross-repo.sh <repo1> [repo2] [repo3] ...
 #
-# Prerequisite: phase35-extract.sh must have been run on the backend repo
-#               (needs forge_scan_api_routes.txt for Phase 5.5 correlation)
+# Prerequisite: phase35-extract.sh must have been run on every repo that defines HTTP routes
+#               (aggregate /tmp/forge_scan_api_routes.txt — first repo without "append",
+#                remaining repos with "append". Otherwise only the LAST repo's routes remain.)
 #
 # Writes to /tmp:
 #   forge_scan_js_calls.txt         TS/JS HTTP call sites
@@ -60,11 +61,12 @@ for repo in "${REPOS[@]}"; do
   repo_name=$(basename "$repo")
   echo "  Scanning: $repo_name"
 
-  # TypeScript / JavaScript
+  # TypeScript / JavaScript — include common wrappers ($fetch, RTK query, ofetch, etc.)
   grep -rn \
-    "fetch(\|axios\.\|got\.\|superagent\.\|ky\.\|needle\." \
+    "fetch(\|\$fetch(\|useFetch(\|ofetch(\|axios\.\|got\.\|superagent\.\|ky\.\|needle\.\|http\.get(\|http\.post(\|http\.put(\|http\.delete(\|http\.patch(\|request(\|apiClient\.\|client\.get(\|client\.post(\|client\.put(\|client\.delete(\|createApi(" \
     "$repo" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
-    | grep -v node_modules | grep -v test | grep -v spec \
+    | grep -v node_modules \
+    | grep -Ev '/(test|tests|__tests__|e2e|spec)/|\.test\.|\.spec\.|/testing/' \
     | sed "s|$repo/||" | sed "s|^|$repo_name\t|" \
     2>/dev/null >> /tmp/forge_scan_js_calls.txt || true
 
@@ -215,18 +217,50 @@ forge_scan_log_step "phase=5.4 producer_consumer_grep_complete (see_stdout_above
 echo ""
 echo "[5.5 prep] Extracting URL path strings from call sites..."
 
-# TS/JS string literal URLs
-grep -oE "(fetch|axios\.[a-z]+|got\.[a-z]+|ky\.[a-z]+)\(['\`]([/][^'\`\"?# ]+)" \
+# TS/JS string literal URLs (from matched call-site lines)
+grep -oE "(fetch|axios\.[a-zA-Z]+|got\.[a-zA-Z]+|ky\.[a-zA-Z]+|\$fetch|useFetch|ofetch)\(['\`]([/][^'\`\"?# ]+)" \
   /tmp/forge_scan_js_calls.txt \
   | grep -oE "['\`][/][^'\`\"?# ]+" | tr -d "'\`\"" \
   2>/dev/null > /tmp/forge_scan_url_strings.txt || true
+
+# TS/JS double-quoted paths on same lines
+grep -oE "(fetch|axios\.[a-zA-Z]+|got\.[a-zA-Z]+|ky\.[a-zA-Z]+|\$fetch|useFetch|ofetch)\(\"(/[^\"?# ]+)\"" \
+  /tmp/forge_scan_js_calls.txt \
+  | grep -oE '"/[^"]+"' | tr -d '"' \
+  2>/dev/null >> /tmp/forge_scan_url_strings.txt || true
+
+# Broader harvest: quoted /api… /vN… /graphql… /rest… path literals (whole repo; ERE-only, no PCRE)
+_inc=(--include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx")
+for _hr in "${REPOS[@]}"; do
+  grep -rhoE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
+    '"(/api[^"#?]{1,240})"' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '"' >> /tmp/forge_scan_url_strings.txt || true
+  grep -rhoE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
+    "'(/api[^'#?]{1,240})'" "$_hr" "${_inc[@]}" 2>/dev/null | sed "s/^'//;s/'$//" >> /tmp/forge_scan_url_strings.txt || true
+  grep -rhoE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
+    '\`(/api[^\`#?]{1,240})\`' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '\`' >> /tmp/forge_scan_url_strings.txt || true
+  grep -rhoE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
+    '"(/v[0-9]+[^"#?]{1,240})"' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '"' >> /tmp/forge_scan_url_strings.txt || true
+  grep -rhoE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
+    "'(/v[0-9]+[^'#?]{1,240})'" "$_hr" "${_inc[@]}" 2>/dev/null | sed "s/^'//;s/'$//" >> /tmp/forge_scan_url_strings.txt || true
+  grep -rhoE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
+    '\`(/v[0-9]+[^\`#?]{1,240})\`' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '\`' >> /tmp/forge_scan_url_strings.txt || true
+  grep -rhoE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
+    '"(/graphql[^"#?]{1,240})"' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '"' >> /tmp/forge_scan_url_strings.txt || true
+  grep -rhoE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
+    '"(/rest[^"#?]{1,240})"' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '"' >> /tmp/forge_scan_url_strings.txt || true
+done
 
 # Java URL literals
 grep -oE '"(/[^"?# ]+)"' /tmp/forge_scan_java_calls.txt \
   | tr -d '"' \
   2>/dev/null >> /tmp/forge_scan_url_strings.txt || true
 
-# Feign/Retrofit mapping annotations
+# Feign / Spring MVC mapping annotations on Java (was incorrectly reading kotlin_calls)
+grep -oE '@[A-Z][a-z]+Mapping\("([^"]+)"' /tmp/forge_scan_java_calls.txt \
+  | grep -oE '"[^"]+"' | tr -d '"' \
+  2>/dev/null >> /tmp/forge_scan_url_strings.txt || true
+
+# Retrofit / Ktor path strings from Kotlin call dump
 grep -oE '@[A-Z][a-z]+Mapping\("([^"]+)"' /tmp/forge_scan_kotlin_calls.txt \
   | grep -oE '"[^"]+"' | tr -d '"' \
   2>/dev/null >> /tmp/forge_scan_url_strings.txt || true
@@ -248,7 +282,8 @@ for repo in "${REPOS[@]}"; do
     "fetch(\`\${\\|axios\.[a-z]*(\`\${\|got\.[a-z]*(\`\${\|requests\.[a-z]*(f\"\|httpx\.[a-z]*(f\"" \
     "$repo" \
     --include="*.ts" --include="*.tsx" --include="*.js" --include="*.py" \
-    | grep -v node_modules | grep -v test | grep -v spec \
+    | grep -v node_modules \
+    | grep -Ev '/(test|tests|__tests__|e2e|spec)/|\.test\.|\.spec\.|/testing/' \
     | sed "s|$repo/||" | sed "s|^|$repo_name\t|" \
     2>/dev/null >> /tmp/forge_scan_dynamic_urls.txt || true
 
@@ -257,7 +292,8 @@ for repo in "${REPOS[@]}"; do
     "baseURL\s*+\|API_BASE_URL\s*+\|API_URL\s*+\|BASE_URL\s*+" \
     "$repo" \
     --include="*.ts" --include="*.tsx" --include="*.js" \
-    | grep -v node_modules | grep -v test \
+    | grep -v node_modules \
+    | grep -Ev '/(test|tests|__tests__|e2e|spec)/|\.test\.|\.spec\.|/testing/' \
     | sed "s|$repo/||" | sed "s|^|$repo_name\t|" \
     2>/dev/null >> /tmp/forge_scan_dynamic_urls.txt || true
 done

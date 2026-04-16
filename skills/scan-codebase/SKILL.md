@@ -240,140 +240,227 @@ grep -c "\.dart$" /tmp/forge_scan_source_files.txt && echo "Dart files"
 Each language has fundamentally different syntax. Grep patterns below are language-specific.
 
 ```bash
+# ═══════════════════════════════════════════════════════════════════════════════
+# GOAL: Build a complete symbol inventory — every type, method, function, and
+# UI element gets its own node in the Obsidian graph. Thousands of nodes is fine.
+# ═══════════════════════════════════════════════════════════════════════════════
+
 # ── Java ──────────────────────────────────────────────────────────────────────
-# Capture: class, abstract class, interface, enum, annotation type (@interface)
-# Include Spring annotations line above (@Service, @Repository, @Controller, etc.)
+
+# Types: class, abstract class, interface, enum, @interface
 grep -rn \
-  "^\s*\(public\|protected\|private\|abstract\|final\|static\)\{0,3\}\s*\(class\|interface\|enum\|@interface\)\s" \
+  "^\s*\(public\|protected\|abstract\|final\)\{0,3\}\s*\(class\|interface\|enum\|@interface\)\s" \
   "$REPO" --include="*.java" \
   | grep -v "/test/\|Test\.java\b\|IT\.java\b\|Tests\.java\b" \
   > /tmp/forge_scan_types_java.txt
 
-# Spring/Jakarta stereotype annotations (these mark the important classes)
-grep -rn "^\s*@\(Service\|Repository\|Controller\|RestController\|Component\|Configuration\|Entity\|SpringBootApplication\)" \
+# Spring/Jakarta stereotype annotations
+grep -rn "^\s*@\(Service\|Repository\|Controller\|RestController\|Component\|Configuration\|Entity\|SpringBootApplication\|EventListener\|Scheduled\)" \
   "$REPO" --include="*.java" \
   | grep -v "/test/" \
   > /tmp/forge_scan_annotations_java.txt
 
-echo "Java types: $(wc -l < /tmp/forge_scan_types_java.txt) | Annotations: $(wc -l < /tmp/forge_scan_annotations_java.txt)"
+# Methods: public/protected methods in any class (indented — inside class body)
+# Pattern: indented + access modifier + optional modifiers + return type + methodName(
+grep -rn "^\s\+\(public\|protected\)\s\+\(static\s\+\)\?\(final\s\+\)\?\(abstract\s\+\)\?\(synchronized\s\+\)\?\(void\|boolean\|int\|long\|double\|float\|String\|List\|Map\|Set\|Optional\|[A-Z]\)[a-zA-Z0-9<>\[\]?,\s]*\s\+[a-z_][a-zA-Z0-9_]*\s*(" \
+  "$REPO" --include="*.java" \
+  | grep -v "new \([A-Z]\|\")\|return \|if (\|while (\|for (\|switch (\|throw \|/test/\|Test\.java" \
+  > /tmp/forge_scan_methods_java.txt
+
+echo "Java — types: $(wc -l < /tmp/forge_scan_types_java.txt) | methods: $(wc -l < /tmp/forge_scan_methods_java.txt) | annotations: $(wc -l < /tmp/forge_scan_annotations_java.txt)"
 
 # ── Kotlin ────────────────────────────────────────────────────────────────────
-# Capture: class, data class, sealed class, abstract class, open class,
-#          inner class, interface, object, companion object, typealias, enum class
+
+# Types: class, data class, sealed class, abstract class, object, interface, enum
 grep -rn \
   "^\s*\(data \|sealed \|abstract \|open \|inner \|enum \|annotation \)\?\(class\|interface\|object\)\s\|^\s*typealias \|^\s*companion object" \
   "$REPO" --include="*.kt" \
   | grep -v "Test\.kt\b\|Spec\.kt\b\|/test/" \
   > /tmp/forge_scan_types_kotlin.txt
 
-# Kotlin/Spring annotations
+# Spring/Kotlin annotations
 grep -rn "^\s*@\(Service\|Repository\|Controller\|RestController\|Component\|Configuration\|Entity\|SpringBootApplication\)" \
   "$REPO" --include="*.kt" \
   | grep -v "/test/" \
   > /tmp/forge_scan_annotations_kotlin.txt
 
-echo "Kotlin types: $(wc -l < /tmp/forge_scan_types_kotlin.txt)"
+# Functions: ALL fun declarations — top-level and inside classes
+# Captures: fun, override fun, suspend fun, private fun, inline fun, etc.
+grep -rn "^\s*\(override\s\+\)\?\(suspend\s\+\)\?\(inline\s\+\)\?\(private\s\+\|protected\s\+\|internal\s\+\|public\s\+\)\?\(open\s\+\)\?fun [a-zA-Z_]" \
+  "$REPO" --include="*.kt" \
+  | grep -v "Test\.kt\b\|Spec\.kt\b\|/test/" \
+  > /tmp/forge_scan_methods_kotlin.txt
+
+echo "Kotlin — types: $(wc -l < /tmp/forge_scan_types_kotlin.txt) | functions: $(wc -l < /tmp/forge_scan_methods_kotlin.txt)"
 
 # ── Go ────────────────────────────────────────────────────────────────────────
-# Go has NO classes. Types are: struct, interface (both defined with `type`)
-# Methods are defined SEPARATELY via receiver functions — not inside the type.
-# These MUST be extracted independently.
 
-# Exported structs and interfaces (uppercase first letter = exported in Go)
+# Types: exported structs and interfaces (uppercase = exported in Go)
 grep -rn "^type [A-Z][a-zA-Z0-9]* \(struct\|interface\)\b" \
   "$REPO" --include="*.go" \
   | grep -v "_test\.go" \
   > /tmp/forge_scan_types_go.txt
 
-# Go receiver methods — CRITICAL: these are Go's equivalent of class methods
-# Pattern: func (receiverVar *TypeName) MethodName( OR func (receiverVar TypeName) MethodName(
-grep -rn "^func ([a-zA-Z_][a-zA-Z0-9_]* \*\?[A-Z][a-zA-Z0-9]*) [A-Z]" \
+# Receiver methods — Go's equivalent of class methods (OUTSIDE struct definition)
+# e.g. func (u *UserService) GetUser(ctx context.Context, id int64) (*User, error)
+grep -rn "^func ([a-zA-Z_][a-zA-Z0-9_]* \*\?[A-Z][a-zA-Z0-9]*) [A-Za-z]" \
   "$REPO" --include="*.go" \
   | grep -v "_test\.go" \
   > /tmp/forge_scan_methods_go.txt
 
-echo "Go types: $(wc -l < /tmp/forge_scan_types_go.txt) | Go exported methods: $(wc -l < /tmp/forge_scan_methods_go.txt)"
+# Standalone exported functions (not receiver methods)
+# e.g. func NewUserService(...), func ParseConfig(...)
+grep -rn "^func [A-Z][a-zA-Z0-9]*(" \
+  "$REPO" --include="*.go" \
+  | grep -v "_test\.go" \
+  > /tmp/forge_scan_functions_go.txt
+
+echo "Go — types: $(wc -l < /tmp/forge_scan_types_go.txt) | receiver methods: $(wc -l < /tmp/forge_scan_methods_go.txt) | standalone funcs: $(wc -l < /tmp/forge_scan_functions_go.txt)"
 
 # ── TypeScript / JavaScript ───────────────────────────────────────────────────
-# JS/TS has TWO primary abstraction units: classes AND exported functions.
-# In React, Next.js, Express, and most modern TS code, functions outnumber classes 10:1.
-# Both must be captured.
+# Modern TS/JS = FUNCTION FIRST. Classes are rare outside NestJS/backend.
+# React components, hooks, handlers, utilities are ALL functions.
 
-# Classes and interfaces (OOP / NestJS / class-based code)
+# Classes and interfaces
 grep -rn \
   "^export \(default \)\?\(abstract \)\?class \|^export interface \|^export abstract class \|^export type [A-Z]" \
   "$REPO" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
   | grep -v "node_modules\|\.d\.ts\|\.spec\.\|\.test\." \
   > /tmp/forge_scan_types_ts.txt
 
-# NestJS / TypeORM decorators (marks architecturally important classes)
-grep -rn "^@\(Injectable\|Controller\|Service\|Repository\|Entity\|Module\|Guard\|Interceptor\|Pipe\|EventEmitter\|Resolver\|ObjectType\|InputType\)" \
+# Class methods (inside class bodies — indented method signatures)
+grep -rn "^\s\+\(public\|private\|protected\|readonly\|static\|async\|override\)\s\+[a-zA-Z_][a-zA-Z0-9_]*\s*([^)]*)\s*[:{]" \
+  "$REPO" --include="*.ts" --include="*.tsx" \
+  | grep -v "node_modules\|\.spec\.\|\.test\.\|constructor" \
+  > /tmp/forge_scan_methods_ts.txt
+
+# NestJS / TypeORM / class-validator decorators
+grep -rn "^@\(Injectable\|Controller\|Service\|Repository\|Entity\|Module\|Guard\|Interceptor\|Pipe\|EventEmitter\|Resolver\|ObjectType\|InputType\|Get\|Post\|Put\|Delete\|Patch\)" \
   "$REPO" --include="*.ts" --include="*.tsx" \
   | grep -v "node_modules\|\.spec\.\|\.test\." \
   > /tmp/forge_scan_decorators_ts.txt
 
-# Exported functions — React components, hooks, handlers, Next.js pages, service functions
-# Pattern 1: export function / export async function
+# Exported functions (named export)
 grep -rn "^export \(async \)\?function [a-zA-Z]" \
   "$REPO" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
   | grep -v "node_modules\|\.spec\.\|\.test\." \
   > /tmp/forge_scan_functions_ts.txt
 
-# Pattern 2: export default function (Next.js pages, React default exports)
+# Export default function (Next.js pages, React default components)
 grep -rn "^export default \(async \)\?function" \
   "$REPO" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
   | grep -v "node_modules\|\.spec\.\|\.test\." \
   >> /tmp/forge_scan_functions_ts.txt
 
-# Pattern 3: export const X = () => or export const X = async () =>
-# Captures: React components as const, custom hooks, arrow function services
+# Arrow function exports (React const components, hooks, handlers)
 grep -rn "^export const [a-zA-Z][a-zA-Z0-9]* = \(async \)\?(" \
   "$REPO" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
   | grep -v "node_modules\|\.spec\.\|\.test\." \
   >> /tmp/forge_scan_functions_ts.txt
 
-echo "TS/JS classes: $(wc -l < /tmp/forge_scan_types_ts.txt) | Decorators: $(wc -l < /tmp/forge_scan_decorators_ts.txt) | Functions: $(wc -l < /tmp/forge_scan_functions_ts.txt)"
+echo "TS/JS — classes: $(wc -l < /tmp/forge_scan_types_ts.txt) | class methods: $(wc -l < /tmp/forge_scan_methods_ts.txt) | functions: $(wc -l < /tmp/forge_scan_functions_ts.txt) | decorators: $(wc -l < /tmp/forge_scan_decorators_ts.txt)"
 
 # ── Python ────────────────────────────────────────────────────────────────────
-# Capture: class definitions starting with uppercase (PEP8 class naming convention)
-grep -rn "^class [A-Za-z][a-zA-Z0-9]*\(.*\)\?:" \
+
+# Classes
+grep -rn "^class [A-Za-z][a-zA-Z0-9]*\b" \
   "$REPO" --include="*.py" \
   | grep -v "test_[a-z]\|_test\.py\|Test[A-Z]" \
   > /tmp/forge_scan_types_python.txt
 
-# Python dataclasses and ABCs
-grep -rn "^@\(dataclass\|dataclasses\.dataclass\|abstractmethod\|abc\.ABC\)" \
+# Decorators
+grep -rn "^@\(dataclass\|dataclasses\.dataclass\|property\|staticmethod\|classmethod\|abstractmethod\|app\.route\|router\.\)" \
   "$REPO" --include="*.py" \
   | grep -v "test_\|_test\.py" \
   > /tmp/forge_scan_annotations_python.txt
 
-# Python top-level functions (not methods — exclude indented `def`)
-# Many Python codebases use module-level functions as the primary abstraction
+# Top-level module functions (not indented — not class methods)
 grep -rn "^def [a-zA-Z][a-zA-Z0-9_]*\|^async def [a-zA-Z][a-zA-Z0-9_]*" \
   "$REPO" --include="*.py" \
-  | grep -v "test_\|_test\.py\|__init__\|__main__\|__str__\|__repr__\|__eq__\|__hash__" \
+  | grep -v "test_\|_test\.py\|__init__\|__main__\|__str__\|__repr__\|__eq__\|__hash__\|__len__\|__iter__" \
   > /tmp/forge_scan_functions_python.txt
 
-echo "Python types: $(wc -l < /tmp/forge_scan_types_python.txt) | Python functions: $(wc -l < /tmp/forge_scan_functions_python.txt)"
+# Class methods (indented def — inside class body)
+grep -rn "^\s\+def [a-zA-Z][a-zA-Z0-9_]*\|^\s\+async def [a-zA-Z][a-zA-Z0-9_]*" \
+  "$REPO" --include="*.py" \
+  | grep -v "test_\|_test\.py\|__init__\|__str__\|__repr__\|__eq__\|__hash__\|__len__" \
+  > /tmp/forge_scan_methods_python.txt
+
+echo "Python — types: $(wc -l < /tmp/forge_scan_types_python.txt) | class methods: $(wc -l < /tmp/forge_scan_methods_python.txt) | module functions: $(wc -l < /tmp/forge_scan_functions_python.txt)"
 
 # ── Dart / Flutter ────────────────────────────────────────────────────────────
+
+# Types
 grep -rn "^\(abstract \)\?class [A-Z]\|^mixin [A-Z]\|^enum [A-Z]" \
   "$REPO" --include="*.dart" \
   | grep -v "_test\.dart\|test/" \
   > /tmp/forge_scan_types_dart.txt
 
-echo "Dart types: $(wc -l < /tmp/forge_scan_types_dart.txt)"
+# Methods and functions
+grep -rn "^\s*\(Future\|Stream\|void\|bool\|int\|double\|String\|Widget\|[A-Z][a-zA-Z0-9<>?]*\)\s\+[a-z_][a-zA-Z0-9_]*\s*(" \
+  "$REPO" --include="*.dart" \
+  | grep -v "_test\.dart\|test/" \
+  > /tmp/forge_scan_methods_dart.txt
+
+echo "Dart — types: $(wc -l < /tmp/forge_scan_types_dart.txt) | methods: $(wc -l < /tmp/forge_scan_methods_dart.txt)"
 
 # ── Rust ──────────────────────────────────────────────────────────────────────
-grep -rn "^pub \(struct\|enum\|trait\|impl\) [A-Z]\|^pub(crate) \(struct\|enum\|trait\) [A-Z]" \
+
+# Types
+grep -rn "^pub \(struct\|enum\|trait\) [A-Z]\|^pub(crate) \(struct\|enum\|trait\) [A-Z]" \
   "$REPO" --include="*.rs" \
-  | grep -v "test\b" \
+  | grep -v "test\b\|#\[test\]" \
   > /tmp/forge_scan_types_rust.txt
 
-echo "Rust types: $(wc -l < /tmp/forge_scan_types_rust.txt)"
+# Public functions and impl methods
+grep -rn "^\s*pub fn [a-zA-Z_]\|^pub fn [a-zA-Z_]\|^pub async fn [a-zA-Z_]" \
+  "$REPO" --include="*.rs" \
+  | grep -v "#\[test\]\|mod tests" \
+  > /tmp/forge_scan_methods_rust.txt
+
+echo "Rust — types: $(wc -l < /tmp/forge_scan_types_rust.txt) | pub fns: $(wc -l < /tmp/forge_scan_methods_rust.txt)"
+
+# ── Frontend / HTML / Templates ───────────────────────────────────────────────
+# HTML pages, Vue SFCs, Svelte components, Angular templates — each is a UI node
+
+# Raw HTML files (web apps, server-rendered templates, email templates)
+find "$REPO" -type f \( -name "*.html" -o -name "*.htm" \) \
+  | grep -v "node_modules\|dist\|build\|\.git\|coverage" \
+  | sort > /tmp/forge_scan_html_files.txt
+
+# Vue Single File Components (.vue = template + script + style in one file)
+find "$REPO" -type f -name "*.vue" \
+  | grep -v "node_modules\|dist" \
+  | sort > /tmp/forge_scan_vue_files.txt
+
+# Svelte components
+find "$REPO" -type f -name "*.svelte" \
+  | grep -v "node_modules\|dist" \
+  | sort > /tmp/forge_scan_svelte_files.txt
+
+# Angular component templates (always co-located with .component.ts)
+find "$REPO" -type f -name "*.component.html" \
+  | grep -v "node_modules\|dist" \
+  | sort > /tmp/forge_scan_angular_templates.txt
+
+# HTML key elements: forms, navigation links, interactive sections
+# Used to build the UI → function relationship map
+grep -rn "<form\s\+\|<form>" \
+  "$REPO" --include="*.html" --include="*.vue" --include="*.svelte" --include="*.tsx" --include="*.jsx" \
+  | grep -v "node_modules\|dist" \
+  > /tmp/forge_scan_html_forms.txt
+
+# HTML IDs and data-* attributes that JavaScript references
+grep -rn "id=\"[a-zA-Z][a-zA-Z0-9_-]*\"\|data-[a-z][a-z0-9-]*=" \
+  "$REPO" --include="*.html" --include="*.vue" --include="*.svelte" \
+  | grep -v "node_modules\|dist" \
+  > /tmp/forge_scan_html_ids.txt
+
+echo "Frontend — HTML: $(wc -l < /tmp/forge_scan_html_files.txt) | Vue: $(wc -l < /tmp/forge_scan_vue_files.txt) | Svelte: $(wc -l < /tmp/forge_scan_svelte_files.txt) | Angular templates: $(wc -l < /tmp/forge_scan_angular_templates.txt) | Forms: $(wc -l < /tmp/forge_scan_html_forms.txt)"
 
 # ── Master inventories ────────────────────────────────────────────────────────
-# Types (classes, structs, interfaces, enums) → go into classes/ in Phase 4
+
+# TYPES → classes/ in brain (Java/Kotlin/Go/TS/Python/Dart/Rust classes, structs, interfaces)
 cat /tmp/forge_scan_types_java.txt \
     /tmp/forge_scan_types_kotlin.txt \
     /tmp/forge_scan_types_go.txt \
@@ -383,25 +470,52 @@ cat /tmp/forge_scan_types_java.txt \
     /tmp/forge_scan_types_rust.txt \
     2>/dev/null > /tmp/forge_scan_types_all.txt
 
-# Functions (exported functions, React components, hooks) → go into functions/ in Phase 4
+# METHODS → methods/ in brain (class/struct methods from all languages)
+cat /tmp/forge_scan_methods_java.txt \
+    /tmp/forge_scan_methods_kotlin.txt \
+    /tmp/forge_scan_methods_go.txt \
+    /tmp/forge_scan_methods_ts.txt \
+    /tmp/forge_scan_methods_python.txt \
+    /tmp/forge_scan_methods_dart.txt \
+    /tmp/forge_scan_methods_rust.txt \
+    2>/dev/null > /tmp/forge_scan_methods_all.txt
+
+# FUNCTIONS → functions/ in brain (standalone exported functions: TS/JS/Go/Python)
 cat /tmp/forge_scan_functions_ts.txt \
+    /tmp/forge_scan_functions_go.txt \
     /tmp/forge_scan_functions_python.txt \
     2>/dev/null > /tmp/forge_scan_functions_all.txt
 
-echo "══════════════════════════════════════════"
-echo "Types  (→ classes/):    $(wc -l < /tmp/forge_scan_types_all.txt)"
-echo "Functions (→ functions/): $(wc -l < /tmp/forge_scan_functions_all.txt)"
-echo "Go methods:             $(wc -l < /tmp/forge_scan_methods_go.txt)"
-echo "══════════════════════════════════════════"
+# UI/FRONTEND → pages/ in brain (HTML, Vue, Svelte, Angular templates)
+cat /tmp/forge_scan_html_files.txt \
+    /tmp/forge_scan_vue_files.txt \
+    /tmp/forge_scan_svelte_files.txt \
+    /tmp/forge_scan_angular_templates.txt \
+    2>/dev/null > /tmp/forge_scan_ui_all.txt
+
+echo ""
+echo "══════════════════════════════════════════════════════════"
+echo "INVENTORY SUMMARY"
+echo "══════════════════════════════════════════════════════════"
+echo "  Types     (→ classes/):    $(wc -l < /tmp/forge_scan_types_all.txt)"
+echo "  Methods   (→ methods/):    $(wc -l < /tmp/forge_scan_methods_all.txt)"
+echo "  Functions (→ functions/):  $(wc -l < /tmp/forge_scan_functions_all.txt)"
+echo "  UI files  (→ pages/):      $(wc -l < /tmp/forge_scan_ui_all.txt)"
+echo "  HTML forms found:          $(wc -l < /tmp/forge_scan_html_forms.txt)"
+echo "══════════════════════════════════════════════════════════"
+echo "TOTAL POTENTIAL NODES: $(($(wc -l < /tmp/forge_scan_types_all.txt) + $(wc -l < /tmp/forge_scan_methods_all.txt) + $(wc -l < /tmp/forge_scan_functions_all.txt) + $(wc -l < /tmp/forge_scan_ui_all.txt)))"
+echo "══════════════════════════════════════════════════════════"
 ```
 
-> **Two separate inventories:**
-> - `/tmp/forge_scan_types_all.txt` → classes, structs, interfaces → `classes/` directory in brain
-> - `/tmp/forge_scan_functions_all.txt` → exported functions, React components, hooks → `functions/` directory in brain
+> **Four inventories, four brain directories:**
+> - `types_all.txt` → `classes/` — one node per type (class, struct, interface, enum)
+> - `methods_all.txt` → `methods/` — one node per method/function inside a type
+> - `functions_all.txt` → `functions/` — one node per standalone exported function
+> - `ui_all.txt` → `pages/` — one node per HTML/Vue/Svelte/Angular template file
 >
-> **Go methods** (`/tmp/forge_scan_methods_go.txt`) are not types or functions — they're receiver methods. When writing a class file for a Go struct, grep this file for entries where the receiver type matches the struct name.
->
-> **Decorator/annotation note:** `forge_scan_annotations_*.txt` and `forge_scan_decorators_ts.txt` tell you the layer. `@Service` = service layer. `@Repository` = data layer. `@Controller` = request handler. Populate the **Layer** field in class/function files from these.
+> **Go specifics:** receiver methods are in `methods_go.txt`, standalone constructors/helpers in `functions_go.txt`
+> **Kotlin specifics:** `fun` inside a class = method node; top-level `fun` = function node
+> **Python specifics:** indented `def` = method node; top-level `def` = function node
 
 ---
 
@@ -610,7 +724,9 @@ cat > ~/forge/brain/products/<slug>/codebase/SCAN.json << EOF
   "tier1_hubs": $(wc -l < /tmp/forge_scan_tier1.txt),
   "tier2_hubs": $(wc -l < /tmp/forge_scan_tier2.txt),
   "types_in_inventory": $(wc -l < /tmp/forge_scan_types_all.txt 2>/dev/null || echo 0),
-  "go_methods_in_inventory": $(wc -l < /tmp/forge_scan_methods_go.txt 2>/dev/null || echo 0),
+  "methods_in_inventory": $(wc -l < /tmp/forge_scan_methods_all.txt 2>/dev/null || echo 0),
+  "functions_in_inventory": $(wc -l < /tmp/forge_scan_functions_all.txt 2>/dev/null || echo 0),
+  "ui_files_in_inventory": $(wc -l < /tmp/forge_scan_ui_all.txt 2>/dev/null || echo 0),
   "role": "<backend|web|mobile|shared>"
 }
 EOF
@@ -811,6 +927,101 @@ The `classes/` directory is what makes the Obsidian graph show class-level nodes
 
 **Skip a class if** it is a pure generated file (e.g. `*Generated.java`, `*_pb2.py`, Kotlin `*Binding` from Android View Binding) or a test-only class. Everything else gets a file — even simple data classes, because they are still graph nodes that other classes reference.
 
+### 4.3d — methods/<role>-<ClassName>-<methodName>.md format
+
+**Driven by `/tmp/forge_scan_methods_all.txt`.** For every method whose source file is in `/tmp/forge_scan_tier1.txt` or `/tmp/forge_scan_tier2.txt`, create one method file. This gives every Java method, Kotlin `fun`, Go receiver method, TypeScript class method, Python class method, Dart method, and Rust `pub fn` its own navigable node in the Obsidian graph.
+
+> **Why individual method files?** Method-level nodes enable relationship tracing that class-level nodes cannot: "which methods call this repository?", "what does `GetUser` delegate to?", "which handlers use this validation method?". Without method nodes, the graph stops at the class boundary and cross-cutting concerns are invisible.
+
+File path: `~/forge/brain/products/<slug>/codebase/methods/<role>-<ClassName>-<methodName>.md`
+
+**Naming convention:** `<role>-<ClassName>-<methodName>.md` — preserve class name casing, lowercase the method name only when the language convention requires it.
+Examples: `backend-UserService-getUser.md`, `app-OrderBloc-fetchOrders.md`, `api-UserController-create.md`, `go-UserService-GetUser.md`
+
+```markdown
+# Method: <ClassName>.<methodName>
+
+**Class:** [[classes/<role>-<ClassName>]]
+**Module:** [[modules/<role>-<module>]]
+**File:** `<relative/path/from/repo/root>:<line>`
+**Language:** <Java | Kotlin | Go | TypeScript | Python | Dart | Rust>
+**Visibility:** <public | protected | private | package-private | internal>
+**Modifiers:** <static | async | suspend | override | abstract | final | inline> *(omit line if none)*
+
+## Signature
+
+> Write the signature for the language of this method. Use the language-specific block below:
+
+```java
+// Java
+public ReturnType methodName(Type1 param1, Type2 param2) throws ExceptionType
+```
+
+```kotlin
+// Kotlin
+suspend fun methodName(param1: Type1, param2: Type2 = default): ReturnType
+```
+
+```go
+// Go receiver method — NOT inside the struct, defined separately
+func (u *ClassName) MethodName(ctx context.Context, param1 Type1) (ReturnType, error)
+```
+
+```ts
+// TypeScript
+async methodName(param1: Type1, param2?: Type2): Promise<ReturnType>
+```
+
+```python
+# Python
+async def method_name(self, param1: Type1, param2: Type2 = None) -> ReturnType:
+```
+
+## Parameters
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `<param>` | `<type>` | required / optional / default=X / nullable |
+
+## Returns
+
+`<ReturnType>` — <what it returns and under what conditions; "void" if none>
+
+## Purpose
+
+<One-sentence description from Javadoc/KDoc/TSDoc/docstring, or synthesized from name + params + return type>
+
+## Called By
+
+- [[methods/<role>-<CallerClass>-<callerMethod>]] — `<why it calls this>`
+- [[functions/<role>-<callerFunction>]] — `<context>`
+- [[modules/<role>-<module>]] — `<entry point if applicable>`
+
+## Calls
+
+- [[methods/<role>-<DependencyClass>-<dependencyMethod>]] — `<what it delegates to>`
+- [[classes/<role>-<Dependency>]] — `<how it uses this class>`
+
+## Location in Structure
+
+[[structure]] → `<directory/path>/` → [[classes/<role>-<ClassName>]] → `<methodName>`
+```
+
+**When to create a method file:**
+- Methods on **Tier 1 hub classes**: create for ALL public/exported methods — no exceptions
+- Methods on **Tier 2 hub classes**: create for public methods with non-trivial bodies (skip trivial getters/setters that are one-liners)
+- **Go receiver methods**: always create — they are the primary behavior of Go types and are NOT visible inside the struct definition. Use `/tmp/forge_scan_methods_go.txt` as the authoritative list
+- **Kotlin `suspend fun`**: always create — async boundary is architecturally significant
+- **Override methods implementing an interface**: always create — they are the fulfillment of a contract node
+- **Private/internal methods**: skip unless clearly the core algorithm (named `execute`, `process`, `run`, `handle`, `validate`, `transform`)
+
+**Language-specific skip rules:**
+- **Java**: skip `getX()` / `setX()` unless they have side effects beyond field access
+- **Kotlin data class**: skip `copy()`, `equals()`, `hashCode()`, `toString()` — auto-generated, no architectural value
+- **Go**: skip `String()` (Stringer) and `Error()` (error interface) unless custom logic present; skip `init()`
+- **Python**: skip `@property` accessors unless they have significant computation; skip `__init__` (covered by class Constructor section); skip `__str__`, `__repr__`, `__eq__`, `__hash__`
+- **All languages**: skip auto-generated CRUD scaffolding methods when a code generator is detected (Hibernate-generated, GRPC stubs, Android ViewBinding)
+
 ### 4.3c — functions/<role>-<FunctionName>.md format
 
 **Driven by `/tmp/forge_scan_functions_all.txt`.** For every exported function in that file whose source file is in `/tmp/forge_scan_tier1.txt` or `/tmp/forge_scan_tier2.txt`, create one function file.
@@ -883,6 +1094,79 @@ async def function_name(param: Type) -> ReturnType:
 - Do NOT create a file for: internal helpers with no export, test utility functions, one-liner utils that have no parameters worth documenting
 
 **For utility files with many small exports** (e.g. `utils/format.ts` with `formatDate`, `formatPrice`, `formatName`): list all exports in the module file's `## Exports` section instead. Only create individual function files for the ones referenced by 3+ other modules.
+
+### 4.3e — pages/<role>-<PageName>.md format
+
+**Driven by `/tmp/forge_scan_ui_all.txt`.** For every HTML, Vue SFC, Svelte, and Angular template file found in Phase 1.6, create one page file. This gives every screen, form, and template its own navigable node in the Obsidian graph — enabling the full traversal: UI surface → JS/TS handler → API call → backend route.
+
+> **Why page nodes?** Without page files, the frontend is invisible in the graph. Page nodes connect what the user sees to the functions that power it. The `pages/` → `functions/` → `modules/` edge chain is the most readable path through a full-stack system.
+
+File path: `~/forge/brain/products/<slug>/codebase/pages/<role>-<PageName>.md`
+
+**Naming:** Use the file stem (without extension), preserving original casing. For route-based directories (Next.js `pages/`, SvelteKit `routes/`), include the parent path segment to disambiguate same-named files.
+Examples: `web-LoginPage.md`, `web-UserProfile.md`, `app-HomeScreen.md`, `web-checkout-index.md`, `web-auth-login.md`
+
+```markdown
+# Page: <PageName>
+
+**File:** `<relative/path/from/repo/root>`
+**Language / Format:** <HTML | Vue SFC | Svelte | Angular Template | JSX | TSX>
+**Kind:** <page | component | layout | partial | template | screen | dialog>
+**Route / URL:** `<path>` *(derive from filename for Next.js / SvelteKit / React Router)* | unknown
+
+## Purpose
+
+<One-sentence description of what this page/component renders and its role in the product>
+
+## Key UI Elements
+
+> Extracted from `/tmp/forge_scan_html_forms.txt` and `/tmp/forge_scan_html_ids.txt`.
+> Do NOT read the full template file to populate this section — grep output is sufficient.
+
+| Element | Type | ID / Selector | Notes |
+|---|---|---|---|
+| `<element description>` | form / button / input / nav / section / modal | `#<id>` or `[data-<attr>]` | <what user action this enables> |
+
+## Forms
+
+> From `/tmp/forge_scan_html_forms.txt`
+
+| Form | Action / Handler | Method | Purpose |
+|---|---|---|---|
+| `<form context>` | `<action URL or @submit handler>` | GET / POST / onSubmit | <what this form does> |
+
+## Script / Component Dependencies
+
+> Functions and components this page uses — these wikilinks create graph edges into the `functions/` layer
+
+- [[functions/<role>-<ComponentName>]] — `<how it's rendered on this page>`
+- [[functions/<role>-<hookName>]] — `<what data/state it manages>`
+- [[classes/<role>-<ServiceClass>]] — `<if page directly instantiates a class>`
+
+## API Calls Made
+
+> Cross-reference with [[api-surface]] — backend routes this page triggers (via its script dependencies)
+
+- `GET /api/<path>` → [[modules/<backend-role>-<module>]] *(via [[functions/<role>-<hook>]])*
+- `POST /api/<path>` → [[modules/<backend-role>-<module>]] *(via form submit / mutation)*
+
+## Location in Structure
+
+[[structure]] → `<directory/path>/` → `<PageName>.<html|vue|svelte|tsx>`
+```
+
+**What to write without reading the template file:**
+- **File path, language, kind, route**: derivable from the path alone — no read needed
+- **Key UI elements**: from `/tmp/forge_scan_html_forms.txt` (forms) and `/tmp/forge_scan_html_ids.txt` (IDs/data attributes)
+- **Script / Component Dependencies**: cross-reference filenames in `/tmp/forge_scan_functions_all.txt` whose stem matches the page name or lives in the same directory
+- **API Calls Made**: derive from the function nodes linked above — their `## Side Effects` sections contain the call info
+
+**Do NOT read the full HTML/Vue/Svelte template** unless the file is a Tier 1 hub. Template files are large and mostly markup noise — the grep inventory captures the structurally significant elements (forms, IDs) without a full read.
+
+**For React `.tsx` / `.jsx` page files** (Next.js, Remix, CRA): The same file is captured as BOTH a `functions/` node (for the exported component function) AND a `pages/` node (for the UI surface). The two nodes are complementary — link them explicitly:
+`**Component Function:** [[functions/<role>-<PageName>]]`
+
+**For Vue SFCs** (`.vue`): The `<script>` block exports are captured in `functions/` or `classes/`. The `<template>` block is the UI surface captured here. Link: `**Vue Component Logic:** [[functions/<role>-<ComponentName>]]` or `[[classes/<role>-<ComponentName>]]`
 
 ### 4.3b — structure.md format
 
@@ -1099,16 +1383,25 @@ This section is overwritten on every re-scan. First scans do not include this se
 cd ~/forge/brain
 # Verify expected output files were created
 echo "=== Output summary ==="
-echo "Modules: $(ls products/<slug>/codebase/modules/ 2>/dev/null | wc -l) files"
-echo "Classes: $(ls products/<slug>/codebase/classes/ 2>/dev/null | wc -l) files"
+echo "Modules:   $(ls products/<slug>/codebase/modules/   2>/dev/null | wc -l) files"
+echo "Classes:   $(ls products/<slug>/codebase/classes/   2>/dev/null | wc -l) files"
+echo "Methods:   $(ls products/<slug>/codebase/methods/   2>/dev/null | wc -l) files"
+echo "Functions: $(ls products/<slug>/codebase/functions/ 2>/dev/null | wc -l) files"
+echo "Pages:     $(ls products/<slug>/codebase/pages/     2>/dev/null | wc -l) files"
 echo "Structure: $([ -f products/<slug>/codebase/structure.md ] && echo 'present' || echo 'MISSING')"
 echo "API surface: $([ -f products/<slug>/codebase/api-surface.md ] && echo 'present' || echo 'MISSING')"
+echo ""
+echo "TOTAL BRAIN NODES: $(($(ls products/<slug>/codebase/modules/ 2>/dev/null | wc -l) + $(ls products/<slug>/codebase/classes/ 2>/dev/null | wc -l) + $(ls products/<slug>/codebase/methods/ 2>/dev/null | wc -l) + $(ls products/<slug>/codebase/functions/ 2>/dev/null | wc -l) + $(ls products/<slug>/codebase/pages/ 2>/dev/null | wc -l)))"
 
 git add products/<slug>/codebase/
-git commit -m "scan: map <slug>/<role> codebase — <file-count> files, <hub-count> hubs, <class-count> classes"
+git commit -m "scan: map <slug>/<role> codebase — <file-count> files, <hub-count> hubs, <class-count> classes, <method-count> methods, <fn-count> functions, <page-count> pages"
 ```
 
 **If `classes/` has 0 files** and hub reads included class-bearing code: do NOT skip. Go back and extract at least the top 3-5 classes from the Tier 1 hubs. The `classes/` directory is mandatory for a meaningful Obsidian graph — flat module-only output does not produce a navigable mindmap.
+
+**If `methods/` has 0 files** and the codebase has Java/Kotlin/Go/TypeScript classes: do NOT skip. Extract method nodes from at least the top 3 Tier 1 hub classes. Without method nodes, class-level graph traversal is a dead end.
+
+**If `pages/` has 0 files** and the repo contains `.html`/`.vue`/`.svelte` files: do NOT skip. Write page nodes from `/tmp/forge_scan_ui_all.txt` — no additional file reads required.
 
 **If `structure.md` is missing:** do NOT proceed to Phase 5 or commit. Write it now using the file paths already in `/tmp/forge_scan_source_files.txt` — no additional reads needed.
 
@@ -1648,10 +1941,10 @@ Is the file a README / ARCHITECTURE / CONTRIBUTING / ADR?
   → YES: Read fully (always)
   → NO:
       Is reference count ≥ 5?
-        → YES (Tier 1 hub): Read top 150 lines
+        → YES (Tier 1 hub): Read in full (cat — no line limit)
         → NO:
             Is reference count 3-4?
-              → YES (Tier 2 hub): Read top 80 lines
+              → YES (Tier 2 hub): Read in full (cat — no line limit)
               → NO (leaf file):
                   Is it a test file?
                     → YES: Extract test name strings only (grep, no Read)
@@ -1842,16 +2135,21 @@ rm -f /tmp/forge_scan_*.txt
 | 1.3 | Import graph | `head`, `grep` | 0 |
 | 1.4 | Hub scoring | `grep -rl`, `awk`, `sort` | 0 |
 | 1.5 | Language fingerprint | `grep`, `cat` (package.json) | 0 |
+| 1.6 | Type/method/function/UI inventory | `grep -rn` per language | 0 |
 | 2 | Hub tier assignment | `awk` | 0 |
 | 3.1 | README / docs | Read (full) | Low |
-| 3.2 | Tier 1 hub reads | Read (top 150 lines) | Medium |
-| 3.3 | Tier 2 hub reads | Read (top 80 lines) | Low |
+| 3.2 | Tier 1 hub reads | Read (full file) | Medium |
+| 3.3 | Tier 2 hub reads | Read (full file) | Low-Medium |
 | 3.4 | Test name extraction | `grep` | 0 |
 | 3.5 | API route extraction | `grep -rn` | 0 |
-| 4 | Brain write | Write per file | Low |
+| 4 | Brain write (modules/) | Write per file | Low |
+| 4.3a | Brain write (classes/) | Write per type from inventory | Low |
+| 4.3d | Brain write (methods/) | Write per method from inventory | Low |
+| 4.3c | Brain write (functions/) | Write per exported function | Low |
+| 4.3e | Brain write (pages/) | Write per UI template file | Low |
 | 5 | Cross-repo layer | `grep` across all repos | 0 (grep) + Low (write) |
 
-**Token budget target:** <15K tokens per repo + <5K for cross-repo layer. If you exceed this, you skipped the exclusions.
+**Token guidance:** No hard budget cap — read hub files fully. The Phase 1.6 grep inventory is zero tokens. The token investment is in Phase 3 reads and Phase 4 writes, both of which produce permanent brain files that prevent future re-reads.
 
 ---
 

@@ -95,9 +95,47 @@ codebase/
 
 ---
 
+## Pre-Written Scripts
+
+> **Do NOT reconstruct these commands inline.** All zero-token bash work is pre-written in committed scripts.
+> Running a pre-written script is one tool call. Reconstructing 200 lines of bash is wasted tokens.
+
+| Script | Phase | What it does |
+|---|---|---|
+| `skills/scan-codebase/scripts/phase1-inventory.sh <REPO>` | 1.1 – 1.6 | Full inventory: file list, hub scores, type/method/function/UI symbols |
+| `skills/scan-codebase/scripts/phase35-extract.sh <REPO>` | 3.4 – 3.5 | Test name strings + API route extraction |
+| `skills/scan-codebase/scripts/phase5-cross-repo.sh <repo1> [repo2...]` | 5.1 – 5.4 | Cross-repo HTTP call sites, shared types, env vars, event producers/consumers |
+| `skills/scan-codebase/scripts/cleanup.sh` | End | Remove all `/tmp/forge_scan_*.txt` files |
+
+**Script location:** Forge plugin installs to `~/.claude/plugins/cache/*/forge/skills/scan-codebase/scripts/` or the repo root `skills/scan-codebase/scripts/`. Resolve the actual path with:
+```bash
+FORGE_SCRIPTS=$(find ~/.claude/plugins -path "*/scan-codebase/scripts" -type d 2>/dev/null | head -1)
+# Or if working in the forge repo directly:
+FORGE_SCRIPTS="$(git rev-parse --show-toplevel)/skills/scan-codebase/scripts"
+```
+
+---
+
 ## Phase 1: Structural Map (Zero Tokens)
 
-Run these bash commands for **each repo** in the workspace. Collect all output before reading any files.
+Run the pre-written Phase 1 script for **each repo** in the workspace. It covers Phases 1.1-1.6 in a single command.
+
+```bash
+REPO=<repo-path>
+bash "$FORGE_SCRIPTS/phase1-inventory.sh" "$REPO"
+```
+
+The script prints a full INVENTORY SUMMARY at the end. Read the output — it tells you:
+- Source file count, test file count
+- Whether it's a monorepo and where the packages are
+- Entry points
+- Tier 1 and Tier 2 hub files (already written to `/tmp/forge_scan_tier1.txt` and `/tmp/forge_scan_tier2.txt`)
+- TOTAL POTENTIAL NODES across all 4 symbol categories
+
+**After running the script, read the output summary and proceed directly to Phase 2.** Do not re-run any of the grep commands the script already ran.
+
+> The inline reference sections below (1.1 – 1.6) document what the script does internally.
+> Read them if you need to understand a specific output file. Do not re-execute them.
 
 ### 1.1 — File inventory
 
@@ -674,31 +712,19 @@ Only record classes from Tier 1 and Tier 2 hub files. Leaf files contribute to t
 
 ---
 
-### 3.4 — Test name extraction (zero token body reads)
+### 3.4 — Test name extraction + 3.5 — API route extraction
+
+Run the pre-written Phase 3.4-3.5 script:
 
 ```bash
-# Extract test names only — no file body reads needed
-while IFS= read -r file; do
-  echo "=== $file ==="
-  grep -n \
-    "it\(.\|test\(.\|describe\(.\|def test_\|func Test\|#\[test\]\|@Test" \
-    "$file" 2>/dev/null | head -30
-done < /tmp/forge_scan_test_files.txt > /tmp/forge_scan_test_names.txt
+bash "$FORGE_SCRIPTS/phase35-extract.sh" "$REPO"
 ```
 
-### 3.5 — API surface extraction
+This writes:
+- `/tmp/forge_scan_test_names.txt` — test name strings (used for `gotchas.md`)
+- `/tmp/forge_scan_api_routes.txt` — all route decorators and router patterns (used for `api-surface.md` and Phase 5.5 route correlation)
 
-```bash
-# REST endpoints (look for route decorators and router patterns)
-grep -rn \
-  "@Get\|@Post\|@Put\|@Delete\|@Patch\|router\.get\|router\.post\|app\.get\|app\.post\|r\.GET\|r\.POST\|@app\.route\|@router\." \
-  "$REPO" --include="*.ts" --include="*.py" --include="*.go" --include="*.java" --include="*.kt" \
-  | grep -v node_modules | grep -v dist | grep -v test | grep -v spec \
-  > /tmp/forge_scan_api_routes.txt
-
-echo "API routes found: $(wc -l < /tmp/forge_scan_api_routes.txt)"
-cat /tmp/forge_scan_api_routes.txt
-```
+Read the script output for the route breakdown by HTTP method before proceeding to Phase 4.
 
 ---
 
@@ -1413,12 +1439,31 @@ git commit -m "scan: map <slug>/<role> codebase — <file-count> files, <hub-cou
 
 This phase identifies the architectural seams between repos — the contracts, shared types, and communication patterns that cross repo boundaries. This is the most valuable architectural data for multi-repo planning and the data most likely to be missing without an explicit scan phase.
 
-### 5.1 — API call detection (any repo → any repo)
+### 5.1 – 5.4 — Run the pre-written cross-repo script
+
+Run the pre-written Phase 5 script, passing all repo paths:
+
+```bash
+bash "$FORGE_SCRIPTS/phase5-cross-repo.sh" <repo1> <repo2> [repo3...]
+# Example:
+bash "$FORGE_SCRIPTS/phase5-cross-repo.sh" ~/projects/backend ~/projects/web ~/projects/app
+```
+
+The script handles all of 5.1 – 5.4 and 5.5 URL extraction prep in one call. Read its output for:
+- Total call sites per language
+- Shared type names appearing in 2+ repos
+- Env variable names used across repos
+- Event producers and consumers
+- Count of unique URL paths extracted vs. dynamic URLs that need manual review
+
+> Sections 5.1 – 5.4 below document what the script does internally (reference only — do not re-run inline).
+
+### 5.1 — API call detection (any repo → any repo) [reference]
 
 Find where any repo calls another service's HTTP API. **Scan ALL repos** — not just web/mobile. Microservices call other microservices. A Java consumer service calls a Node backend. A Go service calls another Go service.
 
 ```bash
-# Scan ALL repos for outbound HTTP calls — every language, every client library
+# (Covered by phase5-cross-repo.sh — do not run inline)
 for repo in <all-repos>; do
   echo "=== API calls from: $(basename $repo) ==="
 
@@ -2121,7 +2166,7 @@ Does SCAN.json exist?
 
 ```bash
 # Always run at end of scan
-rm -f /tmp/forge_scan_*.txt
+bash "$FORGE_SCRIPTS/cleanup.sh"
 ```
 
 ---

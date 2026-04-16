@@ -146,7 +146,7 @@ done
 
 echo "  Total type declarations: $(wc -l < /tmp/forge_scan_all_types.txt)"
 echo "  Types appearing in 2+ repos (potential shared contracts):"
-sort /tmp/forge_scan_all_types.txt | uniq -d | head -20 | sed 's/^/    /'
+sort /tmp/forge_scan_all_types.txt | uniq -d | sed 's/^/    /'
 
 # ── 5.3: Environment variable cross-reference ─────────────────────────────────
 echo ""
@@ -167,7 +167,7 @@ done
 echo "  Env var references: $(wc -l < /tmp/forge_scan_all_env_vars.txt)"
 echo "  Distinct variable names:"
 grep -oE "process\.env\.[A-Z_]+" /tmp/forge_scan_all_env_vars.txt \
-  | sed 's/process\.env\.//' | sort | uniq -c | sort -rn | head -15 | sed 's/^/    /'
+  | sed 's/process\.env\.//' | sort | uniq -c | sort -rn | sed 's/^/    /'
 
 # ── 5.4: Event/message bus cross-reference ────────────────────────────────────
 echo ""
@@ -180,7 +180,7 @@ for repo in "${REPOS[@]}"; do
     "publish(\|produce(\|emit(\|sendMessage\|kafkaProducer\|channel\.send\|rabbitMQ\.publish\|\.send(" \
     "$repo" \
     --include="*.ts" --include="*.py" --include="*.go" --include="*.java" --include="*.kt" \
-    | grep -v node_modules | grep -v test | head -10 \
+    | grep -v node_modules | grep -v test \
     | sed "s|$repo/||" | sed "s|^|    $repo_name: |" \
     2>/dev/null || true
 done
@@ -192,7 +192,7 @@ for repo in "${REPOS[@]}"; do
     "subscribe(\|consume(\|\.on(\|kafkaConsumer\|channel\.receive\|rabbitMQ\.consume\|@KafkaListener\|\.listen(" \
     "$repo" \
     --include="*.ts" --include="*.py" --include="*.go" --include="*.java" --include="*.kt" \
-    | grep -v node_modules | grep -v test | head -10 \
+    | grep -v node_modules | grep -v test \
     | sed "s|$repo/||" | sed "s|^|    $repo_name: |" \
     2>/dev/null || true
 done

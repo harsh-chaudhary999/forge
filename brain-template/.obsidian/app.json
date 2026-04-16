@@ -1,0 +1,16 @@
+{
+  "useMarkdownLinks": false,
+  "newLinkFormat": "shortest",
+  "newFileLocation": "current",
+  "attachmentFolderPath": "assets",
+  "foldHeading": false,
+  "showFrontmatter": false,
+  "defaultViewMode": "preview",
+  "promptDelete": true,
+  "trashOption": "local",
+  "readableLineLength": true,
+  "strictLineBreaks": false,
+  "showUnsupportedFiles": false,
+  "vimMode": false,
+  "editorStatus": true
+}

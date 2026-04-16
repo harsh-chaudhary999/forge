@@ -182,6 +182,45 @@ Then confirm and auto-trigger codebase scan:
    Infrastructure: not configured (optional — add with /workspace add-infra <slug>)
 ```
 
+### Step 5a — Bootstrap brain as Obsidian vault (first time only)
+
+Check if the brain is already an Obsidian vault:
+
+```bash
+ls ~/forge/brain/.obsidian/app.json 2>/dev/null
+```
+
+If the file does **not** exist, bootstrap it now. Find the Forge install location and copy the templates:
+
+```bash
+FORGE_DIR=$(find ~/.claude/plugins -path "*/forge/brain-template" -type d 2>/dev/null | head -1 | sed 's|/brain-template||')
+# Fallback: check local forge repo
+[ -z "$FORGE_DIR" ] && FORGE_DIR=$(find ~/forge ~/Videos/forge /home/*/Videos/forge -maxdepth 0 -type d 2>/dev/null | head -1)
+
+mkdir -p ~/forge/brain/.obsidian
+cp "$FORGE_DIR/brain-template/.obsidian/app.json"   ~/forge/brain/.obsidian/app.json
+cp "$FORGE_DIR/brain-template/.obsidian/graph.json" ~/forge/brain/.obsidian/graph.json
+```
+
+Then update `~/forge/brain/README.md` to use wikilinks so the graph has edges between sections. Replace plain text section references with `[[path/to/file]]` links pointing to existing files.
+
+Commit the Obsidian bootstrap:
+
+```bash
+git -C ~/forge/brain add .obsidian/ README.md
+git -C ~/forge/brain commit -m "chore: initialize brain as Obsidian vault"
+```
+
+**Output:**
+```
+✅ Brain initialized as Obsidian vault
+   Open in Obsidian: File → Open vault → ~/forge/brain
+```
+
+If `.obsidian/app.json` already exists, skip this step silently.
+
+---
+
 ### Step 5b — Auto-scan all repos (REQUIRED after product.md is created)
 
 **REQUIRED SKILL:** Invoke `scan-codebase` skill for each registered repo automatically.

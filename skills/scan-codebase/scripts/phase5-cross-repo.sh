@@ -22,12 +22,19 @@
 
 set -euo pipefail
 
+_fs_scripts=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck disable=SC1091
+. "$_fs_scripts/_forge-scan-log.sh"
+
+FORGE_SCAN_SCRIPT_ID=phase5-cross-repo
 if [ "$#" -lt 1 ]; then
   echo "Usage: $0 <repo1> [repo2] [repo3] ..."
+  forge_scan_log_error "bad_usage need_at_least_one_repo_path"
   exit 1
 fi
 
 REPOS=("$@")
+forge_scan_log_start phase5-cross-repo "repo_count=${#REPOS[@]} repos=$(printf '%s;' "${REPOS[@]}")"
 
 echo "════════════════════════════════════════════════════════"
 echo "FORGE SCAN — Phase 5: Cross-Repo Relationship Scanning"
@@ -130,6 +137,7 @@ cat \
 echo "  Total call sites: $(wc -l < /tmp/forge_scan_all_callsites.txt)"
 echo "    TS/JS: $(wc -l < /tmp/forge_scan_js_calls.txt) | Java: $(wc -l < /tmp/forge_scan_java_calls.txt) | Kotlin: $(wc -l < /tmp/forge_scan_kotlin_calls.txt)"
 echo "    Python: $(wc -l < /tmp/forge_scan_python_calls.txt) | Go: $(wc -l < /tmp/forge_scan_go_calls.txt) | Dart: $(wc -l < /tmp/forge_scan_dart_calls.txt)"
+forge_scan_log_stat "phase=5.1 total_callsites=$(wc -l < /tmp/forge_scan_all_callsites.txt) js=$(wc -l < /tmp/forge_scan_js_calls.txt) java=$(wc -l < /tmp/forge_scan_java_calls.txt) kotlin=$(wc -l < /tmp/forge_scan_kotlin_calls.txt) python=$(wc -l < /tmp/forge_scan_python_calls.txt) go=$(wc -l < /tmp/forge_scan_go_calls.txt) dart=$(wc -l < /tmp/forge_scan_dart_calls.txt)"
 
 # ── 5.2: Shared type detection ────────────────────────────────────────────────
 echo ""
@@ -147,6 +155,8 @@ done
 echo "  Total type declarations: $(wc -l < /tmp/forge_scan_all_types.txt)"
 echo "  Types appearing in 2+ repos (potential shared contracts):"
 sort /tmp/forge_scan_all_types.txt | uniq -d | sed 's/^/    /'
+_dup_type_lines=$(sort /tmp/forge_scan_all_types.txt | uniq -d | wc -l)
+forge_scan_log_stat "phase=5.2 type_declarations=$(wc -l < /tmp/forge_scan_all_types.txt) duplicate_type_lines=${_dup_type_lines:-0}"
 
 # ── 5.3: Environment variable cross-reference ─────────────────────────────────
 echo ""
@@ -166,8 +176,10 @@ done
 
 echo "  Env var references: $(wc -l < /tmp/forge_scan_all_env_vars.txt)"
 echo "  Distinct variable names:"
-grep -oE "process\.env\.[A-Z_]+" /tmp/forge_scan_all_env_vars.txt \
+{ grep -oE "process\.env\.[A-Z_]+" /tmp/forge_scan_all_env_vars.txt 2>/dev/null || true; } \
   | sed 's/process\.env\.//' | sort | uniq -c | sort -rn | sed 's/^/    /'
+_process_env_names=$( { grep -oE "process\.env\.[A-Z_]+" /tmp/forge_scan_all_env_vars.txt 2>/dev/null || true; } | sort -u | wc -l)
+forge_scan_log_stat "phase=5.3 env_var_lines=$(wc -l < /tmp/forge_scan_all_env_vars.txt) distinct_process_env_keys=${_process_env_names:-0}"
 
 # ── 5.4: Event/message bus cross-reference ────────────────────────────────────
 echo ""
@@ -196,6 +208,8 @@ for repo in "${REPOS[@]}"; do
     | sed "s|$repo/||" | sed "s|^|    $repo_name: |" \
     2>/dev/null || true
 done
+
+forge_scan_log_step "phase=5.4 producer_consumer_grep_complete (see_stdout_above_for_hits)"
 
 # ── 5.5 prep: Extract URL strings from call sites ────────────────────────────
 echo ""
@@ -253,6 +267,7 @@ if [ -s /tmp/forge_scan_dynamic_urls.txt ]; then
   echo "  ⚠  Dynamic URLs detected (template literals / variable concatenation):"
   echo "     $(wc -l < /tmp/forge_scan_dynamic_urls.txt) call sites — NOT extractable by grep"
   echo "     Document in cross-repo.md under '## Dynamic URL Call Sites (Manual Review Required)'"
+  forge_scan_log_warn "phase=5.5-prep dynamic_url_lines=$(wc -l < /tmp/forge_scan_dynamic_urls.txt) manual_review_required=true"
 fi
 
 echo ""
@@ -264,3 +279,4 @@ echo "  Shared types:    /tmp/forge_scan_all_types.txt"
 echo ""
 echo "Next: Phase 5.5 Steps 3-6 — join URL strings against backend routes"
 echo "      (model-side work: /tmp/forge_scan_fe_urls.txt × /tmp/forge_scan_api_routes.txt)"
+forge_scan_log_done "callsites=$(wc -l < /tmp/forge_scan_all_callsites.txt) fe_urls=$(wc -l < /tmp/forge_scan_fe_urls.txt) dynamic_urls=$(wc -l < /tmp/forge_scan_dynamic_urls.txt) env_lines=$(wc -l < /tmp/forge_scan_all_env_vars.txt)"

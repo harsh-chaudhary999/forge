@@ -23,9 +23,21 @@
 
 set -euo pipefail
 
+_fs_scripts=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck disable=SC1091
+. "$_fs_scripts/_forge-scan-log.sh"
+
 REPO="${1:?Usage: $0 <repo-path> <brain-codebase-dir> <role>}"
 BRAIN_DIR="${2:?Usage: $0 <repo-path> <brain-codebase-dir> <role>}"
 ROLE="${3:?Usage: $0 <repo-path> <brain-codebase-dir> <role>}"
+
+forge_scan_log_start phase4-brain-write "repo=$REPO brain_dir=$BRAIN_DIR role=$ROLE"
+
+for _f in forge_scan_types_all.txt forge_scan_functions_all.txt forge_scan_ui_all.txt forge_scan_source_files.txt; do
+  if [ ! -s "/tmp/$_f" ]; then
+    forge_scan_log_warn "input_missing_or_empty path=/tmp/$_f hint=run_phase1-inventory.sh_first"
+  fi
+done
 
 mkdir -p "$BRAIN_DIR/classes" "$BRAIN_DIR/methods" "$BRAIN_DIR/functions" "$BRAIN_DIR/pages" "$BRAIN_DIR/modules"
 
@@ -142,6 +154,7 @@ done < /tmp/forge_scan_types_all.txt
 set -o pipefail
 
 echo "  Written: $CLASSES class nodes"
+forge_scan_log_stat "phase=4.3a classes_written=$CLASSES input_lines=$(wc -l < /tmp/forge_scan_types_all.txt 2>/dev/null || echo 0)"
 
 # ── 4.3c: Functions ──────────────────────────────────────────────────────────
 echo ""
@@ -210,6 +223,7 @@ done < /tmp/forge_scan_functions_all.txt
 set -o pipefail
 
 echo "  Written: $FUNCTIONS function nodes"
+forge_scan_log_stat "phase=4.3c functions_written=$FUNCTIONS input_lines=$(wc -l < /tmp/forge_scan_functions_all.txt 2>/dev/null || echo 0)"
 
 # ── 4.3e: Pages / UI ─────────────────────────────────────────────────────────
 echo ""
@@ -281,6 +295,7 @@ done < /tmp/forge_scan_ui_all.txt
 set -o pipefail
 
 echo "  Written: $PAGES page nodes"
+forge_scan_log_stat "phase=4.3e pages_written=$PAGES input_lines=$(wc -l < /tmp/forge_scan_ui_all.txt 2>/dev/null || echo 0)"
 
 # ── 4.3b: Module scaffolds from directory structure ───────────────────────────
 echo ""
@@ -337,6 +352,7 @@ NODEEOF
 done < /tmp/forge_scan_dirs.txt
 
 echo "  Written: $MODULES module scaffold nodes"
+forge_scan_log_stat "phase=4.3b modules_written=$MODULES unique_dirs=$(wc -l < /tmp/forge_scan_dirs.txt 2>/dev/null || echo 0)"
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 TOTAL=$((CLASSES + FUNCTIONS + PAGES + MODULES))
@@ -357,3 +373,4 @@ echo "Next steps:"
 echo "  1. Phase 3 hub reads — enrich stubs for Tier 1/2 hub files"
 echo "  2. git -C ~/forge/brain add products/<slug>/codebase/"
 echo "  3. git -C ~/forge/brain commit -m 'scan: <slug> codebase brain nodes ($TOTAL nodes)'"
+forge_scan_log_done "classes=$CLASSES functions=$FUNCTIONS pages=$PAGES modules=$MODULES skipped_existing=$SKIPPED total_new=$TOTAL"

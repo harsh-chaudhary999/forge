@@ -108,6 +108,8 @@ codebase/
 | `skills/scan-codebase/scripts/phase5-cross-repo.sh <repo1> [repo2...]` | 5.1 – 5.4 | Cross-repo HTTP call sites, shared types, env vars, event producers/consumers |
 | `skills/scan-codebase/scripts/cleanup.sh` | End | Remove all `/tmp/forge_scan_*.txt` files |
 
+**Agent-visible diagnostics:** Every script sources `_forge-scan-log.sh` and prints machine-grep lines of the form `FORGE_SCAN|<script>|<utc>|LEVEL|…`. In chat or CI logs, filter with `grep '^FORGE_SCAN|'` (or `ERROR` / `WARN` in the fourth pipe field) to audit scan health without rereading prose output.
+
 **Script location:** Resolve once at the start of every scan — covers Claude Code, Cursor, Gemini CLI, and direct repo use:
 ```bash
 # Try plugin caches first (Claude Code, Cursor, Gemini CLI), then repo root

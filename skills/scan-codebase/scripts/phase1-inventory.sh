@@ -32,7 +32,12 @@
 
 set -euo pipefail
 
+_fs_scripts=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck disable=SC1091
+. "$_fs_scripts/_forge-scan-log.sh"
+
 REPO="${1:?Usage: $0 <repo-path>}"
+forge_scan_log_start phase1-inventory "repo=$REPO"
 
 echo "════════════════════════════════════════════════════════"
 echo "FORGE SCAN — Phase 1: Structural Inventory"
@@ -74,6 +79,7 @@ find "$REPO" -type f \( \
 | sort > /tmp/forge_scan_test_files.txt || true
 
 echo "[1.1] Source files: $(wc -l < /tmp/forge_scan_source_files.txt) | Test files: $(wc -l < /tmp/forge_scan_test_files.txt)"
+forge_scan_log_stat "phase=1.1 source_files=$(wc -l < /tmp/forge_scan_source_files.txt) test_files=$(wc -l < /tmp/forge_scan_test_files.txt)"
 
 # ── 1.2: Monorepo + entry point detection ───────────────────────────────────
 
@@ -107,7 +113,9 @@ while IFS= read -r file; do
     2>/dev/null || true
 done < /tmp/forge_scan_source_files.txt > /tmp/forge_scan_imports.txt
 
-echo "[1.3] Import relationships extracted: $(grep -c "^===" /tmp/forge_scan_imports.txt 2>/dev/null || echo 0) files"
+_import_file_count=$(grep -c "^===" /tmp/forge_scan_imports.txt 2>/dev/null || true)
+echo "[1.3] Import relationships extracted: ${_import_file_count:-0} files"
+forge_scan_log_stat "phase=1.3 import_blocks=${_import_file_count:-0}"
 
 # ── 1.4: Hub scoring — single-pass from import graph (O(n), no file count limit) ──
 #
@@ -123,7 +131,8 @@ set +o pipefail
 while IFS= read -r file; do
   basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
   # Count import lines that reference this module name
-  count=$(grep -c "$basename_no_ext" /tmp/forge_scan_imports.txt 2>/dev/null || echo 0)
+  count=$(grep -c "$basename_no_ext" /tmp/forge_scan_imports.txt 2>/dev/null || true)
+  count=${count:-0}
   echo "$count $file"
 done < /tmp/forge_scan_source_files.txt \
 | sort -rn > /tmp/forge_scan_hub_scores.txt
@@ -135,23 +144,35 @@ awk '$1 >= 3 && $1 < 5 {print $2}' /tmp/forge_scan_hub_scores.txt > /tmp/forge_s
 echo "[1.4] Tier 1 hubs (5+ refs): $(wc -l < /tmp/forge_scan_tier1.txt) | Tier 2 hubs (3-4 refs): $(wc -l < /tmp/forge_scan_tier2.txt)"
 echo "[1.4] Top 10 hubs:"
 head -10 /tmp/forge_scan_hub_scores.txt | sed 's/^/  /'
+forge_scan_log_stat "phase=1.4 tier1=$(wc -l < /tmp/forge_scan_tier1.txt) tier2=$(wc -l < /tmp/forge_scan_tier2.txt) source_files_scored=$SOURCE_COUNT"
 
 # ── 1.5: Language fingerprinting ─────────────────────────────────────────────
 
-TS_COUNT=$(grep -c "\.ts$\|\.tsx$" /tmp/forge_scan_source_files.txt 2>/dev/null || echo 0)
-JS_COUNT=$(grep -c "\.js$\|\.jsx$" /tmp/forge_scan_source_files.txt 2>/dev/null || echo 0)
-PY_COUNT=$(grep -c "\.py$"  /tmp/forge_scan_source_files.txt 2>/dev/null || echo 0)
-GO_COUNT=$(grep -c "\.go$"  /tmp/forge_scan_source_files.txt 2>/dev/null || echo 0)
-JAVA_COUNT=$(grep -c "\.java$" /tmp/forge_scan_source_files.txt 2>/dev/null || echo 0)
-KT_COUNT=$(grep -c "\.kt$"  /tmp/forge_scan_source_files.txt 2>/dev/null || echo 0)
-DART_COUNT=$(grep -c "\.dart$" /tmp/forge_scan_source_files.txt 2>/dev/null || echo 0)
-RS_COUNT=$(grep -c "\.rs$"  /tmp/forge_scan_source_files.txt 2>/dev/null || echo 0)
+# grep -c prints 0 and exits 1 when there are no matches; never append `|| echo 0`
+# or command substitution captures two lines and breaks $(( )) arithmetic.
+TS_COUNT=$(grep -c "\.ts$\|\.tsx$" /tmp/forge_scan_source_files.txt 2>/dev/null || true)
+JS_COUNT=$(grep -c "\.js$\|\.jsx$" /tmp/forge_scan_source_files.txt 2>/dev/null || true)
+PY_COUNT=$(grep -c "\.py$"  /tmp/forge_scan_source_files.txt 2>/dev/null || true)
+GO_COUNT=$(grep -c "\.go$"  /tmp/forge_scan_source_files.txt 2>/dev/null || true)
+JAVA_COUNT=$(grep -c "\.java$" /tmp/forge_scan_source_files.txt 2>/dev/null || true)
+KT_COUNT=$(grep -c "\.kt$"  /tmp/forge_scan_source_files.txt 2>/dev/null || true)
+DART_COUNT=$(grep -c "\.dart$" /tmp/forge_scan_source_files.txt 2>/dev/null || true)
+RS_COUNT=$(grep -c "\.rs$"  /tmp/forge_scan_source_files.txt 2>/dev/null || true)
+TS_COUNT=${TS_COUNT:-0}
+JS_COUNT=${JS_COUNT:-0}
+PY_COUNT=${PY_COUNT:-0}
+GO_COUNT=${GO_COUNT:-0}
+JAVA_COUNT=${JAVA_COUNT:-0}
+KT_COUNT=${KT_COUNT:-0}
+DART_COUNT=${DART_COUNT:-0}
+RS_COUNT=${RS_COUNT:-0}
 TSJS_COUNT=$(( TS_COUNT + JS_COUNT ))
 
 echo ""
 echo "[1.5] Language breakdown:"
 echo "  TypeScript/TSX: $TS_COUNT | JavaScript/JSX: $JS_COUNT | Python: $PY_COUNT | Go: $GO_COUNT"
 echo "  Java: $JAVA_COUNT | Kotlin: $KT_COUNT | Dart: $DART_COUNT | Rust: $RS_COUNT"
+forge_scan_log_stat "phase=1.5 ts=$TS_COUNT js=$JS_COUNT py=$PY_COUNT go=$GO_COUNT java=$JAVA_COUNT kt=$KT_COUNT dart=$DART_COUNT rs=$RS_COUNT tsjs=$TSJS_COUNT"
 
 if [ -f "$REPO/package.json" ]; then
   FRAMEWORK_SIGNALS=$(grep -E '"next"|"express"|"fastify"|"nestjs"|"react-native"|"vue"|"nuxt"|"svelte"|"hono"|"koa"' "$REPO/package.json" 2>/dev/null || true)
@@ -426,6 +447,8 @@ FUNCS_COUNT=$(wc -l < /tmp/forge_scan_functions_all.txt)
 UI_COUNT=$(wc -l < /tmp/forge_scan_ui_all.txt)
 TOTAL=$(( TYPES_COUNT + METHODS_COUNT + FUNCS_COUNT + UI_COUNT ))
 
+forge_scan_log_stat "phase=1.6 types=$TYPES_COUNT methods=$METHODS_COUNT functions=$FUNCS_COUNT ui=$UI_COUNT html_forms=$(wc -l < /tmp/forge_scan_html_forms.txt) total_potential_nodes=$TOTAL"
+
 echo ""
 echo "══════════════════════════════════════════════════════════"
 echo "INVENTORY SUMMARY"
@@ -444,3 +467,4 @@ echo "Tier 2 hubs (3-4 refs): $(wc -l < /tmp/forge_scan_tier2.txt)"
 echo ""
 echo "Phase 1 complete. All inventory files written to /tmp/forge_scan_*.txt"
 echo "Next: Phase 2 (hub assignment already done above), Phase 3 (hub reads)"
+forge_scan_log_done "tier1=$(wc -l < /tmp/forge_scan_tier1.txt) tier2=$(wc -l < /tmp/forge_scan_tier2.txt) types=$TYPES_COUNT methods=$METHODS_COUNT functions=$FUNCS_COUNT ui=$UI_COUNT total_potential_nodes=$TOTAL"

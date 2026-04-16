@@ -136,11 +136,14 @@ bash "$FORGE_SCRIPTS/phase1-inventory.sh" "$REPO"
 
 **For large repos or multi-repo workspaces:** spawn a subagent per repo so all Phase 1 scripts run in parallel. Never wait for one to finish before starting the next. The subagent's only job is to run the script and report the inventory summary — it does not do Phase 3 or 4.
 
+**CRITICAL:** All Agent calls must be dispatched in a **single message** to run in parallel. Sending them one at a time makes them sequential — each waits for the previous to finish.
+
 ```
-// Example: 3-repo workspace — dispatch all 3 Phase 1 agents simultaneously
+// Send all 3 in ONE message = parallel execution
 Agent({ prompt: "Run: bash <FORGE_SCRIPTS>/phase1-inventory.sh ~/jh/backend — report the full INVENTORY SUMMARY output" })
 Agent({ prompt: "Run: bash <FORGE_SCRIPTS>/phase1-inventory.sh ~/jh/web    — report the full INVENTORY SUMMARY output" })
 Agent({ prompt: "Run: bash <FORGE_SCRIPTS>/phase1-inventory.sh ~/jh/app    — report the full INVENTORY SUMMARY output" })
+// All three start simultaneously. Wait for all to complete, then proceed.
 ```
 
 Phases 3 and 4 can begin for a repo as soon as its Phase 1 agent completes — no need to wait for all repos to finish.
@@ -767,11 +770,14 @@ The script reads from `/tmp/forge_scan_types_all.txt`, `forge_scan_functions_all
 
 **For multi-repo workspaces:** spawn one subagent per repo to run phase4-brain-write.sh in parallel. Each subagent gets a single command: run the script, report the node counts. No file reading, no enrichment — just stub generation. The stubs write to different subdirectories so there are no conflicts.
 
+**CRITICAL:** Dispatch all Agent calls in a **single message** — that is what makes them run simultaneously. One message per Agent = sequential, not parallel.
+
 ```
-// Dispatch all 3 simultaneously — they write to separate BRAIN_CODEBASE_DIR paths
+// ONE message containing all 3 Agent calls = all run at the same time
 Agent({ prompt: "Run: bash <FORGE_SCRIPTS>/phase4-brain-write.sh ~/jh/backend ~/forge/brain/products/jh/codebase/backend backend — report the TOTAL NEW NODES count" })
 Agent({ prompt: "Run: bash <FORGE_SCRIPTS>/phase4-brain-write.sh ~/jh/web    ~/forge/brain/products/jh/codebase/web    web     — report the TOTAL NEW NODES count" })
 Agent({ prompt: "Run: bash <FORGE_SCRIPTS>/phase4-brain-write.sh ~/jh/app    ~/forge/brain/products/jh/codebase/app    app     — report the TOTAL NEW NODES count" })
+// Each writes to its own BRAIN_CODEBASE_DIR — no file conflicts.
 ```
 
 Check the summary output for counts. If any count is 0 and you expected content, verify Phase 1 ran successfully for that repo.

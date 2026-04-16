@@ -109,38 +109,32 @@ done < /tmp/forge_scan_source_files.txt > /tmp/forge_scan_imports.txt
 
 echo "[1.3] Import relationships extracted: $(grep -c "^===" /tmp/forge_scan_imports.txt 2>/dev/null || echo 0) files"
 
-# ── 1.4: Hub scoring ─────────────────────────────────────────────────────────
+# ── 1.4: Hub scoring — single-pass from import graph (O(n), no file count limit) ──
+#
+# Instead of grep-per-file (O(n²)), count how many times each filename stem
+# appears in the already-extracted import lines. One grep pass over one file.
 
 SOURCE_COUNT=$(wc -l < /tmp/forge_scan_source_files.txt)
+echo "[1.4] Computing hub scores for $SOURCE_COUNT files (single-pass import analysis)..."
 
-if [ "$SOURCE_COUNT" -gt 800 ]; then
-  echo "[1.4] Hub scoring SKIPPED — $SOURCE_COUNT source files exceeds 800-file threshold (O(n²) too slow)"
-  echo "  Tier files will be empty; Phase 3 will read key modules based on role/naming conventions"
-  > /tmp/forge_scan_hub_scores.txt
-  > /tmp/forge_scan_tier1.txt
-  > /tmp/forge_scan_tier2.txt
-  echo "[1.4] Tier 1 hubs (5+ refs): 0 | Tier 2 hubs (3-4 refs): 0"
-else
-  echo "[1.4] Computing hub scores for $SOURCE_COUNT files (may take a moment)..."
-  set +o pipefail
-  while IFS= read -r file; do
-    basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
-    count=$(grep -rl "$basename_no_ext" "$REPO" \
-      --include="*.ts" --include="*.py" --include="*.go" \
-      --include="*.java" --include="*.kt" \
-      2>/dev/null | grep -v node_modules | grep -v "\.git" | grep -v dist | wc -l)
-    echo "$count $file"
-  done < /tmp/forge_scan_source_files.txt \
-  | sort -rn > /tmp/forge_scan_hub_scores.txt
-  set -o pipefail
+> /tmp/forge_scan_hub_scores.txt
 
-  awk '$1 >= 5 {print $2}' /tmp/forge_scan_hub_scores.txt > /tmp/forge_scan_tier1.txt
-  awk '$1 >= 3 && $1 < 5 {print $2}' /tmp/forge_scan_hub_scores.txt > /tmp/forge_scan_tier2.txt
+set +o pipefail
+while IFS= read -r file; do
+  basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
+  # Count import lines that reference this module name
+  count=$(grep -c "$basename_no_ext" /tmp/forge_scan_imports.txt 2>/dev/null || echo 0)
+  echo "$count $file"
+done < /tmp/forge_scan_source_files.txt \
+| sort -rn > /tmp/forge_scan_hub_scores.txt
+set -o pipefail
 
-  echo "[1.4] Tier 1 hubs (5+ refs): $(wc -l < /tmp/forge_scan_tier1.txt) | Tier 2 hubs (3-4 refs): $(wc -l < /tmp/forge_scan_tier2.txt)"
-  echo "[1.4] Top 10 hubs:"
-  head -10 /tmp/forge_scan_hub_scores.txt | sed 's/^/  /'
-fi
+awk '$1 >= 5 {print $2}' /tmp/forge_scan_hub_scores.txt > /tmp/forge_scan_tier1.txt
+awk '$1 >= 3 && $1 < 5 {print $2}' /tmp/forge_scan_hub_scores.txt > /tmp/forge_scan_tier2.txt
+
+echo "[1.4] Tier 1 hubs (5+ refs): $(wc -l < /tmp/forge_scan_tier1.txt) | Tier 2 hubs (3-4 refs): $(wc -l < /tmp/forge_scan_tier2.txt)"
+echo "[1.4] Top 10 hubs:"
+head -10 /tmp/forge_scan_hub_scores.txt | sed 's/^/  /'
 
 # ── 1.5: Language fingerprinting ─────────────────────────────────────────────
 

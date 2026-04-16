@@ -295,20 +295,44 @@ grep -rn "^func ([a-zA-Z_][a-zA-Z0-9_]* \*\?[A-Z][a-zA-Z0-9]*) [A-Z]" \
 echo "Go types: $(wc -l < /tmp/forge_scan_types_go.txt) | Go exported methods: $(wc -l < /tmp/forge_scan_methods_go.txt)"
 
 # ── TypeScript / JavaScript ───────────────────────────────────────────────────
-# Capture: exported class, abstract class, interface, type alias (uppercase = domain type)
+# JS/TS has TWO primary abstraction units: classes AND exported functions.
+# In React, Next.js, Express, and most modern TS code, functions outnumber classes 10:1.
+# Both must be captured.
+
+# Classes and interfaces (OOP / NestJS / class-based code)
 grep -rn \
   "^export \(default \)\?\(abstract \)\?class \|^export interface \|^export abstract class \|^export type [A-Z]" \
-  "$REPO" --include="*.ts" --include="*.tsx" \
+  "$REPO" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
   | grep -v "node_modules\|\.d\.ts\|\.spec\.\|\.test\." \
   > /tmp/forge_scan_types_ts.txt
 
-# NestJS / TypeORM / class-validator decorators (these mark the architecturally important classes)
+# NestJS / TypeORM decorators (marks architecturally important classes)
 grep -rn "^@\(Injectable\|Controller\|Service\|Repository\|Entity\|Module\|Guard\|Interceptor\|Pipe\|EventEmitter\|Resolver\|ObjectType\|InputType\)" \
-  "$REPO" --include="*.ts" \
+  "$REPO" --include="*.ts" --include="*.tsx" \
   | grep -v "node_modules\|\.spec\.\|\.test\." \
   > /tmp/forge_scan_decorators_ts.txt
 
-echo "TypeScript types: $(wc -l < /tmp/forge_scan_types_ts.txt) | Decorators: $(wc -l < /tmp/forge_scan_decorators_ts.txt)"
+# Exported functions — React components, hooks, handlers, Next.js pages, service functions
+# Pattern 1: export function / export async function
+grep -rn "^export \(async \)\?function [a-zA-Z]" \
+  "$REPO" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
+  | grep -v "node_modules\|\.spec\.\|\.test\." \
+  > /tmp/forge_scan_functions_ts.txt
+
+# Pattern 2: export default function (Next.js pages, React default exports)
+grep -rn "^export default \(async \)\?function" \
+  "$REPO" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
+  | grep -v "node_modules\|\.spec\.\|\.test\." \
+  >> /tmp/forge_scan_functions_ts.txt
+
+# Pattern 3: export const X = () => or export const X = async () =>
+# Captures: React components as const, custom hooks, arrow function services
+grep -rn "^export const [a-zA-Z][a-zA-Z0-9]* = \(async \)\?(" \
+  "$REPO" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
+  | grep -v "node_modules\|\.spec\.\|\.test\." \
+  >> /tmp/forge_scan_functions_ts.txt
+
+echo "TS/JS classes: $(wc -l < /tmp/forge_scan_types_ts.txt) | Decorators: $(wc -l < /tmp/forge_scan_decorators_ts.txt) | Functions: $(wc -l < /tmp/forge_scan_functions_ts.txt)"
 
 # ── Python ────────────────────────────────────────────────────────────────────
 # Capture: class definitions starting with uppercase (PEP8 class naming convention)
@@ -323,7 +347,14 @@ grep -rn "^@\(dataclass\|dataclasses\.dataclass\|abstractmethod\|abc\.ABC\)" \
   | grep -v "test_\|_test\.py" \
   > /tmp/forge_scan_annotations_python.txt
 
-echo "Python types: $(wc -l < /tmp/forge_scan_types_python.txt)"
+# Python top-level functions (not methods — exclude indented `def`)
+# Many Python codebases use module-level functions as the primary abstraction
+grep -rn "^def [a-zA-Z][a-zA-Z0-9_]*\|^async def [a-zA-Z][a-zA-Z0-9_]*" \
+  "$REPO" --include="*.py" \
+  | grep -v "test_\|_test\.py\|__init__\|__main__\|__str__\|__repr__\|__eq__\|__hash__" \
+  > /tmp/forge_scan_functions_python.txt
+
+echo "Python types: $(wc -l < /tmp/forge_scan_types_python.txt) | Python functions: $(wc -l < /tmp/forge_scan_functions_python.txt)"
 
 # ── Dart / Flutter ────────────────────────────────────────────────────────────
 grep -rn "^\(abstract \)\?class [A-Z]\|^mixin [A-Z]\|^enum [A-Z]" \
@@ -341,7 +372,8 @@ grep -rn "^pub \(struct\|enum\|trait\|impl\) [A-Z]\|^pub(crate) \(struct\|enum\|
 
 echo "Rust types: $(wc -l < /tmp/forge_scan_types_rust.txt)"
 
-# ── Master inventory ──────────────────────────────────────────────────────────
+# ── Master inventories ────────────────────────────────────────────────────────
+# Types (classes, structs, interfaces, enums) → go into classes/ in Phase 4
 cat /tmp/forge_scan_types_java.txt \
     /tmp/forge_scan_types_kotlin.txt \
     /tmp/forge_scan_types_go.txt \
@@ -351,15 +383,25 @@ cat /tmp/forge_scan_types_java.txt \
     /tmp/forge_scan_types_rust.txt \
     2>/dev/null > /tmp/forge_scan_types_all.txt
 
+# Functions (exported functions, React components, hooks) → go into functions/ in Phase 4
+cat /tmp/forge_scan_functions_ts.txt \
+    /tmp/forge_scan_functions_python.txt \
+    2>/dev/null > /tmp/forge_scan_functions_all.txt
+
 echo "══════════════════════════════════════════"
-echo "Total types in inventory: $(wc -l < /tmp/forge_scan_types_all.txt)"
-echo "Go methods: $(wc -l < /tmp/forge_scan_methods_go.txt)"
+echo "Types  (→ classes/):    $(wc -l < /tmp/forge_scan_types_all.txt)"
+echo "Functions (→ functions/): $(wc -l < /tmp/forge_scan_functions_all.txt)"
+echo "Go methods:             $(wc -l < /tmp/forge_scan_methods_go.txt)"
 echo "══════════════════════════════════════════"
 ```
 
-> **Go note:** Go methods (`/tmp/forge_scan_methods_go.txt`) are NOT in the type inventory because they are standalone functions with a receiver — they have no syntactic nesting. When writing a class file for a Go struct, look up matching entries in `forge_scan_methods_go.txt` where the receiver type matches the struct name.
+> **Two separate inventories:**
+> - `/tmp/forge_scan_types_all.txt` → classes, structs, interfaces → `classes/` directory in brain
+> - `/tmp/forge_scan_functions_all.txt` → exported functions, React components, hooks → `functions/` directory in brain
 >
-> **Decorator note:** For Java/Kotlin/TypeScript, cross-reference `forge_scan_annotations_*.txt` with the type inventory. A class annotated `@Service` is an application service. `@Repository` is a data layer. `@Controller` / `@RestController` is a request handler. Use these to populate the **Layer** field in class files.
+> **Go methods** (`/tmp/forge_scan_methods_go.txt`) are not types or functions — they're receiver methods. When writing a class file for a Go struct, grep this file for entries where the receiver type matches the struct name.
+>
+> **Decorator/annotation note:** `forge_scan_annotations_*.txt` and `forge_scan_decorators_ts.txt` tell you the layer. `@Service` = service layer. `@Repository` = data layer. `@Controller` = request handler. Populate the **Layer** field in class/function files from these.
 
 ---
 
@@ -769,6 +811,79 @@ The `classes/` directory is what makes the Obsidian graph show class-level nodes
 
 **Skip a class if** it is a pure generated file (e.g. `*Generated.java`, `*_pb2.py`, Kotlin `*Binding` from Android View Binding) or a test-only class. Everything else gets a file — even simple data classes, because they are still graph nodes that other classes reference.
 
+### 4.3c — functions/<role>-<FunctionName>.md format
+
+**Driven by `/tmp/forge_scan_functions_all.txt`.** For every exported function in that file whose source file is in `/tmp/forge_scan_tier1.txt` or `/tmp/forge_scan_tier2.txt`, create one function file.
+
+> This is the JS/TS/Python equivalent of `classes/`. In React, Next.js, Express, and most modern TS/JS codebases, the primary abstraction is the exported function — not the class. Without this directory, a React or Node codebase produces almost no graph nodes.
+
+File path: `~/forge/brain/products/<slug>/codebase/functions/<role>-<functionName>.md`
+
+```markdown
+# Function: <functionName>
+
+**Module:** [[modules/<role>-<module>]]
+**File:** `<relative/path/from/repo/root>`
+**Language:** TypeScript | JavaScript | Python
+**Kind:** <React component | Custom hook | API handler | Service function | Utility | Next.js page | Middleware>
+**Async:** yes | no
+
+## Purpose
+
+<One-sentence description from JSDoc/docstring, or synthesized from params and return type>
+
+## Signature
+
+```ts
+// TypeScript / JavaScript
+export function functionName(param1: Type1, param2: Type2): ReturnType
+export const functionName = async (param: Type): Promise<ReturnType> => {}
+export default function PageName({ prop }: Props): JSX.Element
+```
+
+```python
+# Python
+def function_name(param1: Type1, param2: Type2) -> ReturnType:
+async def function_name(param: Type) -> ReturnType:
+```
+
+## Parameters
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `<param>` | `<type>` | required / optional / default=X |
+
+## Returns
+
+`<ReturnType>` — <what it returns and when>
+
+## Side Effects / Dependencies
+
+> For React components: what hooks it uses, what context it reads
+> For API handlers: what services/repos it calls
+> For utility functions: none / describe if present
+
+- Uses: [[functions/<role>-<usedHook>]], [[classes/<role>-<ServiceClass>]]
+- Calls: [[modules/<role>-<dep>]]
+
+## Used by
+
+- [[modules/<role>-<consumer>]] — `<how it uses this function>`
+- [[functions/<role>-<callerFn>]] — `<how it uses this function>`
+
+## Location in Structure
+
+[[structure]] → `<directory/path>/` → [[modules/<role>-<module>]] → `<functionName>`
+```
+
+**What counts as "significant" enough for its own file:**
+- Any function that is the primary/only export of its file (React component files, hooks, page files)
+- Any function called by 3+ other modules (visible in the import graph)
+- Any function from a Tier 1 hub file
+- Do NOT create a file for: internal helpers with no export, test utility functions, one-liner utils that have no parameters worth documenting
+
+**For utility files with many small exports** (e.g. `utils/format.ts` with `formatDate`, `formatPrice`, `formatName`): list all exports in the module file's `## Exports` section instead. Only create individual function files for the ones referenced by 3+ other modules.
+
 ### 4.3b — structure.md format
 
 `structure.md` is the directory-tree backbone of the Obsidian graph. Every module and class node links back to it, giving the mindmap its hierarchy. Without this file the graph is a flat soup of nodes with no spatial structure.
@@ -787,11 +902,12 @@ File path: `~/forge/brain/products/<slug>/codebase/structure.md`
 - `<repo-name>/`
   - `<dir1>/` → [[modules/<role>-<dir1>]]
     - `<subdir1>/` → [[modules/<role>-<subdir1>]]
-      - `<ClassA>.ts` → [[classes/<role>-<ClassA>]]
-      - `<ClassB>.ts` → [[classes/<role>-<ClassB>]]
+      - `<UserService>.java` → [[classes/<role>-<UserService>]]     *(class-based: Java/Kotlin/Go)*
+      - `<UserCard>.tsx` → [[functions/<role>-<UserCard>]]           *(function-based: JS/TS component)*
+      - `<useAuth>.ts` → [[functions/<role>-<useAuth>]]              *(hook)*
     - `<file>.ts` → [[modules/<role>-<stem>]]
   - `<dir2>/` → [[modules/<role>-<dir2>]]
-    - `<file>.ts` → [[modules/<role>-<stem>]]
+    - `<file>.go` → [[modules/<role>-<stem>]]
   - `package.json` / `go.mod` / `pom.xml`
   - `README.md`
 

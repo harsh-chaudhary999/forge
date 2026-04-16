@@ -190,21 +190,39 @@ Check if the brain is already an Obsidian vault:
 ls ~/forge/brain/.obsidian/app.json 2>/dev/null
 ```
 
-If the file does **not** exist, bootstrap it now. Find the Forge install location and copy the templates:
+If the file does **not** exist, run the full bootstrap. This handles both brand-new systems (no git repo yet) and existing brains that just lack Obsidian config.
+
+**Step 5a.1 — Ensure brain is a git repo:**
+
+```bash
+git -C ~/forge/brain status 2>/dev/null || (
+  git -C ~/forge/brain init
+  cat > ~/forge/brain/.gitignore << 'EOF'
+.DS_Store
+*.tmp
+EOF
+  git -C ~/forge/brain add .gitignore
+  git -C ~/forge/brain commit -m "chore: initialize brain git repo"
+)
+```
+
+**Step 5a.2 — Copy Obsidian config from Forge template:**
 
 ```bash
 FORGE_DIR=$(find ~/.claude/plugins -path "*/forge/brain-template" -type d 2>/dev/null | head -1 | sed 's|/brain-template||')
-# Fallback: check local forge repo
-[ -z "$FORGE_DIR" ] && FORGE_DIR=$(find ~/forge ~/Videos/forge /home/*/Videos/forge -maxdepth 0 -type d 2>/dev/null | head -1)
+# Fallback: check common Forge install locations
+[ -z "$FORGE_DIR" ] && FORGE_DIR=$(find ~/forge ~/Videos/forge -maxdepth 1 -name "brain-template" -type d 2>/dev/null | head -1 | sed 's|/brain-template||')
 
 mkdir -p ~/forge/brain/.obsidian
 cp "$FORGE_DIR/brain-template/.obsidian/app.json"   ~/forge/brain/.obsidian/app.json
 cp "$FORGE_DIR/brain-template/.obsidian/graph.json" ~/forge/brain/.obsidian/graph.json
 ```
 
-Then update `~/forge/brain/README.md` to use wikilinks so the graph has edges between sections. Replace plain text section references with `[[path/to/file]]` links pointing to existing files.
+**Step 5a.3 — Write README.md with wikilinks (hub for graph):**
 
-Commit the Obsidian bootstrap:
+Write `~/forge/brain/README.md` with `[[wikilink]]` references to the key subdirectories. This creates graph edges so the vault opens with a connected structure, not isolated nodes. Use links pointing to files that actually exist in the brain.
+
+**Step 5a.4 — Commit:**
 
 ```bash
 git -C ~/forge/brain add .obsidian/ README.md

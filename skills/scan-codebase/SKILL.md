@@ -107,11 +107,19 @@ codebase/
 | `skills/scan-codebase/scripts/phase5-cross-repo.sh <repo1> [repo2...]` | 5.1 – 5.4 | Cross-repo HTTP call sites, shared types, env vars, event producers/consumers |
 | `skills/scan-codebase/scripts/cleanup.sh` | End | Remove all `/tmp/forge_scan_*.txt` files |
 
-**Script location:** Forge plugin installs to `~/.claude/plugins/cache/*/forge/skills/scan-codebase/scripts/` or the repo root `skills/scan-codebase/scripts/`. Resolve the actual path with:
+**Script location:** Resolve once at the start of every scan — covers Claude Code, Cursor, Gemini CLI, and direct repo use:
 ```bash
-FORGE_SCRIPTS=$(find ~/.claude/plugins -path "*/scan-codebase/scripts" -type d 2>/dev/null | head -1)
-# Or if working in the forge repo directly:
-FORGE_SCRIPTS="$(git rev-parse --show-toplevel)/skills/scan-codebase/scripts"
+# Try plugin caches first (Claude Code, Cursor, Gemini CLI), then repo root
+FORGE_SCRIPTS=$(find \
+  ~/.claude/plugins \
+  ~/.cursor/plugins \
+  ~/.config/gemini/plugins \
+  -path "*/scan-codebase/scripts" -type d 2>/dev/null | head -1)
+# Fallback: we're running inside the forge repo itself
+[ -z "$FORGE_SCRIPTS" ] && FORGE_SCRIPTS="$(git rev-parse --show-toplevel 2>/dev/null)/skills/scan-codebase/scripts"
+# Fallback: user cloned forge to ~/forge
+[ -z "$FORGE_SCRIPTS" ] && [ -d "$HOME/forge/skills/scan-codebase/scripts" ] && FORGE_SCRIPTS="$HOME/forge/skills/scan-codebase/scripts"
+echo "Using scripts: $FORGE_SCRIPTS"
 ```
 
 ---

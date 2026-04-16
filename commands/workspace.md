@@ -209,8 +209,9 @@ EOF
 **Step 5a.2 — Copy Obsidian config from Forge template:**
 
 ```bash
-FORGE_DIR=$(find ~/.claude/plugins -path "*/forge/brain-template" -type d 2>/dev/null | head -1 | sed 's|/brain-template||')
-# Fallback: check common Forge install locations
+FORGE_DIR=$(find ~/.claude/plugins ~/.cursor/plugins ~/.config/gemini/plugins \
+  -path "*/forge/brain-template" -type d 2>/dev/null | head -1 | sed 's|/brain-template||')
+# Fallback: common direct clone locations
 [ -z "$FORGE_DIR" ] && FORGE_DIR=$(find ~/forge ~/Videos/forge -maxdepth 1 -name "brain-template" -type d 2>/dev/null | head -1 | sed 's|/brain-template||')
 
 mkdir -p ~/forge/brain/.obsidian

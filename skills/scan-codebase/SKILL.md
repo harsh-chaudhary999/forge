@@ -24,7 +24,7 @@ Produces `~/forge/brain/products/<slug>/codebase/` — readable by humans, query
 - MUST run Phase 1 (grep/find) before reading any source file
 - MUST identify hub files via incoming-reference count before selecting what to read
 - MUST exclude: `node_modules/`, `vendor/`, `dist/`, `build/`, `__pycache__/`, `.git/`, `*.generated.*`, `*.min.js`, `*.lock`
-- MUST NOT read more than 100 lines from any single non-README file
+- MUST extract class/type/struct inventory via grep in Phase 1.6 BEFORE reading any hub file
 - MUST NOT read test files unless they are the only documentation for an API
 
 ### Anti-Pattern 2: "I'll scan the entire codebase at once and produce a single summary"
@@ -233,6 +233,134 @@ grep -c "\.dart$" /tmp/forge_scan_source_files.txt && echo "Dart files"
 [ -f "$REPO/pubspec.yaml" ] && head -5 "$REPO/pubspec.yaml"
 ```
 
+### 1.6 — Type/class inventory (zero tokens, all languages)
+
+> **This step is mandatory.** Class file generation in Phase 4.3a is driven from this inventory — not from in-context memory. Run this before any hub reads.
+
+Each language has fundamentally different syntax. Grep patterns below are language-specific.
+
+```bash
+# ── Java ──────────────────────────────────────────────────────────────────────
+# Capture: class, abstract class, interface, enum, annotation type (@interface)
+# Include Spring annotations line above (@Service, @Repository, @Controller, etc.)
+grep -rn \
+  "^\s*\(public\|protected\|private\|abstract\|final\|static\)\{0,3\}\s*\(class\|interface\|enum\|@interface\)\s" \
+  "$REPO" --include="*.java" \
+  | grep -v "/test/\|Test\.java\b\|IT\.java\b\|Tests\.java\b" \
+  > /tmp/forge_scan_types_java.txt
+
+# Spring/Jakarta stereotype annotations (these mark the important classes)
+grep -rn "^\s*@\(Service\|Repository\|Controller\|RestController\|Component\|Configuration\|Entity\|SpringBootApplication\)" \
+  "$REPO" --include="*.java" \
+  | grep -v "/test/" \
+  > /tmp/forge_scan_annotations_java.txt
+
+echo "Java types: $(wc -l < /tmp/forge_scan_types_java.txt) | Annotations: $(wc -l < /tmp/forge_scan_annotations_java.txt)"
+
+# ── Kotlin ────────────────────────────────────────────────────────────────────
+# Capture: class, data class, sealed class, abstract class, open class,
+#          inner class, interface, object, companion object, typealias, enum class
+grep -rn \
+  "^\s*\(data \|sealed \|abstract \|open \|inner \|enum \|annotation \)\?\(class\|interface\|object\)\s\|^\s*typealias \|^\s*companion object" \
+  "$REPO" --include="*.kt" \
+  | grep -v "Test\.kt\b\|Spec\.kt\b\|/test/" \
+  > /tmp/forge_scan_types_kotlin.txt
+
+# Kotlin/Spring annotations
+grep -rn "^\s*@\(Service\|Repository\|Controller\|RestController\|Component\|Configuration\|Entity\|SpringBootApplication\)" \
+  "$REPO" --include="*.kt" \
+  | grep -v "/test/" \
+  > /tmp/forge_scan_annotations_kotlin.txt
+
+echo "Kotlin types: $(wc -l < /tmp/forge_scan_types_kotlin.txt)"
+
+# ── Go ────────────────────────────────────────────────────────────────────────
+# Go has NO classes. Types are: struct, interface (both defined with `type`)
+# Methods are defined SEPARATELY via receiver functions — not inside the type.
+# These MUST be extracted independently.
+
+# Exported structs and interfaces (uppercase first letter = exported in Go)
+grep -rn "^type [A-Z][a-zA-Z0-9]* \(struct\|interface\)\b" \
+  "$REPO" --include="*.go" \
+  | grep -v "_test\.go" \
+  > /tmp/forge_scan_types_go.txt
+
+# Go receiver methods — CRITICAL: these are Go's equivalent of class methods
+# Pattern: func (receiverVar *TypeName) MethodName( OR func (receiverVar TypeName) MethodName(
+grep -rn "^func ([a-zA-Z_][a-zA-Z0-9_]* \*\?[A-Z][a-zA-Z0-9]*) [A-Z]" \
+  "$REPO" --include="*.go" \
+  | grep -v "_test\.go" \
+  > /tmp/forge_scan_methods_go.txt
+
+echo "Go types: $(wc -l < /tmp/forge_scan_types_go.txt) | Go exported methods: $(wc -l < /tmp/forge_scan_methods_go.txt)"
+
+# ── TypeScript / JavaScript ───────────────────────────────────────────────────
+# Capture: exported class, abstract class, interface, type alias (uppercase = domain type)
+grep -rn \
+  "^export \(default \)\?\(abstract \)\?class \|^export interface \|^export abstract class \|^export type [A-Z]" \
+  "$REPO" --include="*.ts" --include="*.tsx" \
+  | grep -v "node_modules\|\.d\.ts\|\.spec\.\|\.test\." \
+  > /tmp/forge_scan_types_ts.txt
+
+# NestJS / TypeORM / class-validator decorators (these mark the architecturally important classes)
+grep -rn "^@\(Injectable\|Controller\|Service\|Repository\|Entity\|Module\|Guard\|Interceptor\|Pipe\|EventEmitter\|Resolver\|ObjectType\|InputType\)" \
+  "$REPO" --include="*.ts" \
+  | grep -v "node_modules\|\.spec\.\|\.test\." \
+  > /tmp/forge_scan_decorators_ts.txt
+
+echo "TypeScript types: $(wc -l < /tmp/forge_scan_types_ts.txt) | Decorators: $(wc -l < /tmp/forge_scan_decorators_ts.txt)"
+
+# ── Python ────────────────────────────────────────────────────────────────────
+# Capture: class definitions starting with uppercase (PEP8 class naming convention)
+grep -rn "^class [A-Za-z][a-zA-Z0-9]*\(.*\)\?:" \
+  "$REPO" --include="*.py" \
+  | grep -v "test_[a-z]\|_test\.py\|Test[A-Z]" \
+  > /tmp/forge_scan_types_python.txt
+
+# Python dataclasses and ABCs
+grep -rn "^@\(dataclass\|dataclasses\.dataclass\|abstractmethod\|abc\.ABC\)" \
+  "$REPO" --include="*.py" \
+  | grep -v "test_\|_test\.py" \
+  > /tmp/forge_scan_annotations_python.txt
+
+echo "Python types: $(wc -l < /tmp/forge_scan_types_python.txt)"
+
+# ── Dart / Flutter ────────────────────────────────────────────────────────────
+grep -rn "^\(abstract \)\?class [A-Z]\|^mixin [A-Z]\|^enum [A-Z]" \
+  "$REPO" --include="*.dart" \
+  | grep -v "_test\.dart\|test/" \
+  > /tmp/forge_scan_types_dart.txt
+
+echo "Dart types: $(wc -l < /tmp/forge_scan_types_dart.txt)"
+
+# ── Rust ──────────────────────────────────────────────────────────────────────
+grep -rn "^pub \(struct\|enum\|trait\|impl\) [A-Z]\|^pub(crate) \(struct\|enum\|trait\) [A-Z]" \
+  "$REPO" --include="*.rs" \
+  | grep -v "test\b" \
+  > /tmp/forge_scan_types_rust.txt
+
+echo "Rust types: $(wc -l < /tmp/forge_scan_types_rust.txt)"
+
+# ── Master inventory ──────────────────────────────────────────────────────────
+cat /tmp/forge_scan_types_java.txt \
+    /tmp/forge_scan_types_kotlin.txt \
+    /tmp/forge_scan_types_go.txt \
+    /tmp/forge_scan_types_ts.txt \
+    /tmp/forge_scan_types_python.txt \
+    /tmp/forge_scan_types_dart.txt \
+    /tmp/forge_scan_types_rust.txt \
+    2>/dev/null > /tmp/forge_scan_types_all.txt
+
+echo "══════════════════════════════════════════"
+echo "Total types in inventory: $(wc -l < /tmp/forge_scan_types_all.txt)"
+echo "Go methods: $(wc -l < /tmp/forge_scan_methods_go.txt)"
+echo "══════════════════════════════════════════"
+```
+
+> **Go note:** Go methods (`/tmp/forge_scan_methods_go.txt`) are NOT in the type inventory because they are standalone functions with a receiver — they have no syntactic nesting. When writing a class file for a Go struct, look up matching entries in `forge_scan_methods_go.txt` where the receiver type matches the struct name.
+>
+> **Decorator note:** For Java/Kotlin/TypeScript, cross-reference `forge_scan_annotations_*.txt` with the type inventory. A class annotated `@Service` is an application service. `@Repository` is a data layer. `@Controller` / `@RestController` is a request handler. Use these to populate the **Layer** field in class files.
+
 ---
 
 ## Phase 2: Hub Identification (Zero Tokens)
@@ -296,34 +424,94 @@ while IFS= read -r file; do
 done < /tmp/forge_scan_tier2.txt
 ```
 
-### 3.3a — Class/method/attribute extraction from hub reads
+### 3.3a — Class/method/attribute enrichment from hub reads
 
-As you process hub files in 3.2 and 3.3, extract class-level structure for Phase 4.3a. Hub files are read in full so no class buried deep in a file will be missed.
+Phase 1.6 already extracted the **names and locations** of all types from disk via grep. The job here is to **enrich** those known types with methods, properties, doc comments, and inheritance — by reading the hub files in full.
 
-For each hub file, note the following patterns inline (record as mental model, not as a new tool call):
+For each hub file, cross-reference `/tmp/forge_scan_types_all.txt` to know which classes live there, then extract the following. **Each language has fundamentally different syntax:**
 
-**Classes / types to capture:**
-- `class <Name>`, `interface <Name>`, `type <Name> =`, `abstract class <Name>`
-- `struct <Name>`, `data class <Name>`, `@dataclass class <Name>`, `type <Name> struct`
-- Swift: `class <Name>`, `struct <Name>`, `protocol <Name>`
+---
 
-**Methods to capture (public/exported only):**
-- `def <name>(`, `async def <name>(`, `fun <name>(`, `func <name>(`
-- `public <returnType> <name>(`, `async <name>(`, `export function <name>(`
-- `<name>(<params>): <returnType>` (TypeScript method syntax)
-- Constructor: `constructor(`, `__init__(self`, `init(`, `func init(`
+**Java** (`*.java`)
 
-**Properties/attributes to capture:**
-- `this.<prop> =`, `readonly <prop>`, `private <prop>:`, `protected <prop>:`
-- `@property`, `var <name>:`, `val <name>:`, `let <name>:`, `const <name> =`
-- Go struct fields: lines within `type <Name> struct { ... }`
+*Types*: `public class Foo`, `abstract class Foo`, `interface Foo`, `enum Foo`, `@interface Foo`
+*Inheritance*: `extends BarClass`, `implements BazInterface` — critical for graph edges
+*Annotations*: `@Service`, `@Repository`, `@RestController`, `@Entity` — determines layer
+*Fields (properties)*: `private String name;`, `protected final List<X> items;`
+*Methods*: `public ReturnType methodName(Type param)` — include full signature
+*Constructor*: `public ClassName(Type param, Type param2)`
+*Key gotcha*: Inner classes and anonymous classes — record them as nested, not top-level
 
-**Record as structured data** for use in Phase 4.3a:
+**Kotlin** (`*.kt`)
+
+*Types*: `data class Foo(val a: A, val b: B)` — constructor params ARE the properties
+*Sealed class*: `sealed class Result` with subclasses `data class Success(...)` and `data class Error(...)` — these are variants, not independent classes
+*Object*: `object Singleton` — no constructor, static singleton
+*Companion object*: nested `companion object { ... }` — factory methods live here
+*Coroutines*: `suspend fun fetchData(): Result<T>` — mark `suspend` in method notes
+*Properties*: `val name: String`, `var count: Int = 0`, `lateinit var db: DB`
+*Key gotcha*: Extension functions (`fun String.toUser(): User`) are NOT class members — they belong to the module, not the class
+
+**Go** (`*.go`)
+
+*Types*: `type UserService struct { ... }` — fields are inside the struct body
+*Struct fields*: Lines inside `type X struct { ... }` block — `FieldName Type \`json:"..."\`` 
+*Interfaces*: `type UserRepository interface { ... }` — method signatures inside the block
+*Methods*: **NOT inside the struct.** Look in `/tmp/forge_scan_methods_go.txt` for lines matching `(* TypeName)` or `( TypeName)`. Pattern: `func (u *UserService) GetUser(ctx context.Context, id int64) (*User, error)`
+*Constructor*: `func NewUserService(db *DB) *UserService` — named constructors, not `new`
+*Key gotcha*: Go has no inheritance. Embedding (`type Admin struct { User }`) is composition, not inheritance. Note it as "embeds [[classes/<role>-User]]" not "extends".
+
+**TypeScript / Node.js** (`*.ts`, `*.tsx`)
+
+*Types*: `export class UserController`, `export interface IUser`, `export abstract class BaseService`
+*Decorators*: `@Injectable()`, `@Controller('/users')`, `@Entity()` — the decorator tells you the layer before you read a single method
+*Constructor injection*: `constructor(private readonly userService: UserService)` — injected deps = class dependencies for graph edges
+*Methods*: `async getUser(id: string): Promise<User>`, `private validate(data: unknown): boolean`
+*Properties*: `readonly name: string`, `private count = 0`, `@Column() email: string`
+*Type aliases*: `export type UserId = string` — if used widely, it's a domain concept worth noting
+*Key gotcha*: Arrow function class properties (`private handleClick = () => {}`) are methods defined as properties — include them
+
+**Python** (`*.py`)
+
+*Types*: `class UserService(BaseService):` — base class in parens = inheritance
+*Dataclasses*: `@dataclass class User:` — fields defined as `name: str`, `age: int = 0`
+*Abstract*: `class IRepository(ABC):` with `@abstractmethod def find_by_id(self, id: int)`
+*Methods*: `def get_user(self, user_id: int) -> User:`, `async def fetch(self) -> List[T]:`
+*Class variables*: `MAX_RETRIES: int = 3` (outside `__init__`)
+*Instance variables*: set in `__init__`: `self.name = name`
+*Key gotcha*: `__init__` params are the constructor signature — list them as "Constructor" not as a method
+
+**Dart / Flutter** (`*.dart`)
+
+*Types*: `class UserBloc extends Bloc<UserEvent, UserState>`, `abstract class IUserRepository`, `mixin LoggerMixin`
+*Widgets*: `class UserWidget extends StatelessWidget` / `StatefulWidget` — note as "widget", not "service"
+*Fields*: `final String name;`, `late UserRepository _repo;`
+*Methods*: `@override Widget build(BuildContext context)`, `Future<User> getUser(String id)`
+
+---
+
+**Record per class as you read** (used in Phase 4.3a):
+
 ```
-File: <path>
-Class: <ClassName>
-  Methods: methodA(params): ReturnType, methodB(): void
-  Properties: propA: string (readonly), propB: number
+Language: Go
+File: internal/user/service.go
+Type: UserService (struct)
+Annotation/Decorator: none
+Fields: db *gorm.DB, logger *zap.Logger
+Methods (from forge_scan_methods_go.txt): GetUser(ctx, id int64) (*User, error), CreateUser(ctx, req CreateUserRequest) (*User, error), DeleteUser(ctx, id int64) error
+Implements: UserRepository (interface)
+Constructor: NewUserService(db *gorm.DB, logger *zap.Logger) *UserService
+```
+
+```
+Language: Kotlin
+File: src/main/kotlin/com/app/user/UserService.kt
+Type: UserService (class)
+Annotation: @Service
+Properties: userRepository: UserRepository (injected), emailSender: EmailSender (injected)
+Methods: findById(id: Long): User?, createUser(req: CreateUserRequest): User, suspend sendWelcomeEmail(userId: Long)
+Extends: none
+Implements: IUserService
 ```
 
 Only record classes from Tier 1 and Tier 2 hub files. Leaf files contribute to the import graph only.
@@ -379,6 +567,8 @@ cat > ~/forge/brain/products/<slug>/codebase/SCAN.json << EOF
   "test_files": $TEST_COUNT,
   "tier1_hubs": $(wc -l < /tmp/forge_scan_tier1.txt),
   "tier2_hubs": $(wc -l < /tmp/forge_scan_tier2.txt),
+  "types_in_inventory": $(wc -l < /tmp/forge_scan_types_all.txt 2>/dev/null || echo 0),
+  "go_methods_in_inventory": $(wc -l < /tmp/forge_scan_methods_go.txt 2>/dev/null || echo 0),
   "role": "<backend|web|mobile|shared>"
 }
 EOF
@@ -511,51 +701,73 @@ Create one file per top-level module directory + one for each Tier 1 hub.
 
 ### 4.3a — classes/<role>-<ClassName>.md format
 
-Create one file per significant class extracted in 3.3a. A class is "significant" if it was found in a Tier 1 or Tier 2 hub file.
+**Driven by `/tmp/forge_scan_types_all.txt`.** For every type in that file whose source file is in `/tmp/forge_scan_tier1.txt` or `/tmp/forge_scan_tier2.txt`, create one class file. Do NOT rely solely on in-context memory — the grep inventory is ground truth.
 
 File path: `~/forge/brain/products/<slug>/codebase/classes/<role>-<ClassName>.md`
 
-The `classes/` directory is what makes the Obsidian graph show method-level and attribute-level nodes. Without these files there are no class nodes to connect to in the graph.
+The `classes/` directory is what makes the Obsidian graph show class-level nodes connected to modules, to each other (via extends/implements), and to the directory structure. Without these files, the graph is a flat list of module nodes.
 
 ```markdown
-# Class: <ClassName>
+# <TypeKind>: <ClassName>
+
+> TypeKind: Class | Interface | Struct | Data Class | Sealed Class | Object | Enum | Trait | Protocol | Abstract Class
 
 **Module:** [[modules/<role>-<module>]]
 **File:** `<relative/path/from/repo/root>`
-**Language:** <language>
-**Type:** <class | interface | abstract class | struct | data class | protocol | type>
+**Language:** <Java | Kotlin | Go | TypeScript | Python | Dart | Rust | ...>
+**Layer:** <controller | service | repository | domain | entity | util | config | widget | bloc>
+**Annotation / Decorator:** `@Service` / `@Injectable()` / `@Entity` / none
 
 ## Purpose
 
-<One-sentence description from the class docstring, comment block above the class, or synthesized from method names>
+<One-sentence description — from the class docstring, comment block above the class, or synthesized from constructor params and method names>
+
+## Constructor / Initialization
+
+| Language | What to write |
+|---|---|
+| Java / Kotlin | `ClassName(Type param1, Type param2)` |
+| Kotlin data class | `ClassName(val param1: Type, var param2: Type)` — constructor IS the property list |
+| Go | `NewTypeName(dep1 *Dep1, dep2 *Dep2) *TypeName` (the `NewX` function, not a constructor keyword) |
+| TypeScript | `constructor(private svc: ServiceType, readonly config: Config)` |
+| Python | `__init__(self, param1: Type, param2: Type = default)` |
+
+`<constructor signature for this class>`
 
 ## Methods
 
+> For **Go**: methods come from `/tmp/forge_scan_methods_go.txt` — grep for `(* <TypeName>)` or `( <TypeName>)` receiver. They are NOT inside the struct definition.
+> For all others: list public/exported methods only.
+
 | Method | Signature | Notes |
 |---|---|---|
-| `<methodName>` | `<methodName>(<paramName>: <Type>): <ReturnType>` | |
-| `constructor` | `constructor(<params>)` | |
+| `<methodName>` | `<methodName>(<params>): <ReturnType>` | async / suspend / override |
 
-> Only list public/exported methods. Omit private helpers unless they are the primary logic of the class.
+## Properties / Fields
 
-## Properties / Attributes
+> For **Kotlin data class**: constructor params are the properties — copy from constructor.
+> For **Go struct**: list fields from inside `type X struct { ... }` block.
+> For **Java**: `private`/`protected` fields from class body.
 
 | Property | Type | Notes |
 |---|---|---|
-| `<propName>` | `<type>` | readonly / required / optional |
+| `<propName>` | `<type>` | readonly / lateinit / inject / json:"..." |
 
 ## Relationships
 
-- **Extends:** [[classes/<role>-<ParentClass>]] *(if applicable)*
-- **Implements:** [[classes/<role>-<InterfaceName>]] *(if applicable)*
+- **Extends:** [[classes/<role>-<ParentClass>]] *(omit line if none)*
+- **Implements:** [[classes/<role>-<InterfaceName>]], [[classes/<role>-<InterfaceName2>]] *(omit if none)*
+- **Embeds (Go):** [[classes/<role>-<EmbeddedStruct>]] *(Go composition — not inheritance)*
+- **Sealed variants (Kotlin):** [[classes/<role>-<Subclass1>]], [[classes/<role>-<Subclass2>]] *(omit if not sealed)*
 - **Used by:** [[modules/<role>-<consumer>]], [[modules/<role>-<consumer2>]]
+- **Depends on:** [[classes/<role>-<Dependency>]] *(classes injected or composed)*
 
 ## Location in Structure
 
 [[structure]] → `<directory/path>/` → [[modules/<role>-<module>]] → `<ClassName>`
 ```
 
-**Skip a class if:** it has 0 public methods (pure data container with no behaviour) AND no other module imports it directly by class name. These are implementation details, not architectural nodes.
+**Skip a class if** it is a pure generated file (e.g. `*Generated.java`, `*_pb2.py`, Kotlin `*Binding` from Android View Binding) or a test-only class. Everything else gets a file — even simple data classes, because they are still graph nodes that other classes reference.
 
 ### 4.3b — structure.md format
 

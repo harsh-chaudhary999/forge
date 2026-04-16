@@ -31,7 +31,7 @@ while IFS= read -r file; do
   echo "=== $file ==="
   grep -n \
     "it(\|test(\|describe(\|def test_\|func Test\|#\[test\]\|@Test\|should\b" \
-    "$file" 2>/dev/null | head -30
+    "$file" 2>/dev/null | head -30 || true
 done < /tmp/forge_scan_test_files.txt > /tmp/forge_scan_test_names.txt
 
 echo "  Test names extracted from $(wc -l < /tmp/forge_scan_test_files.txt) test files"
@@ -51,7 +51,7 @@ grep -rn \
 \|mux\.HandleFunc\|http\.HandleFunc\|e\.GET\|e\.POST\|g\.GET\|g\.POST" \
   "$REPO" \
   --include="*.ts" --include="*.py" --include="*.go" \
-  --include="*.java" --include="*.kt" \
+  --include="*.java" --include="*.kt" --include="*.js" --include="*.jsx" \
   | grep -v node_modules | grep -v dist | grep -v test | grep -v spec \
   2>/dev/null > /tmp/forge_scan_api_routes.txt || true
 

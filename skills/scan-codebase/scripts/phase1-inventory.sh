@@ -65,13 +65,13 @@ find "$REPO" -type f \( \
 | grep -v "\.spec\." \
 | grep -v "\.test\." \
 | eval "cat $SUBMODULE_EXCLUDES" \
-| sort > /tmp/forge_scan_source_files.txt
+| sort > /tmp/forge_scan_source_files.txt || true
 
 find "$REPO" -type f \( \
   -name "*.spec.*" -o -name "*.test.*" -o -name "*_test.*" -o -name "test_*.py" \
 \) \
 | grep -v node_modules | grep -v "\.git/" | grep -v dist \
-| sort > /tmp/forge_scan_test_files.txt
+| sort > /tmp/forge_scan_test_files.txt || true
 
 echo "[1.1] Source files: $(wc -l < /tmp/forge_scan_source_files.txt) | Test files: $(wc -l < /tmp/forge_scan_test_files.txt)"
 
@@ -84,7 +84,7 @@ if [ -f "$REPO/turbo.json" ] || [ -f "$REPO/nx.json" ] || [ -f "$REPO/lerna.json
   echo "  Monorepo detected (turbo/nx/lerna). Packages:"
   find "$REPO" -maxdepth 3 -name "package.json" \
     | grep -v node_modules | grep -v "^$REPO/package.json$" \
-    | xargs dirname | sort | sed 's/^/    /'
+    | xargs dirname | sort | sed 's/^/    /' || true
 else
   echo "  Single-repo"
 fi
@@ -96,7 +96,7 @@ find "$REPO" -maxdepth 3 \( \
   -o -name "index.js" -o -name "main.js" -o -name "server.js" \
   -o -name "main.go" -o -name "main.kt" -o -name "Main.kt" \
   -o -name "main.rs" -o -name "Application.java" \
-\) | grep -v node_modules | grep -v dist | sed 's/^/    /'
+\) | grep -v node_modules | grep -v dist | sed 's/^/    /' || true
 
 # ── 1.3: Import graph ────────────────────────────────────────────────────────
 
@@ -104,31 +104,43 @@ while IFS= read -r file; do
   echo "=== $file ==="
   head -50 "$file" | grep -E \
     "^import |^from |^require\(|^use |^extern crate|^#include|^using " \
-    2>/dev/null
+    2>/dev/null || true
 done < /tmp/forge_scan_source_files.txt > /tmp/forge_scan_imports.txt
 
 echo "[1.3] Import relationships extracted: $(grep -c "^===" /tmp/forge_scan_imports.txt 2>/dev/null || echo 0) files"
 
 # ── 1.4: Hub scoring ─────────────────────────────────────────────────────────
 
-echo "[1.4] Computing hub scores (may take a moment)..."
+SOURCE_COUNT=$(wc -l < /tmp/forge_scan_source_files.txt)
 
-while IFS= read -r file; do
-  basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
-  count=$(grep -rl "$basename_no_ext" "$REPO" \
-    --include="*.ts" --include="*.py" --include="*.go" \
-    --include="*.java" --include="*.kt" \
-    2>/dev/null | grep -v node_modules | grep -v "\.git" | grep -v dist | wc -l)
-  echo "$count $file"
-done < /tmp/forge_scan_source_files.txt \
-| sort -rn > /tmp/forge_scan_hub_scores.txt
+if [ "$SOURCE_COUNT" -gt 800 ]; then
+  echo "[1.4] Hub scoring SKIPPED — $SOURCE_COUNT source files exceeds 800-file threshold (O(n²) too slow)"
+  echo "  Tier files will be empty; Phase 3 will read key modules based on role/naming conventions"
+  > /tmp/forge_scan_hub_scores.txt
+  > /tmp/forge_scan_tier1.txt
+  > /tmp/forge_scan_tier2.txt
+  echo "[1.4] Tier 1 hubs (5+ refs): 0 | Tier 2 hubs (3-4 refs): 0"
+else
+  echo "[1.4] Computing hub scores for $SOURCE_COUNT files (may take a moment)..."
+  set +o pipefail
+  while IFS= read -r file; do
+    basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
+    count=$(grep -rl "$basename_no_ext" "$REPO" \
+      --include="*.ts" --include="*.py" --include="*.go" \
+      --include="*.java" --include="*.kt" \
+      2>/dev/null | grep -v node_modules | grep -v "\.git" | grep -v dist | wc -l)
+    echo "$count $file"
+  done < /tmp/forge_scan_source_files.txt \
+  | sort -rn > /tmp/forge_scan_hub_scores.txt
+  set -o pipefail
 
-awk '$1 >= 5 {print $2}' /tmp/forge_scan_hub_scores.txt > /tmp/forge_scan_tier1.txt
-awk '$1 >= 3 && $1 < 5 {print $2}' /tmp/forge_scan_hub_scores.txt > /tmp/forge_scan_tier2.txt
+  awk '$1 >= 5 {print $2}' /tmp/forge_scan_hub_scores.txt > /tmp/forge_scan_tier1.txt
+  awk '$1 >= 3 && $1 < 5 {print $2}' /tmp/forge_scan_hub_scores.txt > /tmp/forge_scan_tier2.txt
 
-echo "[1.4] Tier 1 hubs (5+ refs): $(wc -l < /tmp/forge_scan_tier1.txt) | Tier 2 hubs (3-4 refs): $(wc -l < /tmp/forge_scan_tier2.txt)"
-echo "[1.4] Top 10 hubs:"
-head -10 /tmp/forge_scan_hub_scores.txt | sed 's/^/  /'
+  echo "[1.4] Tier 1 hubs (5+ refs): $(wc -l < /tmp/forge_scan_tier1.txt) | Tier 2 hubs (3-4 refs): $(wc -l < /tmp/forge_scan_tier2.txt)"
+  echo "[1.4] Top 10 hubs:"
+  head -10 /tmp/forge_scan_hub_scores.txt | sed 's/^/  /'
+fi
 
 # ── 1.5: Language fingerprinting ─────────────────────────────────────────────
 
@@ -352,19 +364,19 @@ fi
 # ── Frontend / HTML / Templates ───────────────────────────────────────────────
 find "$REPO" -type f \( -name "*.html" -o -name "*.htm" \) \
   | grep -v "node_modules\|dist\|build\|\.git\|coverage" \
-  | sort > /tmp/forge_scan_html_files.txt
+  | sort > /tmp/forge_scan_html_files.txt || true
 
 find "$REPO" -type f -name "*.vue" \
   | grep -v "node_modules\|dist" \
-  | sort > /tmp/forge_scan_vue_files.txt
+  | sort > /tmp/forge_scan_vue_files.txt || true
 
 find "$REPO" -type f -name "*.svelte" \
   | grep -v "node_modules\|dist" \
-  | sort > /tmp/forge_scan_svelte_files.txt
+  | sort > /tmp/forge_scan_svelte_files.txt || true
 
 find "$REPO" -type f -name "*.component.html" \
   | grep -v "node_modules\|dist" \
-  | sort > /tmp/forge_scan_angular_templates.txt
+  | sort > /tmp/forge_scan_angular_templates.txt || true
 
 grep -rn "<form\s\+\|<form>" \
   "$REPO" --include="*.html" --include="*.vue" --include="*.svelte" \

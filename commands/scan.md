@@ -80,6 +80,7 @@ Scanning <slug> codebase...
   Phase 2: Hub detection
   Phase 3: Semantic enrichment (targeted reads only)
   Phase 4: Writing brain files
+  Phase 5–5.6: Cross-repo prep + **phase56** auto-wikilinks on `modules/*.md` (multi-repo)
 
 This will take 1-3 minutes per repo. Token budget: <15K per repo.
 ```

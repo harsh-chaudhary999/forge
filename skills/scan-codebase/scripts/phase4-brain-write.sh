@@ -4,8 +4,8 @@
 # Usage: bash /path/to/forge/scripts/phase4-brain-write.sh <REPO_PATH> <BRAIN_CODEBASE_DIR> <ROLE>
 #
 # Prerequisite: phase1-inventory.sh must have been run first.
-# Needs: /tmp/forge_scan_types_all.txt, forge_scan_functions_all.txt,
-#         forge_scan_ui_all.txt, forge_scan_source_files.txt
+# Needs: /tmp/forge_scan_types_all.txt, forge_scan_methods_all.txt,
+#         forge_scan_functions_all.txt, forge_scan_ui_all.txt, forge_scan_source_files.txt
 #
 # What this does:
 #   Generates stub .md brain nodes for EVERY class, function, page, and module
@@ -15,6 +15,7 @@
 #
 # Writes to <BRAIN_CODEBASE_DIR>:
 #   classes/<role>-<ClassName>.md     one per class/interface/enum/struct/trait
+#   methods/<role>-m-<cksum>.md      one per Phase 1.6 method line (full repo — not hub-gated)
 #   functions/<role>-<FuncName>.md    one per exported standalone function
 #   pages/<role>-<FileName>.md        one per HTML/Vue/Svelte/Angular/TSX/JSX file
 #   modules/<role>-<PackageDir>.md    one per unique source directory (scaffold)
@@ -33,7 +34,7 @@ ROLE="${3:?Usage: $0 <repo-path> <brain-codebase-dir> <role>}"
 
 forge_scan_log_start phase4-brain-write "repo=$REPO brain_dir=$BRAIN_DIR role=$ROLE"
 
-for _f in forge_scan_types_all.txt forge_scan_functions_all.txt forge_scan_ui_all.txt forge_scan_source_files.txt; do
+for _f in forge_scan_types_all.txt forge_scan_methods_all.txt forge_scan_functions_all.txt forge_scan_ui_all.txt forge_scan_source_files.txt; do
   if [ ! -s "/tmp/$_f" ]; then
     forge_scan_log_warn "input_missing_or_empty path=/tmp/$_f hint=run_phase1-inventory.sh_first"
   fi
@@ -42,6 +43,7 @@ done
 mkdir -p "$BRAIN_DIR/classes" "$BRAIN_DIR/methods" "$BRAIN_DIR/functions" "$BRAIN_DIR/pages" "$BRAIN_DIR/modules"
 
 CLASSES=0
+METHODS=0
 FUNCTIONS=0
 PAGES=0
 MODULES=0
@@ -138,7 +140,7 @@ _Auto-generated stub — enrich during Phase 3 hub read._
 _What problem does this $KIND solve?_
 
 ## Key Methods
-_See [[methods/]] directory — nodes prefixed \`$ROLE-$CLASS-\`_
+_See [[methods/]] — auto stubs use \`$ROLE-m-<cksum>\` (full inventory); optional hand nodes \`$ROLE-$CLASS-<method>\`._
 
 ## Extends / Implements
 _Fill in during Phase 3 read._
@@ -224,6 +226,70 @@ set -o pipefail
 
 echo "  Written: $FUNCTIONS function nodes"
 forge_scan_log_stat "phase=4.3c functions_written=$FUNCTIONS input_lines=$(wc -l < /tmp/forge_scan_functions_all.txt 2>/dev/null || echo 0)"
+
+# ── 4.3d: Method stubs (FULL inventory — not Tier 1/2 gated) ─────────────────
+echo ""
+if [ "${FORGE_PHASE4_SKIP_METHODS:-}" = "1" ]; then
+  echo "[4.3d] Skipping method nodes (FORGE_PHASE4_SKIP_METHODS=1)"
+else
+  if [ ! -f /tmp/forge_scan_methods_all.txt ]; then
+    echo "[4.3d] Skipping — /tmp/forge_scan_methods_all.txt missing (run phase1-inventory.sh)"
+    forge_scan_log_warn "missing /tmp/forge_scan_methods_all.txt"
+  else
+  echo "[4.3d] Generating method nodes from forge_scan_methods_all.txt (every grep hit)..."
+  echo "  Input: $(wc -l < /tmp/forge_scan_methods_all.txt 2>/dev/null || echo 0) lines"
+  echo "  (Set FORGE_PHASE4_SKIP_METHODS=1 to skip on enormous repos.)"
+
+  set +o pipefail
+  while IFS= read -r line || [ -n "$line" ]; do
+    [ -z "$line" ] && continue
+    parse_grep_line "$line"
+    [ -z "$_FILE" ] && continue
+
+    REL_FILE="${_FILE#$REPO/}"
+    LANG=$(detect_lang "$_FILE")
+    DIR=$(dirname "$REL_FILE")
+    [ "$DIR" = "." ] && DIR="root"
+
+    _M_ID=$(printf '%s' "$line" | cksum | awk '{print $1}')
+    NODE="$BRAIN_DIR/methods/$ROLE-m-$_M_ID.md"
+    if [ -f "$NODE" ]; then
+      SKIPPED=$((SKIPPED + 1))
+      continue
+    fi
+
+    _SIG=$(printf '%s' "$_CONTENT" | head -c 400 | tr '\r\n' '  ')
+    _MOD_SLUG=$(printf '%s' "$DIR" | tr '/' '-' | sed 's/^-//' | sed 's/-$//')
+    [ -z "$_MOD_SLUG" ] && _MOD_SLUG=root
+
+    {
+      printf '%s\n\n' "# Method (inventory)"
+      printf '%s\n' "**Module:** [[modules/$ROLE-$_MOD_SLUG]]"
+      printf '%s\n' "**Class hub:** _See [[classes/]] for types in \`$REL_FILE\` — link the owning class during enrich._"
+      printf '%s\n' "**File:** \`$REL_FILE:$_LINENUM\`"
+      printf '%s\n' "**Language:** $LANG"
+      printf '%s\n\n' "**Stable id:** \`$ROLE-m-$_M_ID\` (cksum of grep line — unique per grep hit)"
+      printf '%s\n' "## Signature (Phase 1 grep)"
+      printf '%s\n' '```text'
+      printf '%s\n' "$_SIG"
+      printf '%s\n\n' '```'
+      printf '%s\n' "## Purpose"
+      printf '%s\n\n' "_Auto-generated from Phase 1.6 — **not** limited to Tier 1 hubs. Enrich by reading this line in context._"
+      printf '%s\n' "## Parameters / return"
+      printf '%s\n\n' "_Fill in during read._"
+      printf '%s\n' "## Calls / data flow"
+      printf '%s\n\n' "_Fill in during read or Phase 5.5._"
+      printf '%s\n' "## Location"
+      printf '%s\n' "**Repo role:** $ROLE | **Directory:** $DIR"
+    } > "$NODE"
+    METHODS=$((METHODS + 1))
+  done < /tmp/forge_scan_methods_all.txt
+  set -o pipefail
+
+  echo "  Written: $METHODS method nodes"
+  forge_scan_log_stat "phase=4.3d methods_written=$METHODS input_lines=$(wc -l < /tmp/forge_scan_methods_all.txt 2>/dev/null || echo 0)"
+  fi
+fi
 
 # ── 4.3e: Pages / UI ─────────────────────────────────────────────────────────
 echo ""
@@ -343,10 +409,10 @@ _Fill in: exported functions, types, constants._
 _Fill in: other modules this one imports from._
 
 ## Calls (cross-repo)
-_Populated during Phase 5.5 cross-repo correlation._
+_Run scripts/phase56-autolink-crossrepo.sh after phase5-cross-repo.sh to auto-append wikilinks (HTML markers FORGE:AUTO_CROSS_REPO_OUT). Optional manual refine in Phase 5.5._
 
 ## Called By (cross-repo)
-_Populated during Phase 5.5 cross-repo correlation._
+_Same script fills incoming edges (FORGE:AUTO_CROSS_REPO_IN). Optional manual refine in Phase 5.5._
 NODEEOF
   MODULES=$((MODULES + 1))
 done < /tmp/forge_scan_dirs.txt
@@ -355,12 +421,13 @@ echo "  Written: $MODULES module scaffold nodes"
 forge_scan_log_stat "phase=4.3b modules_written=$MODULES unique_dirs=$(wc -l < /tmp/forge_scan_dirs.txt 2>/dev/null || echo 0)"
 
 # ── Summary ───────────────────────────────────────────────────────────────────
-TOTAL=$((CLASSES + FUNCTIONS + PAGES + MODULES))
+TOTAL=$((CLASSES + METHODS + FUNCTIONS + PAGES + MODULES))
 echo ""
 echo "════════════════════════════════════════════════════════"
 echo "PHASE 4 AUTO-GENERATION COMPLETE"
 echo "════════════════════════════════════════════════════════"
 echo "  Classes     (classes/):   $CLASSES"
+echo "  Methods     (methods/):   $METHODS  (full Phase 1.6 inventory — use FORGE_PHASE4_SKIP_METHODS=1 to skip)"
 echo "  Functions   (functions/): $FUNCTIONS"
 echo "  Pages       (pages/):     $PAGES"
 echo "  Modules     (modules/):   $MODULES"
@@ -370,7 +437,8 @@ echo "TOTAL NEW NODES WRITTEN: $TOTAL"
 echo "════════════════════════════════════════════════════════"
 echo ""
 echo "Next steps:"
-echo "  1. Phase 3 hub reads — enrich stubs for Tier 1/2 hub files"
-echo "  2. git -C ~/forge/brain add products/<slug>/codebase/"
-echo "  3. git -C ~/forge/brain commit -m 'scan: <slug> codebase brain nodes ($TOTAL nodes)'"
-forge_scan_log_done "classes=$CLASSES functions=$FUNCTIONS pages=$PAGES modules=$MODULES skipped_existing=$SKIPPED total_new=$TOTAL"
+echo "  1. Enrich: Tier 1/2 hub file reads (Phase 3) — OR batch-read all of forge_scan_source_files.txt for full prose"
+echo "  2. Cross-repo: Phase 5.5 correlation + patch module ## Calls / ## Called By"
+echo "  3. git -C ~/forge/brain add products/<slug>/codebase/"
+echo "  4. git -C ~/forge/brain commit -m 'scan: <slug> codebase brain nodes ($TOTAL nodes)'"
+forge_scan_log_done "classes=$CLASSES methods=$METHODS functions=$FUNCTIONS pages=$PAGES modules=$MODULES skipped_existing=$SKIPPED total_new=$TOTAL"

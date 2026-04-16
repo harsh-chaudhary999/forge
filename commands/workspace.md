@@ -273,6 +273,8 @@ cp "$BT/"{app.json,graph.json,workspace.json,core-plugins.json,appearance.json} 
 **REQUIRED SKILL:** Invoke `scan-codebase` skill for each registered repo automatically.
 Do NOT wait for the user to ask — the codebase map is needed for planning.
 
+**Multi-repo HARD-GATE (first pass):** When all repos are scanned and `phase5-cross-repo.sh` has been run with every `repo:` path, immediately run **`phase56-autolink-crossrepo.sh`** against `~/forge/brain/products/<slug>/codebase` so module `## Calls (cross-repo)` / `## Called By` are filled from `/tmp` artifacts — no deferred “Phase 5.5 manual patch” unless the user wants refinements.
+
 Run silently (no verbose output), announce progress briefly:
 
 ```
@@ -296,6 +298,7 @@ After scan completes, show final confirmation:
 
    Infrastructure: not configured (optional — add with /workspace add-infra <slug>)
    Codebase scan: ✅ done (re-run any time: /scan <slug>)
+   Cross-repo module links: ✅ phase56-autolink-crossrepo (if multi-repo)
 
    Ready to start planning? Run: /intake
 ```

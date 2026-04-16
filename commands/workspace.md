@@ -184,13 +184,17 @@ Then confirm and auto-trigger codebase scan:
 
 ### Step 5a — Bootstrap brain as Obsidian vault (first time only)
 
-Check if the brain is already an Obsidian vault:
+Obsidian expects a **complete** `.obsidian/` folder, not only `app.json` + `graph.json`. Missing `workspace.json`, `core-plugins.json`, or `appearance.json` often makes “Open folder as vault” fail, show a blank window, or refuse to treat the folder as a vault. The Forge `brain-template/.obsidian/` ships all five files; **Sync is off** in `core-plugins.json` so the brain is not mistaken for a Sync-linked vault.
+
+Check whether the vault skeleton is already present (all required files):
 
 ```bash
-ls ~/forge/brain/.obsidian/app.json 2>/dev/null
+for f in app.json graph.json workspace.json core-plugins.json appearance.json; do
+  [ -f "$HOME/forge/brain/.obsidian/$f" ] || echo "missing: $f"
+done
 ```
 
-If the file does **not** exist, run the full bootstrap. This handles both brand-new systems (no git repo yet) and existing brains that just lack Obsidian config.
+If **any** of those files is missing, run the full bootstrap below (copy the whole template set). This upgrades older brains that only had `app.json` + `graph.json`.
 
 **Step 5a.1 — Ensure brain is a git repo:**
 
@@ -215,8 +219,12 @@ FORGE_DIR=$(find ~/.claude/plugins ~/.cursor/plugins ~/.config/gemini/plugins \
 [ -z "$FORGE_DIR" ] && FORGE_DIR=$(find ~/forge ~/Videos/forge -maxdepth 1 -name "brain-template" -type d 2>/dev/null | head -1 | sed 's|/brain-template||')
 
 mkdir -p ~/forge/brain/.obsidian
-cp "$FORGE_DIR/brain-template/.obsidian/app.json"   ~/forge/brain/.obsidian/app.json
-cp "$FORGE_DIR/brain-template/.obsidian/graph.json" ~/forge/brain/.obsidian/graph.json
+OBS_TPL="$FORGE_DIR/brain-template/.obsidian"
+cp "$OBS_TPL/app.json"            ~/forge/brain/.obsidian/app.json
+cp "$OBS_TPL/graph.json"         ~/forge/brain/.obsidian/graph.json
+cp "$OBS_TPL/workspace.json"     ~/forge/brain/.obsidian/workspace.json
+cp "$OBS_TPL/core-plugins.json"  ~/forge/brain/.obsidian/core-plugins.json
+cp "$OBS_TPL/appearance.json"    ~/forge/brain/.obsidian/appearance.json
 ```
 
 **Step 5a.3 — Write README.md with wikilinks (hub for graph):**
@@ -236,7 +244,9 @@ git -C ~/forge/brain commit -m "chore: initialize brain as Obsidian vault"
    Open in Obsidian: File → Open vault → ~/forge/brain
 ```
 
-If `.obsidian/app.json` already exists, skip this step silently.
+If **all** of `app.json`, `graph.json`, `workspace.json`, `core-plugins.json`, and `appearance.json` already exist under `~/forge/brain/.obsidian/`, skip Step 5a.2 silently (still run 5a.1 / 5a.3 / 5a.4 as needed for git and README).
+
+**Troubleshooting (vault still won’t open):** Fully quit Obsidian and open **exactly** `~/forge/brain` (the folder containing `README.md`, `products/`, and `.obsidian/` — not `products/<slug>`). Flatpak/Snap sandboxes may block paths under `~/forge/`; grant filesystem access (Flatseal) or use AppImage/deb, or on Windows + WSL use `\\wsl$\…\forge\brain`.
 
 ---
 

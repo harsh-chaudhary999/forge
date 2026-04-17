@@ -1,3 +1,5 @@
+"""CLI and ``run_scan`` orchestrator; sets ``FORGE_SCAN_TMP`` / ``FORGE_SCAN_RUN_DIR``."""
+
 from __future__ import annotations
 
 import argparse
@@ -71,7 +73,7 @@ def run_scan(
     }
 
     if product_md is not None and product_md.is_file():
-        validate_roles.run_validate_product_roles(product_md)
+        validate_roles.run_validate_roles(product_md)
 
     for i, (role, path) in enumerate(repos):
         phase1.run_phase1(path, run_dir)

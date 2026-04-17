@@ -10,7 +10,7 @@ def run_phase35(repo: Path, scan_tmp: Path, append_routes: bool) -> None:
     repo = repo.resolve()
     scan_tmp.mkdir(parents=True, exist_ok=True)
     slug = repo.name
-    log.log_start("phase35-extract", f"repo={repo} append_routes={'append' if append_routes else 'no'}")
+    log.log_start("phase35", f"repo={repo} append_routes={'append' if append_routes else 'no'}")
 
     print("════════════════════════════════════════════════════════")
     print("FORGE SCAN — Phase 3.4-3.5: Test Names + API Routes")

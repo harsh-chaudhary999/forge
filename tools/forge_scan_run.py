@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run Forge scan-codebase phases in order with an isolated FORGE_SCAN_TMP.
 
-Delegates to the Python implementation in ``tools/scan_forge`` (no bash phase scripts).
+Delegates to ``tools/scan_forge`` (see ``scan_forge.cli:run_scan``).
 
 Example:
 

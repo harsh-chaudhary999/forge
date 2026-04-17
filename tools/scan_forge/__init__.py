@@ -1,4 +1,9 @@
-"""Forge scan-codebase pipeline — Python implementation (no bash phase scripts)."""
+"""Forge scan-codebase pipeline — Python package under ``tools/scan_forge``.
+
+Orchestrate via ``python3 tools/forge_scan_run.py`` or ``PYTHONPATH=tools python3 -m scan_forge``.
+"""
+
+from __future__ import annotations
 
 __all__ = ["__version__"]
 

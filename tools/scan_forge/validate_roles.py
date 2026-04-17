@@ -6,13 +6,13 @@ from pathlib import Path
 from . import log
 
 
-def run_validate_product_roles(product_md: Path) -> None:
+def run_validate_roles(product_md: Path) -> None:
     product_md = product_md.resolve()
     if not product_md.is_file():
-        raise SystemExit(f"validate-product-roles: file not found: {product_md}")
+        raise SystemExit(f"validate-roles: file not found: {product_md}")
 
-    os.environ["FORGE_SCAN_SCRIPT_ID"] = "validate-product-roles"
-    log.log_start("validate-product-roles", f"product={product_md}")
+    os.environ["FORGE_SCAN_SCRIPT_ID"] = "validate-roles"
+    log.log_start("validate-roles", f"product={product_md}")
 
     mismatches = 0
     incomplete = 0
@@ -48,7 +48,7 @@ def run_validate_product_roles(product_md: Path) -> None:
                 "hint=rename_folder_or_set_role_to_match_basename_for_phase4_phase56",
             )
             print(
-                f"validate-product-roles: WARN — role '{pending_role}' ≠ repo basename '{base}' (repo: {pending_repo})",
+                f"validate-roles: WARN — role '{pending_role}' ≠ repo basename '{base}' (repo: {pending_repo})",
                 file=__import__("sys").stderr,
             )
             mismatches += 1
@@ -59,7 +59,7 @@ def run_validate_product_roles(product_md: Path) -> None:
         nonlocal pending_repo, pending_role, incomplete
         if pending_repo and not pending_role:
             print(
-                f"validate-product-roles: WARN — project has repo but no role before next heading: {pending_repo}",
+                f"validate-roles: WARN — project has repo but no role before next heading: {pending_repo}",
                 file=__import__("sys").stderr,
             )
             log.log_warn(f"incomplete_project_block repo={pending_repo} missing_role_line")
@@ -94,10 +94,10 @@ def run_validate_product_roles(product_md: Path) -> None:
     new_project_block()
 
     if mismatches == 0 and incomplete == 0:
-        log.log_stat("phase=validate-product-roles mismatches=0 incomplete=0")
+        log.log_stat("phase=validate-roles mismatches=0 incomplete=0")
         log.log_done("ok")
     else:
-        log.log_stat(f"phase=validate-product-roles mismatches={mismatches} incomplete={incomplete}")
+        log.log_stat(f"phase=validate-roles mismatches={mismatches} incomplete={incomplete}")
         log.log_done(f"mismatches={mismatches} incomplete={incomplete}")
         if os.environ.get("FORGE_VALIDATE_PRODUCT_STRICT") == "1" and mismatches > 0:
             raise SystemExit(1)

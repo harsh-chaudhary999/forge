@@ -31,7 +31,7 @@ def _append_repo_lines(repo: Path, pattern: str, includes: list[str], out: Path,
 
 def run_phase5(repos: list[Path], scan_tmp: Path) -> None:
     scan_tmp.mkdir(parents=True, exist_ok=True)
-    log.log_start("phase5-cross-repo", f"repo_count={len(repos)} repos={';'.join(str(r) for r in repos)}")
+    log.log_start("phase5", f"repo_count={len(repos)} repos={';'.join(str(r) for r in repos)}")
 
     print("════════════════════════════════════════════════════════")
     print("FORGE SCAN — Phase 5: Cross-Repo Relationship Scanning")

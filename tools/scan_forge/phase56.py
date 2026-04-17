@@ -65,7 +65,7 @@ def _parse_route_line(ln: str) -> tuple[str, str, str, str] | None:
 def run_phase56(brain_parent: Path, scan_tmp: Path) -> None:
     brain_parent = brain_parent.resolve()
     scan_tmp.mkdir(parents=True, exist_ok=True)
-    log.log_start("phase56-autolink-crossrepo", f"brain_parent={brain_parent}")
+    log.log_start("phase56", f"brain_parent={brain_parent}")
 
     calls = scan_tmp / "forge_scan_all_callsites.txt"
     routes = scan_tmp / "forge_scan_api_routes.txt"

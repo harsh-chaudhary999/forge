@@ -51,7 +51,7 @@ def run_phase4(repo: Path, brain_dir: Path, role: str, scan_tmp: Path) -> None:
     repo = repo.resolve()
     brain_dir = brain_dir.resolve()
     scan_tmp.mkdir(parents=True, exist_ok=True)
-    log.log_start("phase4-brain-write", f"repo={repo} brain_dir={brain_dir} role={role}")
+    log.log_start("phase4", f"repo={repo} brain_dir={brain_dir} role={role}")
 
     for name in (
         "forge_scan_types_all.txt",

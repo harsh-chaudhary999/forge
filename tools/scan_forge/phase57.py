@@ -59,8 +59,8 @@ def _wikilinks_in_file(path: Path) -> list[tuple[int, str]]:
 
 def run_phase57(parent: Path, write_report: bool) -> None:
     parent = parent.resolve()
-    os.environ["FORGE_SCAN_SCRIPT_ID"] = "phase57-validate-brain-wikilinks"
-    log.log_start("phase57-validate-brain-wikilinks", f"brain_parent={parent} write_report={int(write_report)}")
+    os.environ["FORGE_SCAN_SCRIPT_ID"] = "phase57"
+    log.log_start("phase57", f"brain_parent={parent} write_report={int(write_report)}")
 
     idx = _collect_md_index(parent)
     if not idx:

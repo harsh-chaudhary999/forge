@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Smoke-test scan_forge on bundled fixtures (replaces verify_scan_smoke.sh)."""
+"""Smoke-test scan_forge on bundled fixtures."""
 from __future__ import annotations
 
 import json
@@ -7,6 +7,11 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parents[2]
+_TOOLS = _ROOT / "tools"
+if str(_TOOLS) not in sys.path:
+    sys.path.insert(0, str(_TOOLS))
 
 
 def main() -> int:

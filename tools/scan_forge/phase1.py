@@ -25,7 +25,7 @@ def _filter_lines(lines: list[str], drop_res: list[re.Pattern[str]]) -> list[str
 
 
 def run_phase1(repo: Path, scan_tmp: Path) -> None:
-    log.log_start("phase1-inventory", f"repo={repo}")
+    log.log_start("phase1", f"repo={repo}")
     repo = repo.resolve()
     scan_tmp.mkdir(parents=True, exist_ok=True)
 

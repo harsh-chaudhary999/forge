@@ -4,10 +4,10 @@
 # Usage: bash /path/to/forge/skills/scan-codebase/scripts/phase5-cross-repo.sh <repo1> [repo2] [repo3] ...
 #
 # Prerequisite: phase35-extract.sh must have been run on every repo that defines HTTP routes
-#               (aggregate /tmp/forge_scan_api_routes.txt — first repo without "append",
+#               (aggregate FORGE_SCAN_TMP/forge_scan_api_routes.txt — first repo without "append",
 #                remaining repos with "append". Otherwise only the LAST repo's routes remain.)
 #
-# Writes to /tmp:
+# Writes to FORGE_SCAN_TMP (default /tmp; see _forge-scan-paths.sh):
 #   forge_scan_js_calls.txt         TS/JS HTTP call sites
 #   forge_scan_java_calls.txt       Java HTTP call sites
 #   forge_scan_kotlin_calls.txt     Kotlin HTTP call sites
@@ -33,6 +33,8 @@ set -euo pipefail
 _fs_scripts=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck disable=SC1091
 . "$_fs_scripts/_forge-scan-log.sh"
+# shellcheck disable=SC1091
+. "$_fs_scripts/_forge-scan-paths.sh"
 
 FORGE_SCAN_SCRIPT_ID=phase5-cross-repo
 if [ "$#" -lt 1 ]; then
@@ -50,15 +52,15 @@ echo "Repos: ${REPOS[*]}"
 echo "════════════════════════════════════════════════════════"
 
 # Clear output files
-> /tmp/forge_scan_js_calls.txt
-> /tmp/forge_scan_java_calls.txt
-> /tmp/forge_scan_kotlin_calls.txt
-> /tmp/forge_scan_python_calls.txt
-> /tmp/forge_scan_go_calls.txt
-> /tmp/forge_scan_dart_calls.txt
-> /tmp/forge_scan_all_types.txt
-> /tmp/forge_scan_all_env_vars.txt
-> /tmp/forge_scan_dynamic_urls.txt
+> ${FORGE_SCAN_TMP}/forge_scan_js_calls.txt
+> ${FORGE_SCAN_TMP}/forge_scan_java_calls.txt
+> ${FORGE_SCAN_TMP}/forge_scan_kotlin_calls.txt
+> ${FORGE_SCAN_TMP}/forge_scan_python_calls.txt
+> ${FORGE_SCAN_TMP}/forge_scan_go_calls.txt
+> ${FORGE_SCAN_TMP}/forge_scan_dart_calls.txt
+> ${FORGE_SCAN_TMP}/forge_scan_all_types.txt
+> ${FORGE_SCAN_TMP}/forge_scan_all_env_vars.txt
+> ${FORGE_SCAN_TMP}/forge_scan_dynamic_urls.txt
 
 # ── 5.1: API call detection ───────────────────────────────────────────────────
 echo ""
@@ -75,7 +77,7 @@ for repo in "${REPOS[@]}"; do
     | grep -v node_modules \
     | grep -Ev '/(test|tests|__tests__|e2e|spec)/|\.test\.|\.spec\.|/testing/' \
     | sed "s|$repo/||" | sed "s|^|$repo_name\t|" \
-    2>/dev/null >> /tmp/forge_scan_js_calls.txt || true
+    2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_js_calls.txt || true
 
   # Java (RestTemplate, WebClient, OkHttp, HttpClient, Feign)
   grep -rn \
@@ -83,7 +85,7 @@ for repo in "${REPOS[@]}"; do
     "$repo" --include="*.java" \
     | grep -v test | grep -v Test \
     | sed "s|$repo/||" | sed "s|^|$repo_name\t|" \
-    2>/dev/null >> /tmp/forge_scan_java_calls.txt || true
+    2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_java_calls.txt || true
 
   # Feign client annotations
   grep -rn \
@@ -91,7 +93,7 @@ for repo in "${REPOS[@]}"; do
     "$repo" --include="*.java" \
     | grep -i "feign\|client\|Client" \
     | sed "s|$repo/||" | sed "s|^|$repo_name/feign\t|" \
-    2>/dev/null >> /tmp/forge_scan_java_calls.txt || true
+    2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_java_calls.txt || true
 
   # Kotlin (Ktor, Fuel, Retrofit)
   grep -rn \
@@ -99,7 +101,7 @@ for repo in "${REPOS[@]}"; do
     "$repo" --include="*.kt" \
     | grep -v test | grep -v Test \
     | sed "s|$repo/||" | sed "s|^|$repo_name\t|" \
-    2>/dev/null >> /tmp/forge_scan_kotlin_calls.txt || true
+    2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_kotlin_calls.txt || true
 
   # Retrofit annotations on Kotlin interfaces
   grep -rn \
@@ -107,7 +109,7 @@ for repo in "${REPOS[@]}"; do
     "$repo" --include="*.kt" \
     | grep -v test \
     | sed "s|$repo/||" | sed "s|^|$repo_name/retrofit\t|" \
-    2>/dev/null >> /tmp/forge_scan_kotlin_calls.txt || true
+    2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_kotlin_calls.txt || true
 
   # Python (requests, httpx, aiohttp)
   grep -rn \
@@ -115,7 +117,7 @@ for repo in "${REPOS[@]}"; do
     "$repo" --include="*.py" \
     | grep -v test | grep -v "_test" \
     | sed "s|$repo/||" | sed "s|^|$repo_name\t|" \
-    2>/dev/null >> /tmp/forge_scan_python_calls.txt || true
+    2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_python_calls.txt || true
 
   # Go (net/http, resty)
   grep -rn \
@@ -123,7 +125,7 @@ for repo in "${REPOS[@]}"; do
     "$repo" --include="*.go" \
     | grep -v "_test.go" \
     | sed "s|$repo/||" | sed "s|^|$repo_name\t|" \
-    2>/dev/null >> /tmp/forge_scan_go_calls.txt || true
+    2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_go_calls.txt || true
 
   # Dart / Flutter (Dio, http package)
   grep -rn \
@@ -131,22 +133,22 @@ for repo in "${REPOS[@]}"; do
     "$repo" --include="*.dart" \
     | grep -v test \
     | sed "s|$repo/||" | sed "s|^|$repo_name\t|" \
-    2>/dev/null >> /tmp/forge_scan_dart_calls.txt || true
+    2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_dart_calls.txt || true
 done
 
 cat \
-  /tmp/forge_scan_js_calls.txt \
-  /tmp/forge_scan_java_calls.txt \
-  /tmp/forge_scan_kotlin_calls.txt \
-  /tmp/forge_scan_python_calls.txt \
-  /tmp/forge_scan_go_calls.txt \
-  /tmp/forge_scan_dart_calls.txt \
-  > /tmp/forge_scan_all_callsites.txt
+  ${FORGE_SCAN_TMP}/forge_scan_js_calls.txt \
+  ${FORGE_SCAN_TMP}/forge_scan_java_calls.txt \
+  ${FORGE_SCAN_TMP}/forge_scan_kotlin_calls.txt \
+  ${FORGE_SCAN_TMP}/forge_scan_python_calls.txt \
+  ${FORGE_SCAN_TMP}/forge_scan_go_calls.txt \
+  ${FORGE_SCAN_TMP}/forge_scan_dart_calls.txt \
+  > ${FORGE_SCAN_TMP}/forge_scan_all_callsites.txt
 
-echo "  Total call sites: $(wc -l < /tmp/forge_scan_all_callsites.txt)"
-echo "    TS/JS: $(wc -l < /tmp/forge_scan_js_calls.txt) | Java: $(wc -l < /tmp/forge_scan_java_calls.txt) | Kotlin: $(wc -l < /tmp/forge_scan_kotlin_calls.txt)"
-echo "    Python: $(wc -l < /tmp/forge_scan_python_calls.txt) | Go: $(wc -l < /tmp/forge_scan_go_calls.txt) | Dart: $(wc -l < /tmp/forge_scan_dart_calls.txt)"
-forge_scan_log_stat "phase=5.1 total_callsites=$(wc -l < /tmp/forge_scan_all_callsites.txt) js=$(wc -l < /tmp/forge_scan_js_calls.txt) java=$(wc -l < /tmp/forge_scan_java_calls.txt) kotlin=$(wc -l < /tmp/forge_scan_kotlin_calls.txt) python=$(wc -l < /tmp/forge_scan_python_calls.txt) go=$(wc -l < /tmp/forge_scan_go_calls.txt) dart=$(wc -l < /tmp/forge_scan_dart_calls.txt)"
+echo "  Total call sites: $(wc -l < ${FORGE_SCAN_TMP}/forge_scan_all_callsites.txt)"
+echo "    TS/JS: $(wc -l < ${FORGE_SCAN_TMP}/forge_scan_js_calls.txt) | Java: $(wc -l < ${FORGE_SCAN_TMP}/forge_scan_java_calls.txt) | Kotlin: $(wc -l < ${FORGE_SCAN_TMP}/forge_scan_kotlin_calls.txt)"
+echo "    Python: $(wc -l < ${FORGE_SCAN_TMP}/forge_scan_python_calls.txt) | Go: $(wc -l < ${FORGE_SCAN_TMP}/forge_scan_go_calls.txt) | Dart: $(wc -l < ${FORGE_SCAN_TMP}/forge_scan_dart_calls.txt)"
+forge_scan_log_stat "phase=5.1 total_callsites=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_all_callsites.txt) js=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_js_calls.txt) java=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_java_calls.txt) kotlin=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_kotlin_calls.txt) python=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_python_calls.txt) go=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_go_calls.txt) dart=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_dart_calls.txt)"
 
 # ── 5.2: Shared type detection ────────────────────────────────────────────────
 echo ""
@@ -158,14 +160,14 @@ for repo in "${REPOS[@]}"; do
     "$repo" --include="*.ts" \
     | sed 's/^[0-9]*://' \
     | grep -v node_modules \
-    2>/dev/null >> /tmp/forge_scan_all_types.txt || true
+    2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_all_types.txt || true
 done
 
-echo "  Total type declarations: $(wc -l < /tmp/forge_scan_all_types.txt)"
+echo "  Total type declarations: $(wc -l < ${FORGE_SCAN_TMP}/forge_scan_all_types.txt)"
 echo "  Types appearing in 2+ repos (potential shared contracts):"
-sort /tmp/forge_scan_all_types.txt | uniq -d | sed 's/^/    /'
-_dup_type_lines=$(sort /tmp/forge_scan_all_types.txt | uniq -d | wc -l)
-forge_scan_log_stat "phase=5.2 type_declarations=$(wc -l < /tmp/forge_scan_all_types.txt) duplicate_type_lines=${_dup_type_lines:-0}"
+sort ${FORGE_SCAN_TMP}/forge_scan_all_types.txt | uniq -d | sed 's/^/    /'
+_dup_type_lines=$(sort ${FORGE_SCAN_TMP}/forge_scan_all_types.txt | uniq -d | wc -l)
+forge_scan_log_stat "phase=5.2 type_declarations=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_all_types.txt) duplicate_type_lines=${_dup_type_lines:-0}"
 
 # ── 5.3: Environment variable cross-reference ─────────────────────────────────
 echo ""
@@ -180,15 +182,15 @@ for repo in "${REPOS[@]}"; do
     --include="*.go" --include="*.java" --include="*.kt" \
     | grep -v node_modules | grep -v test \
     | sed "s|$repo/||" | sed "s|^|$repo_name\t|" \
-    2>/dev/null >> /tmp/forge_scan_all_env_vars.txt || true
+    2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_all_env_vars.txt || true
 done
 
-echo "  Env var references: $(wc -l < /tmp/forge_scan_all_env_vars.txt)"
+echo "  Env var references: $(wc -l < ${FORGE_SCAN_TMP}/forge_scan_all_env_vars.txt)"
 echo "  Distinct variable names:"
-{ grep -oE "process\.env\.[A-Z_]+" /tmp/forge_scan_all_env_vars.txt 2>/dev/null || true; } \
+{ grep -oE "process\.env\.[A-Z_]+" ${FORGE_SCAN_TMP}/forge_scan_all_env_vars.txt 2>/dev/null || true; } \
   | sed 's/process\.env\.//' | sort | uniq -c | sort -rn | sed 's/^/    /'
-_process_env_names=$( { grep -oE "process\.env\.[A-Z_]+" /tmp/forge_scan_all_env_vars.txt 2>/dev/null || true; } | sort -u | wc -l)
-forge_scan_log_stat "phase=5.3 env_var_lines=$(wc -l < /tmp/forge_scan_all_env_vars.txt) distinct_process_env_keys=${_process_env_names:-0}"
+_process_env_names=$( { grep -oE "process\.env\.[A-Z_]+" ${FORGE_SCAN_TMP}/forge_scan_all_env_vars.txt 2>/dev/null || true; } | sort -u | wc -l)
+forge_scan_log_stat "phase=5.3 env_var_lines=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_all_env_vars.txt) distinct_process_env_keys=${_process_env_names:-0}"
 
 # ── 5.4: Event/message bus cross-reference ────────────────────────────────────
 echo ""
@@ -226,60 +228,60 @@ echo "[5.5 prep] Extracting URL path strings from call sites..."
 
 # TS/JS string literal URLs (from matched call-site lines)
 grep -oE "(fetch|axios\.[a-zA-Z]+|got\.[a-zA-Z]+|ky\.[a-zA-Z]+|\$fetch|useFetch|ofetch)\(['\`]([/][^'\`\"?# ]+)" \
-  /tmp/forge_scan_js_calls.txt \
+  ${FORGE_SCAN_TMP}/forge_scan_js_calls.txt \
   | grep -oE "['\`][/][^'\`\"?# ]+" | tr -d "'\`\"" \
-  2>/dev/null > /tmp/forge_scan_url_strings.txt || true
+  2>/dev/null > ${FORGE_SCAN_TMP}/forge_scan_url_strings.txt || true
 
 # TS/JS double-quoted paths on same lines
 grep -oE "(fetch|axios\.[a-zA-Z]+|got\.[a-zA-Z]+|ky\.[a-zA-Z]+|\$fetch|useFetch|ofetch)\(\"(/[^\"?# ]+)\"" \
-  /tmp/forge_scan_js_calls.txt \
+  ${FORGE_SCAN_TMP}/forge_scan_js_calls.txt \
   | grep -oE '"/[^"]+"' | tr -d '"' \
-  2>/dev/null >> /tmp/forge_scan_url_strings.txt || true
+  2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_url_strings.txt || true
 
 # Broader harvest: quoted /api… /vN… /graphql… /rest… path literals (whole repo; ERE-only, no PCRE)
 _inc=(--include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx")
 for _hr in "${REPOS[@]}"; do
   grep -rhoE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
-    '"(/api[^"#?]{1,240})"' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '"' >> /tmp/forge_scan_url_strings.txt || true
+    '"(/api[^"#?]{1,240})"' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '"' >> ${FORGE_SCAN_TMP}/forge_scan_url_strings.txt || true
   grep -rhoE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
-    "'(/api[^'#?]{1,240})'" "$_hr" "${_inc[@]}" 2>/dev/null | sed "s/^'//;s/'$//" >> /tmp/forge_scan_url_strings.txt || true
+    "'(/api[^'#?]{1,240})'" "$_hr" "${_inc[@]}" 2>/dev/null | sed "s/^'//;s/'$//" >> ${FORGE_SCAN_TMP}/forge_scan_url_strings.txt || true
   grep -rhoE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
-    '\`(/api[^\`#?]{1,240})\`' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '\`' >> /tmp/forge_scan_url_strings.txt || true
+    '\`(/api[^\`#?]{1,240})\`' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '\`' >> ${FORGE_SCAN_TMP}/forge_scan_url_strings.txt || true
   grep -rhoE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
-    '"(/v[0-9]+[^"#?]{1,240})"' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '"' >> /tmp/forge_scan_url_strings.txt || true
+    '"(/v[0-9]+[^"#?]{1,240})"' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '"' >> ${FORGE_SCAN_TMP}/forge_scan_url_strings.txt || true
   grep -rhoE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
-    "'(/v[0-9]+[^'#?]{1,240})'" "$_hr" "${_inc[@]}" 2>/dev/null | sed "s/^'//;s/'$//" >> /tmp/forge_scan_url_strings.txt || true
+    "'(/v[0-9]+[^'#?]{1,240})'" "$_hr" "${_inc[@]}" 2>/dev/null | sed "s/^'//;s/'$//" >> ${FORGE_SCAN_TMP}/forge_scan_url_strings.txt || true
   grep -rhoE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
-    '\`(/v[0-9]+[^\`#?]{1,240})\`' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '\`' >> /tmp/forge_scan_url_strings.txt || true
+    '\`(/v[0-9]+[^\`#?]{1,240})\`' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '\`' >> ${FORGE_SCAN_TMP}/forge_scan_url_strings.txt || true
   grep -rhoE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
-    '"(/graphql[^"#?]{1,240})"' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '"' >> /tmp/forge_scan_url_strings.txt || true
+    '"(/graphql[^"#?]{1,240})"' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '"' >> ${FORGE_SCAN_TMP}/forge_scan_url_strings.txt || true
   grep -rhoE --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=build \
-    '"(/rest[^"#?]{1,240})"' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '"' >> /tmp/forge_scan_url_strings.txt || true
+    '"(/rest[^"#?]{1,240})"' "$_hr" "${_inc[@]}" 2>/dev/null | tr -d '"' >> ${FORGE_SCAN_TMP}/forge_scan_url_strings.txt || true
 done
 
 # Java URL literals
-grep -oE '"(/[^"?# ]+)"' /tmp/forge_scan_java_calls.txt \
+grep -oE '"(/[^"?# ]+)"' ${FORGE_SCAN_TMP}/forge_scan_java_calls.txt \
   | tr -d '"' \
-  2>/dev/null >> /tmp/forge_scan_url_strings.txt || true
+  2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_url_strings.txt || true
 
 # Feign / Spring MVC mapping annotations on Java (was incorrectly reading kotlin_calls)
-grep -oE '@[A-Z][a-z]+Mapping\("([^"]+)"' /tmp/forge_scan_java_calls.txt \
+grep -oE '@[A-Z][a-z]+Mapping\("([^"]+)"' ${FORGE_SCAN_TMP}/forge_scan_java_calls.txt \
   | grep -oE '"[^"]+"' | tr -d '"' \
-  2>/dev/null >> /tmp/forge_scan_url_strings.txt || true
+  2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_url_strings.txt || true
 
 # Retrofit / Ktor path strings from Kotlin call dump
-grep -oE '@[A-Z][a-z]+Mapping\("([^"]+)"' /tmp/forge_scan_kotlin_calls.txt \
+grep -oE '@[A-Z][a-z]+Mapping\("([^"]+)"' ${FORGE_SCAN_TMP}/forge_scan_kotlin_calls.txt \
   | grep -oE '"[^"]+"' | tr -d '"' \
-  2>/dev/null >> /tmp/forge_scan_url_strings.txt || true
+  2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_url_strings.txt || true
 
 # Python requests string literals
 grep -oE "(requests|httpx)\.[a-z]+\(['\"]([/][^'\"?# ]+)" \
-  /tmp/forge_scan_python_calls.txt \
+  ${FORGE_SCAN_TMP}/forge_scan_python_calls.txt \
   | grep -oE "['\"][/][^'\"?# ]+" | tr -d "'\"" \
-  2>/dev/null >> /tmp/forge_scan_url_strings.txt || true
+  2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_url_strings.txt || true
 
-sort -u /tmp/forge_scan_url_strings.txt > /tmp/forge_scan_fe_urls.txt
-echo "  Unique URL paths extracted: $(wc -l < /tmp/forge_scan_fe_urls.txt)"
+sort -u ${FORGE_SCAN_TMP}/forge_scan_url_strings.txt > ${FORGE_SCAN_TMP}/forge_scan_fe_urls.txt
+echo "  Unique URL paths extracted: $(wc -l < ${FORGE_SCAN_TMP}/forge_scan_fe_urls.txt)"
 
 # Dynamic URLs (template literals / variable concatenation) — flag for manual review
 for repo in "${REPOS[@]}"; do
@@ -292,7 +294,7 @@ for repo in "${REPOS[@]}"; do
     | grep -v node_modules \
     | grep -Ev '/(test|tests|__tests__|e2e|spec)/|\.test\.|\.spec\.|/testing/' \
     | sed "s|$repo/||" | sed "s|^|$repo_name\t|" \
-    2>/dev/null >> /tmp/forge_scan_dynamic_urls.txt || true
+    2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_dynamic_urls.txt || true
 
   # Variable concatenation
   grep -rn \
@@ -302,28 +304,28 @@ for repo in "${REPOS[@]}"; do
     | grep -v node_modules \
     | grep -Ev '/(test|tests|__tests__|e2e|spec)/|\.test\.|\.spec\.|/testing/' \
     | sed "s|$repo/||" | sed "s|^|$repo_name\t|" \
-    2>/dev/null >> /tmp/forge_scan_dynamic_urls.txt || true
+    2>/dev/null >> ${FORGE_SCAN_TMP}/forge_scan_dynamic_urls.txt || true
 done
 
-if [ -s /tmp/forge_scan_dynamic_urls.txt ]; then
+if [ -s ${FORGE_SCAN_TMP}/forge_scan_dynamic_urls.txt ]; then
   echo ""
   echo "  ⚠  Dynamic URLs detected (template literals / variable concatenation):"
-  echo "     $(wc -l < /tmp/forge_scan_dynamic_urls.txt) call sites — NOT extractable by grep"
+  echo "     $(wc -l < ${FORGE_SCAN_TMP}/forge_scan_dynamic_urls.txt) call sites — NOT extractable by grep"
   echo "     Document in cross-repo.md under '## Dynamic URL Call Sites (Manual Review Required)'"
-  forge_scan_log_warn "phase=5.5-prep dynamic_url_lines=$(wc -l < /tmp/forge_scan_dynamic_urls.txt) manual_review_required=true"
+  forge_scan_log_warn "phase=5.5-prep dynamic_url_lines=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_dynamic_urls.txt) manual_review_required=true"
 fi
 
 echo ""
 echo "Phase 5.1-5.5 prep complete."
-echo "  All call sites:  /tmp/forge_scan_all_callsites.txt"
-echo "  URL strings:     /tmp/forge_scan_fe_urls.txt"
-echo "  Dynamic URLs:    /tmp/forge_scan_dynamic_urls.txt  (manual review)"
-echo "  Shared types:    /tmp/forge_scan_all_types.txt"
+echo "  All call sites:  ${FORGE_SCAN_TMP}/forge_scan_all_callsites.txt"
+echo "  URL strings:     ${FORGE_SCAN_TMP}/forge_scan_fe_urls.txt"
+echo "  Dynamic URLs:    ${FORGE_SCAN_TMP}/forge_scan_dynamic_urls.txt  (manual review)"
+echo "  Shared types:    ${FORGE_SCAN_TMP}/forge_scan_all_types.txt"
 echo ""
 echo "Next: phase56-autolink-crossrepo.sh (join call sites × routes), then phase57-validate-brain-wikilinks.sh, then cleanup.sh"
-_api_routes_n=$(wc -l < /tmp/forge_scan_api_routes.txt 2>/dev/null || true)
+_api_routes_n=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_api_routes.txt 2>/dev/null || true)
 _api_routes_n=${_api_routes_n:-0}
-_callsites_n=$(wc -l < /tmp/forge_scan_all_callsites.txt 2>/dev/null || true)
+_callsites_n=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_all_callsites.txt 2>/dev/null || true)
 _callsites_n=${_callsites_n:-0}
-forge_scan_log_stat "phase=5.x-prep api_routes=$_api_routes_n callsites=$_callsites_n fe_urls=$(wc -l < /tmp/forge_scan_fe_urls.txt 2>/dev/null | tr -d ' ') dynamic_urls=$(wc -l < /tmp/forge_scan_dynamic_urls.txt 2>/dev/null | tr -d ' ')"
-forge_scan_log_done "callsites=$_callsites_n fe_urls=$(wc -l < /tmp/forge_scan_fe_urls.txt) dynamic_urls=$(wc -l < /tmp/forge_scan_dynamic_urls.txt) env_lines=$(wc -l < /tmp/forge_scan_all_env_vars.txt) api_routes=$_api_routes_n"
+forge_scan_log_stat "phase=5.x-prep api_routes=$_api_routes_n callsites=$_callsites_n fe_urls=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_fe_urls.txt 2>/dev/null | tr -d ' ') dynamic_urls=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_dynamic_urls.txt 2>/dev/null | tr -d ' ')"
+forge_scan_log_done "callsites=$_callsites_n fe_urls=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_fe_urls.txt) dynamic_urls=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_dynamic_urls.txt) env_lines=$(wc -l < ${FORGE_SCAN_TMP}/forge_scan_all_env_vars.txt) api_routes=$_api_routes_n"

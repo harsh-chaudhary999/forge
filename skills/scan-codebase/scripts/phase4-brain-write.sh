@@ -4,7 +4,7 @@
 # Usage: bash /path/to/forge/scripts/phase4-brain-write.sh <REPO_PATH> <BRAIN_CODEBASE_DIR> <ROLE>
 #
 # Prerequisite: phase1-inventory.sh must have been run first.
-# Needs: /tmp/forge_scan_types_all.txt, forge_scan_methods_all.txt,
+# Needs: FORGE_SCAN_TMP/forge_scan_types_all.txt, forge_scan_methods_all.txt,
 #         forge_scan_functions_all.txt, forge_scan_ui_all.txt, forge_scan_source_files.txt
 #
 # What this does:
@@ -35,6 +35,8 @@ _fs_scripts=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck disable=SC1091
 . "$_fs_scripts/_forge-scan-log.sh"
 # shellcheck disable=SC1091
+. "$_fs_scripts/_forge-scan-paths.sh"
+# shellcheck disable=SC1091
 . "$_fs_scripts/_forge-mod-slug.sh"
 if ! command -v forge_mod_dirslug_from_dir >/dev/null 2>&1; then
   printf '%s: expected %s/_forge-mod-slug.sh (forge_mod_dirslug_from_dir missing)\n' "$0" "$_fs_scripts" >&2
@@ -48,8 +50,8 @@ ROLE="${3:?Usage: $0 <repo-path> <brain-codebase-dir> <role>}"
 forge_scan_log_start phase4-brain-write "repo=$REPO brain_dir=$BRAIN_DIR role=$ROLE"
 
 for _f in forge_scan_types_all.txt forge_scan_methods_all.txt forge_scan_functions_all.txt forge_scan_ui_all.txt forge_scan_source_files.txt; do
-  if [ ! -s "/tmp/$_f" ]; then
-    forge_scan_log_warn "input_missing_or_empty path=/tmp/$_f hint=run_phase1-inventory.sh_first"
+  if [ ! -s "${FORGE_SCAN_TMP}/$_f" ]; then
+    forge_scan_log_warn "input_missing_or_empty path=${FORGE_SCAN_TMP}/$_f hint=run_phase1-inventory.sh_first"
   fi
 done
 
@@ -106,7 +108,7 @@ parse_grep_line() {
 # ── 4.3a: Classes ─────────────────────────────────────────────────────────────
 echo ""
 echo "[4.3a] Generating class nodes from forge_scan_types_all.txt..."
-echo "  Input: $(wc -l < /tmp/forge_scan_types_all.txt 2>/dev/null || echo 0) lines"
+echo "  Input: $(wc -l < "${FORGE_SCAN_TMP}/forge_scan_types_all.txt" 2>/dev/null || echo 0) lines"
 
 set +o pipefail
 while IFS= read -r line || [ -n "$line" ]; do
@@ -138,23 +140,22 @@ while IFS= read -r line || [ -n "$line" ]; do
     continue
   fi
 
-  cat > "$NODE" << NODEEOF
-# $KIND: $CLASS
-
-**Module:** [[modules/$ROLE-$MODULE]]
-**File:** \`$REL_FILE:$_LINENUM\`
-**Language:** $LANG
-**Kind:** $KIND
-
+  {
+    printf '%s\n\n' "# $KIND: $CLASS"
+    printf '%s\n' "**Module:** [[modules/$ROLE-$MODULE]]"
+    printf '%s\n' "**File:** \`$REL_FILE:$_LINENUM\`"
+    printf '%s\n' "**Language:** $LANG"
+    printf '%s\n\n' "**Kind:** $KIND"
+    cat <<'CLASSBODY'
 ## Purpose
 _Auto-generated stub — enrich during Phase 3 hub read._
 
 ## Key Responsibilities
-_What problem does this $KIND solve?_
-
-## Key Methods
-_See [[methods/]] — auto stubs use \`$ROLE-m-<cksum>\` (full inventory); optional hand nodes \`$ROLE-$CLASS-<method>\`._
-
+CLASSBODY
+    printf '%s\n\n' "_What problem does this $KIND solve?_"
+    printf '%s\n' "## Key Methods"
+    printf '_See [[methods/]] — auto stubs use `%s-m-<cksum>` (full inventory); optional hand nodes `%s-%s-<method>`._\n\n' "$ROLE" "$ROLE" "$CLASS"
+    cat <<'CLASSBODY2'
 ## Extends / Implements
 _Fill in during Phase 3 read._
 
@@ -162,19 +163,20 @@ _Fill in during Phase 3 read._
 _Populated by phase56 / manual cross-repo notes after phase5 prep._
 
 ## Location in Structure
-**Repo role:** $ROLE | **Package:** $DIR
-NODEEOF
+CLASSBODY2
+    printf '%s\n' "**Repo role:** $ROLE | **Package:** $DIR"
+  } > "$NODE"
   CLASSES=$((CLASSES + 1))
-done < /tmp/forge_scan_types_all.txt
+done < "${FORGE_SCAN_TMP}/forge_scan_types_all.txt"
 set -o pipefail
 
 echo "  Written: $CLASSES class nodes"
-forge_scan_log_stat "phase=4.3a classes_written=$CLASSES input_lines=$(wc -l < /tmp/forge_scan_types_all.txt 2>/dev/null || echo 0)"
+forge_scan_log_stat "phase=4.3a classes_written=$CLASSES input_lines=$(wc -l < "${FORGE_SCAN_TMP}/forge_scan_types_all.txt" 2>/dev/null || echo 0)"
 
 # ── 4.3c: Functions ──────────────────────────────────────────────────────────
 echo ""
 echo "[4.3c] Generating function nodes from forge_scan_functions_all.txt..."
-echo "  Input: $(wc -l < /tmp/forge_scan_functions_all.txt 2>/dev/null || echo 0) lines"
+echo "  Input: $(wc -l < "${FORGE_SCAN_TMP}/forge_scan_functions_all.txt" 2>/dev/null || echo 0) lines"
 
 set +o pipefail
 while IFS= read -r line || [ -n "$line" ]; do
@@ -208,13 +210,12 @@ while IFS= read -r line || [ -n "$line" ]; do
     continue
   fi
 
-  cat > "$NODE" << NODEEOF
-# Function: $FUNC
-
-**Module:** [[modules/$ROLE-$MODULE]]
-**File:** \`$REL_FILE:$_LINENUM\`
-**Language:** $LANG
-
+  {
+    printf '%s\n\n' "# Function: $FUNC"
+    printf '%s\n' "**Module:** [[modules/$ROLE-$MODULE]]"
+    printf '%s\n' "**File:** \`$REL_FILE:$_LINENUM\`"
+    printf '%s\n\n' "**Language:** $LANG"
+    cat <<'FUNCBODY'
 ## Purpose
 _Auto-generated stub — enrich during Phase 3 hub read._
 
@@ -231,26 +232,27 @@ _Fill in during Phase 3 or manual cross-repo correlation (phase56 covers HTTP pa
 _Fill in during Phase 3 or manual cross-repo correlation (phase56 covers HTTP paths)._
 
 ## Location in Structure
-**Repo role:** $ROLE
-NODEEOF
+FUNCBODY
+    printf '%s\n' "**Repo role:** $ROLE"
+  } > "$NODE"
   FUNCTIONS=$((FUNCTIONS + 1))
-done < /tmp/forge_scan_functions_all.txt
+done < "${FORGE_SCAN_TMP}/forge_scan_functions_all.txt"
 set -o pipefail
 
 echo "  Written: $FUNCTIONS function nodes"
-forge_scan_log_stat "phase=4.3c functions_written=$FUNCTIONS input_lines=$(wc -l < /tmp/forge_scan_functions_all.txt 2>/dev/null || echo 0)"
+forge_scan_log_stat "phase=4.3c functions_written=$FUNCTIONS input_lines=$(wc -l < "${FORGE_SCAN_TMP}/forge_scan_functions_all.txt" 2>/dev/null || echo 0)"
 
 # ── 4.3d: Method stubs (FULL inventory — not Tier 1/2 gated) ─────────────────
 echo ""
 if [ "${FORGE_PHASE4_SKIP_METHODS:-}" = "1" ]; then
   echo "[4.3d] Skipping method nodes (FORGE_PHASE4_SKIP_METHODS=1)"
 else
-  if [ ! -f /tmp/forge_scan_methods_all.txt ]; then
-    echo "[4.3d] Skipping — /tmp/forge_scan_methods_all.txt missing (run phase1-inventory.sh)"
-    forge_scan_log_warn "missing /tmp/forge_scan_methods_all.txt"
+  if [ ! -f "${FORGE_SCAN_TMP}/forge_scan_methods_all.txt" ]; then
+    echo "[4.3d] Skipping — ${FORGE_SCAN_TMP}/forge_scan_methods_all.txt missing (run phase1-inventory.sh)"
+    forge_scan_log_warn "missing ${FORGE_SCAN_TMP}/forge_scan_methods_all.txt"
   else
   echo "[4.3d] Generating method nodes from forge_scan_methods_all.txt (every grep hit)..."
-  echo "  Input: $(wc -l < /tmp/forge_scan_methods_all.txt 2>/dev/null || echo 0) lines"
+  echo "  Input: $(wc -l < "${FORGE_SCAN_TMP}/forge_scan_methods_all.txt" 2>/dev/null || echo 0) lines"
   echo "  (Set FORGE_PHASE4_SKIP_METHODS=1 to skip on enormous repos.)"
 
   set +o pipefail
@@ -296,18 +298,18 @@ else
       printf '%s\n' "**Repo role:** $ROLE | **Directory:** $DIR"
     } > "$NODE"
     METHODS=$((METHODS + 1))
-  done < /tmp/forge_scan_methods_all.txt
+  done < "${FORGE_SCAN_TMP}/forge_scan_methods_all.txt"
   set -o pipefail
 
   echo "  Written: $METHODS method nodes"
-  forge_scan_log_stat "phase=4.3d methods_written=$METHODS input_lines=$(wc -l < /tmp/forge_scan_methods_all.txt 2>/dev/null || echo 0)"
+  forge_scan_log_stat "phase=4.3d methods_written=$METHODS input_lines=$(wc -l < "${FORGE_SCAN_TMP}/forge_scan_methods_all.txt" 2>/dev/null || echo 0)"
   fi
 fi
 
 # ── 4.3e: Pages / UI ─────────────────────────────────────────────────────────
 echo ""
 echo "[4.3e] Generating page nodes from forge_scan_ui_all.txt..."
-echo "  Input: $(wc -l < /tmp/forge_scan_ui_all.txt 2>/dev/null || echo 0) UI files"
+echo "  Input: $(wc -l < "${FORGE_SCAN_TMP}/forge_scan_ui_all.txt" 2>/dev/null || echo 0) UI files"
 
 set +o pipefail
 while IFS= read -r file || [ -n "$file" ]; do
@@ -343,14 +345,13 @@ while IFS= read -r file || [ -n "$file" ]; do
     continue
   fi
 
-  cat > "$NODE" << NODEEOF
-# Page: $NAME
-
-**File:** \`$REL_FILE\`
-**Language / Format:** $FORMAT
-**Kind:** $KIND
-**Route / URL:** \`$ROUTE\`
-
+  {
+    printf '%s\n\n' "# Page: $NAME"
+    printf '%s\n' "**File:** \`$REL_FILE\`"
+    printf '%s\n' "**Language / Format:** $FORMAT"
+    printf '%s\n' "**Kind:** $KIND"
+    printf '%s\n\n' "**Route / URL:** \`$ROUTE\`"
+    cat <<'PAGEBODY'
 ## Purpose
 _Auto-generated stub — enrich during Phase 3 hub read._
 
@@ -367,27 +368,28 @@ _Fill in: components imported, composables/hooks used._
 _Populated by phase56 / manual cross-repo notes after phase5 prep._
 
 ## Location in Structure
-**Repo role:** $ROLE
-NODEEOF
+PAGEBODY
+    printf '%s\n' "**Repo role:** $ROLE"
+  } > "$NODE"
   PAGES=$((PAGES + 1))
-done < /tmp/forge_scan_ui_all.txt
+done < "${FORGE_SCAN_TMP}/forge_scan_ui_all.txt"
 set -o pipefail
 
 echo "  Written: $PAGES page nodes"
-forge_scan_log_stat "phase=4.3e pages_written=$PAGES input_lines=$(wc -l < /tmp/forge_scan_ui_all.txt 2>/dev/null || echo 0)"
+forge_scan_log_stat "phase=4.3e pages_written=$PAGES input_lines=$(wc -l < "${FORGE_SCAN_TMP}/forge_scan_ui_all.txt" 2>/dev/null || echo 0)"
 
 # ── 4.3b: Module scaffolds from directory structure ───────────────────────────
 echo ""
 echo "[4.3b] Generating module scaffold nodes from source directory structure..."
 
 # Build unique directory list without pipefail issue
-> /tmp/forge_scan_dirs.txt
+> "${FORGE_SCAN_TMP}/forge_scan_dirs.txt"
 set +o pipefail
 while IFS= read -r file; do
   [ -z "$file" ] && continue
   REL="${file#$REPO/}"
   dirname "$REL"
-done < /tmp/forge_scan_source_files.txt | sort -u > /tmp/forge_scan_dirs.txt
+done < "${FORGE_SCAN_TMP}/forge_scan_source_files.txt" | sort -u > "${FORGE_SCAN_TMP}/forge_scan_dirs.txt"
 set -o pipefail
 
 while IFS= read -r dir || [ -n "$dir" ]; do
@@ -429,10 +431,10 @@ _Same: `phase56-autolink-crossrepo.sh` (`FORGE:AUTO_CROSS_REPO_IN`). Optional ma
 MODBODY2
   } > "$NODE"
   MODULES=$((MODULES + 1))
-done < /tmp/forge_scan_dirs.txt
+done < "${FORGE_SCAN_TMP}/forge_scan_dirs.txt"
 
 echo "  Written: $MODULES module scaffold nodes"
-forge_scan_log_stat "phase=4.3b modules_written=$MODULES unique_dirs=$(wc -l < /tmp/forge_scan_dirs.txt 2>/dev/null || echo 0)"
+forge_scan_log_stat "phase=4.3b modules_written=$MODULES unique_dirs=$(wc -l < "${FORGE_SCAN_TMP}/forge_scan_dirs.txt" 2>/dev/null || echo 0)"
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 TOTAL=$((CLASSES + METHODS + FUNCTIONS + PAGES + MODULES))

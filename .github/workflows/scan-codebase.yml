@@ -1,0 +1,30 @@
+name: scan-codebase
+
+on:
+  push:
+    paths:
+      - "skills/scan-codebase/**"
+      - "tools/forge_scan_run.py"
+      - "tools/scan_forge/**"
+      - ".github/workflows/scan-codebase.yml"
+  pull_request:
+    paths:
+      - "skills/scan-codebase/**"
+      - "tools/forge_scan_run.py"
+      - "tools/scan_forge/**"
+      - ".github/workflows/scan-codebase.yml"
+
+jobs:
+  scan-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+
+      - name: shellcheck scan scripts
+        run: shellcheck --severity=error -x skills/scan-codebase/scripts/*.sh
+
+      - name: Smoke test (fixtures + forge_scan_run.py)
+        run: bash skills/scan-codebase/scripts/verify_scan_smoke.sh

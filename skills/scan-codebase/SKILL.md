@@ -102,13 +102,14 @@ codebase/
 
 | Script | Phase | What it does |
 |---|---|---|
+| `tools/forge_scan_run.py` | Orchestration | Thin entry that adds `tools/` to `sys.path` and runs **`tools/scan_forge`** (stdlib Python + `grep`/`cksum` where needed). Creates a per-run artifact directory (`FORGE_SCAN_RUN_DIR` / `FORGE_SCAN_TMP`), runs phases 1 → 35 → 4 → 5 → 56 → 57 in order, writes `run.json`. Use `--repos role:/abs/path` where **`basename(path)` == `role`** (same contract as `validate-product-roles.sh`). Alternative: `PYTHONPATH=tools python3 -m scan_forge …`. Bash scripts under `scripts/` remain reference/CI shellcheck targets but are not invoked by the default runner. |
 | `skills/scan-codebase/scripts/phase1-inventory.sh <REPO>` | 1.1 – 1.6 | Full inventory: file list, hub scores, type/method/function/UI symbols |
 | `skills/scan-codebase/scripts/phase35-extract.sh <REPO> [append]` | 3.4 – 3.5 | Test name strings + API route extraction (`append` merges routes from multiple repos into one file — **required** for cross-repo correlation) |
 | `skills/scan-codebase/scripts/phase4-brain-write.sh <REPO> <BRAIN_CODEBASE_DIR> <ROLE>` | 4.3a/d/c/e/b | Auto-generate ALL stub brain nodes (classes, **methods (full `methods_all` inventory)**, functions, pages, modules) — no LLM needed |
 | `skills/scan-codebase/scripts/phase5-cross-repo.sh <repo1> [repo2...]` | 5.1 – 5.5 prep | Cross-repo HTTP call sites, shared types, env vars, URL harvest |
-| `skills/scan-codebase/scripts/phase56-autolink-crossrepo.sh <BRAIN_CODEBASE_PARENT>` | 5.6 | **No LLM** — patches `*/modules/*.md` with `[[wikilinks]]` for Calls / Called-by from `/tmp` call sites × routes; writes `cross-repo-automap.md` |
+| `skills/scan-codebase/scripts/phase56-autolink-crossrepo.sh <BRAIN_CODEBASE_PARENT>` | 5.6 | **No LLM** — patches `*/modules/*.md` with `[[wikilinks]]` for Calls / Called-by from `FORGE_SCAN_TMP` call sites × routes; writes `cross-repo-automap.md` |
 | `skills/scan-codebase/scripts/phase57-validate-brain-wikilinks.sh <BRAIN_CODEBASE_PARENT> [--write-report]` | 5.7 | Lists broken `[[wikilinks]]` / `![[embeds]]` (no matching `.md` basename under the tree) and duplicate basenames; optional `wikilink-orphan-report.md` in the brain folder |
-| `skills/scan-codebase/scripts/cleanup.sh` | End | Remove all `/tmp/forge_scan_*.txt` files |
+| `skills/scan-codebase/scripts/cleanup.sh` | End | Remove all `forge_scan_*.txt` files under `FORGE_SCAN_TMP` (default `/tmp`) |
 | `skills/scan-codebase/scripts/validate-product-roles.sh <product.md>` | Pre-scan | Warns when `role:` ≠ basename(`repo:` path) — avoids phase4 / phase56 slug drift (exit 1 only if `FORGE_VALIDATE_PRODUCT_STRICT=1`) |
 | `skills/scan-codebase/scripts/_forge-mod-slug.sh` | (library) | Sourced by `phase4-brain-write.sh` and `phase56-autolink-crossrepo.sh` — single definition of module node basename from repo role + relative path |
 
@@ -120,7 +121,7 @@ codebase/
 2. **`forge_mod_*: command not found`** — `phase4` / `phase56` need `_forge-mod-slug.sh` in the **same directory** as the other scan scripts. Do not copy a single script out of the repo without its neighbors.
 3. **`grep: invalid option`** (phase57) — needs **GNU grep** with `-o`. On minimal images, install `grep` from coreutils or run on a full Linux/macOS dev environment.
 4. **`/usr/bin/env: bash: No such file or directory`** — the runtime has no `bash` in `PATH` seen by `env`. Install bash or call `/bin/bash` explicitly if that binary exists.
-5. **`phase5-cross-repo.sh: command not found` from inside `phase4-brain-write.sh`** — unquoted `<< NODEEOF` treats **markdown backticks** as shell **command substitution**. **Mitigation in-repo:** module stubs now use a **quoted** `<<'…'` body plus `printf` for the few lines that need `$ROLE` / `$dir`. Class / function / page stubs still use unquoted heredocs: keep inline code escaped as backslash-backtick, or migrate them to the same quoted-heredoc pattern.
+5. **`phase5-cross-repo.sh: command not found` from inside `phase4-brain-write.sh`** — unquoted `<< NODEEOF` treats **markdown backticks** as shell **command substitution**. **Mitigation in-repo:** module stubs and class / function / page stubs use **`printf` + quoted `<<'…'`** for static Markdown so backticks are never evaluated by the shell.
 
 ### Recommendations (best practice, not only “make it work”)
 
@@ -131,18 +132,18 @@ codebase/
 | **`product.md` vs `validate-product-roles.sh`** | **Best long-term:** make **`basename(repo path)` == the string you pass as `<ROLE>`** to `phase4-brain-write.sh` and the folder name under `codebase/<role>/` (phase56 call sites use repo basename). If marketing wants `role: mobile` while the repo folder is `app`, either **rename the folder**, **pass `app` as ROLE** to phase4, or accept validator noise — all three are valid tradeoffs; pick one and document it for the team. |
 | **`phase57` + grep** | Plan on **GNU grep** for `-o`; BusyBox-only containers may need a different image or a future rewrite without `-o`. |
 | **Static analysis** | Run **`shellcheck skills/scan-codebase/scripts/*.sh`** before merge when you touch scan bash (Forge has no pre-commit hook for it yet — adding one is worthwhile). |
-| **Other heredocs in `phase4`** | Class / function / page blocks still use `<< NODEEOF` with `\``-escaped inline code. Safer evolution: migrate them to **`<<'EOF'` + `printf`** for dynamic lines only, same as modules. |
+| **Artifact directory** | Scripts source `_forge-scan-paths.sh`: set **`FORGE_SCAN_RUN_DIR`** (or `FORGE_SCAN_TMP`) before running if you want isolated `forge_scan_*.txt` files instead of the default `/tmp`. |
 
 ### Canonical multi-repo scan order (do not skip)
 
 1. **Optional:** `validate-product-roles.sh ~/forge/brain/products/<slug>/product.md` — catch `role` / repo-basename mismatches before Phase 4.
 2. **Per repo:** `phase1-inventory.sh <REPO>`
-3. **Per repo:** `phase35-extract.sh <REPO>` — first route-defining repo **without** `append` (truncates `/tmp/forge_scan_api_routes.txt`); **every other** route-defining repo **with** `append`.
+3. **Per repo:** `phase35-extract.sh <REPO>` — first route-defining repo **without** `append` (truncates `forge_scan_api_routes.txt` under `FORGE_SCAN_TMP`); **every other** route-defining repo **with** `append`.
 4. **Per repo:** `phase4-brain-write.sh <REPO> <BRAIN_CODEBASE_DIR> <ROLE>` — `ROLE` must match `basename <REPO>` (see validator).
 5. **Once all repos:** `phase5-cross-repo.sh <repo1> <repo2> …`
 6. **Once:** `phase56-autolink-crossrepo.sh <BRAIN_CODEBASE_PARENT>`
 7. **Optional:** `phase57-validate-brain-wikilinks.sh <BRAIN_CODEBASE_PARENT> --write-report`
-8. **End:** `cleanup.sh` — clears `/tmp/forge_scan_*.txt` so the next run does not mix stale routes or callsites.
+8. **End:** `cleanup.sh` — clears `forge_scan_*.txt` under `FORGE_SCAN_TMP` so the next run does not mix stale routes or callsites.
 
 ### Tier 1 / Tier 2 hubs vs a full file graph
 

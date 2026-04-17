@@ -6,7 +6,7 @@
 # Example:
 #   bash phase56-autolink-crossrepo.sh "$HOME/forge/brain/products/jh/codebase"
 #
-# Expects /tmp/forge_scan_all_callsites.txt and /tmp/forge_scan_api_routes.txt
+# Expects ${FORGE_SCAN_TMP}/forge_scan_all_callsites.txt and ${FORGE_SCAN_TMP}/forge_scan_api_routes.txt
 # (phase5-cross-repo + phase35 with append for all route repos).
 #
 # Optional: <BRAIN_PARENT>/route-aliases.tsv — non-comment, non-blank lines appended to
@@ -28,6 +28,8 @@ _fs_scripts=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck disable=SC1091
 . "$_fs_scripts/_forge-scan-log.sh"
 # shellcheck disable=SC1091
+. "$_fs_scripts/_forge-scan-paths.sh"
+# shellcheck disable=SC1091
 . "$_fs_scripts/_forge-mod-slug.sh"
 if ! command -v forge_mod_node_basename_from_rel >/dev/null 2>&1; then
   printf '%s: expected %s/_forge-mod-slug.sh\n' "$0" "$_fs_scripts" >&2
@@ -43,13 +45,13 @@ fi
 
 forge_scan_log_start phase56-autolink-crossrepo "brain_parent=$PARENT"
 
-if [ ! -s /tmp/forge_scan_all_callsites.txt ]; then
-  forge_scan_log_warn "skip empty_or_missing /tmp/forge_scan_all_callsites.txt"
+if [ ! -s "${FORGE_SCAN_TMP}/forge_scan_all_callsites.txt" ]; then
+  forge_scan_log_warn "skip empty_or_missing ${FORGE_SCAN_TMP}/forge_scan_all_callsites.txt"
   forge_scan_log_done "edges=0"
   exit 0
 fi
-if [ ! -s /tmp/forge_scan_api_routes.txt ]; then
-  forge_scan_log_warn "skip empty_or_missing /tmp/forge_scan_api_routes.txt"
+if [ ! -s "${FORGE_SCAN_TMP}/forge_scan_api_routes.txt" ]; then
+  forge_scan_log_warn "skip empty_or_missing ${FORGE_SCAN_TMP}/forge_scan_api_routes.txt"
   forge_scan_log_done "edges=0"
   exit 0
 fi
@@ -80,11 +82,13 @@ _resolve_module_file() {
   local rel="$2"
   local slug
   slug=$(forge_mod_node_basename_from_rel "$repo" "$rel")
-  local f="$PARENT/$repo/modules/$slug.md"
-  if [ -f "$f" ]; then
-    printf '%s' "$f"
-    return 0
-  fi
+  local f
+  for f in "$PARENT/$repo/modules/$slug.md" "$PARENT/modules/$slug.md"; do
+    if [ -f "$f" ]; then
+      printf '%s' "$f"
+      return 0
+    fi
+  done
   return 1
 }
 
@@ -92,7 +96,7 @@ _work=$(mktemp -d)
 trap 'rm -rf "$_work"' EXIT
 
 ROUTES_MERGED="$_work/api_routes_merged.txt"
-cp /tmp/forge_scan_api_routes.txt "$ROUTES_MERGED"
+cp "${FORGE_SCAN_TMP}/forge_scan_api_routes.txt" "$ROUTES_MERGED"
 if [ -f "$PARENT/route-aliases.tsv" ]; then
   _alias_lines=$(grep -v '^[[:space:]]*#' "$PARENT/route-aliases.tsv" | grep -v '^[[:space:]]*$' | wc -l | tr -d ' ')
   _alias_lines=${_alias_lines:-0}
@@ -152,7 +156,7 @@ while IFS= read -r raw || [ -n "${raw:-}" ]; do
     printf '%s\t%s\t%s\t%s\n' "$repo" "$caller_rel" "$be_repo" "$_u" >> "$_work/edges.tsv"
     _edges=$((_edges + 1))
   done <<< "$_urls"
-done < /tmp/forge_scan_all_callsites.txt
+done < "${FORGE_SCAN_TMP}/forge_scan_all_callsites.txt"
 
 _merge_block() {
   local pathfile="$1"
@@ -199,7 +203,7 @@ if [ -s "$_work/edges.tsv" ]; then
   } > "$PARENT/cross-repo-automap.md"
 fi
 
-_touched=$( { grep -rlF "$BEGIN_OUT" "$PARENT" 2>/dev/null; grep -rlF "$BEGIN_IN" "$PARENT" 2>/dev/null; } | sort -u | wc -l)
+_touched=$( { grep -rlF "$BEGIN_OUT" "$PARENT" 2>/dev/null || true; grep -rlF "$BEGIN_IN" "$PARENT" 2>/dev/null || true; } | sort -u | wc -l)
 echo "Phase 5.6: auto-linked cross-repo blocks (OUT/IN markers). Edges=$_edges module_files≈$_touched"
 forge_scan_log_stat "phase=5.6 edges=$_edges modules_with_out_block=$_touched"
 forge_scan_log_done "edges=$_edges automap=$([ -f "$PARENT/cross-repo-automap.md" ] && echo yes || echo no)"

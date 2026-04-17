@@ -21,6 +21,13 @@
 #   modules/<role>-<PackageDir>.md    one per unique source directory (scaffold)
 #
 # Existing files are NEVER overwritten — safe to re-run after manual enrichment.
+#
+# Must run with bash: `bash phase4-brain-write.sh …`
+
+if [ -z "${BASH_VERSION:-}" ]; then
+  printf '%s: requires bash, not sh/dash. Use: bash "%s" <REPO> <BRAIN_DIR> <ROLE>\n' "${0##*/}" "$0" >&2
+  exit 127
+fi
 
 set -euo pipefail
 
@@ -29,6 +36,10 @@ _fs_scripts=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 . "$_fs_scripts/_forge-scan-log.sh"
 # shellcheck disable=SC1091
 . "$_fs_scripts/_forge-mod-slug.sh"
+if ! command -v forge_mod_dirslug_from_dir >/dev/null 2>&1; then
+  printf '%s: expected %s/_forge-mod-slug.sh (forge_mod_dirslug_from_dir missing)\n' "$0" "$_fs_scripts" >&2
+  exit 127
+fi
 
 REPO="${1:?Usage: $0 <repo-path> <brain-codebase-dir> <role>}"
 BRAIN_DIR="${2:?Usage: $0 <repo-path> <brain-codebase-dir> <role>}"
@@ -391,18 +402,19 @@ while IFS= read -r dir || [ -n "$dir" ]; do
     continue
   fi
 
-  cat > "$NODE" << NODEEOF
-# Module: $ROLE / $dir
-
-**Directory:** \`$dir/\`
-**Repo role:** $ROLE
-
+  # Dynamic header via printf; static body in <<'…' so Markdown `backticks` are never shell command substitution.
+  {
+    printf '%s\n\n' "# Module: $ROLE / $dir"
+    printf '%s\n' "**Directory:** \`$dir/\`"
+    printf '%s\n\n' "**Repo role:** $ROLE"
+    cat <<'MODBODY'
 ## Purpose
 _Auto-generated scaffold — enrich during Phase 3._
 
 ## Key Types Defined Here
-_See [[classes/]] for individual class nodes with prefix \`$ROLE-\`_
-
+MODBODY
+    printf '_See [[classes/]] for individual class nodes with prefix `%s-`_\n\n' "$ROLE"
+    cat <<'MODBODY2'
 ## Exports
 _Fill in: exported functions, types, constants._
 
@@ -414,7 +426,8 @@ _After `phase5-cross-repo.sh`, run `phase56-autolink-crossrepo.sh` (markers `FOR
 
 ## Called By (cross-repo)
 _Same: `phase56-autolink-crossrepo.sh` (`FORGE:AUTO_CROSS_REPO_IN`). Optional manual rows only if needed._
-NODEEOF
+MODBODY2
+  } > "$NODE"
   MODULES=$((MODULES + 1))
 done < /tmp/forge_scan_dirs.txt
 

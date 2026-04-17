@@ -11,6 +11,13 @@
 #   - [[name]] / ![[name]]  → any file named name.md anywhere under PARENT (excluding .obsidian)
 #   - [[dir/sub]]          → PARENT/dir/sub.md first; if missing, same as basename-only search
 #
+# Must run with bash. Requires GNU grep with -o (BusyBox may fail).
+
+if [ -z "${BASH_VERSION:-}" ]; then
+  printf '%s: requires bash, not sh/dash. Use: bash "%s" <BRAIN_CODEBASE_PARENT> [--write-report]\n' "${0##*/}" "$0" >&2
+  exit 127
+fi
+
 set -euo pipefail
 
 USAGE() {

@@ -5,6 +5,13 @@
 # Usage: bash .../validate-product-roles.sh <path/to/product.md>
 # Exit: 0 always (warnings only). Set FORGE_VALIDATE_PRODUCT_STRICT=1 to exit 1 on mismatch.
 #
+# Must run with bash (uses `local`).
+
+if [ -z "${BASH_VERSION:-}" ]; then
+  printf '%s: requires bash, not sh/dash. Use: bash "%s" <product.md>\n' "${0##*/}" "$0" >&2
+  exit 127
+fi
+
 set -euo pipefail
 
 PRODUCT="${1:?Usage: $0 <path/to/product.md>}"

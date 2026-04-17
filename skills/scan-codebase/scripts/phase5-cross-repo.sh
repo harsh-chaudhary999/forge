@@ -20,6 +20,13 @@
 #   forge_scan_dynamic_urls.txt     template literal / variable URLs (for manual review)
 #   forge_scan_all_types.txt        all exported types from all repos (for shared type detection)
 #   forge_scan_all_env_vars.txt     all env var references across repos
+#
+# Must run with bash: `bash phase5-cross-repo.sh …`
+
+if [ -z "${BASH_VERSION:-}" ]; then
+  printf '%s: requires bash, not sh/dash. Use: bash "%s" <repo1> [repo2...]\n' "${0##*/}" "$0" >&2
+  exit 127
+fi
 
 set -euo pipefail
 

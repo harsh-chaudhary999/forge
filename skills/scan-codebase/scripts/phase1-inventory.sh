@@ -29,6 +29,13 @@
 #   forge_scan_methods_all.txt      master method inventory (→ methods/)
 #   forge_scan_functions_all.txt    master function inventory (→ functions/)
 #   forge_scan_ui_all.txt           master UI file inventory (→ pages/)
+#
+# Must run with bash (not sh/dash): `bash phase1-inventory.sh …`
+
+if [ -z "${BASH_VERSION:-}" ]; then
+  printf '%s: requires bash, not sh/dash. Use: bash "%s" <REPO_PATH>\n' "${0##*/}" "$0" >&2
+  exit 127
+fi
 
 set -euo pipefail
 

@@ -4,6 +4,13 @@
 # Usage: bash /path/to/forge/skills/scan-codebase/scripts/cleanup.sh
 #
 # Run at end of every scan to prevent stale data from contaminating next run.
+#
+# Must run with bash: `bash cleanup.sh`
+
+if [ -z "${BASH_VERSION:-}" ]; then
+  printf '%s: requires bash. Use: bash "%s"\n' "${0##*/}" "$0" >&2
+  exit 127
+fi
 
 set -euo pipefail
 

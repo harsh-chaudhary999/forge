@@ -13,6 +13,13 @@
 # the in-memory route list (same column shape as phase35 lines) for manual URL→route fixes.
 #
 # Heuristic substring match on URL paths — no LLM. Re-run safe (idempotent blocks).
+#
+# Must run with bash: `bash phase56-autolink-crossrepo.sh …`
+
+if [ -z "${BASH_VERSION:-}" ]; then
+  printf '%s: requires bash, not sh/dash. Use: bash "%s" <BRAIN_CODEBASE_PARENT>\n' "${0##*/}" "$0" >&2
+  exit 127
+fi
 
 set -euo pipefail
 shopt -s nullglob
@@ -22,6 +29,10 @@ _fs_scripts=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 . "$_fs_scripts/_forge-scan-log.sh"
 # shellcheck disable=SC1091
 . "$_fs_scripts/_forge-mod-slug.sh"
+if ! command -v forge_mod_node_basename_from_rel >/dev/null 2>&1; then
+  printf '%s: expected %s/_forge-mod-slug.sh\n' "$0" "$_fs_scripts" >&2
+  exit 127
+fi
 
 _raw_parent="${1:?Usage: $0 <brain_codebase_parent e.g. \$HOME/forge/brain/products/slug/codebase>}"
 PARENT="${_raw_parent/#\~/$HOME}"

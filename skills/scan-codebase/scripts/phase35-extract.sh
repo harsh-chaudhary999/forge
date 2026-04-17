@@ -13,6 +13,13 @@
 # Writes to /tmp:
 #   forge_scan_test_names.txt   test name strings (describe/it/test/func Test/def test_)
 #   forge_scan_api_routes.txt   API route decorators and router patterns
+#
+# Must run with bash: `bash phase35-extract.sh …`
+
+if [ -z "${BASH_VERSION:-}" ]; then
+  printf '%s: requires bash, not sh/dash. Use: bash "%s" <REPO> [append]\n' "${0##*/}" "$0" >&2
+  exit 127
+fi
 
 set -euo pipefail
 

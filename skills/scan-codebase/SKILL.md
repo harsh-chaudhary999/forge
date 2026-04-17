@@ -114,6 +114,25 @@ codebase/
 
 **Agent-visible diagnostics:** Every script sources `_forge-scan-log.sh` and prints machine-grep lines of the form `FORGE_SCAN|<script>|<utc>|LEVEL|…`. In chat or CI logs, filter with `grep '^FORGE_SCAN|'` (or `ERROR` / `WARN` in the fourth pipe field) to audit scan health without rereading prose output.
 
+### Troubleshooting: `command not found` or cryptic errors when running scripts
+
+1. **Always invoke with `bash`**, not `sh` or `./script.sh` under a non-bash shell — e.g. `bash "$FORGE_SCRIPTS/phase1-inventory.sh" "$REPO"`. These scripts use **bash-only** features (`local`, `[[`, `BASH_SOURCE`, `set -o pipefail`, `$(<file)`). If Cursor (or CI) runs `sh -c '…/phase4-brain-write.sh'`, **dash** may run the file: you can see `local: not found`, `Bad substitution`, or failures before any logic runs. Every script now exits **127** early with a “requires bash” message if `BASH_VERSION` is unset.
+2. **`forge_mod_*: command not found`** — `phase4` / `phase56` need `_forge-mod-slug.sh` in the **same directory** as the other scan scripts. Do not copy a single script out of the repo without its neighbors.
+3. **`grep: invalid option`** (phase57) — needs **GNU grep** with `-o`. On minimal images, install `grep` from coreutils or run on a full Linux/macOS dev environment.
+4. **`/usr/bin/env: bash: No such file or directory`** — the runtime has no `bash` in `PATH` seen by `env`. Install bash or call `/bin/bash` explicitly if that binary exists.
+5. **`phase5-cross-repo.sh: command not found` from inside `phase4-brain-write.sh`** — unquoted `<< NODEEOF` treats **markdown backticks** as shell **command substitution**. **Mitigation in-repo:** module stubs now use a **quoted** `<<'…'` body plus `printf` for the few lines that need `$ROLE` / `$dir`. Class / function / page stubs still use unquoted heredocs: keep inline code escaped as backslash-backtick, or migrate them to the same quoted-heredoc pattern.
+
+### Recommendations (best practice, not only “make it work”)
+
+| Topic | Recommendation |
+|--------|------------------|
+| **Running scripts** | Prefer **`bash /absolute/path/script.sh`** in docs, CI, and agent prompts so `PATH`, `sh` vs `bash`, and cwd never surprise you. |
+| **Forge install in Cursor** | Prefer **one clone** and a **symlink** `~/.cursor/plugins/local/forge` → that repo so you never edit a stale duplicate (watch for accidental `skills/skills/` nesting). |
+| **`product.md` vs `validate-product-roles.sh`** | **Best long-term:** make **`basename(repo path)` == the string you pass as `<ROLE>`** to `phase4-brain-write.sh` and the folder name under `codebase/<role>/` (phase56 call sites use repo basename). If marketing wants `role: mobile` while the repo folder is `app`, either **rename the folder**, **pass `app` as ROLE** to phase4, or accept validator noise — all three are valid tradeoffs; pick one and document it for the team. |
+| **`phase57` + grep** | Plan on **GNU grep** for `-o`; BusyBox-only containers may need a different image or a future rewrite without `-o`. |
+| **Static analysis** | Run **`shellcheck skills/scan-codebase/scripts/*.sh`** before merge when you touch scan bash (Forge has no pre-commit hook for it yet — adding one is worthwhile). |
+| **Other heredocs in `phase4`** | Class / function / page blocks still use `<< NODEEOF` with `\``-escaped inline code. Safer evolution: migrate them to **`<<'EOF'` + `printf`** for dynamic lines only, same as modules. |
+
 ### Canonical multi-repo scan order (do not skip)
 
 1. **Optional:** `validate-product-roles.sh ~/forge/brain/products/<slug>/product.md` — catch `role` / repo-basename mismatches before Phase 4.

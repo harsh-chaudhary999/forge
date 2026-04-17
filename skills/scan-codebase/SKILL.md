@@ -107,9 +107,23 @@ codebase/
 | `skills/scan-codebase/scripts/phase4-brain-write.sh <REPO> <BRAIN_CODEBASE_DIR> <ROLE>` | 4.3a/d/c/e/b | Auto-generate ALL stub brain nodes (classes, **methods (full `methods_all` inventory)**, functions, pages, modules) — no LLM needed |
 | `skills/scan-codebase/scripts/phase5-cross-repo.sh <repo1> [repo2...]` | 5.1 – 5.5 prep | Cross-repo HTTP call sites, shared types, env vars, URL harvest |
 | `skills/scan-codebase/scripts/phase56-autolink-crossrepo.sh <BRAIN_CODEBASE_PARENT>` | 5.6 | **No LLM** — patches `*/modules/*.md` with `[[wikilinks]]` for Calls / Called-by from `/tmp` call sites × routes; writes `cross-repo-automap.md` |
+| `skills/scan-codebase/scripts/phase57-validate-brain-wikilinks.sh <BRAIN_CODEBASE_PARENT> [--write-report]` | 5.7 | Lists broken `[[wikilinks]]` / `![[embeds]]` (no matching `.md` basename under the tree) and duplicate basenames; optional `wikilink-orphan-report.md` in the brain folder |
 | `skills/scan-codebase/scripts/cleanup.sh` | End | Remove all `/tmp/forge_scan_*.txt` files |
+| `skills/scan-codebase/scripts/validate-product-roles.sh <product.md>` | Pre-scan | Warns when `role:` ≠ basename(`repo:` path) — avoids phase4 / phase56 slug drift (exit 1 only if `FORGE_VALIDATE_PRODUCT_STRICT=1`) |
+| `skills/scan-codebase/scripts/_forge-mod-slug.sh` | (library) | Sourced by `phase4-brain-write.sh` and `phase56-autolink-crossrepo.sh` — single definition of module node basename from repo role + relative path |
 
 **Agent-visible diagnostics:** Every script sources `_forge-scan-log.sh` and prints machine-grep lines of the form `FORGE_SCAN|<script>|<utc>|LEVEL|…`. In chat or CI logs, filter with `grep '^FORGE_SCAN|'` (or `ERROR` / `WARN` in the fourth pipe field) to audit scan health without rereading prose output.
+
+### Canonical multi-repo scan order (do not skip)
+
+1. **Optional:** `validate-product-roles.sh ~/forge/brain/products/<slug>/product.md` — catch `role` / repo-basename mismatches before Phase 4.
+2. **Per repo:** `phase1-inventory.sh <REPO>`
+3. **Per repo:** `phase35-extract.sh <REPO>` — first route-defining repo **without** `append` (truncates `/tmp/forge_scan_api_routes.txt`); **every other** route-defining repo **with** `append`.
+4. **Per repo:** `phase4-brain-write.sh <REPO> <BRAIN_CODEBASE_DIR> <ROLE>` — `ROLE` must match `basename <REPO>` (see validator).
+5. **Once all repos:** `phase5-cross-repo.sh <repo1> <repo2> …`
+6. **Once:** `phase56-autolink-crossrepo.sh <BRAIN_CODEBASE_PARENT>`
+7. **Optional:** `phase57-validate-brain-wikilinks.sh <BRAIN_CODEBASE_PARENT> --write-report`
+8. **End:** `cleanup.sh` — clears `/tmp/forge_scan_*.txt` so the next run does not mix stale routes or callsites.
 
 ### Tier 1 / Tier 2 hubs vs a full file graph
 
@@ -122,6 +136,21 @@ codebase/
 | Maximum **FE↔BE links** | Fix Phase 3.5 `append` + Phase 5 prep (see Phase 5 intro), then rewrite `cross-repo.md` and patch `## Calls (cross-repo)` / `## Called By` on modules |
 
 If “Tier 1 hub” sounds like the graph is incomplete, that is usually **stale `/tmp` route aggregation** or **skipped method/cross-repo steps** — not a hard cap on nodes.
+
+### FAQ: Why is the Tier 1 hub count smaller than “files in git”?
+
+- **Tier 1 is not “all tracked files.”** Phase 1 scores **incoming references** from a cheap import-line scan (other files’ early lines mentioning this file’s basename). Tier 1 means **≥5** incoming hits; Tier 2 is typically **3–4**. Anything below that is not labeled Tier 1 even though it exists on disk.
+- **Many real files are rarely imported as modules:** entrypoints, leaves, one-off scripts, styles, config-adjacent code, and new files can sit at **0–2** incoming refs forever.
+- **`git ls-files` includes non-source assets** (docs, YAML, images, etc.) that never participate in hub scoring; Phase 1 also excludes `node_modules/`, `dist/`, tests from the *hub* list while still inventorying source elsewhere.
+- **Brain / Obsidian node count** comes from Phase 4 (classes, modules, methods, …) and is **orthogonal** to Tier 1 — hubs only gate **which files Phase 3 reads first**, not how many notes exist.
+
+### Fixing orphan or bogus `[[wikilinks]]`
+
+Broken links usually come from **slug drift** (`product.md` **role** label ≠ repo folder basename → module filenames like `web-src-api.md` do not match what phase56 emits), **hand-written placeholders** in stubs, **duplicate basenames** in different folders (Obsidian picks one file arbitrarily), or a **stale brain** after refactors.
+
+1. Run **`phase57-validate-brain-wikilinks.sh`** on `brain/products/<slug>/codebase` with `--write-report` to get `wikilink-orphan-report.md` (orphans + ambiguous names).
+2. Align **role** in `product.md` with the **basename** of each `repo:` path so module slugs from **`_forge-mod-slug.sh`** stay consistent in phase4 and phase56.
+3. Re-run **phase4** (per role) and **phase56** (once per product) after slug fixes; edit or remove stale `[[...]]` lines the report flags.
 
 ---
 
@@ -765,13 +794,13 @@ bash "$FORGE_SCRIPTS/phase35-extract.sh" "$REPO"
 bash "$FORGE_SCRIPTS/phase35-extract.sh" "$OTHER_REPO" append
 ```
 
-**HARD-GATE (multi-repo):** `/tmp/forge_scan_api_routes.txt` must contain routes from **every** repo that defines HTTP APIs (typically backend + any BFF). The script **truncates** that file on the first run and **appends** on `append`. If you only run phase35 on the web repo last, the file will contain **only web routes** and Phase 5.5 will show almost no FE↔BE matches — that is a common cause of “one cross-repo link” graphs.
+**HARD-GATE (multi-repo):** `/tmp/forge_scan_api_routes.txt` must contain routes from **every** repo that defines HTTP APIs (typically backend + any BFF). The script **truncates** that file on the first run and **appends** on `append`. If you only run phase35 on the web repo last, the file will contain **only web routes** and **phase56** will find almost no FE↔BE matches — that is a common cause of “one cross-repo link” graphs.
 
 Recommended order: **backend first** (no `append`), then web, mobile, etc. with `append`.
 
 This writes:
 - `/tmp/forge_scan_test_names.txt` — test name strings (used for `gotchas.md`)
-- `/tmp/forge_scan_api_routes.txt` — all route decorators and router patterns (used for `api-surface.md` and Phase 5.5 route correlation). Each line is prefixed with `<repo-basename>\t` after aggregation.
+- `/tmp/forge_scan_api_routes.txt` — all route decorators and router patterns (used for `api-surface.md` and **phase56** route correlation). Each line is prefixed with `<repo-basename>\t` after aggregation.
 
 Read the script output for the route breakdown by HTTP method before proceeding to Phase 4.
 
@@ -929,15 +958,14 @@ Create one file per top-level module directory + one for each Tier 1 hub.
 
 ## Calls (cross-repo)
 
-> Routes this module calls in other repos — backfilled by Phase 5.5 after correlation runs.
-> Leave blank on first pass. Phase 5.5 will patch this section.
+> Routes this module calls in other repos — auto-filled by **phase56** after `phase5-cross-repo.sh` (markers `FORGE:AUTO_*`). Manual rows optional.
+> On first pass stubs may be prose-only until phase56 runs.
 
 - `<METHOD> <path>` → [[<other-role>-<module>]] (`<other-repo>/src/routes/file.ts:<line>`)
 
 ## Called By (cross-repo)
 
-> Modules in other repos that call routes defined here — backfilled by Phase 5.5.
-> Leave blank on first pass. Phase 5.5 will patch this section.
+> Callers in other repos — **phase56** fills `FORGE:AUTO_CROSS_REPO_IN`. Manual rows optional.
 
 - [[<caller-role>-<module>]] (`<caller-repo>/src/hooks/file.ts:<line>`) → `<METHOD> <path>`
 
@@ -955,7 +983,7 @@ Create one file per top-level module directory + one for each Tier 1 hub.
 - `<file:line>` — `<comment text>`
 ```
 
-**Important:** The `## Calls (cross-repo)` and `## Called By (cross-repo)` sections are written as empty stubs during Phase 4. Phase 5.5 Step 6 fills them in after correlation is complete. Do NOT attempt to fill them during Phase 4 — the correlation data doesn't exist yet.
+**Important:** Phase 4 writes scaffold text for `## Calls (cross-repo)` / `## Called By (cross-repo)`. **phase56** appends auto-blocks once `/tmp/forge_scan_all_callsites.txt` and merged routes exist. Do not hand-fill large edge lists during Phase 4 — correlation data is not ready until phase5 prep completes.
 
 ### 4.3a — classes/<role>-<ClassName>.md format
 
@@ -1552,7 +1580,7 @@ bash "$FORGE_SCRIPTS/phase56-autolink-crossrepo.sh" "$HOME/forge/brain/products/
 
 **Prerequisites:** `phase4-brain-write.sh` has already created `*/modules/<role>-<dirslug>.md` files; `/tmp/forge_scan_api_routes.txt` must list **all** route-defining repos (use `phase35-extract.sh … append`); `/tmp/forge_scan_all_callsites.txt` must be from `phase5-cross-repo.sh`.
 
-**What it does:** For each HTTP call line, extracts `/api…`, `/vN…`, `/graphql…`, `/rest…` fragments, finds a substring hit in `forge_scan_api_routes.txt`, then **appends** idempotent blocks to caller and callee module files:
+**What it does:** For each HTTP call line, extracts `/api…`, `/vN…`, `/graphql…`, `/rest…` fragments, finds a substring hit in a merged routes file (copy of `/tmp/forge_scan_api_routes.txt` **plus** optional **`route-aliases.tsv`** in the same brain parent directory — lines appended as extra `repo<TAB>path:line:…` rows, `#` comments and blank lines ignored), then **appends** idempotent blocks to caller and callee module files:
 
 - Outgoing: markers `FORGE:AUTO_CROSS_REPO_OUT`
 - Incoming: markers `FORGE:AUTO_CROSS_REPO_IN`
@@ -1560,6 +1588,14 @@ bash "$FORGE_SCRIPTS/phase56-autolink-crossrepo.sh" "$HOME/forge/brain/products/
 Also writes `cross-repo-automap.md` (TSV) at the codebase parent. **Re-run safe** — old auto blocks are stripped first.
 
 **Limitations:** Heuristic substring match only (no OpenAPI diff). Dynamic/template URLs still need manual rows. Module layout must be `codebase/<role>/modules/` as produced by Phase 4.
+
+### 5.7 — Validate `[[wikilinks]]` (optional, after Phase 4 / 5.6)
+
+```bash
+bash "$FORGE_SCRIPTS/phase57-validate-brain-wikilinks.sh" "$HOME/forge/brain/products/<slug>/codebase" --write-report
+```
+
+Writes **`wikilink-orphan-report.md`** at the codebase root: links whose target basename has no `.md` file under the tree, plus **ambiguous basenames** (same filename in multiple folders — Obsidian may resolve to the wrong note). Omit `--write-report` to print the same markdown to stdout only.
 
 ### 5.1 — API call detection (any repo → any repo) [reference]
 
@@ -1632,7 +1668,7 @@ for repo in <all-repos>; do
 done
 ```
 
-> **tRPC / gRPC note:** These protocols don't emit plain HTTP path strings. tRPC call sites reference procedure names (e.g. `trpc.user.getById.query()`), not URLs. gRPC call sites reference stub method names. For these, the route correlation in Phase 5.5 cannot use URL matching — instead, note the call sites in `cross-repo.md` under a separate section `## tRPC / gRPC Call Sites` with the procedure/method names. Match them manually against the router/proto definition files.
+> **tRPC / gRPC note:** These protocols don't emit plain HTTP path strings. tRPC call sites reference procedure names (e.g. `trpc.user.getById.query()`), not URLs. gRPC call sites reference stub method names. For these, **phase56** URL heuristics do not apply — note the call sites in `cross-repo.md` under `## tRPC / gRPC Call Sites` with procedure/method names and match manually to router/proto definitions.
 
 ### 5.2 — Shared type / schema detection
 

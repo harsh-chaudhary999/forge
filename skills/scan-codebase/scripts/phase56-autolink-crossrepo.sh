@@ -9,6 +9,9 @@
 # Expects /tmp/forge_scan_all_callsites.txt and /tmp/forge_scan_api_routes.txt
 # (phase5-cross-repo + phase35 with append for all route repos).
 #
+# Optional: <BRAIN_PARENT>/route-aliases.tsv — non-comment, non-blank lines appended to
+# the in-memory route list (same column shape as phase35 lines) for manual URL→route fixes.
+#
 # Heuristic substring match on URL paths — no LLM. Re-run safe (idempotent blocks).
 
 set -euo pipefail
@@ -17,6 +20,8 @@ shopt -s nullglob
 _fs_scripts=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck disable=SC1091
 . "$_fs_scripts/_forge-scan-log.sh"
+# shellcheck disable=SC1091
+. "$_fs_scripts/_forge-mod-slug.sh"
 
 _raw_parent="${1:?Usage: $0 <brain_codebase_parent e.g. \$HOME/forge/brain/products/slug/codebase>}"
 PARENT="${_raw_parent/#\~/$HOME}"
@@ -59,22 +64,11 @@ while IFS= read -r -d '' modf; do
   _strip_auto "$modf"
 done < <(find "$PARENT" -type f -path '*/modules/*.md' -print0 2>/dev/null)
 
-_mod_slug_from_rel() {
-  local repo="$1"
-  local rel="$2"
-  local d
-  d=$(dirname "$rel")
-  [ "$d" = "." ] && d="root"
-  local slug
-  slug=$(printf '%s' "$d" | tr '/' '-' | sed 's/^-//;s/-$//')
-  printf '%s' "${repo}-${slug}"
-}
-
 _resolve_module_file() {
   local repo="$1"
   local rel="$2"
   local slug
-  slug=$(_mod_slug_from_rel "$repo" "$rel")
+  slug=$(forge_mod_node_basename_from_rel "$repo" "$rel")
   local f="$PARENT/$repo/modules/$slug.md"
   if [ -f "$f" ]; then
     printf '%s' "$f"
@@ -85,6 +79,17 @@ _resolve_module_file() {
 
 _work=$(mktemp -d)
 trap 'rm -rf "$_work"' EXIT
+
+ROUTES_MERGED="$_work/api_routes_merged.txt"
+cp /tmp/forge_scan_api_routes.txt "$ROUTES_MERGED"
+if [ -f "$PARENT/route-aliases.tsv" ]; then
+  _alias_lines=$(grep -v '^[[:space:]]*#' "$PARENT/route-aliases.tsv" | grep -v '^[[:space:]]*$' | wc -l | tr -d ' ')
+  _alias_lines=${_alias_lines:-0}
+  forge_scan_log_stat "phase=5.6 route_aliases_tsv=appended non_comment_lines=$_alias_lines"
+  grep -v '^[[:space:]]*#' "$PARENT/route-aliases.tsv" | grep -v '^[[:space:]]*$' >> "$ROUTES_MERGED" 2>/dev/null || true
+else
+  forge_scan_log_stat "phase=5.6 route_aliases_tsv=absent"
+fi
 
 _edges=0
 : > "$_work/edges.tsv"
@@ -106,7 +111,7 @@ while IFS= read -r raw || [ -n "${raw:-}" ]; do
   while IFS= read -r url || [ -n "${url:-}" ]; do
     [ -z "${url:-}" ] && continue
     _u=$(printf '%s' "$url" | sed 's/[?#].*$//')
-    hit=$(grep -F "$_u" /tmp/forge_scan_api_routes.txt 2>/dev/null | head -1 || true)
+    hit=$(grep -F "$_u" "$ROUTES_MERGED" 2>/dev/null | head -1 || true)
     [ -z "$hit" ] && continue
 
     be_repo="${hit%%	*}"

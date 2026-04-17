@@ -80,7 +80,7 @@ Scanning <slug> codebase...
   Phase 2: Hub detection
   Phase 3: Semantic enrichment (targeted reads only)
   Phase 4: Writing brain files
-  Phase 5–5.6: Cross-repo prep + **phase56** auto-wikilinks on `modules/*.md` (multi-repo)
+  Phase 5–5.7: Cross-repo prep + **phase56** auto-wikilinks on `modules/*.md` (multi-repo) + optional **phase57** wikilink audit (`wikilink-orphan-report.md`)
 
 This will take 1-3 minutes per repo. Token budget: <15K per repo.
 ```
@@ -89,6 +89,8 @@ Run the scan-codebase skill for each project role. Process roles in this order:
 1. `backend` first (most architecturally dense)
 2. `shared` / `lib` (often imported by everything)
 3. `web` / `mobile` (consumer layers)
+
+**Script order (multi-repo — see `scan-codebase` SKILL):** optional `validate-product-roles.sh` on `product.md` → per repo `phase1-inventory.sh` → `phase35-extract.sh` (first routes run **without** `append`, later repos **with** `append`) → per repo `phase4-brain-write.sh` (pass `ROLE` = basename of that repo path) → once `phase5-cross-repo.sh` → once `phase56-autolink-crossrepo.sh` → optional `phase57-validate-brain-wikilinks.sh --write-report` → **`cleanup.sh`** to clear `/tmp/forge_scan_*.txt`.
 
 ---
 

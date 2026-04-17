@@ -15,6 +15,10 @@ The brain is the **immutable decision record** for your entire product. Every ch
 
 The brain is **not** a task tracker, issue system, or temporary notes file. It is the permanent record of architecture, product, and engineering decisions that shaped the product.
 
+### Phase 2 prep (embeddings / hybrid index — optional today)
+
+Before any vector or FTS index ships, prefer **YAML frontmatter** on new decision files: stable `id`, `updated` (ISO-8601 date), `product` / `project` where applicable, and optional `supersedes: <prior-id>` for knowledge updates. Use predictable `##` section boundaries in long notes so a later indexer can chunk without splitting mid-thought. Codebase scans already emit `SCAN.json` under `products/<slug>/codebase/`; optional **`route-aliases.tsv`** there augments phase56 route matching.
+
 ## Directory Tree
 
 ```
@@ -49,6 +53,7 @@ The brain is **not** a task tracker, issue system, or temporary notes file. It i
 │       │       └── learnings/                # Retrospective analysis
 │       │           └── {prd-id}-retrospective.md  # Post-PR dreamer retrospective
 │       ├── codebase/                       # Codebase knowledge graph (from /scan)
+│       │   ├── route-aliases.tsv           # Optional — extra synthetic API route lines for phase56 (same columns as phase35 routes)
 │       │   ├── SCAN.json                     # Scan metadata: timestamp, commit SHA, file count
 │       │   ├── index.md                      # Architecture style, module map, entry points
 │       │   ├── patterns.md                   # Detected architecture patterns with evidence

@@ -313,6 +313,10 @@ echo "  URL strings:     /tmp/forge_scan_fe_urls.txt"
 echo "  Dynamic URLs:    /tmp/forge_scan_dynamic_urls.txt  (manual review)"
 echo "  Shared types:    /tmp/forge_scan_all_types.txt"
 echo ""
-echo "Next: Phase 5.5 Steps 3-6 — join URL strings against backend routes"
-echo "      (model-side work: /tmp/forge_scan_fe_urls.txt × /tmp/forge_scan_api_routes.txt)"
-forge_scan_log_done "callsites=$(wc -l < /tmp/forge_scan_all_callsites.txt) fe_urls=$(wc -l < /tmp/forge_scan_fe_urls.txt) dynamic_urls=$(wc -l < /tmp/forge_scan_dynamic_urls.txt) env_lines=$(wc -l < /tmp/forge_scan_all_env_vars.txt)"
+echo "Next: phase56-autolink-crossrepo.sh (join call sites × routes), then phase57-validate-brain-wikilinks.sh, then cleanup.sh"
+_api_routes_n=$(wc -l < /tmp/forge_scan_api_routes.txt 2>/dev/null || true)
+_api_routes_n=${_api_routes_n:-0}
+_callsites_n=$(wc -l < /tmp/forge_scan_all_callsites.txt 2>/dev/null || true)
+_callsites_n=${_callsites_n:-0}
+forge_scan_log_stat "phase=5.x-prep api_routes=$_api_routes_n callsites=$_callsites_n fe_urls=$(wc -l < /tmp/forge_scan_fe_urls.txt 2>/dev/null | tr -d ' ') dynamic_urls=$(wc -l < /tmp/forge_scan_dynamic_urls.txt 2>/dev/null | tr -d ' ')"
+forge_scan_log_done "callsites=$_callsites_n fe_urls=$(wc -l < /tmp/forge_scan_fe_urls.txt) dynamic_urls=$(wc -l < /tmp/forge_scan_dynamic_urls.txt) env_lines=$(wc -l < /tmp/forge_scan_all_env_vars.txt) api_routes=$_api_routes_n"

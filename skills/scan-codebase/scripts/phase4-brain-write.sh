@@ -27,6 +27,8 @@ set -euo pipefail
 _fs_scripts=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck disable=SC1091
 . "$_fs_scripts/_forge-scan-log.sh"
+# shellcheck disable=SC1091
+. "$_fs_scripts/_forge-mod-slug.sh"
 
 REPO="${1:?Usage: $0 <repo-path> <brain-codebase-dir> <role>}"
 BRAIN_DIR="${2:?Usage: $0 <repo-path> <brain-codebase-dir> <role>}"
@@ -146,7 +148,7 @@ _See [[methods/]] — auto stubs use \`$ROLE-m-<cksum>\` (full inventory); optio
 _Fill in during Phase 3 read._
 
 ## Used By
-_Populated during Phase 5.5 cross-repo correlation._
+_Populated by phase56 / manual cross-repo notes after phase5 prep._
 
 ## Location in Structure
 **Repo role:** $ROLE | **Package:** $DIR
@@ -212,10 +214,10 @@ _Fill in: argument names and types._
 _Fill in: return type and what it represents._
 
 ## Called By
-_Fill in during Phase 3 or Phase 5.5 cross-repo correlation._
+_Fill in during Phase 3 or manual cross-repo correlation (phase56 covers HTTP paths)._
 
 ## Calls
-_Fill in during Phase 3 or Phase 5.5 cross-repo correlation._
+_Fill in during Phase 3 or manual cross-repo correlation (phase56 covers HTTP paths)._
 
 ## Location in Structure
 **Repo role:** $ROLE
@@ -278,7 +280,7 @@ else
       printf '%s\n' "## Parameters / return"
       printf '%s\n\n' "_Fill in during read._"
       printf '%s\n' "## Calls / data flow"
-      printf '%s\n\n' "_Fill in during read or Phase 5.5._"
+      printf '%s\n\n' "_Fill in during read or manual cross-repo pass._"
       printf '%s\n' "## Location"
       printf '%s\n' "**Repo role:** $ROLE | **Directory:** $DIR"
     } > "$NODE"
@@ -351,7 +353,7 @@ _Fill in: form names, fields, submit actions._
 _Fill in: components imported, composables/hooks used._
 
 ## API Calls Made
-_Populated during Phase 5.5 cross-repo correlation._
+_Populated by phase56 / manual cross-repo notes after phase5 prep._
 
 ## Location in Structure
 **Repo role:** $ROLE
@@ -381,8 +383,7 @@ while IFS= read -r dir || [ -n "$dir" ]; do
   [ -z "$dir" ] && continue
   [ "$dir" = "." ] && dir="root"
 
-  # Sanitize: replace path separators with dashes for filename
-  MODULE_NAME=$(echo "$dir" | tr '/' '-' | sed 's/^-//' | sed 's/-$//')
+  MODULE_NAME=$(forge_mod_dirslug_from_dir "$dir")
   NODE="$BRAIN_DIR/modules/$ROLE-$MODULE_NAME.md"
 
   if [ -f "$NODE" ]; then
@@ -409,10 +410,10 @@ _Fill in: exported functions, types, constants._
 _Fill in: other modules this one imports from._
 
 ## Calls (cross-repo)
-_Run scripts/phase56-autolink-crossrepo.sh after phase5-cross-repo.sh to auto-append wikilinks (HTML markers FORGE:AUTO_CROSS_REPO_OUT). Optional manual refine in Phase 5.5._
+_After `phase5-cross-repo.sh`, run `phase56-autolink-crossrepo.sh` (markers `FORGE:AUTO_CROSS_REPO_OUT`). Heuristic — verify. Optional: add `route-aliases.tsv` in the codebase brain parent for extra synthetic route lines. Further manual rows only if needed._
 
 ## Called By (cross-repo)
-_Same script fills incoming edges (FORGE:AUTO_CROSS_REPO_IN). Optional manual refine in Phase 5.5._
+_Same: `phase56-autolink-crossrepo.sh` (`FORGE:AUTO_CROSS_REPO_IN`). Optional manual rows only if needed._
 NODEEOF
   MODULES=$((MODULES + 1))
 done < /tmp/forge_scan_dirs.txt
@@ -438,7 +439,7 @@ echo "════════════════════════�
 echo ""
 echo "Next steps:"
 echo "  1. Enrich: Tier 1/2 hub file reads (Phase 3) — OR batch-read all of forge_scan_source_files.txt for full prose"
-echo "  2. Cross-repo: Phase 5.5 correlation + patch module ## Calls / ## Called By"
+echo "  2. Multi-repo: phase5-cross-repo.sh → phase56-autolink-crossrepo.sh → phase57-validate-brain-wikilinks.sh (optional --write-report) → cleanup.sh"
 echo "  3. git -C ~/forge/brain add products/<slug>/codebase/"
 echo "  4. git -C ~/forge/brain commit -m 'scan: <slug> codebase brain nodes ($TOTAL nodes)'"
 forge_scan_log_done "classes=$CLASSES methods=$METHODS functions=$FUNCTIONS pages=$PAGES modules=$MODULES skipped_existing=$SKIPPED total_new=$TOTAL"

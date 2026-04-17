@@ -100,5 +100,5 @@ head -20 /tmp/forge_scan_api_routes.txt | sed 's/^/  /'
 echo ""
 echo "Phase 3.4-3.5 complete."
 echo "  /tmp/forge_scan_test_names.txt — use for gotchas.md"
-echo "  /tmp/forge_scan_api_routes.txt — use for api-surface.md and Phase 5.5 correlation"
+echo "  /tmp/forge_scan_api_routes.txt — use for api-surface.md and phase56 cross-repo correlation"
 forge_scan_log_done "test_names_bytes=$(wc -c < /tmp/forge_scan_test_names.txt 2>/dev/null || echo 0) api_routes=$(wc -l < /tmp/forge_scan_api_routes.txt)"

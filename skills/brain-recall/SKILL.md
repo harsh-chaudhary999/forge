@@ -1253,9 +1253,9 @@ grep -r "cache" ~/Videos/forge/brain/ --include="*.md" -l | head -5
 2. **Semantic search needed** (same concept, different terminology)
 3. **Complex multi-dimensional queries** (product × tag × status × recency simultaneously)
 
-**Migration path:**
-1. Use `brain-link` to build embedding-based index
-2. Query against index instead of grepping all files
+**Migration path (product “Phase 2” — after grep-first brain + scan layout are stable):**
+1. Use `brain-link` / a dedicated indexer to build an embedding or hybrid (BM25 + dense) index
+2. Query against the index instead of grepping all files
 3. Fall back to grep for simple filename-based queries
 
 **Implementation sketch:**

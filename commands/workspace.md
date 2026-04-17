@@ -275,6 +275,12 @@ Do NOT wait for the user to ask — the codebase map is needed for planning.
 
 **Multi-repo HARD-GATE (first pass):** When all repos are scanned and `phase5-cross-repo.sh` has been run with every `repo:` path, immediately run **`phase56-autolink-crossrepo.sh`** against `~/forge/brain/products/<slug>/codebase` so module `## Calls (cross-repo)` / `## Called By` are filled from `/tmp` artifacts — no deferred “Phase 5.5 manual patch” unless the user wants refinements.
 
+**Optional (recommended after first brain write):** Run **`phase57-validate-brain-wikilinks.sh …/codebase --write-report`** to emit `wikilink-orphan-report.md` — lists `[[wikilinks]]` that do not resolve to any note file and basenames duplicated across folders (common cause of “phantom graph nodes” in Obsidian).
+
+**Optional before Phase 4:** Run **`validate-product-roles.sh ~/forge/brain/products/<slug>/product.md`** so each project’s `- role:` matches `basename` of its `- repo:` path (phase4 / phase56 assume they are equal).
+
+**After phase57 (or after scan):** Run **`cleanup.sh`** from `skills/scan-codebase/scripts/` so `/tmp/forge_scan_*.txt` does not leak into the next workspace.
+
 Run silently (no verbose output), announce progress briefly:
 
 ```
@@ -299,6 +305,8 @@ After scan completes, show final confirmation:
    Infrastructure: not configured (optional — add with /workspace add-infra <slug>)
    Codebase scan: ✅ done (re-run any time: /scan <slug>)
    Cross-repo module links: ✅ phase56-autolink-crossrepo (if multi-repo)
+   Wikilink audit: optional phase57 → `wikilink-orphan-report.md`
+   `/tmp` cleanup: run `cleanup.sh` after scan
 
    Ready to start planning? Run: /intake
 ```

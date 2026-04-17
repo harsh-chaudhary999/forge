@@ -81,6 +81,8 @@ Given a product slug (from the locked PRD), load and validate:
    cat ~/forge/brain/products/<slug>/codebase/index.md
    ```
 
+   `SCAN.json` may list each repo under **`repos.<role>`** (with top-level fields aggregated across roles). Use those entries when you need per-role `scanned_at`, `commit`, or file counts.
+
    Extract and record:
    - **Last-scanned timestamp** — warn if older than 7 days: `⚠️ Codebase scan is N days old — run /scan to refresh before planning`
    - **Architecture style** — include in context-loaded.md so council surfaces get it

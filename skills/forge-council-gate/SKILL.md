@@ -57,6 +57,8 @@ else
 fi
 ```
 
+`SCAN.json` may use a **nested** shape: per-role data lives under `repos.<role>` with **top-level** aggregates (`scanned_at`, `source_files`, …) for backward compatibility. The `grep` snippet above still finds `scanned_at` on typical files; when reading the file in full, prefer `repos.<role>` for role-specific freshness.
+
 **Decision:**
 
 | Situation | Action |

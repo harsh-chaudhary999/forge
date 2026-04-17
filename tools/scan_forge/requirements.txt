@@ -1,0 +1,3 @@
+# Optional but recommended for YAML OpenAPI/Swagger and full schema digest parsing.
+#   pip install -r tools/scan_forge/requirements.txt
+PyYAML>=6.0.1

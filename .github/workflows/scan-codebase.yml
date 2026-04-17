@@ -23,5 +23,8 @@ jobs:
       - name: Compile scan_forge
         run: python3 -m compileall -q tools/scan_forge
 
+      - name: Unit tests (scan_forge)
+        run: PYTHONPATH=tools python3 -m unittest discover -s tools/scan_forge/tests -v
+
       - name: Smoke test (fixtures + forge_scan_run.py)
         run: python3 tools/scan_forge/verify_smoke.py

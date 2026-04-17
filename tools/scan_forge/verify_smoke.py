@@ -41,6 +41,11 @@ def main() -> int:
         repos = scan_doc.get("repos")
         assert isinstance(repos, dict) and "backend" in repos and "web" in repos, scan_doc
         assert scan_doc.get("source_files", 0) >= 2
+        g = json.loads((brain / "graph.json").read_text(encoding="utf-8"))
+        assert g.get("forge_scan_graph_version") == 1
+        assert isinstance(g.get("nodes"), list)
+        assert (brain / "SCAN_SUMMARY.md").is_file()
+        assert (brain / ".forge_scan_manifest.json").is_file()
     finally:
         import shutil
 

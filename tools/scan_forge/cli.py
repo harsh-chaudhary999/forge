@@ -48,12 +48,16 @@ def run_scan(
 ) -> dict:
     from . import (
         cleanup,
+        openapi_schema_digest,
         phase1,
         phase35,
         phase4,
         phase5,
         phase56,
         phase57,
+        scan_graph_export,
+        scan_manifest,
+        scan_summary,
         validate_roles,
     )
 
@@ -80,8 +84,14 @@ def run_scan(
         phase35.run_phase35(path, run_dir, append_routes=(i > 0))
         phase4.run_phase4(path, brain, role, run_dir)
 
+    openapi_schema_digest.write_digest(brain, repos)
+
     phase5.run_phase5([p for _, p in repos], run_dir)
     phase56.run_phase56(brain, run_dir)
+
+    scan_graph_export.write_graph_json(brain)
+    scan_summary.write_scan_summary(brain, repos)
+    scan_manifest.write_manifest(brain, repos)
 
     if not skip_phase57:
         phase57.run_phase57(brain, write_report=phase57_write_report)

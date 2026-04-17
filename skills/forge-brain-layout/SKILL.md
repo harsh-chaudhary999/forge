@@ -55,6 +55,9 @@ Before any vector or FTS index ships, prefer **YAML frontmatter** on new decisio
 │       ├── codebase/                       # Codebase knowledge graph (from /scan)
 │       │   ├── route-aliases.tsv           # Optional — extra synthetic API route lines for phase56 (same columns as phase35 routes)
 │       │   ├── SCAN.json                     # Scan metadata: `repos.<role>` per repo + aggregated top-level fields (see scan-codebase)
+│       │   ├── SCAN_SUMMARY.md               # One-page scan orientation + limitations (regenerated each scan)
+│       │   ├── graph.json                    # Derived module + cross-repo edge graph (regenerated)
+│       │   ├── .forge_scan_manifest.json     # Per-role git tree/head fingerprints (tooling)
 │       │   ├── index.md                      # Architecture style, module map, entry points
 │       │   ├── patterns.md                   # Detected architecture patterns with evidence
 │       │   ├── api-surface.md                # REST endpoints, exported symbols, event schemas

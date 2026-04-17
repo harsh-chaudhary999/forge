@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from . import grep_util, log
+from . import grep_util, log, openapi_routes
 
 
 def run_phase35(repo: Path, scan_tmp: Path, append_routes: bool) -> None:
@@ -102,6 +102,10 @@ def run_phase35(repo: Path, scan_tmp: Path, append_routes: bool) -> None:
         for line in fixed:
             f.write(line + "\n")
 
+    openapi_n = openapi_routes.append_openapi_routes(repo, slug, routes_path)
+    if openapi_n:
+        print(f"  OpenAPI/Swagger operations appended: {openapi_n}")
+
     merged = routes_path.read_text(encoding="utf-8", errors="replace")
     n_routes = len([x for x in merged.splitlines() if x.strip()])
     _get = sum(1 for ln in merged.splitlines() if re.search(r"@Get\b|router\.get|app\.get|r\.GET|e\.GET|g\.GET|@GetMapping", ln))
@@ -117,7 +121,7 @@ def run_phase35(repo: Path, scan_tmp: Path, append_routes: bool) -> None:
     print(f"    DELETE: {_delete}")
     print(f"    PATCH:  {_patch}")
     log.log_stat(
-        f"phase=3.5 api_routes={n_routes} get={_get} post={_post} put={_put} delete={_delete} patch={_patch}",
+        f"phase=3.5 api_routes={n_routes} get={_get} post={_post} put={_put} delete={_delete} patch={_patch} openapi_ops={openapi_n}",
     )
     print()
     print("[3.5] Routes sample (first 20):")

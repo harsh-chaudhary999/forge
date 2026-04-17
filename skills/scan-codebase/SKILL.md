@@ -86,6 +86,9 @@ Output goes to: `~/forge/brain/products/<slug>/codebase/`
 codebase/
   index.md              # Overview: entry points, architecture style, stats, last scanned
   SCAN.json             # Metadata: timestamp, commit SHA, file count, language breakdown
+  SCAN_SUMMARY.md       # One-page orientation + limitations (after each scan)
+  graph.json            # Derived module graph + cross-repo edges (regeneratable)
+  .forge_scan_manifest.json  # Per-role git tree/head fingerprints (tooling)
   modules/
     <module-name>.md    # Per-module: purpose, exports, dependencies, dependents
   patterns.md           # Detected architecture patterns with evidence
@@ -104,9 +107,29 @@ codebase/
 | `python3 tools/forge_scan_run.py …` | Prepends `tools/` on `sys.path` and runs **`scan_forge`** |
 | `PYTHONPATH=tools python3 -m scan_forge …` | Same CLI without the wrapper script |
 
-**Requirements:** Python 3.9+, **GNU grep** and **cksum** on `PATH` (pattern inventory and stable method IDs).
+**Requirements:** Python 3.9+, **GNU grep** and **cksum** on `PATH` (pattern inventory and stable method IDs). Optional: `pip install -r tools/scan_forge/requirements.txt` (adds **PyYAML**) for reliable YAML OpenAPI parsing and full `openapi-schema-digest` coverage.
 
-**Package layout:** `tools/scan_forge/` — `cli.run_scan` invokes `phase1` → `phase35` → `phase4` (writes `SCAN.json` via `scan_metadata`) per repo, then `phase5` → `phase56`, optional `phase57`, optional `cleanup`; optional `validate_roles` when `--product-md` is set.
+**Package layout:** `tools/scan_forge/` — `cli.run_scan` invokes `phase1` → `phase35` → `phase4` (writes `SCAN.json` via `scan_metadata`) per repo, then **`openapi_schema_digest.write_digest`** (writes `openapi-schema-digest.md`), then `phase5` → `phase56`, optional `phase57`, optional `cleanup`; optional `validate_roles` when `--product-md` is set.
+
+**OpenAPI / Swagger (phase 3.5):** Each repo is scanned for spec files (`openapi.json`, `openapi.yaml`, `openapi.yml`, `swagger.json`, `*.openapi.json`, filenames containing `openapi` or `swagger` with json/yaml/yml — see `openapi_routes.discover_openapi_files`). Operations are **appended** to `forge_scan_api_routes.txt` after grep-based route lines. **Phase 56** matches frontend call paths to those operations using substring match **or** `{param}` template matching (so `/api/users/123` can match `/api/users/{id}`). Without PyYAML, YAML specs may be skipped or partially parsed; install from `tools/scan_forge/requirements.txt` when possible.
+
+**Schema digest (not prop↔DTO proof):** `openapi-schema-digest.md` lists shallow `components.schemas` property names per role for LLM/recall — it does **not** certify React props ↔ backend fields. **Empirical coverage:** re-scan your stack, then use `python3 -m scan_forge.scan_metrics --brain-codebase <codebase> [--run-dir <kept>]` to print SCAN.json / automap / digest hints (numbers are observational, not a guarantee of N% accuracy).
+
+**Derived artifacts (after phase56, always regenerated):**
+
+| File | Purpose |
+|------|---------|
+| `SCAN_SUMMARY.md` | One-page orientation: freshness, per-role stats, links to automap / digest / graph, known limitations |
+| `graph.json` | Machine graph: `nodes` (module stems + paths) + `edges` (`cross_repo_http` with `url` + `provenance`) — **derived** from markdown + automap; markdown modules remain the human source of truth |
+| `.forge_scan_manifest.json` | Per-role `git` `HEAD` + `HEAD^{tree}` after each successful scan — for tooling and future incremental strategies |
+
+**Cross-repo provenance (phase56):** Injected module bullets and `cross-repo-automap.md` TSV use tags: **`OPENAPI`** (route line from OpenAPI append), **`GREP_SUBSTRING`** / **`GREP_TEMPLATE`** (grep route inventory; template = `{param}` match), **`MANUAL_ALIAS`** (rows from `route-aliases.tsv`). These label **how the join was made**, not runtime correctness.
+
+**MCP:** Not part of the default pipeline. Full scans are driven by **`/scan`** / **`forge_scan_run.py`** (and workspace init). A separate read-only MCP could wrap `graph.json` later; it is optional, not required for parity with other graph tools.
+
+**Token policy:** The scanner does **not** impose artificial context/token budgets on outputs — summaries and graphs include available signal; agents and skills choose what to read.
+
+**Known limitations (honest):** Grep-based call/route inventory misses dynamic URLs and some frameworks; OpenAPI discovery is heuristic; Obsidian resolves `[[modules/…]]` from the **vault root** (often open `codebase/` as vault or expect some wikilinks to need path adjustment); `graph.json` edges require current automap TSV columns (includes `route_rel_path`). Re-scan after major refactors.
 
 **Diagnostics:** Modules emit `FORGE_SCAN|<id>|<utc>|LEVEL|…` (see `tools/scan_forge/log.py`).
 

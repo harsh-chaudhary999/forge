@@ -4,7 +4,7 @@ import os
 import re
 from pathlib import Path
 
-from . import grep_util, log, modslug
+from . import grep_util, log, modslug, scan_metadata
 
 
 def _parse_grep_line(line: str) -> tuple[str, str, str]:
@@ -458,6 +458,8 @@ def run_phase4(repo: Path, brain_dir: Path, role: str, scan_tmp: Path) -> None:
     print("════════════════════════════════════════════════════════")
     print(f"TOTAL NEW NODES WRITTEN: {total}")
     print("════════════════════════════════════════════════════════")
+    scan_metadata.merge_scan_json(brain_dir, repo, role, scan_tmp)
+    print(f"SCAN.json updated under {brain_dir}")
     log.log_done(
         f"classes={classes} methods={methods} functions={functions} pages={pages} modules={modules} "
         f"skipped_existing={skipped} total_new={total}",

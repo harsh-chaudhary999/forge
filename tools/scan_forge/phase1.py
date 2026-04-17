@@ -196,7 +196,7 @@ def run_phase1(repo: Path, scan_tmp: Path) -> None:
             pass
     print()
 
-    # 1.6 symbol inventory — grep mirrors bash phase1-inventory.sh
+    # 1.6 symbol inventory — GNU grep patterns aligned with legacy inventory
     print("[1.6] Building symbol inventory...")
 
     def w(name: str, content: str) -> None:

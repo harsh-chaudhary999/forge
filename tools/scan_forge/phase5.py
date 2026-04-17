@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
 from pathlib import Path
 
 from . import grep_util, log
@@ -164,9 +165,18 @@ def run_phase5(repos: list[Path], scan_tmp: Path) -> None:
                 if len(parts) < 3:
                     continue
                 f.write(parts[2] + "\n")
-    dup_lines = len({ln for ln in (scan_tmp / "forge_scan_all_types.txt").read_text().splitlines() if ln.strip()})
-    print(f"  Total type declarations: {dup_lines}")
-    log.log_stat(f"phase=5.2 type_declarations={dup_lines} duplicate_type_lines=0")
+    type_text = (scan_tmp / "forge_scan_all_types.txt").read_text(encoding="utf-8", errors="replace")
+    type_lines = [ln.strip() for ln in type_text.splitlines() if ln.strip()]
+    total_decl = len(type_lines)
+    ctr = Counter(type_lines)
+    dup_distinct = sum(1 for n in ctr.values() if n > 1)
+    print(f"  Total type declarations: {total_decl}")
+    if dup_distinct:
+        print("  Types appearing in 2+ repos (potential shared contracts):")
+        dups = sorted(((ln, c) for ln, c in ctr.items() if c > 1), key=lambda x: -x[1])[:50]
+        for line, n in dups:
+            print(f"    ({n}x) {line[:120]}")
+    log.log_stat(f"phase=5.2 type_declarations={total_decl} duplicate_type_lines={dup_distinct}")
 
     # 5.3 env
     print()

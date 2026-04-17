@@ -273,13 +273,13 @@ cp "$BT/"{app.json,graph.json,workspace.json,core-plugins.json,appearance.json} 
 **REQUIRED SKILL:** Invoke `scan-codebase` skill for each registered repo automatically.
 Do NOT wait for the user to ask — the codebase map is needed for planning.
 
-**Multi-repo HARD-GATE (first pass):** When all repos are scanned and `phase5-cross-repo.sh` has been run with every `repo:` path, immediately run **`phase56-autolink-crossrepo.sh`** against `~/forge/brain/products/<slug>/codebase` so module `## Calls (cross-repo)` / `## Called By` are filled from `/tmp` artifacts — no deferred “Phase 5.5 manual patch” unless the user wants refinements.
+**Multi-repo HARD-GATE (first pass):** Use **`python3 tools/forge_scan_run.py`** with **every** `--repos` entry so phase 5 and **phase56** (`tools/scan_forge/phase56.py`) run against `~/forge/brain/products/<slug>/codebase` and fill module `## Calls (cross-repo)` / `## Called By` from the run-dir artifacts — no deferred “Phase 5.5 manual patch” unless the user wants refinements.
 
-**Optional (recommended after first brain write):** Run **`phase57-validate-brain-wikilinks.sh …/codebase --write-report`** to emit `wikilink-orphan-report.md` — lists `[[wikilinks]]` that do not resolve to any note file and basenames duplicated across folders (common cause of “phantom graph nodes” in Obsidian).
+**Optional (recommended after first brain write):** Pass **`--phase57-write-report`** so phase57 emits `wikilink-orphan-report.md` — orphan `[[wikilinks]]` and ambiguous basenames.
 
-**Optional before Phase 4:** Run **`validate-product-roles.sh ~/forge/brain/products/<slug>/product.md`** so each project’s `- role:` matches `basename` of its `- repo:` path (phase4 / phase56 assume they are equal).
+**Optional before Phase 4:** Pass **`--product-md ~/forge/brain/products/<slug>/product.md`** so built-in role validation ensures each project’s `- role:` matches the basename of its `- repo:` path (phase4 / phase56 assume they are equal).
 
-**After phase57 (or after scan):** Run **`cleanup.sh`** from `skills/scan-codebase/scripts/` so `/tmp/forge_scan_*.txt` does not leak into the next workspace.
+**After the run:** Pass **`--cleanup`** or delete the temp run directory printed on stdout so `forge_scan_*.txt` files in that directory are not reused accidentally.
 
 Run silently (no verbose output), announce progress briefly:
 
@@ -304,9 +304,9 @@ After scan completes, show final confirmation:
 
    Infrastructure: not configured (optional — add with /workspace add-infra <slug>)
    Codebase scan: ✅ done (re-run any time: /scan <slug>)
-   Cross-repo module links: ✅ phase56-autolink-crossrepo (if multi-repo)
-   Wikilink audit: optional phase57 → `wikilink-orphan-report.md`
-   `/tmp` cleanup: run `cleanup.sh` after scan
+   Cross-repo module links: ✅ phase56 (if multi-repo)
+   Wikilink audit: optional `--phase57-write-report` → `wikilink-orphan-report.md`
+   Run-dir cleanup: optional `--cleanup` on `forge_scan_run.py`
 
    Ready to start planning? Run: /intake
 ```

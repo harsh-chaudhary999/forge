@@ -74,8 +74,8 @@ Produces `~/forge/brain/products/<slug>/codebase/` — readable by humans, query
 Scan produces a structured knowledge graph of a codebase, stored in the Forge brain as navigable Obsidian markdown. It runs in 4 phases, ordered by token cost (cheapest first):
 
 ```
-Phase 1 — Structural map     (bash only, 0 tokens)
-Phase 2 — Hub detection      (bash only, 0 tokens)
+Phase 1 — Structural map     (Python + grep, 0 LLM tokens)
+Phase 2 — Hub detection      (derived from phase 1 artifacts, 0 LLM tokens)
 Phase 3 — Semantic enrichment (targeted reads, low tokens)
 Phase 4 — Brain write        (structured output, low tokens)
 ```
@@ -95,555 +95,72 @@ codebase/
 
 ---
 
-## Pre-Written Scripts
+## Scan runner (`tools/scan_forge`)
 
-> **Do NOT reconstruct these commands inline.** All zero-token bash work is pre-written in committed scripts.
-> Running a pre-written script is one tool call. Reconstructing 200 lines of bash is wasted tokens.
+> **Do not re-implement Phase 1–5 pipelines by hand.** The committed Python package is the source of truth; one invocation runs the full scan.
 
-| Script | Phase | What it does |
-|---|---|---|
-| `tools/forge_scan_run.py` | Orchestration | Thin entry that adds `tools/` to `sys.path` and runs **`tools/scan_forge`** (stdlib Python + `grep`/`cksum` where needed). Creates a per-run artifact directory (`FORGE_SCAN_RUN_DIR` / `FORGE_SCAN_TMP`), runs phases 1 → 35 → 4 → 5 → 56 → 57 in order, writes `run.json`. Use `--repos role:/abs/path` where **`basename(path)` == `role`** (same contract as `validate-product-roles.sh`). Alternative: `PYTHONPATH=tools python3 -m scan_forge …`. Bash scripts under `scripts/` remain reference/CI shellcheck targets but are not invoked by the default runner. |
-| `skills/scan-codebase/scripts/phase1-inventory.sh <REPO>` | 1.1 – 1.6 | Full inventory: file list, hub scores, type/method/function/UI symbols |
-| `skills/scan-codebase/scripts/phase35-extract.sh <REPO> [append]` | 3.4 – 3.5 | Test name strings + API route extraction (`append` merges routes from multiple repos into one file — **required** for cross-repo correlation) |
-| `skills/scan-codebase/scripts/phase4-brain-write.sh <REPO> <BRAIN_CODEBASE_DIR> <ROLE>` | 4.3a/d/c/e/b | Auto-generate ALL stub brain nodes (classes, **methods (full `methods_all` inventory)**, functions, pages, modules) — no LLM needed |
-| `skills/scan-codebase/scripts/phase5-cross-repo.sh <repo1> [repo2...]` | 5.1 – 5.5 prep | Cross-repo HTTP call sites, shared types, env vars, URL harvest |
-| `skills/scan-codebase/scripts/phase56-autolink-crossrepo.sh <BRAIN_CODEBASE_PARENT>` | 5.6 | **No LLM** — patches `*/modules/*.md` with `[[wikilinks]]` for Calls / Called-by from `FORGE_SCAN_TMP` call sites × routes; writes `cross-repo-automap.md` |
-| `skills/scan-codebase/scripts/phase57-validate-brain-wikilinks.sh <BRAIN_CODEBASE_PARENT> [--write-report]` | 5.7 | Lists broken `[[wikilinks]]` / `![[embeds]]` (no matching `.md` basename under the tree) and duplicate basenames; optional `wikilink-orphan-report.md` in the brain folder |
-| `skills/scan-codebase/scripts/cleanup.sh` | End | Remove all `forge_scan_*.txt` files under `FORGE_SCAN_TMP` (default `/tmp`) |
-| `skills/scan-codebase/scripts/validate-product-roles.sh <product.md>` | Pre-scan | Warns when `role:` ≠ basename(`repo:` path) — avoids phase4 / phase56 slug drift (exit 1 only if `FORGE_VALIDATE_PRODUCT_STRICT=1`) |
-| `skills/scan-codebase/scripts/_forge-mod-slug.sh` | (library) | Sourced by `phase4-brain-write.sh` and `phase56-autolink-crossrepo.sh` — single definition of module node basename from repo role + relative path |
+| Entry | Purpose |
+|-------|---------|
+| `python3 tools/forge_scan_run.py …` | Prepends `tools/` on `sys.path` and runs **`scan_forge`** |
+| `PYTHONPATH=tools python3 -m scan_forge …` | Same CLI without the wrapper script |
 
-**Agent-visible diagnostics:** Every script sources `_forge-scan-log.sh` and prints machine-grep lines of the form `FORGE_SCAN|<script>|<utc>|LEVEL|…`. In chat or CI logs, filter with `grep '^FORGE_SCAN|'` (or `ERROR` / `WARN` in the fourth pipe field) to audit scan health without rereading prose output.
+**Requirements:** Python 3.9+, **GNU grep** and **cksum** on `PATH` (pattern inventory and stable method IDs). Shell phase scripts were removed; logic lives under `tools/scan_forge/`.
 
-### Troubleshooting: `command not found` or cryptic errors when running scripts
+**Diagnostics:** Modules emit `FORGE_SCAN|<id>|<utc>|LEVEL|…` (see `tools/scan_forge/log.py`).
 
-1. **Always invoke with `bash`**, not `sh` or `./script.sh` under a non-bash shell — e.g. `bash "$FORGE_SCRIPTS/phase1-inventory.sh" "$REPO"`. These scripts use **bash-only** features (`local`, `[[`, `BASH_SOURCE`, `set -o pipefail`, `$(<file)`). If Cursor (or CI) runs `sh -c '…/phase4-brain-write.sh'`, **dash** may run the file: you can see `local: not found`, `Bad substitution`, or failures before any logic runs. Every script now exits **127** early with a “requires bash” message if `BASH_VERSION` is unset.
-2. **`forge_mod_*: command not found`** — `phase4` / `phase56` need `_forge-mod-slug.sh` in the **same directory** as the other scan scripts. Do not copy a single script out of the repo without its neighbors.
-3. **`grep: invalid option`** (phase57) — needs **GNU grep** with `-o`. On minimal images, install `grep` from coreutils or run on a full Linux/macOS dev environment.
-4. **`/usr/bin/env: bash: No such file or directory`** — the runtime has no `bash` in `PATH` seen by `env`. Install bash or call `/bin/bash` explicitly if that binary exists.
-5. **`phase5-cross-repo.sh: command not found` from inside `phase4-brain-write.sh`** — unquoted `<< NODEEOF` treats **markdown backticks** as shell **command substitution**. **Mitigation in-repo:** module stubs and class / function / page stubs use **`printf` + quoted `<<'…'`** for static Markdown so backticks are never evaluated by the shell.
+### CLI flags (common)
 
-### Recommendations (best practice, not only “make it work”)
+| Flag | Meaning |
+|------|---------|
+| `--brain-codebase <dir>` | Brain codebase parent (the tree containing `modules/`, `classes/`, …) |
+| `--repos role:/abs/path …` | One or more repos; **`role` must equal `basename(path)`** |
+| `--run-dir <dir>` | Artifact dir for `forge_scan_*.txt` and `run.json` |
+| `--product-md <file>` | Optional — validates `role:` vs repo basename pairs in `product.md` |
+| `--skip-phase57` | Skip wikilink validation |
+| `--phase57-write-report` | Write `wikilink-orphan-report.md` under the brain codebase parent |
+| `--cleanup` | Remove `forge_scan_*.txt` in the run dir after success |
 
-| Topic | Recommendation |
-|--------|------------------|
-| **Running scripts** | Prefer **`bash /absolute/path/script.sh`** in docs, CI, and agent prompts so `PATH`, `sh` vs `bash`, and cwd never surprise you. |
-| **Forge install in Cursor** | Prefer **one clone** and a **symlink** `~/.cursor/plugins/local/forge` → that repo so you never edit a stale duplicate (watch for accidental `skills/skills/` nesting). |
-| **`product.md` vs `validate-product-roles.sh`** | **Best long-term:** make **`basename(repo path)` == the string you pass as `<ROLE>`** to `phase4-brain-write.sh` and the folder name under `codebase/<role>/` (phase56 call sites use repo basename). If marketing wants `role: mobile` while the repo folder is `app`, either **rename the folder**, **pass `app` as ROLE** to phase4, or accept validator noise — all three are valid tradeoffs; pick one and document it for the team. |
-| **`phase57` + grep** | Plan on **GNU grep** for `-o`; BusyBox-only containers may need a different image or a future rewrite without `-o`. |
-| **Static analysis** | Run **`shellcheck skills/scan-codebase/scripts/*.sh`** before merge when you touch scan bash (Forge has no pre-commit hook for it yet — adding one is worthwhile). |
-| **Artifact directory** | Scripts source `_forge-scan-paths.sh`: set **`FORGE_SCAN_RUN_DIR`** (or `FORGE_SCAN_TMP`) before running if you want isolated `forge_scan_*.txt` files instead of the default `/tmp`. |
+### Canonical command (multi-repo)
 
-### Canonical multi-repo scan order (do not skip)
+```text
+python3 tools/forge_scan_run.py \
+  --brain-codebase ~/forge/brain/products/<slug>/codebase \
+  --repos backend:~/projects/backend web:~/projects/web app:~/projects/app \
+  [--product-md ~/forge/brain/products/<slug>/product.md] \
+  [--phase57-write-report] [--cleanup]
+```
 
-1. **Optional:** `validate-product-roles.sh ~/forge/brain/products/<slug>/product.md` — catch `role` / repo-basename mismatches before Phase 4.
-2. **Per repo:** `phase1-inventory.sh <REPO>`
-3. **Per repo:** `phase35-extract.sh <REPO>` — first route-defining repo **without** `append` (truncates `forge_scan_api_routes.txt` under `FORGE_SCAN_TMP`); **every other** route-defining repo **with** `append`.
-4. **Per repo:** `phase4-brain-write.sh <REPO> <BRAIN_CODEBASE_DIR> <ROLE>` — `ROLE` must match `basename <REPO>` (see validator).
-5. **Once all repos:** `phase5-cross-repo.sh <repo1> <repo2> …`
-6. **Once:** `phase56-autolink-crossrepo.sh <BRAIN_CODEBASE_PARENT>`
-7. **Optional:** `phase57-validate-brain-wikilinks.sh <BRAIN_CODEBASE_PARENT> --write-report`
-8. **End:** `cleanup.sh` — clears `forge_scan_*.txt` under `FORGE_SCAN_TMP` so the next run does not mix stale routes or callsites.
+**Order inside the runner:** phase **1** → **3.5** (first repo truncates `forge_scan_api_routes.txt`; later repos **append**) → **4** per repo → **5** once → **56** → optional **57** → optional **cleanup**. List route-defining repos with **backend first** when possible so API routes accumulate correctly for phase 56.
 
 ### Tier 1 / Tier 2 hubs vs a full file graph
 
-**Hub tiers are not a ceiling on what exists in the brain.** They only **prioritize which source files get `cat` in Phase 3** so enrichment does not burn tokens on every leaf file first. Phase 1 already lists **every** tracked source file; Phase 4 writes **every** class / function / page / **module directory** stub from grep inventory; Phase **4.3d** writes **one method stub per line** in `forge_scan_methods_all.txt` (full-repo method lines from Phase 1.6 — not hub-filtered). Cross-repo edges in Phase 5 come from **route + URL correlation**, not from hub scores.
+**Hub tiers are not a ceiling on brain size.** They only prioritize which files to read first in Phase 3. Phase 1 lists every scanned source file; Phase 4 writes stubs from full inventories; Phase 4.3d emits one method stub per `forge_scan_methods_all.txt` line (not hub-filtered). Cross-repo edges come from routes × call sites in Phase 5–56, not hub scores.
 
 | You want… | What to do |
 |---|---|
-| Maximum **Obsidian nodes** per repo | Run `phase4-brain-write.sh` after Phase 1 — includes `methods/` from the full methods inventory |
-| Maximum **prose** on every file | **Ignore** `tier1`/`tier2` lists: batch-read **all** paths in `forge_scan_source_files.txt` (token cost = repo size) |
-| Maximum **FE↔BE links** | Fix Phase 3.5 `append` + Phase 5 prep (see Phase 5 intro), then rewrite `cross-repo.md` and patch `## Calls (cross-repo)` / `## Called By` on modules |
+| Maximum **nodes** | Run the full runner through phase 4 |
+| Maximum **prose** | Batch-read all paths in `forge_scan_source_files.txt` |
+| Maximum **FE↔BE links** | Ensure multi-repo `--repos` includes every route-defining repo; use `--phase57-write-report` after edits |
 
-If “Tier 1 hub” sounds like the graph is incomplete, that is usually **stale `/tmp` route aggregation** or **skipped method/cross-repo steps** — not a hard cap on nodes.
+### FAQ: Tier 1 count vs git file count
 
-### FAQ: Why is the Tier 1 hub count smaller than “files in git”?
+Tier 1 is **incoming reference score ≥5** from a cheap import-line scan, not “every file in git.” Many files stay at 0–2 incoming hits. Node counts come from Phase 4 and are orthogonal.
 
-- **Tier 1 is not “all tracked files.”** Phase 1 scores **incoming references** from a cheap import-line scan (other files’ early lines mentioning this file’s basename). Tier 1 means **≥5** incoming hits; Tier 2 is typically **3–4**. Anything below that is not labeled Tier 1 even though it exists on disk.
-- **Many real files are rarely imported as modules:** entrypoints, leaves, one-off scripts, styles, config-adjacent code, and new files can sit at **0–2** incoming refs forever.
-- **`git ls-files` includes non-source assets** (docs, YAML, images, etc.) that never participate in hub scoring; Phase 1 also excludes `node_modules/`, `dist/`, tests from the *hub* list while still inventorying source elsewhere.
-- **Brain / Obsidian node count** comes from Phase 4 (classes, modules, methods, …) and is **orthogonal** to Tier 1 — hubs only gate **which files Phase 3 reads first**, not how many notes exist.
+### Fixing orphan `[[wikilinks]]`
 
-### Fixing orphan or bogus `[[wikilinks]]`
-
-Broken links usually come from **slug drift** (`product.md` **role** label ≠ repo folder basename → module filenames like `web-src-api.md` do not match what phase56 emits), **hand-written placeholders** in stubs, **duplicate basenames** in different folders (Obsidian picks one file arbitrarily), or a **stale brain** after refactors.
-
-1. Run **`phase57-validate-brain-wikilinks.sh`** on `brain/products/<slug>/codebase` with `--write-report` to get `wikilink-orphan-report.md` (orphans + ambiguous names).
-2. Align **role** in `product.md` with the **basename** of each `repo:` path so module slugs from **`_forge-mod-slug.sh`** stay consistent in phase4 and phase56.
-3. Re-run **phase4** (per role) and **phase56** (once per product) after slug fixes; edit or remove stale `[[...]]` lines the report flags.
-
----
-
-**Script location:** Resolve once at the start of every scan — covers Claude Code, Cursor, Gemini CLI, and direct repo use:
-```bash
-# Try plugin caches first (Claude Code, Cursor, Gemini CLI), then repo root
-FORGE_SCRIPTS=$(find \
-  ~/.claude/plugins \
-  ~/.cursor/plugins \
-  ~/.cursor/plugins/local \
-  ~/.config/gemini/plugins \
-  -path "*/scan-codebase/scripts" -type d 2>/dev/null | head -1)
-# Fallback: we're running inside the forge repo itself
-[ -z "$FORGE_SCRIPTS" ] && FORGE_SCRIPTS="$(git rev-parse --show-toplevel 2>/dev/null)/skills/scan-codebase/scripts"
-# Fallback: user cloned forge to ~/forge
-[ -z "$FORGE_SCRIPTS" ] && [ -d "$HOME/forge/skills/scan-codebase/scripts" ] && FORGE_SCRIPTS="$HOME/forge/skills/scan-codebase/scripts"
-echo "Using scripts: $FORGE_SCRIPTS"
-```
+1. Re-run with **`--phase57-write-report`**.
+2. Align **`role`** in `product.md` with **`basename(repo path)`** for each project.
+3. Re-run scan after slug fixes; remove stale links the report flags.
 
 ---
 
 ## Phase 1: Structural Map (Zero Tokens)
 
-Run the pre-written Phase 1 script for **each repo** in the workspace. It covers Phases 1.1-1.6 in a single command.
+**Implementation:** `tools/scan_forge/phase1.py`. The runner sets **`FORGE_SCAN_TMP`** (and `FORGE_SCAN_RUN_DIR`) to your artifact directory — prefer `--run-dir` instead of littering `/tmp`.
 
-```bash
-REPO=<repo-path>
-bash "$FORGE_SCRIPTS/phase1-inventory.sh" "$REPO"
-```
+**Artifacts** (under `$FORGE_SCAN_TMP`): `forge_scan_source_files.txt`, `forge_scan_test_files.txt`, `forge_scan_imports.txt`, `forge_scan_hub_scores.txt`, `forge_scan_tier1.txt`, `forge_scan_tier2.txt`, per-language inventories, aggregated `forge_scan_types_all.txt`, `forge_scan_methods_all.txt`, `forge_scan_functions_all.txt`, `forge_scan_ui_all.txt`.
 
-**For large repos or multi-repo workspaces:** spawn a subagent per repo so all Phase 1 scripts run in parallel. Never wait for one to finish before starting the next. The subagent's only job is to run the script and report the inventory summary — it does not do Phase 3 or 4.
-
-**CRITICAL:** All Agent calls must be dispatched in a **single message** to run in parallel. Sending them one at a time makes them sequential — each waits for the previous to finish.
-
-```
-// Send all 3 in ONE message = parallel execution
-Agent({ prompt: "Run: bash <FORGE_SCRIPTS>/phase1-inventory.sh ~/jh/backend — report the full INVENTORY SUMMARY output" })
-Agent({ prompt: "Run: bash <FORGE_SCRIPTS>/phase1-inventory.sh ~/jh/web    — report the full INVENTORY SUMMARY output" })
-Agent({ prompt: "Run: bash <FORGE_SCRIPTS>/phase1-inventory.sh ~/jh/app    — report the full INVENTORY SUMMARY output" })
-// All three start simultaneously. Wait for all to complete, then proceed.
-```
-
-Phases 3 and 4 can begin for a repo as soon as its Phase 1 agent completes — no need to wait for all repos to finish.
-
-The script prints a full INVENTORY SUMMARY at the end. Read the output — it tells you:
-- Source file count, test file count
-- Whether it's a monorepo and where the packages are
-- Entry points
-- Tier 1 and Tier 2 hub files (already written to `/tmp/forge_scan_tier1.txt` and `/tmp/forge_scan_tier2.txt`)
-- TOTAL POTENTIAL NODES across all 4 symbol categories
-
-**After running the script, read the output summary and proceed directly to Phase 2.** Do not re-run any of the grep commands the script already ran.
-
-> The inline reference sections below (1.1 – 1.6) document what the script does internally.
-> Read them if you need to understand a specific output file. Do not re-execute them.
-
-### 1.1 — File inventory
-
-```bash
-REPO=<repo-path>
-
-# Detect git submodule paths to exclude from scan
-SUBMODULE_PATHS=$(git -C "$REPO" submodule --quiet foreach 'echo $displaypath' 2>/dev/null)
-
-# Build exclusion pattern for submodule directories
-SUBMODULE_EXCLUDES=""
-for sm in $SUBMODULE_PATHS; do
-  SUBMODULE_EXCLUDES="$SUBMODULE_EXCLUDES | grep -v \"$sm/\""
-done
-
-# All source files, excluding noise
-find "$REPO" -type f \( \
-  -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" \
-  -o -name "*.py" -o -name "*.go" -o -name "*.java" -o -name "*.kt" \
-  -o -name "*.rs" -o -name "*.rb" -o -name "*.dart" -o -name "*.swift" \
-  -o -name "*.cpp" -o -name "*.c" -o -name "*.h" \
-) \
-| grep -v node_modules \
-| grep -v "\.git/" \
-| grep -v "__pycache__" \
-| grep -v "/vendor/" \
-| grep -v "/dist/" \
-| grep -v "/build/" \
-| grep -v "\.generated\." \
-| grep -v "\.min\." \
-| grep -v "\.spec\." \
-| grep -v "\.test\." \
-| eval "grep -v node_modules $SUBMODULE_EXCLUDES" \
-| sort > /tmp/forge_scan_source_files.txt
-
-# Test files — separately (for gotchas extraction)
-find "$REPO" -type f \( -name "*.spec.*" -o -name "*.test.*" -o -name "*_test.*" -o -name "test_*.py" \) \
-| grep -v node_modules | grep -v "\.git/" | grep -v dist \
-| sort > /tmp/forge_scan_test_files.txt
-
-echo "Source files: $(wc -l < /tmp/forge_scan_source_files.txt)"
-echo "Test files: $(wc -l < /tmp/forge_scan_test_files.txt)"
-```
-
-### 1.2 — Module boundary detection
-
-> **Monorepo detection:** Before scanning, check if the repo is a Turborepo/Nx/Lerna/pnpm workspace monorepo. If it is, treat each package as a separate logical repo for the purposes of module naming and brain file organization.
-
-```bash
-# Detect monorepo structure
-IS_MONOREPO=false
-MONOREPO_PACKAGES=""
-
-if [ -f "$REPO/turbo.json" ] || [ -f "$REPO/nx.json" ] || [ -f "$REPO/lerna.json" ]; then
-  IS_MONOREPO=true
-  # Find package directories (packages/, apps/, libs/ are common roots)
-  MONOREPO_PACKAGES=$(find "$REPO" -maxdepth 3 -name "package.json" \
-    | grep -v node_modules | grep -v "^$REPO/package.json" \
-    | xargs dirname | sort)
-  echo "Monorepo detected. Packages:"
-  echo "$MONOREPO_PACKAGES"
-  echo ""
-  echo "Scan each package as a separate logical repo. Use package directory name as role prefix."
-  echo "Example: packages/api/src/users.ts → api-users.md"
-fi
-
-# Top-level directories (excluding config/infra noise)
-find "$REPO" -maxdepth 2 -type d \
-  | grep -v node_modules | grep -v "\.git" | grep -v __pycache__ \
-  | grep -v "dist\b" | grep -v "\bbuild\b" \
-  | awk -F/ 'NF<=4' \
-  | sort
-
-# Entry point detection
-find "$REPO" -maxdepth 3 \( \
-  -name "main.py" -o -name "app.py" -o -name "server.py" \
-  -o -name "index.ts" -o -name "main.ts" -o -name "app.ts" \
-  -o -name "index.js" -o -name "main.js" -o -name "server.js" \
-  -o -name "main.go" -o -name "main.kt" -o -name "Main.kt" \
-  -o -name "main.rs" -o -name "Application.java" \
-\) | grep -v node_modules | grep -v dist
-```
-
-### 1.3 — Import graph extraction
-
-```bash
-# Extract import lines only (first 50 lines per file — imports are always at the top)
-while IFS= read -r file; do
-  echo "=== $file ==="
-  head -50 "$file" | grep -E \
-    "^import |^from |^require\(|^use |^extern crate|^#include|^using " \
-    2>/dev/null
-done < /tmp/forge_scan_source_files.txt > /tmp/forge_scan_imports.txt
-
-echo "Import relationships extracted: $(grep -c "^===" /tmp/forge_scan_imports.txt) files"
-```
-
-### 1.4 — Incoming reference count (hub detection)
-
-```bash
-# Count how many files reference each module/file
-# This identifies architectural hubs without reading any file content
-
-while IFS= read -r file; do
-  basename_no_ext=$(basename "$file" | sed 's/\.[^.]*$//')
-  count=$(grep -rl "$basename_no_ext" "$REPO" \
-    --include="*.ts" --include="*.py" --include="*.go" --include="*.java" --include="*.kt" \
-    2>/dev/null | grep -v node_modules | grep -v "\.git" | grep -v dist | wc -l)
-  echo "$count $file"
-done < /tmp/forge_scan_source_files.txt \
-| sort -rn > /tmp/forge_scan_hub_scores.txt
-
-echo "Top 10 hubs:"
-head -10 /tmp/forge_scan_hub_scores.txt
-```
-
-### 1.5 — Language and framework fingerprinting
-
-```bash
-# Language breakdown
-echo "Language breakdown:"
-grep -c "\.ts$\|\.tsx$" /tmp/forge_scan_source_files.txt && echo "TypeScript/TSX files"
-grep -c "\.py$" /tmp/forge_scan_source_files.txt && echo "Python files"
-grep -c "\.go$" /tmp/forge_scan_source_files.txt && echo "Go files"
-grep -c "\.java$" /tmp/forge_scan_source_files.txt && echo "Java files"
-grep -c "\.kt$" /tmp/forge_scan_source_files.txt && echo "Kotlin files"
-grep -c "\.dart$" /tmp/forge_scan_source_files.txt && echo "Dart files"
-
-# Framework signals (package.json, go.mod, requirements.txt, etc.)
-[ -f "$REPO/package.json" ] && cat "$REPO/package.json" | grep -E '"next"|"express"|"fastify"|"nestjs"|"react-native"|"vue"|"nuxt"|"svelte"|"hono"|"koa"'
-[ -f "$REPO/go.mod" ] && grep -E "gin|echo|fiber|chi|mux" "$REPO/go.mod"
-[ -f "$REPO/requirements.txt" ] && grep -iE "fastapi|django|flask|starlette|tornado" "$REPO/requirements.txt"
-[ -f "$REPO/pubspec.yaml" ] && head -5 "$REPO/pubspec.yaml"
-```
-
-### 1.6 — Type/class inventory (zero tokens, all languages)
-
-> **This step is mandatory.** Class file generation in Phase 4.3a is driven from this inventory — not from in-context memory. Run this before any hub reads.
-
-Each language has fundamentally different syntax. Grep patterns below are language-specific.
-
-```bash
-# ═══════════════════════════════════════════════════════════════════════════════
-# GOAL: Build a complete symbol inventory — every type, method, function, and
-# UI element gets its own node in the Obsidian graph. Thousands of nodes is fine.
-# ═══════════════════════════════════════════════════════════════════════════════
-
-# ── Java ──────────────────────────────────────────────────────────────────────
-
-# Types: class, abstract class, interface, enum, @interface
-grep -rn \
-  "^\s*\(public\|protected\|abstract\|final\)\{0,3\}\s*\(class\|interface\|enum\|@interface\)\s" \
-  "$REPO" --include="*.java" \
-  | grep -v "/test/\|Test\.java\b\|IT\.java\b\|Tests\.java\b" \
-  > /tmp/forge_scan_types_java.txt
-
-# Spring/Jakarta stereotype annotations
-grep -rn "^\s*@\(Service\|Repository\|Controller\|RestController\|Component\|Configuration\|Entity\|SpringBootApplication\|EventListener\|Scheduled\)" \
-  "$REPO" --include="*.java" \
-  | grep -v "/test/" \
-  > /tmp/forge_scan_annotations_java.txt
-
-# Methods: public/protected methods in any class (indented — inside class body)
-# Pattern: indented + access modifier + optional modifiers + return type + methodName(
-grep -rn "^\s\+\(public\|protected\)\s\+\(static\s\+\)\?\(final\s\+\)\?\(abstract\s\+\)\?\(synchronized\s\+\)\?\(void\|boolean\|int\|long\|double\|float\|String\|List\|Map\|Set\|Optional\|[A-Z]\)[a-zA-Z0-9<>\[\]?,\s]*\s\+[a-z_][a-zA-Z0-9_]*\s*(" \
-  "$REPO" --include="*.java" \
-  | grep -v "new \([A-Z]\|\")\|return \|if (\|while (\|for (\|switch (\|throw \|/test/\|Test\.java" \
-  > /tmp/forge_scan_methods_java.txt
-
-echo "Java — types: $(wc -l < /tmp/forge_scan_types_java.txt) | methods: $(wc -l < /tmp/forge_scan_methods_java.txt) | annotations: $(wc -l < /tmp/forge_scan_annotations_java.txt)"
-
-# ── Kotlin ────────────────────────────────────────────────────────────────────
-
-# Types: class, data class, sealed class, abstract class, object, interface, enum
-grep -rn \
-  "^\s*\(data \|sealed \|abstract \|open \|inner \|enum \|annotation \)\?\(class\|interface\|object\)\s\|^\s*typealias \|^\s*companion object" \
-  "$REPO" --include="*.kt" \
-  | grep -v "Test\.kt\b\|Spec\.kt\b\|/test/" \
-  > /tmp/forge_scan_types_kotlin.txt
-
-# Spring/Kotlin annotations
-grep -rn "^\s*@\(Service\|Repository\|Controller\|RestController\|Component\|Configuration\|Entity\|SpringBootApplication\)" \
-  "$REPO" --include="*.kt" \
-  | grep -v "/test/" \
-  > /tmp/forge_scan_annotations_kotlin.txt
-
-# Functions: ALL fun declarations — top-level and inside classes
-# Captures: fun, override fun, suspend fun, private fun, inline fun, etc.
-grep -rn "^\s*\(override\s\+\)\?\(suspend\s\+\)\?\(inline\s\+\)\?\(private\s\+\|protected\s\+\|internal\s\+\|public\s\+\)\?\(open\s\+\)\?fun [a-zA-Z_]" \
-  "$REPO" --include="*.kt" \
-  | grep -v "Test\.kt\b\|Spec\.kt\b\|/test/" \
-  > /tmp/forge_scan_methods_kotlin.txt
-
-echo "Kotlin — types: $(wc -l < /tmp/forge_scan_types_kotlin.txt) | functions: $(wc -l < /tmp/forge_scan_methods_kotlin.txt)"
-
-# ── Go ────────────────────────────────────────────────────────────────────────
-
-# Types: exported structs and interfaces (uppercase = exported in Go)
-grep -rn "^type [A-Z][a-zA-Z0-9]* \(struct\|interface\)\b" \
-  "$REPO" --include="*.go" \
-  | grep -v "_test\.go" \
-  > /tmp/forge_scan_types_go.txt
-
-# Receiver methods — Go's equivalent of class methods (OUTSIDE struct definition)
-# e.g. func (u *UserService) GetUser(ctx context.Context, id int64) (*User, error)
-grep -rn "^func ([a-zA-Z_][a-zA-Z0-9_]* \*\?[A-Z][a-zA-Z0-9]*) [A-Za-z]" \
-  "$REPO" --include="*.go" \
-  | grep -v "_test\.go" \
-  > /tmp/forge_scan_methods_go.txt
-
-# Standalone exported functions (not receiver methods)
-# e.g. func NewUserService(...), func ParseConfig(...)
-grep -rn "^func [A-Z][a-zA-Z0-9]*(" \
-  "$REPO" --include="*.go" \
-  | grep -v "_test\.go" \
-  > /tmp/forge_scan_functions_go.txt
-
-echo "Go — types: $(wc -l < /tmp/forge_scan_types_go.txt) | receiver methods: $(wc -l < /tmp/forge_scan_methods_go.txt) | standalone funcs: $(wc -l < /tmp/forge_scan_functions_go.txt)"
-
-# ── TypeScript / JavaScript ───────────────────────────────────────────────────
-# Modern TS/JS = FUNCTION FIRST. Classes are rare outside NestJS/backend.
-# React components, hooks, handlers, utilities are ALL functions.
-
-# Classes and interfaces
-grep -rn \
-  "^export \(default \)\?\(abstract \)\?class \|^export interface \|^export abstract class \|^export type [A-Z]" \
-  "$REPO" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
-  | grep -v "node_modules\|\.d\.ts\|\.spec\.\|\.test\." \
-  > /tmp/forge_scan_types_ts.txt
-
-# Class methods (inside class bodies — indented method signatures)
-grep -rn "^\s\+\(public\|private\|protected\|readonly\|static\|async\|override\)\s\+[a-zA-Z_][a-zA-Z0-9_]*\s*([^)]*)\s*[:{]" \
-  "$REPO" --include="*.ts" --include="*.tsx" \
-  | grep -v "node_modules\|\.spec\.\|\.test\.\|constructor" \
-  > /tmp/forge_scan_methods_ts.txt
-
-# NestJS / TypeORM / class-validator decorators
-grep -rn "^@\(Injectable\|Controller\|Service\|Repository\|Entity\|Module\|Guard\|Interceptor\|Pipe\|EventEmitter\|Resolver\|ObjectType\|InputType\|Get\|Post\|Put\|Delete\|Patch\)" \
-  "$REPO" --include="*.ts" --include="*.tsx" \
-  | grep -v "node_modules\|\.spec\.\|\.test\." \
-  > /tmp/forge_scan_decorators_ts.txt
-
-# Exported functions (named export)
-grep -rn "^export \(async \)\?function [a-zA-Z]" \
-  "$REPO" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
-  | grep -v "node_modules\|\.spec\.\|\.test\." \
-  > /tmp/forge_scan_functions_ts.txt
-
-# Export default function (Next.js pages, React default components)
-grep -rn "^export default \(async \)\?function" \
-  "$REPO" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
-  | grep -v "node_modules\|\.spec\.\|\.test\." \
-  >> /tmp/forge_scan_functions_ts.txt
-
-# Arrow function exports (React const components, hooks, handlers)
-grep -rn "^export const [a-zA-Z][a-zA-Z0-9]* = \(async \)\?(" \
-  "$REPO" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
-  | grep -v "node_modules\|\.spec\.\|\.test\." \
-  >> /tmp/forge_scan_functions_ts.txt
-
-echo "TS/JS — classes: $(wc -l < /tmp/forge_scan_types_ts.txt) | class methods: $(wc -l < /tmp/forge_scan_methods_ts.txt) | functions: $(wc -l < /tmp/forge_scan_functions_ts.txt) | decorators: $(wc -l < /tmp/forge_scan_decorators_ts.txt)"
-
-# ── Python ────────────────────────────────────────────────────────────────────
-
-# Classes
-grep -rn "^class [A-Za-z][a-zA-Z0-9]*\b" \
-  "$REPO" --include="*.py" \
-  | grep -v "test_[a-z]\|_test\.py\|Test[A-Z]" \
-  > /tmp/forge_scan_types_python.txt
-
-# Decorators
-grep -rn "^@\(dataclass\|dataclasses\.dataclass\|property\|staticmethod\|classmethod\|abstractmethod\|app\.route\|router\.\)" \
-  "$REPO" --include="*.py" \
-  | grep -v "test_\|_test\.py" \
-  > /tmp/forge_scan_annotations_python.txt
-
-# Top-level module functions (not indented — not class methods)
-grep -rn "^def [a-zA-Z][a-zA-Z0-9_]*\|^async def [a-zA-Z][a-zA-Z0-9_]*" \
-  "$REPO" --include="*.py" \
-  | grep -v "test_\|_test\.py\|__init__\|__main__\|__str__\|__repr__\|__eq__\|__hash__\|__len__\|__iter__" \
-  > /tmp/forge_scan_functions_python.txt
-
-# Class methods (indented def — inside class body)
-grep -rn "^\s\+def [a-zA-Z][a-zA-Z0-9_]*\|^\s\+async def [a-zA-Z][a-zA-Z0-9_]*" \
-  "$REPO" --include="*.py" \
-  | grep -v "test_\|_test\.py\|__init__\|__str__\|__repr__\|__eq__\|__hash__\|__len__" \
-  > /tmp/forge_scan_methods_python.txt
-
-echo "Python — types: $(wc -l < /tmp/forge_scan_types_python.txt) | class methods: $(wc -l < /tmp/forge_scan_methods_python.txt) | module functions: $(wc -l < /tmp/forge_scan_functions_python.txt)"
-
-# ── Dart / Flutter ────────────────────────────────────────────────────────────
-
-# Types
-grep -rn "^\(abstract \)\?class [A-Z]\|^mixin [A-Z]\|^enum [A-Z]" \
-  "$REPO" --include="*.dart" \
-  | grep -v "_test\.dart\|test/" \
-  > /tmp/forge_scan_types_dart.txt
-
-# Methods and functions
-grep -rn "^\s*\(Future\|Stream\|void\|bool\|int\|double\|String\|Widget\|[A-Z][a-zA-Z0-9<>?]*\)\s\+[a-z_][a-zA-Z0-9_]*\s*(" \
-  "$REPO" --include="*.dart" \
-  | grep -v "_test\.dart\|test/" \
-  > /tmp/forge_scan_methods_dart.txt
-
-echo "Dart — types: $(wc -l < /tmp/forge_scan_types_dart.txt) | methods: $(wc -l < /tmp/forge_scan_methods_dart.txt)"
-
-# ── Rust ──────────────────────────────────────────────────────────────────────
-
-# Types
-grep -rn "^pub \(struct\|enum\|trait\) [A-Z]\|^pub(crate) \(struct\|enum\|trait\) [A-Z]" \
-  "$REPO" --include="*.rs" \
-  | grep -v "test\b\|#\[test\]" \
-  > /tmp/forge_scan_types_rust.txt
-
-# Public functions and impl methods
-grep -rn "^\s*pub fn [a-zA-Z_]\|^pub fn [a-zA-Z_]\|^pub async fn [a-zA-Z_]" \
-  "$REPO" --include="*.rs" \
-  | grep -v "#\[test\]\|mod tests" \
-  > /tmp/forge_scan_methods_rust.txt
-
-echo "Rust — types: $(wc -l < /tmp/forge_scan_types_rust.txt) | pub fns: $(wc -l < /tmp/forge_scan_methods_rust.txt)"
-
-# ── Frontend / HTML / Templates ───────────────────────────────────────────────
-# HTML pages, Vue SFCs, Svelte components, Angular templates — each is a UI node
-
-# Raw HTML files (web apps, server-rendered templates, email templates)
-find "$REPO" -type f \( -name "*.html" -o -name "*.htm" \) \
-  | grep -v "node_modules\|dist\|build\|\.git\|coverage" \
-  | sort > /tmp/forge_scan_html_files.txt
-
-# Vue Single File Components (.vue = template + script + style in one file)
-find "$REPO" -type f -name "*.vue" \
-  | grep -v "node_modules\|dist" \
-  | sort > /tmp/forge_scan_vue_files.txt
-
-# Svelte components
-find "$REPO" -type f -name "*.svelte" \
-  | grep -v "node_modules\|dist" \
-  | sort > /tmp/forge_scan_svelte_files.txt
-
-# Angular component templates (always co-located with .component.ts)
-find "$REPO" -type f -name "*.component.html" \
-  | grep -v "node_modules\|dist" \
-  | sort > /tmp/forge_scan_angular_templates.txt
-
-# HTML key elements: forms, navigation links, interactive sections
-# Used to build the UI → function relationship map
-grep -rn "<form\s\+\|<form>" \
-  "$REPO" --include="*.html" --include="*.vue" --include="*.svelte" --include="*.tsx" --include="*.jsx" \
-  | grep -v "node_modules\|dist" \
-  > /tmp/forge_scan_html_forms.txt
-
-# HTML IDs and data-* attributes that JavaScript references
-grep -rn "id=\"[a-zA-Z][a-zA-Z0-9_-]*\"\|data-[a-z][a-z0-9-]*=" \
-  "$REPO" --include="*.html" --include="*.vue" --include="*.svelte" \
-  | grep -v "node_modules\|dist" \
-  > /tmp/forge_scan_html_ids.txt
-
-echo "Frontend — HTML: $(wc -l < /tmp/forge_scan_html_files.txt) | Vue: $(wc -l < /tmp/forge_scan_vue_files.txt) | Svelte: $(wc -l < /tmp/forge_scan_svelte_files.txt) | Angular templates: $(wc -l < /tmp/forge_scan_angular_templates.txt) | Forms: $(wc -l < /tmp/forge_scan_html_forms.txt)"
-
-# ── Master inventories ────────────────────────────────────────────────────────
-
-# TYPES → classes/ in brain (Java/Kotlin/Go/TS/Python/Dart/Rust classes, structs, interfaces)
-cat /tmp/forge_scan_types_java.txt \
-    /tmp/forge_scan_types_kotlin.txt \
-    /tmp/forge_scan_types_go.txt \
-    /tmp/forge_scan_types_ts.txt \
-    /tmp/forge_scan_types_python.txt \
-    /tmp/forge_scan_types_dart.txt \
-    /tmp/forge_scan_types_rust.txt \
-    2>/dev/null > /tmp/forge_scan_types_all.txt
-
-# METHODS → methods/ in brain (class/struct methods from all languages)
-cat /tmp/forge_scan_methods_java.txt \
-    /tmp/forge_scan_methods_kotlin.txt \
-    /tmp/forge_scan_methods_go.txt \
-    /tmp/forge_scan_methods_ts.txt \
-    /tmp/forge_scan_methods_python.txt \
-    /tmp/forge_scan_methods_dart.txt \
-    /tmp/forge_scan_methods_rust.txt \
-    2>/dev/null > /tmp/forge_scan_methods_all.txt
-
-# FUNCTIONS → functions/ in brain (standalone exported functions: TS/JS/Go/Python)
-cat /tmp/forge_scan_functions_ts.txt \
-    /tmp/forge_scan_functions_go.txt \
-    /tmp/forge_scan_functions_python.txt \
-    2>/dev/null > /tmp/forge_scan_functions_all.txt
-
-# UI/FRONTEND → pages/ in brain (HTML, Vue, Svelte, Angular templates)
-cat /tmp/forge_scan_html_files.txt \
-    /tmp/forge_scan_vue_files.txt \
-    /tmp/forge_scan_svelte_files.txt \
-    /tmp/forge_scan_angular_templates.txt \
-    2>/dev/null > /tmp/forge_scan_ui_all.txt
-
-echo ""
-echo "══════════════════════════════════════════════════════════"
-echo "INVENTORY SUMMARY"
-echo "══════════════════════════════════════════════════════════"
-echo "  Types     (→ classes/):    $(wc -l < /tmp/forge_scan_types_all.txt)"
-echo "  Methods   (→ methods/):    $(wc -l < /tmp/forge_scan_methods_all.txt)"
-echo "  Functions (→ functions/):  $(wc -l < /tmp/forge_scan_functions_all.txt)"
-echo "  UI files  (→ pages/):      $(wc -l < /tmp/forge_scan_ui_all.txt)"
-echo "  HTML forms found:          $(wc -l < /tmp/forge_scan_html_forms.txt)"
-echo "══════════════════════════════════════════════════════════"
-echo "TOTAL POTENTIAL NODES: $(($(wc -l < /tmp/forge_scan_types_all.txt) + $(wc -l < /tmp/forge_scan_methods_all.txt) + $(wc -l < /tmp/forge_scan_functions_all.txt) + $(wc -l < /tmp/forge_scan_ui_all.txt)))"
-echo "══════════════════════════════════════════════════════════"
-```
-
-> **Four inventories, four brain directories:**
-> - `types_all.txt` → `classes/` — one node per type (class, struct, interface, enum)
-> - `methods_all.txt` → `methods/` — one node per method/function inside a type
-> - `functions_all.txt` → `functions/` — one node per standalone exported function
-> - `ui_all.txt` → `pages/` — one node per HTML/Vue/Svelte/Angular template file
->
-> **Go specifics:** receiver methods are in `methods_go.txt`, standalone constructors/helpers in `functions_go.txt`
-> **Kotlin specifics:** `fun` inside a class = method node; top-level `fun` = function node
-> **Python specifics:** indented `def` = method node; top-level `def` = function node
+Read the **INVENTORY SUMMARY** printed at the end of phase 1 (or inspect those files). Do not re-run ad-hoc `find`/`grep` blocks; the Python module already mirrors the legacy inventory patterns.
 
 ---
 
@@ -655,15 +172,7 @@ From `forge_scan_hub_scores.txt`, identify:
 **Tier 2 Hubs** (referenced by 3-4 files) — read in full in Phase 3
 **Leaf files** (referenced by 0-2 files) — stubs auto-generated; enrich in batches during Phase 3 if full coverage is needed
 
-```bash
-# Tier 1 hubs
-awk '$1 >= 5 {print $2}' /tmp/forge_scan_hub_scores.txt > /tmp/forge_scan_tier1.txt
-echo "Tier 1 hubs: $(wc -l < /tmp/forge_scan_tier1.txt)"
-
-# Tier 2 hubs
-awk '$1 >= 3 && $1 < 5 {print $2}' /tmp/forge_scan_hub_scores.txt > /tmp/forge_scan_tier2.txt
-echo "Tier 2 hubs: $(wc -l < /tmp/forge_scan_tier2.txt)"
-```
+Tier lists are already in **`forge_scan_tier1.txt`** and **`forge_scan_tier2.txt`** under `$FORGE_SCAN_TMP` (produced during phase 1).
 
 ---
 
@@ -673,24 +182,11 @@ Read files in this priority order. Read each file in full. **No file is off limi
 
 ### 3.1 — Always read
 
-These are documentation files, not code. Read fully:
-
-```bash
-for doc in README.md CONTRIBUTING.md ARCHITECTURE.md docs/architecture.md docs/design.md \
-           ADR*.md adr/*.md docs/decisions/*.md; do
-  [ -f "$REPO/$doc" ] && echo "=== $REPO/$doc ===" && cat "$REPO/$doc"
-done
-```
+These are documentation files, not code. Read fully when present: `README.md`, `CONTRIBUTING.md`, `ARCHITECTURE.md`, `docs/architecture.md`, `docs/design.md`, `ADR*.md`, `adr/*.md`, `docs/decisions/*.md`.
 
 ### 3.2 — Tier 1 hub reads (full file)
 
-```bash
-while IFS= read -r file; do
-  echo "=== $file ==="
-  cat "$file"
-  echo ""
-done < /tmp/forge_scan_tier1.txt
-```
+Read each absolute path listed in **`forge_scan_tier1.txt`** (under `$FORGE_SCAN_TMP`) in full.
 
 Extract from each hub:
 - Exported classes, functions, interfaces (look for `export`, `public`, `pub fn`, `func`, `def`)
@@ -700,19 +196,13 @@ Extract from each hub:
 
 ### 3.3 — Tier 2 hub reads (full file)
 
-```bash
-while IFS= read -r file; do
-  echo "=== $file ==="
-  cat "$file"
-  echo ""
-done < /tmp/forge_scan_tier2.txt
-```
+Read each path in **`forge_scan_tier2.txt`** in full.
 
 ### 3.3a — Class/method/attribute enrichment from hub reads
 
 Phase 1.6 already extracted the **names and locations** of all types from disk via grep. The job here is to **enrich** those known types with methods, properties, doc comments, and inheritance — by reading the hub files in full.
 
-For each hub file, cross-reference `/tmp/forge_scan_types_all.txt` to know which classes live there, then extract the following. **Each language has fundamentally different syntax:**
+For each hub file, cross-reference `$FORGE_SCAN_TMP/forge_scan_types_all.txt` to know which classes live there, then extract the following. **Each language has fundamentally different syntax:**
 
 ---
 
@@ -741,7 +231,7 @@ For each hub file, cross-reference `/tmp/forge_scan_types_all.txt` to know which
 *Types*: `type UserService struct { ... }` — fields are inside the struct body
 *Struct fields*: Lines inside `type X struct { ... }` block — `FieldName Type \`json:"..."\`` 
 *Interfaces*: `type UserRepository interface { ... }` — method signatures inside the block
-*Methods*: **NOT inside the struct.** Look in `/tmp/forge_scan_methods_go.txt` for lines matching `(* TypeName)` or `( TypeName)`. Pattern: `func (u *UserService) GetUser(ctx context.Context, id int64) (*User, error)`
+*Methods*: **NOT inside the struct.** Look in `$FORGE_SCAN_TMP/forge_scan_methods_go.txt` for lines matching `(* TypeName)` or `( TypeName)`. Pattern: `func (u *UserService) GetUser(ctx context.Context, id int64) (*User, error)`
 *Constructor*: `func NewUserService(db *DB) *UserService` — named constructors, not `new`
 *Key gotcha*: Go has no inheritance. Embedding (`type Admin struct { User }`) is composition, not inheritance. Note it as "embeds [[classes/<role>-User]]" not "extends".
 
@@ -798,7 +288,7 @@ Extends: none
 Implements: IUserService
 ```
 
-**Stub nodes for ALL classes** are already auto-generated by `phase4-brain-write.sh` (Step 4.0) — from the full `forge_scan_types_all.txt` inventory, not just hubs.
+**Stub nodes for ALL classes** are already auto-generated by the Phase 4 step in `tools/scan_forge` (`phase4.py`) (Step 4.0) — from the full `forge_scan_types_all.txt` inventory, not just hubs.
 
 **Enrichment in Phase 3** (filling in Purpose, Methods, Properties, Relationships from reading the actual file) is **prioritized** for **Tier 1 and Tier 2 hub files** to save tokens — but **stubs** (classes, **methods/**, functions, pages, modules) already exist for the **whole** grep inventory. To enrich every file anyway, walk `forge_scan_source_files.txt` in batches and ignore the tier lists.
 
@@ -806,23 +296,17 @@ Implements: IUserService
 
 ### 3.4 — Test name extraction + 3.5 — API route extraction
 
-Run the pre-written Phase 3.4-3.5 script **once per repo**.
+Handled automatically by **`tools/scan_forge`** (`phase35.py`) for each repo in `--repos` order: the first repo resets `forge_scan_api_routes.txt`; later repos **append**.
 
-```bash
-bash "$FORGE_SCRIPTS/phase35-extract.sh" "$REPO"
-# For every additional repo in the same product scan:
-bash "$FORGE_SCRIPTS/phase35-extract.sh" "$OTHER_REPO" append
-```
+**HARD-GATE (multi-repo):** `$FORGE_SCAN_TMP/forge_scan_api_routes.txt` must list routes from **every** repo that defines HTTP APIs (typically backend + any BFF). If the backend is not included or order is wrong, phase 56 will miss FE↔BE links.
 
-**HARD-GATE (multi-repo):** `/tmp/forge_scan_api_routes.txt` must contain routes from **every** repo that defines HTTP APIs (typically backend + any BFF). The script **truncates** that file on the first run and **appends** on `append`. If you only run phase35 on the web repo last, the file will contain **only web routes** and **phase56** will find almost no FE↔BE matches — that is a common cause of “one cross-repo link” graphs.
+Recommended `--repos` order: **backend first**, then web, mobile, BFFs.
 
-Recommended order: **backend first** (no `append`), then web, mobile, etc. with `append`.
+Artifacts:
+- `forge_scan_test_names.txt` — test name strings (for `gotchas.md`)
+- `forge_scan_api_routes.txt` — route lines with `<repo-basename>\\trel:line:content` (for `api-surface.md` and phase 56)
 
-This writes:
-- `/tmp/forge_scan_test_names.txt` — test name strings (used for `gotchas.md`)
-- `/tmp/forge_scan_api_routes.txt` — all route decorators and router patterns (used for `api-surface.md` and **phase56** route correlation). Each line is prefixed with `<repo-basename>\t` after aggregation.
-
-Read the script output for the route breakdown by HTTP method before proceeding to Phase 4.
+Read the phase 3.5 console output for the HTTP method breakdown before manual enrichment.
 
 ---
 
@@ -832,54 +316,19 @@ Create all output files in `~/forge/brain/products/<slug>/codebase/`. Use `[[wik
 
 ### 4.0 — Auto-generate all stub nodes (REQUIRED, run before any manual enrichment)
 
-**HARD-GATE:** Run the pre-written script to generate EVERY class, function, page, and module stub from Phase 1 inventory. Do NOT write individual node files manually — the script writes all of them in one pass. The LLM's job in Phase 4 is only to ENRICH these stubs during hub reads.
+**HARD-GATE:** The runner’s **Phase 4** (`tools/scan_forge/phase4.py`) generates EVERY class, function, page, and module stub from the Phase 1 inventories. Do NOT hand-author stub files at scale — enrich them after. Phase 4 reads `forge_scan_types_all.txt`, `forge_scan_functions_all.txt`, `forge_scan_ui_all.txt`, and `forge_scan_source_files.txt` under **`$FORGE_SCAN_TMP`**. It writes under `classes/`, `functions/`, `pages/`, and `modules/` beneath `--brain-codebase`. Existing files are **never overwritten**.
 
-```bash
-BRAIN_CODEBASE_DIR=~/forge/brain/products/<slug>/codebase
-bash "$FORGE_SCRIPTS/phase4-brain-write.sh" "$REPO" "$BRAIN_CODEBASE_DIR" "<role>"
-```
+**Multi-repo:** Prefer **one** `forge_scan_run.py` invocation with all `--repos` so phase 1 → 3.5 → 4 run in the correct order for every role. If you must split work, run the full runner per repo with the same `--run-dir` only when you know what you are doing — the default is one coherent pipeline.
 
-The script reads from `/tmp/forge_scan_types_all.txt`, `forge_scan_functions_all.txt`, `forge_scan_ui_all.txt`, and `forge_scan_source_files.txt` — all produced by Phase 1. It writes to `classes/`, `functions/`, `pages/`, and `modules/` subdirectories. Existing files are **never overwritten** — safe to re-run after manual enrichment.
-
-**For multi-repo workspaces:** spawn one subagent per repo to run phase4-brain-write.sh in parallel. Each subagent gets a single command: run the script, report the node counts. No file reading, no enrichment — just stub generation. The stubs write to different subdirectories so there are no conflicts.
-
-**CRITICAL:** Dispatch all Agent calls in a **single message** — that is what makes them run simultaneously. One message per Agent = sequential, not parallel.
-
-```
-// ONE message containing all 3 Agent calls = all run at the same time
-Agent({ prompt: "Run: bash <FORGE_SCRIPTS>/phase4-brain-write.sh ~/jh/backend ~/forge/brain/products/jh/codebase/backend backend — report the TOTAL NEW NODES count" })
-Agent({ prompt: "Run: bash <FORGE_SCRIPTS>/phase4-brain-write.sh ~/jh/web    ~/forge/brain/products/jh/codebase/web    web     — report the TOTAL NEW NODES count" })
-Agent({ prompt: "Run: bash <FORGE_SCRIPTS>/phase4-brain-write.sh ~/jh/app    ~/forge/brain/products/jh/codebase/app    app     — report the TOTAL NEW NODES count" })
-// Each writes to its own BRAIN_CODEBASE_DIR — no file conflicts.
-```
-
-Check the summary output for counts. If any count is 0 and you expected content, verify Phase 1 ran successfully for that repo.
+Check the Phase 4 summary for node counts. If a count is 0 unexpectedly, confirm Phase 1 artifacts exist for that repo in `FORGE_SCAN_TMP`.
 
 ### 4.1 — SCAN.json (metadata, always first)
 
-```bash
-SCAN_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-COMMIT_SHA=$(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || echo "unknown")
-FILE_COUNT=$(wc -l < /tmp/forge_scan_source_files.txt)
-TEST_COUNT=$(wc -l < /tmp/forge_scan_test_files.txt)
+**Written automatically** at the end of each repo’s Phase 4 by **`tools/scan_forge/scan_metadata.merge_scan_json`**: `~/forge/brain/products/<slug>/codebase/SCAN.json`.
 
-cat > ~/forge/brain/products/<slug>/codebase/SCAN.json << EOF
-{
-  "scanned_at": "$SCAN_DATE",
-  "repo": "$REPO",
-  "commit": "$COMMIT_SHA",
-  "source_files": $FILE_COUNT,
-  "test_files": $TEST_COUNT,
-  "tier1_hubs": $(wc -l < /tmp/forge_scan_tier1.txt),
-  "tier2_hubs": $(wc -l < /tmp/forge_scan_tier2.txt),
-  "types_in_inventory": $(wc -l < /tmp/forge_scan_types_all.txt 2>/dev/null || echo 0),
-  "methods_in_inventory": $(wc -l < /tmp/forge_scan_methods_all.txt 2>/dev/null || echo 0),
-  "functions_in_inventory": $(wc -l < /tmp/forge_scan_functions_all.txt 2>/dev/null || echo 0),
-  "ui_files_in_inventory": $(wc -l < /tmp/forge_scan_ui_all.txt 2>/dev/null || echo 0),
-  "role": "<backend|web|mobile|shared>"
-}
-EOF
-```
+- **`repos.<role>`** holds per-repo path, commit SHA, scan time, and inventory line counts (sources, tests, tier hubs, types, methods, functions, UI).
+- **Top-level** `scanned_at`, `source_files`, `test_files`, etc. are **aggregated** across roles for backward compatibility with skills that grep a flat `SCAN.json`.
+- Legacy single-repo flat `SCAN.json` files are merged into **`repos`** on the next run.
 
 ### 4.2 — index.md format
 
@@ -978,7 +427,7 @@ Create one file per top-level module directory + one for each Tier 1 hub.
 
 ## Calls (cross-repo)
 
-> Routes this module calls in other repos — auto-filled by **phase56** after `phase5-cross-repo.sh` (markers `FORGE:AUTO_*`). Manual rows optional.
+> Routes this module calls in other repos — auto-filled by **phase56** after `scan_forge.phase5` (markers `FORGE:AUTO_*`). Manual rows optional.
 > On first pass stubs may be prose-only until phase56 runs.
 
 - `<METHOD> <path>` → [[<other-role>-<module>]] (`<other-repo>/src/routes/file.ts:<line>`)
@@ -1003,13 +452,13 @@ Create one file per top-level module directory + one for each Tier 1 hub.
 - `<file:line>` — `<comment text>`
 ```
 
-**Important:** Phase 4 writes scaffold text for `## Calls (cross-repo)` / `## Called By (cross-repo)`. **phase56** appends auto-blocks once `/tmp/forge_scan_all_callsites.txt` and merged routes exist. Do not hand-fill large edge lists during Phase 4 — correlation data is not ready until phase5 prep completes.
+**Important:** Phase 4 writes scaffold text for `## Calls (cross-repo)` / `## Called By (cross-repo)`. **phase56** appends auto-blocks once `$FORGE_SCAN_TMP/forge_scan_all_callsites.txt` and merged routes exist. Do not hand-fill large edge lists during Phase 4 — correlation data is not ready until phase5 prep completes.
 
 ### 4.3a — classes/<role>-<ClassName>.md format
 
-> **Stubs are auto-generated by `phase4-brain-write.sh` (Step 4.0).** The script writes a stub for EVERY class in `forge_scan_types_all.txt`. Your job here is to ENRICH stubs for Tier 1 and Tier 2 hub classes during hub reads — add Purpose, Methods, Properties, Relationships by reading the actual source file. Do not recreate stubs that already exist.
+> **Stubs are auto-generated by the Phase 4 step in `tools/scan_forge` (`phase4.py`) (Step 4.0).** The script writes a stub for EVERY class in `forge_scan_types_all.txt`. Your job here is to ENRICH stubs for Tier 1 and Tier 2 hub classes during hub reads — add Purpose, Methods, Properties, Relationships by reading the actual source file. Do not recreate stubs that already exist.
 
-**Driven by `/tmp/forge_scan_types_all.txt`.** For every type in that file whose source file is in `/tmp/forge_scan_tier1.txt` or `/tmp/forge_scan_tier2.txt`, enrich the existing stub. Do NOT rely solely on in-context memory — the grep inventory is ground truth.
+**Driven by `$FORGE_SCAN_TMP/forge_scan_types_all.txt`.** For every type in that file whose source file is in `$FORGE_SCAN_TMP/forge_scan_tier1.txt` or `$FORGE_SCAN_TMP/forge_scan_tier2.txt`, enrich the existing stub. Do NOT rely solely on in-context memory — the grep inventory is ground truth.
 
 File path: `~/forge/brain/products/<slug>/codebase/classes/<role>-<ClassName>.md`
 
@@ -1044,7 +493,7 @@ The `classes/` directory is what makes the Obsidian graph show class-level nodes
 
 ## Methods
 
-> For **Go**: methods come from `/tmp/forge_scan_methods_go.txt` — grep for `(* <TypeName>)` or `( <TypeName>)` receiver. They are NOT inside the struct definition.
+> For **Go**: methods come from `$FORGE_SCAN_TMP/forge_scan_methods_go.txt` — grep for `(* <TypeName>)` or `( <TypeName>)` receiver. They are NOT inside the struct definition.
 > For all others: list public/exported methods only.
 
 | Method | Signature | Notes |
@@ -1079,7 +528,7 @@ The `classes/` directory is what makes the Obsidian graph show class-level nodes
 
 ### 4.3d — Method nodes (script + optional rich layout)
 
-**Auto (Phase 4 script):** `phase4-brain-write.sh` writes **one** `methods/<role>-m-<cksum>.md` stub per line in `/tmp/forge_scan_methods_all.txt` — that is the **entire** Phase 1.6 method grep inventory, **not** filtered by Tier 1/2 hubs. Each stub links to `[[modules/...]]` by directory slug. Set `FORGE_PHASE4_SKIP_METHODS=1` to skip on huge repos.
+**Auto (Phase 4 script):** the Phase 4 step in `tools/scan_forge` (`phase4.py`) writes **one** `methods/<role>-m-<cksum>.md` stub per line in `$FORGE_SCAN_TMP/forge_scan_methods_all.txt` — that is the **entire** Phase 1.6 method grep inventory, **not** filtered by Tier 1/2 hubs. Each stub links to `[[modules/...]]` by directory slug. Set `FORGE_PHASE4_SKIP_METHODS=1` to skip on huge repos.
 
 **Manual enrich (optional):** For a hand-authored layout `methods/<role>-<ClassName>-<methodName>.md` (nicer titles), use the template below — you can replace or supplement `m-<cksum>` stubs after scan.
 
@@ -1162,7 +611,7 @@ async def method_name(self, param1: Type1, param2: Type2 = None) -> ReturnType:
 **When to create a method file:**
 - Methods on **Tier 1 hub classes**: create for ALL public/exported methods — no exceptions
 - Methods on **Tier 2 hub classes**: create for public methods with non-trivial bodies (skip trivial getters/setters that are one-liners)
-- **Go receiver methods**: always create — they are the primary behavior of Go types and are NOT visible inside the struct definition. Use `/tmp/forge_scan_methods_go.txt` as the authoritative list
+- **Go receiver methods**: always create — they are the primary behavior of Go types and are NOT visible inside the struct definition. Use `$FORGE_SCAN_TMP/forge_scan_methods_go.txt` as the authoritative list
 - **Kotlin `suspend fun`**: always create — async boundary is architecturally significant
 - **Override methods implementing an interface**: always create — they are the fulfillment of a contract node
 - **Private/internal methods**: skip unless clearly the core algorithm (named `execute`, `process`, `run`, `handle`, `validate`, `transform`)
@@ -1176,9 +625,9 @@ async def method_name(self, param1: Type1, param2: Type2 = None) -> ReturnType:
 
 ### 4.3c — functions/<role>-<FunctionName>.md format
 
-> **Stubs are auto-generated by `phase4-brain-write.sh` (Step 4.0).** Your job here is to ENRICH stubs for Tier 1 and Tier 2 hub functions during hub reads.
+> **Stubs are auto-generated by the Phase 4 step in `tools/scan_forge` (`phase4.py`) (Step 4.0).** Your job here is to ENRICH stubs for Tier 1 and Tier 2 hub functions during hub reads.
 
-**Driven by `/tmp/forge_scan_functions_all.txt`.** For every exported function in that file whose source file is in `/tmp/forge_scan_tier1.txt` or `/tmp/forge_scan_tier2.txt`, enrich the existing stub.
+**Driven by `$FORGE_SCAN_TMP/forge_scan_functions_all.txt`.** For every exported function in that file whose source file is in `$FORGE_SCAN_TMP/forge_scan_tier1.txt` or `$FORGE_SCAN_TMP/forge_scan_tier2.txt`, enrich the existing stub.
 
 > This is the JS/TS/Python equivalent of `classes/`. In React, Next.js, Express, and most modern TS/JS codebases, the primary abstraction is the exported function — not the class. Without this directory, a React or Node codebase produces almost no graph nodes.
 
@@ -1251,9 +700,9 @@ async def function_name(param: Type) -> ReturnType:
 
 ### 4.3e — pages/<role>-<PageName>.md format
 
-> **Stubs are auto-generated by `phase4-brain-write.sh` (Step 4.0).** Your job here is to ENRICH stubs for key UI pages during hub reads.
+> **Stubs are auto-generated by the Phase 4 step in `tools/scan_forge` (`phase4.py`) (Step 4.0).** Your job here is to ENRICH stubs for key UI pages during hub reads.
 
-**Driven by `/tmp/forge_scan_ui_all.txt`.** For every HTML, Vue SFC, Svelte, and Angular template file found in Phase 1.6, the script has already created a stub. Enrich the ones for Tier 1 hub files. This gives every screen, form, and template its own navigable node in the Obsidian graph — enabling the full traversal: UI surface → JS/TS handler → API call → backend route.
+**Driven by `$FORGE_SCAN_TMP/forge_scan_ui_all.txt`.** For every HTML, Vue SFC, Svelte, and Angular template file found in Phase 1.6, the script has already created a stub. Enrich the ones for Tier 1 hub files. This gives every screen, form, and template its own navigable node in the Obsidian graph — enabling the full traversal: UI surface → JS/TS handler → API call → backend route.
 
 > **Why page nodes?** Without page files, the frontend is invisible in the graph. Page nodes connect what the user sees to the functions that power it. The `pages/` → `functions/` → `modules/` edge chain is the most readable path through a full-stack system.
 
@@ -1276,7 +725,7 @@ Examples: `web-LoginPage.md`, `web-UserProfile.md`, `app-HomeScreen.md`, `web-ch
 
 ## Key UI Elements
 
-> Extracted from `/tmp/forge_scan_html_forms.txt` and `/tmp/forge_scan_html_ids.txt`.
+> Extracted from `$FORGE_SCAN_TMP/forge_scan_html_forms.txt` and `$FORGE_SCAN_TMP/forge_scan_html_ids.txt`.
 > Do NOT read the full template file to populate this section — grep output is sufficient.
 
 | Element | Type | ID / Selector | Notes |
@@ -1285,7 +734,7 @@ Examples: `web-LoginPage.md`, `web-UserProfile.md`, `app-HomeScreen.md`, `web-ch
 
 ## Forms
 
-> From `/tmp/forge_scan_html_forms.txt`
+> From `$FORGE_SCAN_TMP/forge_scan_html_forms.txt`
 
 | Form | Action / Handler | Method | Purpose |
 |---|---|---|---|
@@ -1313,8 +762,8 @@ Examples: `web-LoginPage.md`, `web-UserProfile.md`, `app-HomeScreen.md`, `web-ch
 
 **What to write without reading the template file:**
 - **File path, language, kind, route**: derivable from the path alone — no read needed
-- **Key UI elements**: from `/tmp/forge_scan_html_forms.txt` (forms) and `/tmp/forge_scan_html_ids.txt` (IDs/data attributes)
-- **Script / Component Dependencies**: cross-reference filenames in `/tmp/forge_scan_functions_all.txt` whose stem matches the page name or lives in the same directory
+- **Key UI elements**: from `$FORGE_SCAN_TMP/forge_scan_html_forms.txt` (forms) and `$FORGE_SCAN_TMP/forge_scan_html_ids.txt` (IDs/data attributes)
+- **Script / Component Dependencies**: cross-reference filenames in `$FORGE_SCAN_TMP/forge_scan_functions_all.txt` whose stem matches the page name or lives in the same directory
 - **API Calls Made**: derive from the function nodes linked above — their `## Side Effects` sections contain the call info
 
 **For HTML/Vue/Svelte templates:** stubs are already written by the script. Read the full template when enriching a page node — grep inventory gives you forms and IDs, but a full read reveals the component hierarchy, slot usage, and conditional rendering logic. If there are many template files, process in batches: enrich a set, commit, continue.
@@ -1374,7 +823,7 @@ File path: `~/forge/brain/products/<slug>/codebase/structure.md`
 - [[patterns]] — Architecture patterns
 ```
 
-**How to write the tree:** Use the file inventory from Phase 1 (`/tmp/forge_scan_source_files.txt`) grouped by directory. Do not read additional files. Reconstruct the directory structure from the paths alone — you already have them.
+**How to write the tree:** Use the file inventory from Phase 1 (`$FORGE_SCAN_TMP/forge_scan_source_files.txt`) grouped by directory. Do not read additional files. Reconstruct the directory structure from the paths alone — you already have them.
 
 ### 4.4 — patterns.md format
 
@@ -1481,33 +930,7 @@ File path: `~/forge/brain/products/<slug>/codebase/structure.md`
 
 ### 4.7 — Diff against prior scan (re-scan only)
 
-When a `SCAN.json` already existed before this run (i.e. this is a re-scan, not first scan), produce a diff summary before overwriting:
-
-```bash
-# Read prior scan metadata
-PRIOR_FILES=$(cat ~/forge/brain/products/<slug>/codebase/SCAN.json 2>/dev/null | grep '"source_files"' | grep -o '[0-9]*')
-PRIOR_COMMIT=$(cat ~/forge/brain/products/<slug>/codebase/SCAN.json 2>/dev/null | grep '"commit"' | grep -o '"[a-f0-9]*"' | tr -d '"')
-PRIOR_DATE=$(cat ~/forge/brain/products/<slug>/codebase/SCAN.json 2>/dev/null | grep '"scanned_at"' | grep -o '"[^"]*"' | tail -1 | tr -d '"')
-
-CURRENT_FILES=$(wc -l < /tmp/forge_scan_source_files.txt)
-CURRENT_COMMIT=$(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || echo "unknown")
-
-# Compare module counts
-PRIOR_MODULES=$(ls ~/forge/brain/products/<slug>/codebase/modules/ 2>/dev/null | wc -l)
-
-echo "=== Scan Diff ==="
-echo "Prior scan: $PRIOR_DATE (commit $PRIOR_COMMIT, $PRIOR_FILES files)"
-echo "This scan:  $(date -u +"%Y-%m-%dT%H:%M:%SZ") (commit $CURRENT_COMMIT, $CURRENT_FILES files)"
-echo ""
-echo "File count change: $((CURRENT_FILES - PRIOR_FILES)) files ($([ $((CURRENT_FILES - PRIOR_FILES)) -gt 0 ] && echo '+')$((CURRENT_FILES - PRIOR_FILES)))"
-
-# Git log between prior and current commit for change summary
-if [ "$PRIOR_COMMIT" != "unknown" ] && [ "$PRIOR_COMMIT" != "$CURRENT_COMMIT" ]; then
-  echo ""
-  echo "Commits since prior scan:"
-  git -C "$REPO" log --oneline "$PRIOR_COMMIT".."$CURRENT_COMMIT" 2>/dev/null | head -10
-fi
-```
+When a `SCAN.json` already existed before this run (re-scan), compare **prior** `repos.<role>` (or legacy flat fields) with the new entry: `scanned_at`, `commit`, `source_files`, and module directory counts under `codebase/modules/`. Use `git log` between prior and current commit for the repo when helpful.
 
 Write diff summary into `index.md` under a `## Changes Since Last Scan` section:
 
@@ -1535,31 +958,15 @@ This section is overwritten on every re-scan. First scans do not include this se
 
 ### 4.8 — Commit after each project role
 
-```bash
-cd ~/forge/brain
-# Verify expected output files were created
-echo "=== Output summary ==="
-echo "Modules:   $(ls products/<slug>/codebase/modules/   2>/dev/null | wc -l) files"
-echo "Classes:   $(ls products/<slug>/codebase/classes/   2>/dev/null | wc -l) files"
-echo "Methods:   $(ls products/<slug>/codebase/methods/   2>/dev/null | wc -l) files"
-echo "Functions: $(ls products/<slug>/codebase/functions/ 2>/dev/null | wc -l) files"
-echo "Pages:     $(ls products/<slug>/codebase/pages/     2>/dev/null | wc -l) files"
-echo "Structure: $([ -f products/<slug>/codebase/structure.md ] && echo 'present' || echo 'MISSING')"
-echo "API surface: $([ -f products/<slug>/codebase/api-surface.md ] && echo 'present' || echo 'MISSING')"
-echo ""
-echo "TOTAL BRAIN NODES: $(($(ls products/<slug>/codebase/modules/ 2>/dev/null | wc -l) + $(ls products/<slug>/codebase/classes/ 2>/dev/null | wc -l) + $(ls products/<slug>/codebase/methods/ 2>/dev/null | wc -l) + $(ls products/<slug>/codebase/functions/ 2>/dev/null | wc -l) + $(ls products/<slug>/codebase/pages/ 2>/dev/null | wc -l)))"
-
-git add products/<slug>/codebase/
-git commit -m "scan: map <slug>/<role> codebase — <file-count> files, <hub-count> hubs, <class-count> classes, <method-count> methods, <fn-count> functions, <page-count> pages"
-```
+After the runner finishes (or after each logical batch), verify under `~/forge/brain/products/<slug>/codebase/`: `SCAN.json`, counts in `modules/`, `classes/`, `methods/`, `functions/`, `pages/`, plus `structure.md` and `api-surface.md` when expected. Commit the tree with a message that includes slug, role, and approximate node counts.
 
 **If `classes/` has 0 files** and hub reads included class-bearing code: do NOT skip. Go back and extract at least the top 3-5 classes from the Tier 1 hubs. The `classes/` directory is mandatory for a meaningful Obsidian graph — flat module-only output does not produce a navigable mindmap.
 
 **If `methods/` has 0 files** and the codebase has Java/Kotlin/Go/TypeScript classes: do NOT skip. Extract method nodes from at least the top 3 Tier 1 hub classes. Without method nodes, class-level graph traversal is a dead end.
 
-**If `pages/` has 0 files** and the repo contains `.html`/`.vue`/`.svelte` files: do NOT skip. Write page nodes from `/tmp/forge_scan_ui_all.txt` — no additional file reads required.
+**If `pages/` has 0 files** and the repo contains `.html`/`.vue`/`.svelte` files: do NOT skip. Write page nodes from `forge_scan_ui_all.txt` in `$FORGE_SCAN_TMP` — no additional file reads required.
 
-**If `structure.md` is missing:** do NOT proceed to Phase 5 or commit. Write it now using the file paths already in `/tmp/forge_scan_source_files.txt` — no additional reads needed.
+**If `structure.md` is missing:** do NOT proceed to Phase 5 or commit. Write it now using the file paths already in `forge_scan_source_files.txt` under `$FORGE_SCAN_TMP` — no additional reads needed.
 
 ---
 
@@ -1569,38 +976,24 @@ git commit -m "scan: map <slug>/<role> codebase — <file-count> files, <hub-cou
 
 This phase identifies the architectural seams between repos — the contracts, shared types, and communication patterns that cross repo boundaries. This is the most valuable architectural data for multi-repo planning and the data most likely to be missing without an explicit scan phase.
 
-**Correlation quality:** If `cross-repo.md` shows almost no `MATCHED` rows while the backend has hundreds of routes, verify (1) `phase35-extract.sh` was run with **`append`** for every route-defining repo so `/tmp/forge_scan_api_routes.txt` is not overwritten, and (2) `/tmp/forge_scan_fe_urls.txt` is non-trivial after `phase5-cross-repo.sh` (many SPAs use `$fetch`, `api.`, or quoted `/api/...` paths — the script harvests those; dynamic template URLs still need manual rows).
+**Correlation quality:** If `cross-repo.md` shows almost no `MATCHED` rows while the backend has hundreds of routes, verify (1) phase 3.5 (`scan_forge.phase35`) was run with **`append`** for every route-defining repo so **`forge_scan_api_routes.txt`** in `$FORGE_SCAN_TMP` is complete, and (2) **`forge_scan_fe_urls.txt`** is non-trivial after phase 5 (many SPAs use `$fetch`, `api.`, or quoted `/api/...` paths — phase 5 harvests those; dynamic template URLs still need manual rows).
 
-### 5.1 – 5.5 prep — Run the pre-written cross-repo script
+### 5.1 – 5.5 prep — Cross-repo scan
 
-Run the pre-written Phase 5 script, passing all repo paths:
-
-```bash
-bash "$FORGE_SCRIPTS/phase5-cross-repo.sh" <repo1> <repo2> [repo3...]
-# Example:
-bash "$FORGE_SCRIPTS/phase5-cross-repo.sh" ~/projects/backend ~/projects/web ~/projects/app
-```
-
-The script handles all of 5.1 – 5.4 and 5.5 URL extraction prep in one call. Read its output for:
+**Already included** in `forge_scan_run.py` when you pass every repo on **`--repos`**. Phase 5 runs **once** after all per-repo phases. Read the console output for:
 - Total call sites per language
 - Shared type names appearing in 2+ repos
 - Env variable names used across repos
 - Event producers and consumers
 - Count of unique URL paths extracted vs. dynamic URLs that need manual review
 
-> Sections 5.1 – 5.4 below document what the script does internally (reference only — do not re-run inline).
-
 ### 5.6 — Auto-patch module stubs (HARD-GATE for first-pass workspace/scan)
 
-**No LLM, no “come back in Phase 5.5”.** After `phase5-cross-repo.sh`, run:
+**No LLM, no “come back in Phase 5.5”.** Phase **56** (`tools/scan_forge/phase56.py`) runs automatically after phase 5 in the same `forge_scan_run.py` invocation.
 
-```bash
-bash "$FORGE_SCRIPTS/phase56-autolink-crossrepo.sh" "$HOME/forge/brain/products/<slug>/codebase"
-```
+**Prerequisites:** Phase 4 has created `*/modules/<role>-<dirslug>.md` files; `$FORGE_SCAN_TMP/forge_scan_api_routes.txt` lists **all** route-defining repos (correct `--repos` order); `$FORGE_SCAN_TMP/forge_scan_all_callsites.txt` comes from phase 5.
 
-**Prerequisites:** `phase4-brain-write.sh` has already created `*/modules/<role>-<dirslug>.md` files; `/tmp/forge_scan_api_routes.txt` must list **all** route-defining repos (use `phase35-extract.sh … append`); `/tmp/forge_scan_all_callsites.txt` must be from `phase5-cross-repo.sh`.
-
-**What it does:** For each HTTP call line, extracts `/api…`, `/vN…`, `/graphql…`, `/rest…` fragments, finds a substring hit in a merged routes file (copy of `/tmp/forge_scan_api_routes.txt` **plus** optional **`route-aliases.tsv`** in the same brain parent directory — lines appended as extra `repo<TAB>path:line:…` rows, `#` comments and blank lines ignored), then **appends** idempotent blocks to caller and callee module files:
+**What it does:** For each HTTP call line, extracts `/api…`, `/vN…`, `/graphql…`, `/rest…` fragments, finds a substring hit in a merged routes file (copy of `forge_scan_api_routes.txt` **plus** optional **`route-aliases.tsv`** in the brain parent — lines appended as extra `repo<TAB>path:line:…` rows, `#` comments and blank lines ignored), then **appends** idempotent blocks to caller and callee module files:
 
 - Outgoing: markers `FORGE:AUTO_CROSS_REPO_OUT`
 - Incoming: markers `FORGE:AUTO_CROSS_REPO_IN`
@@ -1611,420 +1004,15 @@ Also writes `cross-repo-automap.md` (TSV) at the codebase parent. **Re-run safe*
 
 ### 5.7 — Validate `[[wikilinks]]` (optional, after Phase 4 / 5.6)
 
-```bash
-bash "$FORGE_SCRIPTS/phase57-validate-brain-wikilinks.sh" "$HOME/forge/brain/products/<slug>/codebase" --write-report
-```
+Pass **`--phase57-write-report`** to `forge_scan_run.py` (or omit **`--skip-phase57`**). Phase 57 (`tools/scan_forge/phase57.py`) writes **`wikilink-orphan-report.md`** at the codebase root when requested: orphan links plus **ambiguous basenames**. Without `--write-report`, the report is printed to stdout only.
 
-Writes **`wikilink-orphan-report.md`** at the codebase root: links whose target basename has no `.md` file under the tree, plus **ambiguous basenames** (same filename in multiple folders — Obsidian may resolve to the wrong note). Omit `--write-report` to print the same markdown to stdout only.
+### 5.1 – 5.5 — Reference (implementation)
 
-### 5.1 — API call detection (any repo → any repo) [reference]
+Phases **5.1–5.5** are implemented in **`tools/scan_forge/phase5.py`**: per-language HTTP client call sites, exported TypeScript types (with duplicate-line stats), environment-variable references, producer/consumer heuristics, URL literal harvest, and dynamic-URL flags. Patterns follow the legacy grep inventory; extend **`phase5.py`** if you need new languages — do not maintain parallel shell snippets.
 
-Find where any repo calls another service's HTTP API. **Scan ALL repos** — not just web/mobile. Microservices call other microservices. A Java consumer service calls a Node backend. A Go service calls another Go service.
-
-```bash
-# (Covered by phase5-cross-repo.sh — do not run inline)
-for repo in <all-repos>; do
-  echo "=== API calls from: $(basename $repo) ==="
-
-  # TypeScript / JavaScript (fetch, axios, got, superagent, ky, needle)
-  grep -rn \
-    "fetch(\|axios\.\|got\.\|superagent\.\|ky\.\|needle\." \
-    "$repo" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
-    | grep -v node_modules | grep -v test | grep -v spec | head -30
-
-  # Java (RestTemplate, WebClient, OkHttp, HttpClient, Feign interfaces)
-  grep -rn \
-    "restTemplate\.\|webClient\.\|HttpClient\.\|OkHttpClient\.\|\.exchange(\|\.getForObject(\|\.postForObject(\|@FeignClient" \
-    "$repo" --include="*.java" \
-    | grep -v test | grep -v Test | head -20
-
-  # Kotlin (Ktor client, Fuel, Retrofit annotations on consumer interfaces)
-  grep -rn \
-    "client\.get\|client\.post\|Fuel\.get\|Fuel\.post\|@GET(\|@POST(\|@PUT(\|@DELETE(" \
-    "$repo" --include="*.kt" \
-    | grep -v test | head -20
-
-  # Python (requests, httpx, aiohttp)
-  grep -rn \
-    "requests\.get\|requests\.post\|requests\.put\|requests\.delete\|httpx\.get\|httpx\.post\|aiohttp\." \
-    "$repo" --include="*.py" \
-    | grep -v test | grep -v _test | head -20
-
-  # Go (net/http, resty, go-resty)
-  grep -rn \
-    "http\.Get(\|http\.Post(\|http\.NewRequest(\|resty\.\|client\.R()" \
-    "$repo" --include="*.go" \
-    | grep -v _test.go | head -20
-
-  # Dart / Flutter (Dio, http package)
-  grep -rn \
-    "dio\.get\|dio\.post\|dio\.put\|dio\.delete\|http\.get\|http\.post" \
-    "$repo" --include="*.dart" \
-    | grep -v test | head -20
-
-  # Ruby (Net::HTTP, HTTParty, Faraday, RestClient)
-  grep -rn \
-    "Net::HTTP\.\|HTTParty\.\|Faraday\.new\|RestClient\.\|\.get(\|\.post(\|\.put(\|\.delete(" \
-    "$repo" --include="*.rb" \
-    | grep -v test | grep -v spec | head -20
-
-  # Swift (URLSession, Alamofire)
-  grep -rn \
-    "URLSession\.\|AF\.\|Alamofire\.\|dataTask(with\|URLRequest(" \
-    "$repo" --include="*.swift" \
-    | grep -v test | grep -v Test | head -20
-
-  # tRPC (client.procedure.query / client.procedure.mutate patterns)
-  grep -rn \
-    "trpc\.\|createTRPCClient\|\.query(\|\.mutate(\|\.useQuery(\|\.useMutation(" \
-    "$repo" --include="*.ts" --include="*.tsx" \
-    | grep -v node_modules | grep -v test | grep -v spec | head -20
-
-  # gRPC stub calls (generated client method calls)
-  grep -rn \
-    "Stub(\|\.stub\.\|grpc\.unary\|grpc\.invoke\|ServicePromiseClient\|\.call(" \
-    "$repo" --include="*.ts" --include="*.js" --include="*.java" --include="*.kt" --include="*.go" \
-    | grep -v node_modules | grep -v test | grep -v Test | head -20
-done
-```
-
-> **tRPC / gRPC note:** These protocols don't emit plain HTTP path strings. tRPC call sites reference procedure names (e.g. `trpc.user.getById.query()`), not URLs. gRPC call sites reference stub method names. For these, **phase56** URL heuristics do not apply — note the call sites in `cross-repo.md` under `## tRPC / gRPC Call Sites` with procedure/method names and match manually to router/proto definitions.
-
-### 5.2 — Shared type / schema detection
-
-Find types, interfaces, or schemas that appear in multiple repos (shared contracts):
-
-```bash
-# Extract exported interface/type names from each repo
-for repo in <all-repos>; do
-  echo "=== Types from: $repo ==="
-  grep -rhn \
-    "^export interface \|^export type \|^export class \|^type \|^interface " \
-    "$repo" \
-    --include="*.ts" \
-    | sed 's/^[0-9]*://' \
-    | grep -v node_modules
-done > /tmp/forge_scan_all_types.txt
-
-# Find type names that appear in 2+ repos (shared types)
-sort /tmp/forge_scan_all_types.txt | uniq -d | head -30
-```
-
-### 5.3 — Environment variable cross-reference
-
-Environment variables are often the contract between repos (service URLs, API keys, feature flags):
-
-```bash
-for repo in <all-repos>; do
-  echo "=== Env vars from: $repo ==="
-  grep -rhn \
-    "process\.env\.\|os\.environ\.\|os\.Getenv\|System\.getenv\|dotenv" \
-    "$repo" \
-    --include="*.ts" --include="*.js" --include="*.py" --include="*.go" --include="*.java" --include="*.kt" \
-    | grep -v node_modules | grep -v test \
-    | sed 's/.*process\.env\.\([A-Z_]*\).*/\1/' \
-    | sort | uniq
-done
-```
-
-### 5.4 — Event/message bus cross-reference
-
-Find event producers and consumers across repos:
-
-```bash
-# Producer patterns
-for repo in <all-repos>; do
-  echo "=== Events produced by: $repo ==="
-  grep -rhn \
-    "publish(\|produce(\|emit(\|sendMessage\|kafkaProducer\|channel\.send\|rabbitMQ\.publish" \
-    "$repo" \
-    --include="*.ts" --include="*.py" --include="*.go" --include="*.java" --include="*.kt" \
-    | grep -v node_modules | grep -v test | head -20
-done
-
-# Consumer patterns
-for repo in <all-repos>; do
-  echo "=== Events consumed by: $repo ==="
-  grep -rhn \
-    "subscribe(\|consume(\|\.on(\|kafkaConsumer\|channel\.receive\|rabbitMQ\.consume\|@KafkaListener" \
-    "$repo" \
-    --include="*.ts" --include="*.py" --include="*.go" --include="*.java" --include="*.kt" \
-    | grep -v node_modules | grep -v test | head -20
-done
-```
-
-### 5.5 — Route-to-callsite correlation (backend route ↔ any-repo call)
-
-This is the join between Phase 3.5 (backend route table) and Phase 5.1 (call sites across ALL repos). It produces the most actionable cross-repo data: which call site maps to which backend route, and which calls have no matching route (broken contracts).
-
-**Scope: ALL repos, not just web/mobile.** Microservices call other services. A Java consumer may call a Node backend. A backend service may call another backend microservice. Every repo is a potential API consumer.
-
-**Step 1 — Extract URL strings from ALL repo call sites (language-aware):**
-
-```bash
-# ── TypeScript / JavaScript / Node (fetch, axios, got, superagent) ──────────
-for repo in <all-repos>; do
-  repo_name=$(basename "$repo")
-  grep -rn \
-    "fetch(\|axios\.\|got\.\|superagent\.\|request\.\|needle\.\|ky\." \
-    "$repo" \
-    --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
-    | grep -v node_modules | grep -v test | grep -v spec \
-    | grep -E "['\`\"]/" \
-    | sed "s|$repo/||" \
-    | sed "s|^|$repo_name\t|"
-done > /tmp/forge_scan_js_calls.txt
-
-# ── Java (RestTemplate, WebClient, OkHttp, HttpClient, Feign annotations) ───
-for repo in <all-repos>; do
-  repo_name=$(basename "$repo")
-  # RestTemplate / WebClient URL string literals
-  grep -rn \
-    "restTemplate\.\|webClient\.\|HttpClient\.\|OkHttpClient\.\|\.exchange(\|\.getForObject(\|\.postForObject(" \
-    "$repo" --include="*.java" \
-    | grep -v test | grep -v Test \
-    | sed "s|$repo/||" | sed "s|^|$repo_name\t|"
-
-  # Feign client interface @GetMapping/@PostMapping etc. (these ARE the route definitions)
-  grep -rn \
-    "@GetMapping\|@PostMapping\|@PutMapping\|@DeleteMapping\|@PatchMapping\|@RequestMapping" \
-    "$repo" --include="*.java" \
-    | grep -i "feign\|client\|Client" \
-    | sed "s|$repo/||" | sed "s|^|$repo_name/feign\t|"
-done >> /tmp/forge_scan_java_calls.txt
-
-# ── Kotlin (Ktor, Fuel, Retrofit annotations) ────────────────────────────────
-for repo in <all-repos>; do
-  repo_name=$(basename "$repo")
-  grep -rn \
-    "client\.get(\|client\.post(\|client\.put(\|client\.delete(\|Fuel\.get(\|Fuel\.post(\|\.get<\|\.post<" \
-    "$repo" --include="*.kt" \
-    | grep -v test | grep -v Test \
-    | sed "s|$repo/||" | sed "s|^|$repo_name\t|"
-
-  # Retrofit annotations on interfaces
-  grep -rn \
-    "@GET(\|@POST(\|@PUT(\|@DELETE(\|@PATCH(" \
-    "$repo" --include="*.kt" \
-    | grep -v test \
-    | sed "s|$repo/||" | sed "s|^|$repo_name/retrofit\t|"
-done >> /tmp/forge_scan_kotlin_calls.txt
-
-# ── Python (requests, httpx, aiohttp) ────────────────────────────────────────
-for repo in <all-repos>; do
-  repo_name=$(basename "$repo")
-  grep -rn \
-    "requests\.get(\|requests\.post(\|requests\.put(\|requests\.delete(\|httpx\.get(\|httpx\.post(\|aiohttp\." \
-    "$repo" --include="*.py" \
-    | grep -v test | grep -v "_test" \
-    | sed "s|$repo/||" | sed "s|^|$repo_name\t|"
-done >> /tmp/forge_scan_python_calls.txt
-
-# ── Go (http.Get, http.Post, http.NewRequest, resty, go-resty) ───────────────
-for repo in <all-repos>; do
-  repo_name=$(basename "$repo")
-  grep -rn \
-    "http\.Get(\|http\.Post(\|http\.NewRequest(\|resty\.\|client\.R()\.Get(" \
-    "$repo" --include="*.go" \
-    | grep -v "_test.go" \
-    | sed "s|$repo/||" | sed "s|^|$repo_name\t|"
-done >> /tmp/forge_scan_go_calls.txt
-
-# ── Dart/Flutter (Dio, http package) ─────────────────────────────────────────
-for repo in <all-repos>; do
-  repo_name=$(basename "$repo")
-  grep -rn \
-    "dio\.get(\|dio\.post(\|dio\.put(\|dio\.delete(\|http\.get(\|http\.post(" \
-    "$repo" --include="*.dart" \
-    | grep -v test \
-    | sed "s|$repo/||" | sed "s|^|$repo_name\t|"
-done >> /tmp/forge_scan_dart_calls.txt
-
-cat /tmp/forge_scan_js_calls.txt /tmp/forge_scan_java_calls.txt \
-    /tmp/forge_scan_kotlin_calls.txt /tmp/forge_scan_python_calls.txt \
-    /tmp/forge_scan_go_calls.txt /tmp/forge_scan_dart_calls.txt \
-    > /tmp/forge_scan_all_callsites.txt
-
-echo "Total call sites across all repos and languages: $(wc -l < /tmp/forge_scan_all_callsites.txt)"
-```
-
-**Step 2 — Extract literal URL strings with file:line context:**
-
-```bash
-# For each language, extract the actual URL path string from the call
-# TS/JS: look for string arguments starting with '/' or config constants
-grep -oE "(fetch|axios\.[a-z]+|got\.[a-z]+)\(['\`\"]([/][^'\`\"?# ]+)" \
-  /tmp/forge_scan_js_calls.txt \
-  | grep -oE "['\`\"][/][^'\`\"?# ]+" | tr -d "'\`\"" > /tmp/forge_scan_url_strings.txt
-
-# Java: RestTemplate URL strings, Feign @*Mapping values
-grep -oE '"(/[^"?# ]+)"' /tmp/forge_scan_java_calls.txt \
-  | tr -d '"' >> /tmp/forge_scan_url_strings.txt
-
-# Feign @GetMapping("...") annotations — these are consumer-side route declarations
-grep -oE '@[A-Z][a-z]+Mapping\("([^"]+)"' /tmp/forge_scan_kotlin_calls.txt \
-  | grep -oE '"[^"]+"' | tr -d '"' >> /tmp/forge_scan_url_strings.txt
-
-# Python requests.get("..."), requests.post("...")
-grep -oE "(requests|httpx)\.[a-z]+\(['\"]([/][^'\"?# ]+)" \
-  /tmp/forge_scan_python_calls.txt \
-  | grep -oE "['\"][/][^'\"?# ]+" | tr -d "'\"" >> /tmp/forge_scan_url_strings.txt
-
-sort -u /tmp/forge_scan_url_strings.txt > /tmp/forge_scan_fe_urls.txt
-echo "Unique URL paths extracted: $(wc -l < /tmp/forge_scan_fe_urls.txt)"
-cat /tmp/forge_scan_fe_urls.txt
-
-# ── Dynamic URLs (template literals / variable concatenation) — flag for manual review ──
-# These cannot be statically extracted — the path is built at runtime from env vars or state
-for repo in <all-repos>; do
-  repo_name=$(basename "$repo")
-  # Template literals: fetch(`${BASE_URL}/path`) or axios.get(`${API_URL}/users`)
-  grep -rn \
-    "fetch(\`\${\\|axios\.[a-z]*(\`\${\|got\.[a-z]*(\`\${\|requests\.[a-z]*(f\"\|httpx\.[a-z]*(f\"" \
-    "$repo" \
-    --include="*.ts" --include="*.tsx" --include="*.js" --include="*.py" \
-    | grep -v node_modules | grep -v test | grep -v spec \
-    | sed "s|$repo/||" | sed "s|^|$repo_name\t|"
-  # Concatenation: baseURL + '/path' or API_BASE_URL + endpoint
-  grep -rn \
-    "baseURL\s*+\|API_BASE_URL\s*+\|API_URL\s*+\|BASE_URL\s*+" \
-    "$repo" \
-    --include="*.ts" --include="*.tsx" --include="*.js" \
-    | grep -v node_modules | grep -v test \
-    | sed "s|$repo/||" | sed "s|^|$repo_name\t|"
-done > /tmp/forge_scan_dynamic_urls.txt
-
-if [ -s /tmp/forge_scan_dynamic_urls.txt ]; then
-  echo ""
-  echo "⚠️  Dynamic URLs detected — path not extractable by grep (template literals / variable concatenation):"
-  wc -l < /tmp/forge_scan_dynamic_urls.txt
-  echo "These call sites will NOT appear in URL correlation. Document in cross-repo.md under '## Dynamic URL Call Sites (Manual Review Required)'"
-fi
-```
-
-**Step 3 — Normalize backend route table for matching:**
-
-```bash
-# /tmp/forge_scan_api_routes.txt was built in Phase 3.5 (possibly multiple repos; each line may start with `repo\t`)
-# Strip optional leading repo column for sed-only pipelines, or keep it for tables:
-#   cut -f2- /tmp/forge_scan_api_routes.txt | grep -E ...
-# Normalize :param placeholders to a regex-friendly pattern for matching
-# Format each line: METHOD  /route/path  file:line  handler
-grep -E "@Get|@Post|@Put|@Delete|@Patch|router\.(get|post|put|delete|patch)|app\.(get|post|put|delete|patch)|r\.(GET|POST|PUT|DELETE)" \
-  /tmp/forge_scan_api_routes.txt \
-  | sed \
-    -e "s/.*@Get('\([^']*\)').*/GET\t\1/" \
-    -e "s/.*@Post('\([^']*\)').*/POST\t\1/" \
-    -e "s/.*@Put('\([^']*\)').*/PUT\t\1/" \
-    -e "s/.*@Delete('\([^']*\)').*/DELETE\t\1/" \
-    -e "s/.*@Patch('\([^']*\)').*/PATCH\t\1/" \
-    -e "s/.*router\.get('\([^']*\)'.*/GET\t\1/" \
-    -e "s/.*router\.post('\([^']*\)'.*/POST\t\1/" \
-    -e "s/.*app\.get('\([^']*\)'.*/GET\t\1/" \
-    -e "s/.*app\.post('\([^']*\)'.*/POST\t\1/" \
-    -e "s/.*@GetMapping(\"\([^\"]*\)\").*/GET\t\1/" \
-    -e "s/.*@PostMapping(\"\([^\"]*\)\").*/POST\t\1/" \
-    -e "s/.*@RequestMapping.*\"\([^\"]*\)\".*/MULTI\t\1/" \
-  > /tmp/forge_scan_be_routes_normalized.txt
-
-echo "Backend routes normalized: $(wc -l < /tmp/forge_scan_be_routes_normalized.txt)"
-cat /tmp/forge_scan_be_routes_normalized.txt
-```
-
-**Step 4 — Join: match each frontend URL against backend route table:**
-
-This step is done by the model (not bash) — bash regex matching for `:param` normalization is brittle. Read both files and produce the correlation:
-
-For each URL in `/tmp/forge_scan_fe_urls.txt`:
-1. Strip query strings (`?key=val`) and hash fragments
-2. Try exact match against backend routes
-3. If no exact match, try pattern match — replace `:param`, `{param}`, `[param]` with `*` wildcard and match
-4. Record: `MATCHED` (exact or pattern), `UNMATCHED` (no backend route found), or `AMBIGUOUS` (matches 2+ routes)
-
-Flag these specifically:
-- **UNMATCHED** frontend URLs → broken contract (frontend calls a route that doesn't exist in backend)
-- Routes in backend with zero frontend call sites → orphan routes (may be internal, may be dead code)
-
-**Step 5 — Output correlation results to temp file:**
-
-Write `/tmp/forge_scan_route_correlation.txt` with this structure (tab-separated):
-```
-STATUS  CALLER_REPO  CALLER_FILE  CALLER_LINE  CALLER_MODULE  URL  MATCH_TYPE  BE_REPO  BE_FILE  BE_LINE  BE_MODULE  BE_ROUTE  BE_METHOD
-MATCHED  web  src/hooks/useUser.ts  34  web-useUser  /api/users/profile  exact  backend  src/routes/users.ts  18  backend-users  /api/users/profile  GET
-MATCHED  app  lib/api/auth.dart  12  app-authClient  /api/auth/login  exact  backend  src/routes/auth.ts  9  backend-auth  /api/auth/login  POST
-MATCHED  consumer-service  src/client/UserClient.java  55  consumer-service-UserClient  /api/users/profile  pattern  core-backend  src/routes/users.ts  18  core-backend-users  /api/users/:id  GET
-UNMATCHED  web  src/utils/legacy.ts  88  web-legacy  /api/v1/feed  -  -  -  -  -  -  -
-ORPHAN  -  -  -  -  -  -  backend  src/routes/admin.ts  7  backend-admin  /api/admin/metrics  GET
-```
-
-**Module name derivation rule:** `<role>-<stem>` where stem = filename without extension, lowercased.
-
-**Collision rule:** Common filenames (`index`, `main`, `app`, `server`, `utils`, `helpers`, `types`, `config`, `client`, `handler`, `middleware`) appear in many directories within the same repo and will collide. For these names, prefix with the immediate parent directory: `<role>-<parent>-<stem>`.
-
-Examples:
-- `web/src/hooks/useUser.ts` → `web-useUser` (unique name, no prefix needed)
-- `backend/src/routes/users.ts` → `backend-users` (unique name, no prefix needed)
-- `backend/src/auth/index.ts` → `backend-auth-index` (collision-prone name, parent included)
-- `backend/src/middleware/index.ts` → `backend-middleware-index` (collision-prone, different parent)
-- `consumer-service/src/client/UserClient.java` → `consumer-service-UserClient` (unique name)
-
-**Detection:** Before writing a module file, check if the name already exists in `modules/`. If it does, apply the parent-directory prefix to both the existing and new file to disambiguate.
+**tRPC / gRPC:** Plain URL heuristics may not apply; document procedure/stub names in `cross-repo.md` manually when needed.
 
 ---
-
-**Step 6 — Patch module files with cross-repo wikilinks (CRITICAL — this creates the Obsidian graph edges):**
-
-For every `MATCHED` row in `/tmp/forge_scan_route_correlation.txt`, patch two brain files:
-
-**6a — Patch the CALLER module file** (`~/forge/brain/products/<slug>/codebase/modules/<CALLER_MODULE>.md`):
-
-Find the `## Calls (cross-repo)` section (written as empty stub in Phase 4.3) and append:
-```markdown
-- `<BE_METHOD> <BE_ROUTE>` → [[<BE_MODULE>]] (`<BE_REPO>/<BE_FILE>:<BE_LINE>`)
-```
-
-Example — patching `modules/web-useUser.md`:
-```markdown
-## Calls (cross-repo)
-
-- `GET /api/users/profile` → [[backend-users]] (`backend/src/routes/users.ts:18`)
-- `PUT /api/users/profile` → [[backend-users]] (`backend/src/routes/users.ts:31`)
-```
-
-**6b — Patch the PROVIDER module file** (`~/forge/brain/products/<slug>/codebase/modules/<BE_MODULE>.md`):
-
-Find the `## Called By (cross-repo)` section and append:
-```markdown
-- [[<CALLER_MODULE>]] (`<CALLER_REPO>/<CALLER_FILE>:<CALLER_LINE>`) → `<BE_METHOD> <BE_ROUTE>`
-```
-
-Example — patching `modules/backend-users.md`:
-```markdown
-## Called By (cross-repo)
-
-- [[web-useUser]] (`web/src/hooks/useUser.ts:34`) → `GET /api/users/profile`
-- [[app-authClient]] (`app/lib/api/auth.dart:89`) → `GET /api/users/profile`
-- [[consumer-service-UserClient]] (`consumer-service/src/client/UserClient.java:55`) → `GET /api/users/:id`
-```
-
-**6c — Handle UNMATCHED rows** — patch only the caller file, note the broken contract:
-
-In `modules/<CALLER_MODULE>.md` → `## Calls (cross-repo)`:
-```markdown
-- `GET /api/v1/feed` → ❌ NO MATCHING BACKEND ROUTE FOUND — broken contract
-```
-
-**6d — Handle ORPHAN rows** — patch the provider file with a note:
-
-In `modules/<BE_MODULE>.md` → `## Called By (cross-repo)`:
-```markdown
-> ⚠️ No callers found in any repo scan. May be: internal/webhook-only, dead code, or called via dynamic URL construction not detectable by grep.
-```
-
-**Why this step matters:** These wikilinks create the actual graph edges in Obsidian. Without them, cross-repo.md is a flat table no one navigates. With them, clicking any module node in the graph immediately shows every cross-repo dependency — you can trace a call from a Java consumer interface to a Node route to its DB query in three clicks.
-
----
-
 ### 5.6 — Write cross-repo map
 
 Write to `~/forge/brain/products/<slug>/codebase/cross-repo.md` using data from all prior Phase 5 steps. Include the route correlation table from 5.5.
@@ -2129,12 +1117,7 @@ Variables that cross repo boundaries:
 - [[api-surface]] — Full backend API surface
 ```
 
-Commit after cross-repo layer:
-```bash
-cd ~/forge/brain
-git add products/<slug>/codebase/cross-repo.md
-git commit -m "scan: cross-repo relationships for <slug> — <N> routes correlated, <N> broken contracts, <N> shared types"
-```
+Commit after cross-repo layer: stage `cross-repo.md` (and related updates) under `~/forge/brain/products/<slug>/codebase/` with a message summarizing route correlation and contract health.
 
 ---
 
@@ -2154,7 +1137,7 @@ Is the file a README / ARCHITECTURE / CONTRIBUTING / ADR?
               → NO (leaf file):
                   Is it a test file?
                     → YES: Extract test name strings only (grep, no Read)
-                    → NO: Stub already exists from phase4-brain-write.sh.
+                    → NO: Stub already exists from Phase 4 (`scan_forge.phase4`).
                           Read in batches to enrich — no file is skipped,
                           just prioritize hubs first. If doing full coverage,
                           read all leaf files in groups of 20-30, writing
@@ -2209,11 +1192,11 @@ Does SCAN.json exist?
 
 **Symptom:** Phase 1 produces thousands of source files; hub scoring takes a moment on very large repos.
 
-**Do NOT:** Cap or sample the file inventory — all stubs are generated by `phase4-brain-write.sh` from the full inventory regardless of repo size. Never skip files.
+**Do NOT:** Cap or sample the file inventory — all stubs are generated by the Phase 4 step in `tools/scan_forge` (`phase4.py`) from the full inventory regardless of repo size. Never skip files.
 
 **Mitigation:**
 1. Phase 1 hub scoring is O(n) — it counts references per file from the already-extracted import graph, not by re-grepping the entire repo per file. Runs fast at any scale.
-2. Phase 4: run `phase4-brain-write.sh` as normal — it handles any number of files
+2. Phase 4: run the Phase 4 step in `tools/scan_forge` (`phase4.py`) as normal — it handles any number of files
 3. For Phase 3 enrichment on very large repos (1000+ hub candidates): process in batches — read the first batch of hub files, write their brain nodes, then continue with the next batch. No file is skipped, just done in multiple passes.
 4. Add `"monorepo": true` flag to SCAN.json
 
@@ -2223,7 +1206,7 @@ Does SCAN.json exist?
 
 ### Edge Case 2: No test files found
 
-**Symptom:** `/tmp/forge_scan_test_files.txt` is empty; gotchas.md has no test-derived content.
+**Symptom:** `$FORGE_SCAN_TMP/forge_scan_test_files.txt` is empty; gotchas.md has no test-derived content.
 
 **Do NOT:** Fabricate edge cases or infer them from production code alone.
 
@@ -2327,39 +1310,21 @@ Does SCAN.json exist?
 
 5. **Not committing SCAN.json before other brain files** — If the write fails mid-way, an incomplete scan with no metadata is worse than no scan. Commit SCAN.json first.
 
-6. **Forgetting to clean up `/tmp/forge_scan_*.txt` temp files** — These accumulate and may cause stale data if a second scan runs in the same session without cleanup.
-
-```bash
-# Always run at end of scan
-bash "$FORGE_SCRIPTS/cleanup.sh"
-```
+6. **Forgetting to clean up `forge_scan_*.txt` in the run directory** — Pass **`--cleanup`** to `forge_scan_run.py` to remove them after a successful run, or delete the temp run dir printed on stdout when you no longer need it.
 
 ---
 
 ## Quick Reference Card
 
-| Phase | What | Tools | Tokens |
-|---|---|---|---|
-| 1.1 | File inventory | `find`, `grep` | 0 |
-| 1.2 | Module boundaries | `find`, `awk` | 0 |
-| 1.3 | Import graph | `head`, `grep` | 0 |
-| 1.4 | Hub scoring | `grep -rl`, `awk`, `sort` | 0 |
-| 1.5 | Language fingerprint | `grep`, `cat` (package.json) | 0 |
-| 1.6 | Type/method/function/UI inventory | `grep -rn` per language | 0 |
-| 2 | Hub tier assignment | `awk` | 0 |
-| 3.1 | README / docs | Read (full) | Low |
-| 3.2 | Tier 1 hub reads | Read (full file) | Medium |
-| 3.3 | Tier 2 hub reads | Read (full file) | Low-Medium |
-| 3.4 | Test name extraction | `grep` | 0 |
-| 3.5 | API route extraction | `grep -rn` | 0 |
-| 4 | Brain write (modules/) | Write per file | Low |
-| 4.3a | Brain write (classes/) | Write per type from inventory | Low |
-| 4.3d | Brain write (methods/) | Write per method from inventory | Low |
-| 4.3c | Brain write (functions/) | Write per exported function | Low |
-| 4.3e | Brain write (pages/) | Write per UI template file | Low |
-| 5 | Cross-repo layer | `grep` across all repos | 0 (grep) + Low (write) |
+| Phase | What | Implementation |
+|---|---|---|
+| 1.x | Inventory, hubs, tiers | `tools/scan_forge/phase1.py` (GNU `grep` where needed) |
+| 3.4–3.5 | Test names + API routes | `tools/scan_forge/phase35.py` |
+| 4 | Brain stubs + `SCAN.json` | `tools/scan_forge/phase4.py`, `scan_metadata.py` |
+| 5–57 | Cross-repo, autolink, wikilinks | `phase5.py`, `phase56.py`, `phase57.py` |
+| Cleanup | Remove `forge_scan_*.txt` in run dir | `tools/scan_forge/cleanup.py` via **`--cleanup`** |
 
-**Token guidance:** No hard budget cap — read hub files fully. The Phase 1.6 grep inventory is zero tokens. The token investment is in Phase 3 reads and Phase 4 writes, both of which produce permanent brain files that prevent future re-reads.
+**Token guidance:** No hard budget cap — read hub files fully. Phase 1 inventory is automated (no manual `find`/`awk` in the skill path). The token investment is in Phase 3 reads and Phase 4 writes, both of which produce permanent brain files that prevent future re-reads.
 
 ---
 

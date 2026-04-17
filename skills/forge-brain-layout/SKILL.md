@@ -54,7 +54,7 @@ Before any vector or FTS index ships, prefer **YAML frontmatter** on new decisio
 │       │           └── {prd-id}-retrospective.md  # Post-PR dreamer retrospective
 │       ├── codebase/                       # Codebase knowledge graph (from /scan)
 │       │   ├── route-aliases.tsv           # Optional — extra synthetic API route lines for phase56 (same columns as phase35 routes)
-│       │   ├── SCAN.json                     # Scan metadata: timestamp, commit SHA, file count
+│       │   ├── SCAN.json                     # Scan metadata: `repos.<role>` per repo + aggregated top-level fields (see scan-codebase)
 │       │   ├── index.md                      # Architecture style, module map, entry points
 │       │   ├── patterns.md                   # Detected architecture patterns with evidence
 │       │   ├── api-surface.md                # REST endpoints, exported symbols, event schemas

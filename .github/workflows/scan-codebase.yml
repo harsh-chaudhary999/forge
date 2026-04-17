@@ -15,16 +15,13 @@ on:
       - ".github/workflows/scan-codebase.yml"
 
 jobs:
-  scan-scripts:
+  scan-forge-python:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install shellcheck
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-
-      - name: shellcheck scan scripts
-        run: shellcheck --severity=error -x skills/scan-codebase/scripts/*.sh
+      - name: Compile scan_forge
+        run: python3 -m compileall -q tools/scan_forge
 
       - name: Smoke test (fixtures + forge_scan_run.py)
-        run: bash skills/scan-codebase/scripts/verify_scan_smoke.sh
+        run: python3 tools/scan_forge/verify_smoke.py

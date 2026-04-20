@@ -8,8 +8,19 @@ Small, repo-local utilities shipped with Forge. The main maintained package here
 |------|---------|
 | [`scan_forge/`](scan_forge/) | Python package: phases 1, 3.5, 4, 5, 56, 57, CLI; smoke data is generated at runtime by `verify_smoke.py` |
 | [`forge_scan.py`](forge_scan.py) | CLI entry: prepends `tools/` on `sys.path` and runs `scan_forge.cli` |
+| [`verify_forge_task.py`](verify_forge_task.py) | **Machine gate:** validates `prds/<task-id>/eval/*.yaml`, optional `conductor.log` ordering (P4.0 before P4.1), QA CSV when `forge_qa_csv_before_eval: true`, net-new design evidence — stdlib only ([doc](../docs/forge-task-verification.md)) |
 
 There is **no** separate throwaway “temp” tree under `tools/`; scan run artifacts are always created in a directory you pass as **`--run-dir`** (or a process temp dir), not committed here.
+
+## Verifying a brain task (CI / pre-merge)
+
+From the **Forge repo root**:
+
+```bash
+python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain
+```
+
+See **[`docs/forge-task-verification.md`](../docs/forge-task-verification.md)** and **[`.github/workflows/forge-brain-guard.yml`](../.github/workflows/forge-brain-guard.yml)** (template for your brain repo).
 
 ## Running the scan pipeline
 

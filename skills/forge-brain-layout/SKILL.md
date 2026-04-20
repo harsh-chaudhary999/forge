@@ -120,6 +120,7 @@ Before any vector or FTS index ships, prefer **YAML frontmatter** on new decisio
 
 **products/** — Contains all PRD-specific context and delivery artifacts
 - Optional **`forge_qa_csv_before_eval: true`** in `product.md` (see `templates/forge-product.md`): when set, **`conductor-orchestrate`** requires approved **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** before **`[P4.0-EVAL-YAML]`** so TDD and eval trace to the same acceptance inventory.
+- Optional **machine gate** on the brain repo: run **`python3 <forge>/tools/verify_forge_task.py --task-id <id> --brain ~/forge/brain`** in CI — see Forge **`docs/forge-task-verification.md`** (checks `eval/*.yaml`, `conductor.log` ordering, QA CSV when the flag is true, net-new **design/** evidence).
 - Each product gets its own slug (e.g., `auth-service`, `web-ui`)
 - Each PRD gets a unique ID (e.g., `PRD-20260410-001`)
 - Council, contracts, evals, and learnings are nested under PRD ID

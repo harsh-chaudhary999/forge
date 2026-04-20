@@ -11,6 +11,8 @@ version: 1.0.0
 
 # When true, conductor State 4b requires approved ~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv
 # (qa-prd-analysis + qa-manual-test-cases-from-prd) and [P4.0-QA-CSV] BEFORE [P4.0-EVAL-YAML] and TDD RED.
+# Machine check (optional): python3 <forge>/tools/verify_forge_task.py --task-id <id> --brain ~/forge/brain
+# enforces this flag + eval YAML + conductor.log ordering — see Forge docs/forge-task-verification.md
 forge_qa_csv_before_eval: false
 
 ## Repos

@@ -23,6 +23,7 @@ Forge ships a feature across **multiple repos** without embedding a runtime fram
 - [Commands reference](#commands-reference)
 - [Repository layout](#repository-layout)
 - [Brain layout](#brain-layout)
+- [Machine verification (optional CI)](#machine-verification-optional-ci)
 - [Troubleshooting](#troubleshooting)
 - [Requirements & license](#requirements--license)
 
@@ -67,7 +68,7 @@ You should see **using-forge** and the skill catalog (**68 skills** when install
 |---|---|
 | A **process plugin**: rules, gates, and workflows your agent is expected to follow | A replacement for your language/framework or CI provider |
 | **Markdown skills** + optional **Python** (`tools/scan_forge/`) for codebase inventory | LangChain, Playwright, or Puppeteer in your product (explicitly out of scope for plugin code) |
-| A **brain** (`~/forge/brain/`) for PRDs, specs, scans, QA CSV, eval YAML, and decisions | Automatic enforcement: agents must **refuse** bad ordering; the IDE does not compile-check `conductor.log` unless you add that |
+| A **brain** (`~/forge/brain/`) for PRDs, specs, scans, QA CSV, eval YAML, and decisions | **IDE enforcement is procedural** — pair with optional **[machine verification](#machine-verification-optional-ci)** (`tools/verify_forge_task.py` + CI) so bad ordering or missing `eval/` fails the build, not just the chat |
 
 ---
 
@@ -315,7 +316,7 @@ forge/
 ├── agents/                 # 4 subagent definitions (*.md)
 ├── commands/               # 17 slash-command docs (*.md)
 ├── hooks/                  # Hook scripts + IDE-specific hook JSON
-├── tools/                  # scan_forge package — see tools/README.md
+├── tools/                  # scan_forge + verify_forge_task.py — see tools/README.md
 ├── docs/
 │   ├── platforms/          # Cursor, Claude Code, …
 │   └── examples/
@@ -349,6 +350,20 @@ Two common layouts coexist:
 2. **`~/forge/brain/prds/<task-id>/`** — **task** artifacts: `prd-locked.md`, `shared-dev-spec.md`, **`tech-plans/`**, **`eval/`**, **`qa/`** (PRD analysis, manual CSV, reports), **`design/`** (exports, MCP ingest notes), eval verdicts, etc.
 
 The brain should be a **git repo** so history and provenance are preserved.
+
+---
+
+## Machine verification (optional CI)
+
+Forge does not run inside your compiler. To move Phase 4 checks from **“please follow the skill”** to **“merge is blocked”**, run the stdlib Python verifier against your brain:
+
+```bash
+python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain
+```
+
+It enforces **at least one** `eval/*.yaml`, optional **`conductor.log`** ordering (`[P4.0-EVAL-YAML]` before `[P4.1-DISPATCH]`, QA CSV gate when `forge_qa_csv_before_eval: true`, net-new **design/** or `[DESIGN-INGEST]`), and optional **`--strict-tdd`**.
+
+Full reference: **[`docs/forge-task-verification.md`](docs/forge-task-verification.md)**. GitHub Actions template: **[`.github/workflows/forge-brain-guard.yml`](.github/workflows/forge-brain-guard.yml)** (usually copied or invoked from the **brain** repo, not only from Forge).
 
 ---
 

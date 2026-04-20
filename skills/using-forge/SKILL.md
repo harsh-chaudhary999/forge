@@ -22,6 +22,8 @@ Council and subagents **do not** share your live chat. They only see **what is w
 
 **Non-negotiable for agents:** (1) **Never skip** asking **“What is the single design source of truth?”** when the PRD is user-visible or design-related — see **`intake-interrogate` Q9**. (2) **Never open Phase 4.1 / dispatch feature implementation** until **`[P4.0-EVAL-YAML]`** is logged with **at least one** scenario file under `~/forge/brain/prds/<task-id>/eval/` and **`[P4.0-TDD-RED]`** per policy — see **`conductor-orchestrate` State 4b**. When **`forge_qa_csv_before_eval: true`** in **`product.md`**, also require **`[P4.0-QA-CSV]`** after approved **`qa/manual-test-cases.csv`** so **TDD** and **eval execution** trace to the same acceptance set — see **`qa-manual-test-cases-from-prd`**. Procedural text is not a CI bot: **you** must refuse to skip these steps.
 
+**Optional machine layer (teams):** Run **`python3 tools/verify_forge_task.py --task-id <id> --brain ~/forge/brain`** in CI or pre-push on the **brain** repo so missing **`eval/*.yaml`** or bad **`conductor.log`** ordering fails the build — see **`docs/forge-task-verification.md`**. The IDE still does not compile-check sessions; this checks **committed** artifacts.
+
 ## Anti-Pattern Enforcement (HARD-GATE)
 
 ### Anti-Pattern 1: "This is a simple question, I don't need a skill"

@@ -882,6 +882,17 @@ User decides: retry, manual fix, or abort
 
 All logs written to: `~/forge/brain/prds/<task-id>/conductor.log`
 
+### Machine verification (optional)
+
+Forge ships **`tools/verify_forge_task.py`** (stdlib Python, no pip deps) to **fail CI or pre-push** when:
+
+- `prds/<task-id>/eval/` has no scenario YAML, or
+- `conductor.log` shows **`[P4.1-DISPATCH]`** before **`[P4.0-EVAL-YAML]`**, or
+- `forge_qa_csv_before_eval: true` but CSV / log order is wrong, or
+- Net-new design (per `prd-locked.md`) lacks **`design/`** files and/or **`[DESIGN-INGEST]`** before P4.1.
+
+See **`docs/forge-task-verification.md`** and **`.github/workflows/forge-brain-guard.yml`**. This does not replace skills — it catches **committed** brain state that violates the same rules.
+
 Example entry:
 ```
 [INTAKE] task_id=task-001 timestamp=2026-04-08T14:23:45Z status=START

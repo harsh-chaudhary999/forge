@@ -1,0 +1,54 @@
+# Optional template: copy or adapt into your *brain* repository CI.
+# This workflow lives in the Forge repo as a reference; brain repos often
+# checkout Forge (sparse) or vendor tools/verify_forge_task.py.
+#
+# Required repo/organization variable: FORGE_TASK_ID (e.g. add-2fa).
+# Optional: FORGE_STRICT_TDD = true to enforce [P4.0-TDD-RED] before P4.1 in the log.
+
+name: Forge brain guard
+
+on:
+  workflow_dispatch:
+  # Uncomment when FORGE_TASK_ID is set as a repo/org variable:
+  # push:
+  #   paths:
+  #     - "prds/**"
+  #     - "products/**"
+
+jobs:
+  verify:
+    if: ${{ vars.FORGE_TASK_ID != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout brain
+        uses: actions/checkout@v4
+
+      - name: Checkout Forge (verify script only)
+        uses: actions/checkout@v4
+        with:
+          repository: harsh-chaudhary999/forge
+          path: forge
+          sparse-checkout: |
+            tools/verify_forge_task.py
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify Forge task
+        env:
+          FORGE_TASK_ID: ${{ vars.FORGE_TASK_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FORGE_TASK_ID:-}" ]; then
+            echo "Set repository variable FORGE_TASK_ID (e.g. add-2fa) or pass via workflow_dispatch input." >&2
+            exit 1
+          fi
+          EXTRA=""
+          if [ "${FORGE_STRICT_TDD:-}" = "true" ]; then EXTRA="--strict-tdd"; fi
+          python3 forge/tools/verify_forge_task.py \
+            --brain "${GITHUB_WORKSPACE}" \
+            --task-id "${FORGE_TASK_ID}" \
+            --require-log \
+            ${EXTRA}

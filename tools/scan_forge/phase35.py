@@ -6,9 +6,11 @@ from pathlib import Path
 from . import grep_util, log, openapi_routes
 
 
-def run_phase35(repo: Path, scan_tmp: Path, append_routes: bool) -> None:
+def run_phase35(repo: Path, role_scan_tmp: Path, shared_run_dir: Path, append_routes: bool) -> None:
+    """``role_scan_tmp`` holds per-role test inventory + test names; ``shared_run_dir`` holds merged API routes."""
     repo = repo.resolve()
-    scan_tmp.mkdir(parents=True, exist_ok=True)
+    role_scan_tmp.mkdir(parents=True, exist_ok=True)
+    shared_run_dir.mkdir(parents=True, exist_ok=True)
     slug = repo.name
     log.log_start("phase35", f"repo={repo} append_routes={'append' if append_routes else 'no'}")
 
@@ -17,7 +19,7 @@ def run_phase35(repo: Path, scan_tmp: Path, append_routes: bool) -> None:
     print(f"Repo: {repo}")
     print("════════════════════════════════════════════════════════")
 
-    test_list = scan_tmp / "forge_scan_test_files.txt"
+    test_list = role_scan_tmp / "forge_scan_test_files.txt"
     if not test_list.is_file():
         print(f"  ERROR: {test_list} not found. Run phase1 first.")
         log.log_die(f"missing_prerequisite path={test_list} hint=run_phase1_first", 1)
@@ -44,7 +46,7 @@ def run_phase35(repo: Path, scan_tmp: Path, append_routes: bool) -> None:
                 shown += 1
                 if shown >= 30:
                     break
-    tn_path = scan_tmp / "forge_scan_test_names.txt"
+    tn_path = role_scan_tmp / "forge_scan_test_names.txt"
     tn_path.write_text("\n".join(names_lines) + ("\n" if names_lines else ""), encoding="utf-8", errors="replace")
     n_tests = len([ln for ln in test_list.read_text().splitlines() if ln.strip()])
     edge_hits = sum(
@@ -58,7 +60,7 @@ def run_phase35(repo: Path, scan_tmp: Path, append_routes: bool) -> None:
 
     print()
     print("[3.5] Extracting API routes...")
-    routes_path = scan_tmp / "forge_scan_api_routes.txt"
+    routes_path = shared_run_dir / "forge_scan_api_routes.txt"
     if append_routes:
         log.log_step(f"phase=3.5 appending_api_routes repo={slug}")
     else:
@@ -85,8 +87,6 @@ def run_phase35(repo: Path, scan_tmp: Path, append_routes: bool) -> None:
     for ln in raw.splitlines():
         if "node_modules" in ln or "/dist/" in ln or "dist/" in ln:
             continue
-        if test_path_re.search(ln):
-            continue
         parts = ln.split(":", 2)
         if len(parts) < 3:
             continue
@@ -95,6 +95,9 @@ def run_phase35(repo: Path, scan_tmp: Path, append_routes: bool) -> None:
             abs_path = Path(abs_path_s).resolve()
             rel = abs_path.relative_to(repo).as_posix()
         except (ValueError, OSError):
+            continue
+        # Match test paths on repo-relative path only — abs path may contain …/tests/… (e.g. fixtures).
+        if test_path_re.search(rel):
             continue
         fixed.append(f"{slug}\t{rel}:{lineno}:{content}")
 

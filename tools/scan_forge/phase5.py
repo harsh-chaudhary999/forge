@@ -4,17 +4,17 @@ import re
 from collections import Counter
 from pathlib import Path
 
-from . import grep_util, log
+from . import ast_http_calls, grep_util, log
 
 
 def _append_repo_lines(repo: Path, pattern: str, includes: list[str], out: Path, repo_name: str, extra_filter=None) -> None:
     raw = grep_util.run_grep_rn(repo, pattern, includes)
+    # Match phase35: apply test-path heuristics to **repo-relative** paths only. Matching the
+    # full grep line false-positives on parent dirs (e.g. ``.../Music/test/web/...`` contains ``/test/``).
     test_re = re.compile(r"/(test|tests|__tests__|e2e|spec)/|\.test\.|\.spec\.|/testing/")
     with out.open("a", encoding="utf-8", errors="replace") as f:
         for ln in raw.splitlines():
             if "node_modules" in ln:
-                continue
-            if test_re.search(ln):
                 continue
             if extra_filter and extra_filter(ln):
                 continue
@@ -25,6 +25,8 @@ def _append_repo_lines(repo: Path, pattern: str, includes: list[str], out: Path,
             try:
                 rel = Path(abs_p).resolve().relative_to(repo).as_posix()
             except ValueError:
+                continue
+            if test_re.search(rel):
                 continue
             f.write(f"{repo_name}\t{rel}:{lineno}:{content}\n")
 
@@ -45,6 +47,7 @@ def run_phase5(repos: list[Path], scan_tmp: Path) -> None:
         "forge_scan_python_calls.txt",
         "forge_scan_go_calls.txt",
         "forge_scan_dart_calls.txt",
+        "forge_scan_ast_http_calls.txt",
         "forge_scan_all_types.txt",
         "forge_scan_all_env_vars.txt",
         "forge_scan_dynamic_urls.txt",
@@ -116,6 +119,10 @@ def run_phase5(repos: list[Path], scan_tmp: Path) -> None:
         )
         _append_repo_lines(repo, dart_pat, ["*.dart"], scan_tmp / "forge_scan_dart_calls.txt", name)
 
+    ast_n = ast_http_calls.append_ast_http_calls(repos, scan_tmp)
+    if ast_n:
+        print(f"  Tree-sitter AST: appended {ast_n} HTTP call line(s) to forge_scan_ast_http_calls.txt")
+
     def _cat(dst: str, *srcs: str) -> None:
         parts: list[str] = []
         for s in srcs:
@@ -132,6 +139,7 @@ def run_phase5(repos: list[Path], scan_tmp: Path) -> None:
         "forge_scan_python_calls.txt",
         "forge_scan_go_calls.txt",
         "forge_scan_dart_calls.txt",
+        "forge_scan_ast_http_calls.txt",
     )
 
     js_n = len((scan_tmp / "forge_scan_js_calls.txt").read_text().splitlines())

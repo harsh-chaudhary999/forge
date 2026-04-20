@@ -1,2 +1,5 @@
 .claude/settings.local.json
 __pycache__/
+
+# Local-only optional smoke trees (verify_smoke uses a temp dir by default)
+tools/scan_forge/fixtures/

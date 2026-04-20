@@ -90,7 +90,7 @@ Run the scan-codebase skill for each project role. Process roles in this order:
 2. `shared` / `lib` (often imported by everything)
 3. `web` / `mobile` (consumer layers)
 
-**Runner (multi-repo — see `scan-codebase` SKILL):** one Python invocation — `python3 tools/forge_scan_run.py` with `--brain-codebase`, `--repos role:path …`, optional `--product-md` (validates roles), optional `--phase57-write-report`, optional **`--cleanup`** (removes `forge_scan_*.txt` in the temp run directory). Phases 1 → 3.5 → 4 → 5 → 56 → 57 run in order inside `tools/scan_forge/`.
+**Runner (multi-repo — see `scan-codebase` SKILL):** one invocation — `python3 tools/forge_scan.py` (or `PYTHONPATH=tools python3 -m scan_forge`) with `--brain-codebase`, `--repos role:path …`, optional `--product-md` (validates roles), optional `--phase57-write-report`, optional **`--cleanup`** (removes `forge_scan_*.txt` in the temp run directory). Phases 1 → 3.5 → 4 → 5 → 56 → 57 run in order inside `tools/scan_forge/`. See `tools/README.md`.
 
 ---
 

@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -57,6 +58,7 @@ def run_scan(
         phase57,
         scan_graph_export,
         scan_manifest,
+        scan_paths,
         scan_summary,
         validate_roles,
     )
@@ -74,33 +76,58 @@ def run_scan(
         "brain_codebase": str(brain),
         "repos": [{"role": r, "path": str(p)} for r, p in repos],
         "orchestrator": "scan_forge",
+        "phase_timings_ms": {},
     }
+    timings: dict[str, int] = meta["phase_timings_ms"]
+    wall0 = time.perf_counter()
 
     if product_md is not None and product_md.is_file():
         validate_roles.run_validate_roles(product_md)
 
     for i, (role, path) in enumerate(repos):
-        phase1.run_phase1(path, run_dir)
-        phase35.run_phase35(path, run_dir, append_routes=(i > 0))
-        phase4.run_phase4(path, brain, role, run_dir)
+        role_dir = scan_paths.role_scan_dir(run_dir, role)
+        t0 = time.perf_counter()
+        phase1.run_phase1(path, role_dir)
+        timings[f"phase1:{role}"] = int((time.perf_counter() - t0) * 1000)
+        t0 = time.perf_counter()
+        phase35.run_phase35(path, role_dir, run_dir, append_routes=(i > 0))
+        timings[f"phase35:{role}"] = int((time.perf_counter() - t0) * 1000)
+        t0 = time.perf_counter()
+        phase4.run_phase4(path, brain, role, role_dir, run_dir)
+        timings[f"phase4:{role}"] = int((time.perf_counter() - t0) * 1000)
 
+    t0 = time.perf_counter()
     openapi_schema_digest.write_digest(brain, repos)
+    timings["openapi_schema_digest"] = int((time.perf_counter() - t0) * 1000)
 
+    t0 = time.perf_counter()
     phase5.run_phase5([p for _, p in repos], run_dir)
+    timings["phase5"] = int((time.perf_counter() - t0) * 1000)
+    t0 = time.perf_counter()
     phase56.run_phase56(brain, run_dir)
+    timings["phase56"] = int((time.perf_counter() - t0) * 1000)
 
+    t0 = time.perf_counter()
     scan_graph_export.write_graph_json(brain)
+    timings["graph_export"] = int((time.perf_counter() - t0) * 1000)
+    t0 = time.perf_counter()
     scan_summary.write_scan_summary(brain, repos)
+    timings["scan_summary"] = int((time.perf_counter() - t0) * 1000)
+    t0 = time.perf_counter()
     scan_manifest.write_manifest(brain, repos)
+    timings["scan_manifest"] = int((time.perf_counter() - t0) * 1000)
 
     if not skip_phase57:
+        t0 = time.perf_counter()
         phase57.run_phase57(brain, write_report=phase57_write_report)
+        timings["phase57"] = int((time.perf_counter() - t0) * 1000)
 
     if do_cleanup:
         cleanup.run_cleanup(run_dir)
 
     meta["status"] = "ok"
     meta["finished_at"] = datetime.now(timezone.utc).isoformat()
+    meta["total_elapsed_ms"] = int((time.perf_counter() - wall0) * 1000)
     (run_dir / "run.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
     return meta
 
@@ -170,6 +197,7 @@ def main(argv: list[str] | None = None) -> None:
             "status": "error",
             "error": {"type": type(exc).__name__, "message": str(exc)},
             "finished_at": datetime.now(timezone.utc).isoformat(),
+            "phase_timings_ms": {},
         }
         (run_dir / "run.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
         raise

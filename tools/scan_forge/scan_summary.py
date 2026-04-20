@@ -69,10 +69,16 @@ def write_scan_summary(brain_codebase: Path, repos: list[tuple[str, Path]]) -> P
     lines.extend(
         [
             "",
+            "## Run directory layout (multi-repo)",
+            "",
+            "- Per-role phase1/3.5/4 inputs live under **`<run_dir>/_role/<role>/`** so inventories are not overwritten by the next repo.",
+            "- Merged **`forge_scan_api_routes.txt`**, phase5 call-site files, and **`run.json`** stay at **`<run_dir>/`** root.",
+            "",
             "## Machine-readable graph",
             "",
             "- **`graph.json`** — module nodes + `cross_repo_http` edges with `provenance` "
-            "(regeneratable; markdown modules remain human source of truth).",
+            "(regeneratable; markdown modules remain human source of truth). "
+            "Check **`warnings`** for skipped legacy automap rows or unresolved module paths.",
             "",
             "## Cross-repo",
             "",

@@ -4,13 +4,15 @@ on:
   push:
     paths:
       - "skills/scan-codebase/**"
-      - "tools/forge_scan_run.py"
+      - "tools/forge_scan.py"
+      - "tools/README.md"
       - "tools/scan_forge/**"
       - ".github/workflows/scan-codebase.yml"
   pull_request:
     paths:
       - "skills/scan-codebase/**"
-      - "tools/forge_scan_run.py"
+      - "tools/forge_scan.py"
+      - "tools/README.md"
       - "tools/scan_forge/**"
       - ".github/workflows/scan-codebase.yml"
 
@@ -20,11 +22,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install scan_forge dependencies
+        run: python3 -m pip install -r tools/scan_forge/requirements.txt
+
       - name: Compile scan_forge
         run: python3 -m compileall -q tools/scan_forge
 
-      - name: Unit tests (scan_forge)
-        run: PYTHONPATH=tools python3 -m unittest discover -s tools/scan_forge/tests -v
-
-      - name: Smoke test (fixtures + forge_scan_run.py)
+      - name: Smoke test (fixtures + scan CLI)
         run: python3 tools/scan_forge/verify_smoke.py

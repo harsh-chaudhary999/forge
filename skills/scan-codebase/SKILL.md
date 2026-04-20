@@ -100,16 +100,16 @@ codebase/
 
 ## Scan runner (`tools/scan_forge`)
 
-> **Do not re-implement Phase 1–5 pipelines by hand.** The committed Python package is the source of truth; one invocation runs the full scan.
+> **Do not re-implement Phase 1–5 pipelines by hand.** The committed Python package is the source of truth; one invocation runs the full scan. Layout and CI commands: **`tools/README.md`**.
 
 | Entry | Purpose |
 |-------|---------|
-| `python3 tools/forge_scan_run.py …` | Prepends `tools/` on `sys.path` and runs **`scan_forge`** |
-| `PYTHONPATH=tools python3 -m scan_forge …` | Same CLI without the wrapper script |
+| `python3 tools/forge_scan.py …` | Prepends `tools/` on `sys.path` and runs **`scan_forge.cli`** (Forge repo root) |
+| `PYTHONPATH=tools python3 -m scan_forge …` | Same CLI when `tools/` is already on `PYTHONPATH` |
 
 **Requirements:** Python 3.9+, **GNU grep** and **cksum** on `PATH` (pattern inventory and stable method IDs). Optional: `pip install -r tools/scan_forge/requirements.txt` (adds **PyYAML**) for reliable YAML OpenAPI parsing and full `openapi-schema-digest` coverage.
 
-**Package layout:** `tools/scan_forge/` — `cli.run_scan` invokes `phase1` → `phase35` → `phase4` (writes `SCAN.json` via `scan_metadata`) per repo, then **`openapi_schema_digest.write_digest`** (writes `openapi-schema-digest.md`), then `phase5` → `phase56`, optional `phase57`, optional `cleanup`; optional `validate_roles` when `--product-md` is set.
+**Package layout:** `tools/scan_forge/` — `cli.run_scan` invokes `phase1` → `phase35` → `phase4` (writes `SCAN.json` via `scan_metadata`) per repo, then **`openapi_schema_digest.write_digest`** (writes `openapi-schema-digest.md`), then `phase5` → `phase56`, optional `phase57`, optional `cleanup`; optional `validate_roles` when `--product-md` is set. **Per-repo inventory** is written under **`<run_dir>/_role/<role>/`** (`scan_paths.role_scan_dir`) so phase1 outputs are not overwritten across repos; merged routes and phase5 artifacts stay at **`run_dir/`** root. **`run.json`** records **`phase_timings_ms`** and **`total_elapsed_ms`** for efficiency checks.
 
 **OpenAPI / Swagger (phase 3.5):** Each repo is scanned for spec files (`openapi.json`, `openapi.yaml`, `openapi.yml`, `swagger.json`, `*.openapi.json`, filenames containing `openapi` or `swagger` with json/yaml/yml — see `openapi_routes.discover_openapi_files`). Operations are **appended** to `forge_scan_api_routes.txt` after grep-based route lines. **Phase 56** matches frontend call paths to those operations using substring match **or** `{param}` template matching (so `/api/users/123` can match `/api/users/{id}`). Without PyYAML, YAML specs may be skipped or partially parsed; install from `tools/scan_forge/requirements.txt` when possible.
 
@@ -125,7 +125,7 @@ codebase/
 
 **Cross-repo provenance (phase56):** Injected module bullets and `cross-repo-automap.md` TSV use tags: **`OPENAPI`** (route line from OpenAPI append), **`GREP_SUBSTRING`** / **`GREP_TEMPLATE`** (grep route inventory; template = `{param}` match), **`MANUAL_ALIAS`** (rows from `route-aliases.tsv`). These label **how the join was made**, not runtime correctness.
 
-**MCP:** Not part of the default pipeline. Full scans are driven by **`/scan`** / **`forge_scan_run.py`** (and workspace init). A separate read-only MCP could wrap `graph.json` later; it is optional, not required for parity with other graph tools.
+**MCP:** Not part of the default pipeline. Full scans are driven by **`/scan`** and **`python3 tools/forge_scan.py`** (or `PYTHONPATH=tools python3 -m scan_forge`) plus workspace init. A separate read-only MCP could wrap `graph.json` later; it is optional, not required for parity with other graph tools.
 
 **Token policy:** The scanner does **not** impose artificial context/token budgets on outputs — summaries and graphs include available signal; agents and skills choose what to read.
 
@@ -148,7 +148,7 @@ codebase/
 ### Canonical command (multi-repo)
 
 ```text
-python3 tools/forge_scan_run.py \
+python3 tools/forge_scan.py \
   --brain-codebase ~/forge/brain/products/<slug>/codebase \
   --repos backend:~/projects/backend web:~/projects/web app:~/projects/app \
   [--product-md ~/forge/brain/products/<slug>/product.md] \
@@ -343,7 +343,7 @@ Create all output files in `~/forge/brain/products/<slug>/codebase/`. Use `[[wik
 
 **HARD-GATE:** The runner’s **Phase 4** (`tools/scan_forge/phase4.py`) generates EVERY class, function, page, and module stub from the Phase 1 inventories. Do NOT hand-author stub files at scale — enrich them after. Phase 4 reads `forge_scan_types_all.txt`, `forge_scan_functions_all.txt`, `forge_scan_ui_all.txt`, and `forge_scan_source_files.txt` under **`$FORGE_SCAN_TMP`**. It writes under `classes/`, `functions/`, `pages/`, and `modules/` beneath `--brain-codebase`. Existing files are **never overwritten**.
 
-**Multi-repo:** Prefer **one** `forge_scan_run.py` invocation with all `--repos` so phase 1 → 3.5 → 4 run in the correct order for every role. If you must split work, run the full runner per repo with the same `--run-dir` only when you know what you are doing — the default is one coherent pipeline.
+**Multi-repo:** Prefer **one** `python3 tools/forge_scan.py` (or `PYTHONPATH=tools python3 -m scan_forge`) invocation with all `--repos` so phase 1 → 3.5 → 4 run in the correct order for every role. If you must split work, run the full runner per repo with the same `--run-dir` only when you know what you are doing — the default is one coherent pipeline.
 
 Check the Phase 4 summary for node counts. If a count is 0 unexpectedly, confirm Phase 1 artifacts exist for that repo in `FORGE_SCAN_TMP`.
 
@@ -1005,7 +1005,7 @@ This phase identifies the architectural seams between repos — the contracts, s
 
 ### 5.1 – 5.5 prep — Cross-repo scan
 
-**Already included** in `forge_scan_run.py` when you pass every repo on **`--repos`**. Phase 5 runs **once** after all per-repo phases. Read the console output for:
+**Already included** when you pass every repo on **`--repos`** in one `python3 tools/forge_scan.py` (or `PYTHONPATH=tools python3 -m scan_forge`) run. Phase 5 runs **once** after all per-repo phases. Read the console output for:
 - Total call sites per language
 - Shared type names appearing in 2+ repos
 - Env variable names used across repos
@@ -1014,7 +1014,7 @@ This phase identifies the architectural seams between repos — the contracts, s
 
 ### 5.6 — Auto-patch module stubs (HARD-GATE for first-pass workspace/scan)
 
-**No LLM, no “come back in Phase 5.5”.** Phase **56** (`tools/scan_forge/phase56.py`) runs automatically after phase 5 in the same `forge_scan_run.py` invocation.
+**No LLM, no “come back in Phase 5.5”.** Phase **56** (`tools/scan_forge/phase56.py`) runs automatically after phase 5 in the same `python3 tools/forge_scan.py` (or `PYTHONPATH=tools python3 -m scan_forge`) invocation.
 
 **Prerequisites:** Phase 4 has created `*/modules/<role>-<dirslug>.md` files; `$FORGE_SCAN_TMP/forge_scan_api_routes.txt` lists **all** route-defining repos (correct `--repos` order); `$FORGE_SCAN_TMP/forge_scan_all_callsites.txt` comes from phase 5.
 
@@ -1029,11 +1029,11 @@ Also writes `cross-repo-automap.md` (TSV) at the codebase parent. **Re-run safe*
 
 ### 5.7 — Validate `[[wikilinks]]` (optional, after Phase 4 / 5.6)
 
-Pass **`--phase57-write-report`** to `forge_scan_run.py` (or omit **`--skip-phase57`**). Phase 57 (`tools/scan_forge/phase57.py`) writes **`wikilink-orphan-report.md`** at the codebase root when requested: orphan links plus **ambiguous basenames**. Without `--write-report`, the report is printed to stdout only.
+Pass **`--phase57-write-report`** to `python3 tools/forge_scan.py` (or `PYTHONPATH=tools python3 -m scan_forge`) (or omit **`--skip-phase57`**). Phase 57 (`tools/scan_forge/phase57.py`) writes **`wikilink-orphan-report.md`** at the codebase root when requested: orphan links plus **ambiguous basenames**. Without `--write-report`, the report is printed to stdout only.
 
 ### 5.1 – 5.5 — Reference (implementation)
 
-Phases **5.1–5.5** are implemented in **`tools/scan_forge/phase5.py`**: per-language HTTP client call sites, exported TypeScript types (with duplicate-line stats), environment-variable references, producer/consumer heuristics, URL literal harvest, and dynamic-URL flags. Extend **`phase5.py`** if you need new languages.
+Phases **5.1–5.5** are implemented in **`tools/scan_forge/phase5.py`**: per-language HTTP client call sites (grep-first), exported TypeScript types (with duplicate-line stats), environment-variable references, producer/consumer heuristics, URL literal harvest, and dynamic-URL flags. After the grep pass, **`tools/scan_forge/ast_http_calls.py`** optionally runs **Tree-sitter** across **many grammars** (Python, Go, Rust, Java, Kotlin, Ruby, C#, PHP, Swift, Lua, Zig, PowerShell, Elixir, ObjC, Julia, Verilog, C/C++, Scala, JS/TS — see `requirements.txt`) and appends extra lines to **`forge_scan_ast_http_calls.txt`** (merged into **`forge_scan_all_callsites.txt`** with the grep outputs) for HTTP-shaped calls grep often misses (e.g. **`api.get('/api/…')`**, **`session.get('/api/…')`**). Phase56 consumes the merged callsites file unchanged. Disable with **`FORGE_SCAN_AST=0`**. Extend **`phase5.py`** / **`ast_http_calls.py`** if you need new callee shapes or line heuristics.
 
 **tRPC / gRPC:** Plain URL heuristics may not apply; document procedure/stub names in `cross-repo.md` manually when needed.
 
@@ -1335,7 +1335,7 @@ Does SCAN.json exist?
 
 5. **Not committing SCAN.json before other brain files** — If the write fails mid-way, an incomplete scan with no metadata is worse than no scan. Commit SCAN.json first.
 
-6. **Forgetting to clean up `forge_scan_*.txt` in the run directory** — Pass **`--cleanup`** to `forge_scan_run.py` to remove them after a successful run, or delete the temp run dir printed on stdout when you no longer need it.
+6. **Forgetting to clean up `forge_scan_*.txt` in the run directory** — Pass **`--cleanup`** to `python3 tools/forge_scan.py` (or `PYTHONPATH=tools python3 -m scan_forge`) to remove them after a successful run, or delete the temp run dir printed on stdout when you no longer need it.
 
 ---
 

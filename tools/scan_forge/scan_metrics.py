@@ -93,8 +93,22 @@ def main(argv: list[str] | None = None) -> int:
             print(f"run_dir api_routes lines: {n}")
         else:
             print("run_dir api_routes: missing")
+        run_json = rd / "run.json"
+        if run_json.is_file():
+            try:
+                rj = json.loads(run_json.read_text(encoding="utf-8"))
+                pt = rj.get("phase_timings_ms")
+                if isinstance(pt, dict) and pt:
+                    print("run.json phase_timings_ms (wall, last run):")
+                    for k in sorted(pt.keys()):
+                        print(f"  {k}: {pt[k]} ms")
+                te = rj.get("total_elapsed_ms")
+                if te is not None:
+                    print(f"  total_elapsed_ms: {te} ms")
+            except (OSError, json.JSONDecodeError):
+                print("run.json: present (unparseable)")
 
-    print("\nNote: Pass --run-dir from forge_scan_run.py output before --cleanup, or use --keep-run-dir.")
+    print("\nNote: Pass --run-dir from the scan CLI output before --cleanup, or use --keep-run-dir.")
     return 0
 
 

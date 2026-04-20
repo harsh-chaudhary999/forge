@@ -44,21 +44,22 @@ def _module_nodes(brain: Path) -> list[dict[str, Any]]:
     return nodes
 
 
-def _edges_from_automap(brain: Path) -> list[dict[str, Any]]:
+def _edges_from_automap(brain: Path) -> tuple[list[dict[str, Any]], list[str]]:
     auto = brain / "cross-repo-automap.md"
     if not auto.is_file():
-        return []
+        return [], []
     text = auto.read_text(encoding="utf-8", errors="replace")
     m = re.search(r"```tsv\n(.*?)```", text, re.S)
     if not m:
-        return []
+        return [], ["automap_tsv_block_missing"]
     edges: list[dict[str, Any]] = []
+    warnings: list[str] = []
     for ln in m.group(1).strip().splitlines():
         if not ln.strip():
             continue
         parts = ln.split("\t")
         if len(parts) < 6:
-            # Legacy rows without route_rel_path — skip (cannot resolve callee module)
+            warnings.append(f"skipped_legacy_tsv_columns:{len(parts)}:{ln[:160]}")
             continue
         caller_repo, caller_rel, route_repo, route_rel, url, provenance = (
             parts[0],
@@ -71,6 +72,9 @@ def _edges_from_automap(brain: Path) -> list[dict[str, Any]]:
         src = _resolve_module_stem(brain, caller_repo, caller_rel)
         tgt = _resolve_module_stem(brain, route_repo, route_rel)
         if not src or not tgt:
+            warnings.append(
+                f"skipped_unresolved_modules:{caller_repo}/{caller_rel}->{route_repo}/{route_rel}",
+            )
             continue
         edges.append(
             {
@@ -83,7 +87,7 @@ def _edges_from_automap(brain: Path) -> list[dict[str, Any]]:
                 "route_repo": route_repo,
             },
         )
-    return edges
+    return edges, warnings
 
 
 def write_graph_json(brain_codebase: Path) -> Path | None:
@@ -99,7 +103,7 @@ def write_graph_json(brain_codebase: Path) -> Path | None:
             scan_meta = {}
 
     nodes = _module_nodes(brain_codebase)
-    edges = _edges_from_automap(brain_codebase)
+    edges, graph_warnings = _edges_from_automap(brain_codebase)
     doc: dict[str, Any] = {
         "forge_scan_graph_version": GRAPH_VERSION,
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -110,8 +114,12 @@ def write_graph_json(brain_codebase: Path) -> Path | None:
         },
         "nodes": nodes,
         "edges": edges,
+        "warnings": graph_warnings,
     }
     out = brain_codebase / "graph.json"
     out.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8", errors="replace")
-    log.log_step(f"scan_graph_export written path={out} nodes={len(nodes)} edges={len(edges)}")
+    log.log_step(
+        f"scan_graph_export written path={out} nodes={len(nodes)} edges={len(edges)} "
+        f"warnings={len(graph_warnings)}",
+    )
     return out

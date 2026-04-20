@@ -1,6 +1,6 @@
 """Forge scan-codebase pipeline — Python package under ``tools/scan_forge``.
 
-Orchestrate via ``python3 tools/forge_scan_run.py`` or ``PYTHONPATH=tools python3 -m scan_forge``.
+Run from the Forge repo root: ``python3 tools/forge_scan.py`` or ``PYTHONPATH=tools python3 -m scan_forge``.
 """
 
 from __future__ import annotations

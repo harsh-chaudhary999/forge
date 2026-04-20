@@ -17,7 +17,7 @@ The brain is **not** a task tracker, issue system, or temporary notes file. It i
 
 ### Phase 2 prep (embeddings / hybrid index — optional today)
 
-Before any vector or FTS index ships, prefer **YAML frontmatter** on new decision files: stable `id`, `updated` (ISO-8601 date), `product` / `project` where applicable, and optional `supersedes: <prior-id>` for knowledge updates. Use predictable `##` section boundaries in long notes so a later indexer can chunk without splitting mid-thought. Codebase scans already emit `SCAN.json` under `products/<slug>/codebase/`; optional **`route-aliases.tsv`** there augments phase56 route matching.
+Before any vector or FTS index ships, prefer **YAML frontmatter** on new decision files: stable `id`, `updated` (ISO-8601 date), `product` / `project` where applicable, and optional `supersedes: <prior-id>` for knowledge updates. Use predictable `##` section boundaries in long notes so a later indexer can chunk without splitting mid-thought. Codebase scans already emit `SCAN.json` under `products/<slug>/codebase/`; optional **`route-aliases.tsv`** there augments phase56 route matching. Each scan run also writes **`graph.json`**, **`SCAN_SUMMARY.md`**, and **`.forge_scan_manifest.json`**; the runner keeps per-role temp inputs under **`<run_dir>/_role/<role>/`** (see `tools/scan_forge/scan_paths.py`) so multi-repo inventories are not overwritten.
 
 ## Directory Tree
 

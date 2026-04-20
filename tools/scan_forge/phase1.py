@@ -417,10 +417,34 @@ def run_phase1(repo: Path, scan_tmp: Path) -> None:
             svelte_files.append(str(p.resolve()))
         elif n.endswith(".component.html"):
             angular_templates.append(str(p.resolve()))
+    tsx_jsx_files: list[str] = []
+    for p in fs_util.iter_files_under(repo):
+        n = p.name.lower()
+        if n.endswith((".tsx", ".jsx")):
+            tsx_jsx_files.append(str(p.resolve()))
+    # Next.js / Remix-style app router: plain .ts/.js under `app/` (page/layout/route handlers).
+    app_router_ts_js: list[str] = []
+    for p in fs_util.iter_files_under(repo):
+        try:
+            rel = p.relative_to(repo).as_posix()
+        except ValueError:
+            continue
+        n = p.name.lower()
+        if n.endswith((".tsx", ".jsx")):
+            continue
+        if not (n.endswith(".ts") or n.endswith(".js")):
+            continue
+        if "/app/" not in f"/{rel}/" and not rel.startswith("app/"):
+            continue
+        if ".test." in n or ".spec." in n or n.startswith("test_"):
+            continue
+        app_router_ts_js.append(str(p.resolve()))
     html_files.sort()
     vue_files.sort()
     svelte_files.sort()
     angular_templates.sort()
+    tsx_jsx_files.sort()
+    app_router_ts_js.sort()
     _write_lines(scan_tmp / "forge_scan_html_files.txt", html_files)
     _write_lines(scan_tmp / "forge_scan_vue_files.txt", vue_files)
     _write_lines(scan_tmp / "forge_scan_svelte_files.txt", svelte_files)
@@ -494,10 +518,23 @@ def run_phase1(repo: Path, scan_tmp: Path) -> None:
             ],
         ),
     )
-    w(
-        "forge_scan_ui_all.txt",
-        "\n".join(html_files + vue_files + svelte_files + angular_templates) + "\n",
-    )
+    ui_seen: set[str] = set()
+    ui_ordered: list[str] = []
+    for bucket in (
+        html_files,
+        vue_files,
+        svelte_files,
+        angular_templates,
+        tsx_jsx_files,
+        app_router_ts_js,
+    ):
+        for s in bucket:
+            if s in ui_seen:
+                continue
+            ui_seen.add(s)
+            ui_ordered.append(s)
+    ui_ordered.sort()
+    w("forge_scan_ui_all.txt", "\n".join(ui_ordered) + ("\n" if ui_ordered else ""))
 
     types_count = len((scan_tmp / "forge_scan_types_all.txt").read_text().splitlines())
     methods_count = len((scan_tmp / "forge_scan_methods_all.txt").read_text().splitlines())
@@ -510,7 +547,7 @@ def run_phase1(repo: Path, scan_tmp: Path) -> None:
         f"html_forms={forms_count} total_potential_nodes={total}",
     )
     print(
-        f"  Frontend — HTML: {len(html_files)} | Vue: {len(vue_files)} | Svelte: {len(svelte_files)} | Angular: {len(angular_templates)} | Forms: {forms_count}",
+        f"  Frontend — HTML: {len(html_files)} | Vue: {len(vue_files)} | Svelte: {len(svelte_files)} | Angular: {len(angular_templates)} | TSX/JSX: {len(tsx_jsx_files)} | app/*.ts|js: {len(app_router_ts_js)} | Forms: {forms_count}",
     )
     print()
     print("══════════════════════════════════════════════════════════")

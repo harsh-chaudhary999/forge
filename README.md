@@ -206,7 +206,7 @@ This walkthrough uses the included seed product (SeedShop) to show the full pipe
 
 ### Step 1: Write the PRD
 
-Write a PRD describing what you want to build. It should cover: problem statement, goals, success metrics, technical scope, and acceptance criteria. See [`seed/prds/01-favorites-cross-surface-sync.md`](seed/prds/01-favorites-cross-surface-sync.md) for a complete example.
+Write a PRD describing what you want to build. It should cover: problem statement, goals, success metrics, technical scope, and acceptance criteria. See [`docs/examples/sample-prd.md`](docs/examples/sample-prd.md) for a short structural example.
 
 ### Step 2: Run the full pipeline
 
@@ -417,15 +417,19 @@ forge/
 │   ├── code-quality-reviewer/    # 8-point quality review
 │   └── dreamer/                  # Retrospective scoring
 ├── commands/           # 16 slash commands
-├── hooks/              # Plugin hooks (session-start injection)
+├── hooks/              # Plugin hook manifests (see per-IDE setup)
+├── tools/              # scan-codebase CLI — see tools/README.md
+│   ├── forge_scan.py   # CLI entry → scan_forge.cli (prepends tools/ on sys.path)
+│   └── scan_forge/     # Python package (phases, tests, fixtures)
+├── docs/               # Platform guides and examples
+│   ├── platforms/      # Per-platform setup (Cursor, Claude Code, …)
+│   └── examples/       # e.g. sample PRD shape
 ├── .claude-plugin/     # Claude Code plugin manifest
 ├── .cursor-plugin/     # Cursor plugin manifest
 ├── .agent/skills/      # Antigravity symlinks → skills/
 ├── .opencode/plugins/  # OpenCode plugin entry
 ├── references/         # Tool mapping (Copilot CLI)
 ├── templates/          # IDE templates (JetBrains)
-├── docs/platforms/     # Per-platform setup guides
-├── seed/               # Seed product (SeedShop) for testing
 ├── CLAUDE.md           # Claude Code project context
 ├── AGENTS.md           # Codex / Antigravity context
 ├── GEMINI.md           # Gemini CLI / Antigravity context
@@ -496,8 +500,8 @@ The brain at `~/forge/brain/` is a git repo of markdown files. Every decision, s
 
 ### Forge not loading on session start
 
-1. Check the hook is executable: `chmod +x ~/forge/hooks/session-start`
-2. Verify `hooks/hooks.json` is valid JSON
+1. Confirm your IDE’s plugin is installed (see [`docs/platforms/`](docs/platforms/) for the checklist for Cursor, Claude Code, etc.). Claude Code uses `.claude/hooks/` (for example `session-start.cjs`); Cursor uses `.cursor-plugin/` — not everything lives under top-level `hooks/`.
+2. Verify `hooks/hooks.json` (and any IDE-specific hook config) is valid JSON where applicable.
 3. Restart your IDE
 4. Run `/forge-status` to check
 

@@ -273,7 +273,7 @@ cp "$BT/"{app.json,graph.json,workspace.json,core-plugins.json,appearance.json} 
 **REQUIRED SKILL:** Invoke `scan-codebase` skill for each registered repo automatically.
 Do NOT wait for the user to ask — the codebase map is needed for planning.
 
-**Multi-repo HARD-GATE (first pass):** Use **`python3 tools/forge_scan_run.py`** with **every** `--repos` entry so phase 5 and **phase56** (`tools/scan_forge/phase56.py`) run against `~/forge/brain/products/<slug>/codebase` and fill module `## Calls (cross-repo)` / `## Called By` from the run-dir artifacts — no deferred “Phase 5.5 manual patch” unless the user wants refinements.
+**Multi-repo HARD-GATE (first pass):** Use **`python3 tools/forge_scan.py`** (or `PYTHONPATH=tools python3 -m scan_forge`) with **every** `--repos` entry so phase 5 and **phase56** (`tools/scan_forge/phase56.py`) run against `~/forge/brain/products/<slug>/codebase` and fill module `## Calls (cross-repo)` / `## Called By` from the run-dir artifacts — no deferred “Phase 5.5 manual patch” unless the user wants refinements.
 
 **Optional (recommended after first brain write):** Pass **`--phase57-write-report`** so phase57 emits `wikilink-orphan-report.md` — orphan `[[wikilinks]]` and ambiguous basenames.
 
@@ -306,7 +306,7 @@ After scan completes, show final confirmation:
    Codebase scan: ✅ done (re-run any time: /scan <slug>)
    Cross-repo module links: ✅ phase56 (if multi-repo)
    Wikilink audit: optional `--phase57-write-report` → `wikilink-orphan-report.md`
-   Run-dir cleanup: optional `--cleanup` on `forge_scan_run.py`
+   Run-dir cleanup: optional `--cleanup` on `python3 tools/forge_scan.py`
 
    Ready to start planning? Run: /intake
 ```

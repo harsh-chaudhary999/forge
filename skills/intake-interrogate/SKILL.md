@@ -1,6 +1,6 @@
 ---
 name: intake-interrogate
-description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Asks 8 core questions one at a time; Q9 (design / UI change class) is mandatory when web or app work is in scope."
+description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Asks 8 core questions one at a time; Q4 forces product.md↔PRD audience cross-check (no false-confidence repo picks); Q9 (design / UI change class) is mandatory when web or app work is in scope."
 type: rigid
 requires: [brain-write]
 ---
@@ -16,6 +16,8 @@ requires: [brain-write]
 | "Asking all intake questions takes too long" | Skipping intake questions takes longer — each unanswered question becomes an assumption that fails during implementation or eval. |
 | "The user said TBD, that's fine for now" | TBD answers cannot be locked. A PRD with TBD success criteria cannot be evaluated. Push for specifics or block the PRD until resolved. |
 | "I'll ask multiple questions at once to save time" | Multi-question dumps produce short, shallow answers. One question at a time forces thought and produces lockable answers. |
+| "Only one repo in `product.md` matches a signal (sole web app, sole API service, sole worker, …), so that must be the repo" | **Cardinality ≠ correctness.** Picking the only backend / only frontend / only mobile entry because it is unique is **registry guessing**, not a validated lock. STOP. Cross-check PRD audience and semantics against **`role:`** and **`repo:`** path; surface mismatches; use explicit list + `product.md` fix or human confirmation. |
+| "I'll phrase option A as the narrowest scope so it looks like the right pick" | Narrowest ≠ correct. MCQ **order** and **only** wording bias humans and models toward A. STOP. When **PRD audience or surface** (who uses it: customer, partner, admin, internal, …) **conflicts** with a **project `role` name** or parent path segment, **do not** present a single-repo “100% confident” option — lead with **escalation / Other**. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -42,6 +44,7 @@ If you notice any of these, STOP and do not proceed:
 - **Rollback plan is "just redeploy the old version"** — Not a real rollback plan for schema changes, cache migrations, or event stream additions. STOP. Get a concrete rollback procedure.
 - **User skips a question saying "that's not relevant"** — Every question was added because of a real project failure. STOP. Ask the question anyway; the user decides what's in scope, not which questions get asked.
 - **PRD touches web or app but Q9 (design / UI change class) was not asked, was skipped, or is TBD** — Surfaces without an explicit design decision ship on hidden assumptions. STOP. Ask Q9 and lock an answer (including **no new design work** or **engineering-only UI**) before PRD lock.
+- **Q4 repo choice without `repo_registry_confidence` + naming check** — You invented certainty. STOP. Reread `product.md` project **`role:`** names and **`repo:`** path segments against the PRD’s **stated audience and surface** (who/what the change is for). If they **diverge**, you must **not** lock “minimal MCQ” alone — record **`repo_naming_mismatch_notes`** and **`product_md_update_required`** or get human sign-off.
 - **PRD is locked without brain-write recording the decision** — The lock exists only in chat context and will be lost. STOP. Write to brain before calling PRD locked.
 
 ## Process
@@ -66,10 +69,35 @@ If you notice any of these, STOP and do not proceed:
 "How will you know this shipped successfully? (e.g., 'user can log in with 2FA', 'search returns results under 100ms')"
 → 2–3 criteria. Lock them.
 
-**Q4: Which repos will change?**
-"Which repos from [product list] will this PRD touch? (List 2–5 expected repos)"
-→ Validate against product.md. Flag if a repo is mentioned but not in product.md.
-→ Lock the list.
+**Q4: Which repos will change? (product topology — no false confidence)**
+
+**Before you ask the user (agent MUST do this silently):**
+
+1. Read `~/forge/brain/products/<slug>/product.md` and list every **`### <heading>`** and each project's **`- role:`** value — these are the **only** legal repo identifiers for MCQ options.
+2. Extract from the PRD **explicit audience / surface / actor** (who or what the change serves: end customer, merchant, partner, admin, platform team, device class, region, …) — use **neutral** vocabulary; do not assume any vendor’s domain dictionary.
+3. **Cross-check:** For each candidate repo, ask: *Would a new engineer, reading **only** the `role` name and the **`repo:`** path (parent folders, basename), believe this project matches the PRD’s audience and surface?*  
+   - If the PRD implies one audience (e.g. **consumer-facing**) but the **only** registered web (or app, or API) **`role`** / path suggests **another** (e.g. **admin**, **partner**, **internal**), treat that as **HIGH RISK — naming or registry mismatch**. **Do not** recommend “that repo only” as the **first** or **sole** confident MCQ option.
+4. **Never** justify a repo pick with “it is the only **X** in `product.md`” where **X** is mobile, web, backend, worker, etc. That is **mechanical cardinality**, not product truth.
+
+**How to ask Q4:**
+
+- Prefer **open list first**: “Which **`role` names** from `product.md` will change? (2–5). If unsure, say unsure.”
+- If you use **multiple choice**, every option must be **honestly scoped**:
+  - **Do not** put a **single** repo as **option A** when step 3 found a **naming/audience tension** — put **“Other / registry review”** first or make **D) Other** the **recommended** path until the user confirms.
+  - Add one line of **epistemic humility** in the prompt: *“If the PRD audience does not match any `role` name, answer **Other** and we will fix `product.md` before council.”*
+- If no registered repo clearly matches the PRD surface, **STOP** and say so: *“No `product.md` project matches [audience]. Add/register the correct repo or rename roles before locking Q4.”*
+
+**Lock in `prd-locked.md` immediately after Q4 (always include these three lines):**
+
+```markdown
+**Repos Affected:** (role names from product.md, 2–5)
+**repo_registry_confidence:** high | medium | low
+**repo_naming_mismatch_notes:** (none) | (bullets: e.g. “PRD implies consumer UI; only registered web role is `admin-console` — confirm or add repo”)
+**product_md_update_required:** no | yes (if yes, link or describe what to add/fix before council)
+```
+
+**SUCCESS:** User confirms repo list **or** explicitly accepts risk after reading mismatch notes.  
+**FAILURE:** You locked Q4 with a **letter-only** answer and **no** `repo_registry_confidence` / mismatch notes — that is incomplete intake.
 
 **Q5: Any contract changes?**
 "Will this PRD require changes to any contracts? (API endpoints, DB schema, event schemas, cache keys, search indexes)"
@@ -129,6 +157,10 @@ Write all answers to `~/forge/brain/prds/<task-id>/prd-locked.md`:
 - backend-api
 - web-dashboard
 - app-mobile
+
+**repo_registry_confidence:** medium
+**repo_naming_mismatch_notes:** (none)
+**product_md_update_required:** no
 
 **Contracts Affected:**
 - REST: Add POST /auth/2fa/enable, POST /auth/2fa/verify
@@ -261,6 +293,7 @@ Next: Council reasoning to negotiate contracts across surfaces.
 Before claiming intake complete:
 
 - [ ] Q1–Q8 answered (no TBD, no skipped, no "we'll figure it out")
+- [ ] **Q4 registry lock:** `repo_registry_confidence`, `repo_naming_mismatch_notes`, `product_md_update_required` present in `prd-locked.md` alongside **Repos Affected** (no letter-only MCQ without these)
 - [ ] **Q9 answered when web or app is in scope** — `design_new_work` + `design_assets` (or `design_ui_scope: not applicable` documented when Q9 skipped)
 - [ ] Each answer confirmed in the user's own words and written back for approval
 - [ ] Contradictions between answers detected and resolved before locking

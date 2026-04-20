@@ -2,7 +2,7 @@
 name: conductor-orchestrate
 description: "WHEN: PRD is locked. You are the master state machine orchestrating the entire forge workflow. Routes the task through all phases, tracks state, manages escalations, and coordinates subagents."
 type: rigid
-requires: [intake-interrogate, product-context-load, brain-read, brain-write]
+requires: [intake-interrogate, product-context-load, brain-read, brain-write, forge-tdd, forge-eval-gate]
 ---
 
 # Conductor Orchestrate — Master State Machine
@@ -17,6 +17,8 @@ requires: [intake-interrogate, product-context-load, brain-read, brain-write]
 | "Self-heal is stuck, I'll just skip that scenario" | Skipping a failing scenario means shipping a known bug. Escalate to BLOCKED — never silently drop failures. |
 | "I'll merge the PRs without waiting for eval" | Eval is the only proof the system works end-to-end. Merging without eval is deploying hope. |
 | "The conductor can adapt the order for this case" | The state machine order exists because each phase produces inputs the next phase requires. Skipping phases means missing inputs. |
+| "We shipped dispatch / partial implement — good enough for now" | **Without P4.4 eval there is no proof the product works.** Stopping after P4.1 or P4.3 is an orchestration failure, not a shortcut. Same for skipping **RED** tests before feature code. |
+| "Tests can be implied from the tech plan; no separate test pass" | Plans are prose until **failing tests exist** (`forge-tdd`). If no subagent run produced RED then GREEN, TDD was not executed. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -37,13 +39,15 @@ If you notice any of these, STOP and do not proceed:
 - **Conductor proceeds after a BLOCKED subagent status without escalation** — Blocked tasks are silently dropped. STOP. Escalate BLOCKED status to human before any forward progress.
 - **Brain state from a previous run is present in the current run's path** — State leakage between runs. STOP. Initialize a clean brain path for this orchestration run.
 - **Conductor retries self-heal more than 3 times on the same failure** — Exceeds the cap defined in self-heal-loop-cap. STOP. Escalate to human with full failure context.
+- **Orchestration stops after P4.1 dispatch or P4.3 QA without entering P4.4 eval** — Partial delivery leaves **no E2E proof** and violates `forge-eval-gate`. STOP unless the human explicitly **aborts the task** with a logged `ABORT` reason. "Ran out of time" is not a valid skip for eval on a claimed-complete feature.
+- **No logged `P4.0-TDD-RED` (or equivalent) before production commits** — `forge-tdd` was not applied: no failing tests were written and run first. STOP. Back up to test authoring before more feature code.
 
 ## Purpose
 
 The Conductor is the master state machine that orchestrates a single task (PRD) through the entire Forge lifecycle:
 
 ```
-Intake → Load Product → Council → Tech Plans → Dispatch → Review → Eval → PR Set
+Intake → Load Product → Council → Tech Plans → **Eval YAML + RED tests** → Dispatch (GREEN) → Review → **Eval (E2E)** → PR Set
 ```
 
 The Conductor:
@@ -74,6 +78,11 @@ The Conductor:
                     │ 2. Load Context     │
                     │ 3. Council Negotiate│
                     │ 4. Tech Plans       │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │  P4.0: EVAL YAML +  │
+                    │  RED tests (TDD)    │
                     └──────────┬──────────┘
                                │
                     ┌──────────┴──────────┐
@@ -241,10 +250,21 @@ Ensure **consensus** across all repos (no conflicting contracts).
 [TECH-PLAN] task_id=<id> timestamp=<ISO8601> status=ALL_REPOS_PLANNED
 ```
 
-### State 5: Dispatch Subagents (Dev Implementers)
-**ENTRY:** All tech plans written.  
+### State 4b: Eval scenarios + RED tests (HARD-GATE before implementation)
+**ENTRY:** All tech plans written and `shared-dev-spec.md` locked.  
 **ACTION:**
-  1. Create a worktree per repo.
+  1. **Eval scenarios (YAML):** Materialize executable scenarios under `~/forge/brain/prds/<task-id>/eval/` (or the task’s agreed folder) using **`eval-scenario-format`** + **`eval-translate-english`** from PRD + shared-dev-spec. Log `[P4.0-EVAL-YAML] scenario_files=<n>`.
+  2. **TDD — RED first:** For each repo, dispatch **`dev-implementer`** (or a test-focused subagent with the same rigor) with **`forge-tdd`** attached to the prompt. **First deliverable only:** automated tests that encode acceptance criteria from the tech plan — **must run and fail (RED)** before any production feature code ships for that repo. Log `[P4.0-TDD-RED] repo=<repo> test_files=<list> red_confirmed=yes`.
+  3. Conductor **does not** advance to State 5 until every in-scope repo has `red_confirmed=yes` (or explicit human `WAIVE_TDD` logged with reason — not default).
+
+**SUCCESS CONDITION:** Eval YAML exists for critical journeys; every repo has a logged RED test run.  
+**FAILURE CONDITION:** Skipped scenario authoring or skipped RED.  
+**ESCALATION:** Missing deploy/runbook in `product.md` → user must fix workspace (`/workspace` Step 3b) before `eval-product-stack-up` can succeed.
+
+### State 5: Dispatch Subagents (Dev Implementers — GREEN + completion)
+**ENTRY:** State 4b complete (RED logged per repo).  
+**ACTION:**
+  1. Create a worktree per repo (if not already from 4b, reuse policy per `worktree-per-project-per-task`).
   2. Dispatch `dev-implementer` subagent for each repo IN PARALLEL (safe: no shared state between repos).
   3. Each subagent receives:
      - Task text (inline, full context from tech plan)
@@ -252,6 +272,8 @@ Ensure **consensus** across all repos (no conflicting contracts).
      - Tech plan markdown
      - Contract impact for this repo
      - Success criteria
+     - **`forge-tdd`:** implement **GREEN** to satisfy existing tests; extend tests only in new RED→GREEN cycles
+     - Paths to eval YAML for this task
   4. Track completion per subagent.
 
 **SUCCESS CONDITION:** All subagents complete. All repos have commits on their branch.  
@@ -348,13 +370,17 @@ Ensure **consensus** across all repos (no conflicting contracts).
 
 The Conductor manages the complete delivery cycle: dispatching dev work, reviewing code, running evals, and self-healing failures.
 
-#### Phase 4.1: Dispatch (Create Worktrees, Dispatch Dev-Implementers)
-**ENTRY:** All tech plans written and locked.  
+#### Phase 4.0: Eval YAML + RED tests (same as State 4b)
+**ENTRY:** Tech plans + `shared-dev-spec.md` locked.  
+**ACTION:** Same as **State 4b** above — scenarios on disk; **forge-tdd** RED logged per repo before Phase 4.1 feature work.
+
+#### Phase 4.1: Dispatch (Create Worktrees, Dispatch Dev-Implementers — GREEN)
+**ENTRY:** Phase 4.0 complete (`[P4.0-TDD-RED]` logged per repo).  
 **ACTION:**
   1. Invoke `worktree-per-project-per-task` skill to create isolated worktrees per repo.
   2. For each repo IN PARALLEL:
      - Dispatch `dev-implementer` subagent.
-     - Pass: task_id, repo path, tech plan, contract impact, success criteria.
+     - Pass: task_id, repo path, tech plan, contract impact, success criteria, **`forge-tdd`**, paths to eval YAML, confirmation that RED tests already exist.
      - Track worktree ID and branch name.
   3. Monitor all subagents for completion or failure.
 
@@ -415,8 +441,10 @@ The Conductor manages the complete delivery cycle: dispatching dev work, reviewi
 [P4.3-QA] task_id=<id> all_repos=<count> passed=<count> status=<ALL_PASS|BLOCKED>
 ```
 
-#### Phase 4.4: Eval — Multi-Surface Evaluation
+#### Phase 4.4: Eval — Multi-Surface Evaluation (mandatory invocation)
 **ENTRY:** All repos pass code quality review.  
+**MUST NOT SKIP:** This phase is **not optional** for a completed delivery. If stack-up cannot run (e.g. missing `deploy_doc` / `start`+`health` in `product.md`), **STOP** and fix `product.md` — do not pretend the task finished.
+
 **ACTION:**
   1. Invoke `eval-product-stack-up` skill to bring up the entire product stack (all services, DBs, caches, etc.).
   2. Run eval scenario drivers:
@@ -862,10 +890,11 @@ conductor_state task_id=<id>
 - [ ] Logs human-readable, timestamped, machine-parseable.
 
 ### Phase 4 (Delivery & Verification)
-- [ ] **P4.1 Dispatch:** worktree-per-project-per-task invoked. Dev-implementers dispatched in parallel.
+- [ ] **P4.0 Prerequisites:** Eval scenario YAML written; **`forge-tdd` RED** logged per repo (`[P4.0-TDD-RED]`); conductor log shows subagent runs for tests-before-feature.
+- [ ] **P4.1 Dispatch:** worktree-per-project-per-task invoked. Dev-implementers dispatched in parallel **after** RED (GREEN implementation).
 - [ ] **P4.2 Review:** spec-reviewer invoked per repo. Max 2 fix rounds per repo. Escalation on final FAIL.
 - [ ] **P4.3 QA:** code-quality-reviewer invoked per repo. Max 2 fix rounds per repo. Escalation on final FAIL.
-- [ ] **P4.4 Eval:** eval-product-stack-up invoked. Multi-surface eval drivers run (API, DB, Web, App, Cache, Search, Bus).
+- [ ] **P4.4 Eval:** **`eval-product-stack-up` explicitly invoked**; multi-surface eval drivers run (API, DB, Web, App, Cache, Search, Bus). Orchestration **invalid** if this step is skipped on a non-aborted task.
 - [ ] **P4.5 Self-Heal:** On eval failure: locate fault → triage → fix → verify. Max 3 attempts. Escalate after 3 failures.
 - [ ] Self-heal loop (3 attempts) integrated with proper diagnostics.
 - [ ] Subagent dispatch via Task tool working.
@@ -908,7 +937,8 @@ Before claiming orchestration complete:
 
 - [ ] PRD locked in brain before council was dispatched
 - [ ] All 4 surfaces reasoned and all 5 contracts locked before build dispatch
+- [ ] **P4.0:** Eval YAML on disk; **`forge-tdd` RED** logged per repo before GREEN implementation
 - [ ] All subagent statuses resolved (no NEEDS_CONTEXT or BLOCKED outstanding) before eval
-- [ ] Eval returned GREEN before any PRs were raised
+- [ ] **P4.4 eval invoked** (not skipped after partial implement); eval returned GREEN before any PRs were raised
 - [ ] conductor.log committed with all phase transitions, subagent dispatches, and escalations
 - [ ] Dreamer retrospective triggered post-merge

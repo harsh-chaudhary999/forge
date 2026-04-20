@@ -33,6 +33,17 @@ If you notice any of these, STOP and do not proceed:
 - **Accessibility requirements are absent** — Accessibility is a legal and product requirement, not optional. STOP. State WCAG level and any known constraints before spec freeze.
 - **Web surface reasoning relies on API shape before backend surface has produced its analysis** — Unilateral assumption about API contract. STOP. Run all 4 surfaces in parallel, then resolve conflicts in negotiation.
 - **State management approach is left as "TBD"** — Undefined state architecture creates integration conflicts during build. STOP. Specify state boundaries (app/page/component) before locking the spec.
+- **Web is in scope but intake Q9 / design lock was not read** — Parallel agents only see written artifacts. STOP. Read **Design / UI** from locked PRD (and **Design source (from intake)** in `shared-dev-spec.md` when present) before finishing `web.md`.
+
+## Intake design lock (before UI analysis)
+
+**HARD-GATE for autonomous handoff:** The first human loop should have locked **Q9** in `prd-locked.md` (`design_new_work`, `design_assets`, optional waiver). You **must** read that block before writing components, routes, or screen lists.
+
+- If **`design_new_work: yes`**: enumerate every **repo path** or exported asset you will read; read those files/images before claiming screen inventory. If paths are missing but PRD says new UI, **STOP** — council cannot proceed on invented pixels; escalate intake gap.
+- If **`design_new_work: no`** (engineering-only / reuse): say so explicitly and anchor UI to existing patterns or PRD prose only.
+- If **`design_ui_scope: not applicable`**: state one line and skip design-file reads.
+
+Council and subagents **do not** learn about new Figma/PNG drops unless they appear in **locked PRD + `shared-dev-spec.md` → Design source (from intake)**. Chat context alone is not a transport layer.
 
 ## Purpose
 

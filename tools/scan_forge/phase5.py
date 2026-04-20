@@ -6,17 +6,24 @@ from pathlib import Path
 
 from . import ast_http_calls, grep_util, log
 
+# Repo-relative paths only (never match parent dirs like ``.../my-test-workspace/...``).
+_TEST_PATH_RE = re.compile(r"/(test|tests|__tests__|e2e|spec)/|\.test\.|\.spec\.|/testing/")
 
-def _append_repo_lines(repo: Path, pattern: str, includes: list[str], out: Path, repo_name: str, extra_filter=None) -> None:
+
+def _append_repo_lines(
+    repo: Path,
+    pattern: str,
+    includes: list[str],
+    out: Path,
+    repo_name: str,
+    extra_filter_rel=None,
+) -> None:
     raw = grep_util.run_grep_rn(repo, pattern, includes)
     # Match phase35: apply test-path heuristics to **repo-relative** paths only. Matching the
     # full grep line false-positives on parent dirs (e.g. ``.../Music/test/web/...`` contains ``/test/``).
-    test_re = re.compile(r"/(test|tests|__tests__|e2e|spec)/|\.test\.|\.spec\.|/testing/")
     with out.open("a", encoding="utf-8", errors="replace") as f:
         for ln in raw.splitlines():
             if "node_modules" in ln:
-                continue
-            if extra_filter and extra_filter(ln):
                 continue
             parts = ln.split(":", 2)
             if len(parts) < 3:
@@ -26,7 +33,9 @@ def _append_repo_lines(repo: Path, pattern: str, includes: list[str], out: Path,
                 rel = Path(abs_p).resolve().relative_to(repo).as_posix()
             except ValueError:
                 continue
-            if test_re.search(rel):
+            if extra_filter_rel and extra_filter_rel(rel, content):
+                continue
+            if _TEST_PATH_RE.search(rel):
                 continue
             f.write(f"{repo_name}\t{rel}:{lineno}:{content}\n")
 
@@ -76,7 +85,9 @@ def run_phase5(repos: list[Path], scan_tmp: Path) -> None:
             ["*.java"],
             scan_tmp / "forge_scan_java_calls.txt",
             name,
-            extra_filter=lambda ln: bool(re.search(r"/test/|Test\.java\b|IT\.java\b|Tests\.java\b", ln)),
+            extra_filter_rel=lambda rel, c: bool(
+                re.search(r"(?:^|/)(?:Test|IT|Tests)\.java$", rel)
+            ),
         )
         raw = grep_util.run_grep_rn(repo, java_map_pat, ["*.java"])
         with (scan_tmp / "forge_scan_java_calls.txt").open("a", encoding="utf-8", errors="replace") as f:
@@ -91,6 +102,8 @@ def run_phase5(repos: list[Path], scan_tmp: Path) -> None:
                     rel = Path(abs_p).resolve().relative_to(repo).as_posix()
                 except ValueError:
                     continue
+                if _TEST_PATH_RE.search(rel):
+                    continue
                 f.write(f"{name}/feign\t{rel}:{lineno}:{content}\n")
         _append_repo_lines(
             repo,
@@ -98,7 +111,7 @@ def run_phase5(repos: list[Path], scan_tmp: Path) -> None:
             ["*.kt"],
             scan_tmp / "forge_scan_kotlin_calls.txt",
             name,
-            extra_filter=lambda ln: bool(re.search(r"Test\.kt\b|Spec\.kt\b|/test/", ln)),
+            extra_filter_rel=lambda rel, c: bool(re.search(r"(?:^|/)(?:Test|Spec)\.kt$", rel)),
         )
         _append_repo_lines(repo, kt_retro, ["*.kt"], scan_tmp / "forge_scan_kotlin_calls.txt", f"{name}/retrofit")
         _append_repo_lines(
@@ -107,7 +120,9 @@ def run_phase5(repos: list[Path], scan_tmp: Path) -> None:
             ["*.py"],
             scan_tmp / "forge_scan_python_calls.txt",
             name,
-            extra_filter=lambda ln: "test" in ln.lower() or "_test" in ln.lower(),
+            extra_filter_rel=lambda rel, c: rel.endswith("_test.py")
+            or rel.endswith("/conftest.py")
+            or rel.rsplit("/", 1)[-1].startswith("test_"),
         )
         _append_repo_lines(
             repo,
@@ -115,7 +130,7 @@ def run_phase5(repos: list[Path], scan_tmp: Path) -> None:
             ["*.go"],
             scan_tmp / "forge_scan_go_calls.txt",
             name,
-            extra_filter=lambda ln: "_test.go" in ln,
+            extra_filter_rel=lambda rel, c: rel.endswith("_test.go"),
         )
         _append_repo_lines(repo, dart_pat, ["*.dart"], scan_tmp / "forge_scan_dart_calls.txt", name)
 

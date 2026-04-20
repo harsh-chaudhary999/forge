@@ -35,6 +35,7 @@ If you notice any of these, STOP and do not proceed:
 - **PRD mentions a repo not in product.md** — Either the repo should be added to product.md or the PRD has a typo. STOP. Reconcile before proceeding to council.
 - **Product context is loaded after council has already started** — Council needs topology to identify affected surfaces. STOP. Always load product context before invoking any surface reasoning.
 - **Service start/stop commands in product.md are not verified** — Wrong startup commands make eval-product-stack-up fail. STOP. Verify commands are executable before surfacing to downstream phases.
+- **A project has neither `deploy_doc` nor (`start` and `health`)** — Stack-up has no runbook. STOP. Send the user back to `/workspace` Step 3b or `/scan` Step 1 to record deploy truth before council or eval that needs a live stack.
 
 Given a product slug (from the locked PRD), load and validate:
 

@@ -1,6 +1,6 @@
 ---
 name: intake-interrogate
-description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Asks 5–8 clarifying questions one at a time."
+description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Asks 8 core questions one at a time; Q9 (design / UI change class) is mandatory when web or app work is in scope."
 type: rigid
 requires: [brain-write]
 ---
@@ -13,7 +13,7 @@ requires: [brain-write]
 |---|---|
 | "I can infer this from context" | You cannot. The biggest projects fail because teams assume they agree on a spec and discover otherwise in code review. Intake enforces lock. No exceptions. |
 | "This question is obviously answered by the PRD" | PRDs describe intent, not decisions. Intake extracts explicit, locked answers — not interpretations of intent. Ambiguous PRDs become arguments in code review. |
-| "Asking all 8 questions takes too long" | Skipping intake questions takes longer — each unanswered question becomes an assumption that fails during implementation or eval. |
+| "Asking all intake questions takes too long" | Skipping intake questions takes longer — each unanswered question becomes an assumption that fails during implementation or eval. |
 | "The user said TBD, that's fine for now" | TBD answers cannot be locked. A PRD with TBD success criteria cannot be evaluated. Push for specifics or block the PRD until resolved. |
 | "I'll ask multiple questions at once to save time" | Multi-question dumps produce short, shallow answers. One question at a time forces thought and produces lockable answers. |
 
@@ -22,7 +22,9 @@ requires: [brain-write]
 ## Iron Law
 
 ```
-ALL 8 INTAKE QUESTIONS MUST BE ANSWERED WITH CONCRETE, LOCKED ANSWERS BEFORE THE PRD ADVANCES TO COUNCIL. A TBD ANSWER IS NO ANSWER. PARTIAL INTAKE IS NO INTAKE.
+Q1–Q8 MUST ALWAYS BE ANSWERED WITH CONCRETE, LOCKED ANSWERS BEFORE THE PRD ADVANCES TO COUNCIL.
+WHEN WEB OR MOBILE APP WORK IS IN SCOPE (SEE Q9), Q9 IS ALSO MANDATORY — SAME BAR AS Q1–Q8 (NO TBD, NO “SKIP”).
+A TBD ANSWER IS NO ANSWER. PARTIAL INTAKE IS NO INTAKE.
 ```
 
 ## HARD-GATE
@@ -39,6 +41,7 @@ If you notice any of these, STOP and do not proceed:
 - **Success criteria is stated in vague terms ("fast", "good UX", "reliable")** — Unmeasurable criteria cannot be evaluated. STOP. Get specific, testable criteria (e.g., "< 200ms p99 latency") before locking.
 - **Rollback plan is "just redeploy the old version"** — Not a real rollback plan for schema changes, cache migrations, or event stream additions. STOP. Get a concrete rollback procedure.
 - **User skips a question saying "that's not relevant"** — Every question was added because of a real project failure. STOP. Ask the question anyway; the user decides what's in scope, not which questions get asked.
+- **PRD touches web or app but Q9 (design / UI change class) was not asked, was skipped, or is TBD** — Surfaces without an explicit design decision ship on hidden assumptions. STOP. Ask Q9 and lock an answer (including **no new design work** or **engineering-only UI**) before PRD lock.
 - **PRD is locked without brain-write recording the decision** — The lock exists only in chat context and will be lost. STOP. Write to brain before calling PRD locked.
 
 ## Process
@@ -85,13 +88,28 @@ If you notice any of these, STOP and do not proceed:
 "How will you measure if this succeeded post-launch? (e.g., 'login rate > 90%', 'search latency < 500ms')"
 → Lock the metrics.
 
-**Q9 (optional): Design assets?**
-"Do you have any design assets for this feature? (Figma URL, exported PNGs, screenshots, wireframes)"
-→ Ask this only if the PRD touches a web or mobile frontend surface.
-→ If Figma URL provided: note it in the PRD, instruct user to export frames as PNG before Council runs (Figma URLs are not directly readable by agents).
-→ If PNG/screenshot files provided: note their paths in the PRD under `design_assets:`.
-→ If none: record `design_assets: none` — reasoning surfaces will derive UI from PRD text only.
-→ Never block PRD lock on missing design assets — they are optional inputs, not requirements.
+**Q9: Design & UI change class (mandatory when web or app is in scope)**
+
+**When to ask (HARD-GATE):** If **Q4** lists any repo or surface that is clearly **web** or **mobile app** (e.g. `web-*`, `app-*`, `*-dashboard`, `*-mobile`), or the PRD describes **user-visible UI** changes, you **MUST** ask Q9 before locking. If the PRD is **backend/infra only** (no web or app in Q4 and no UI in the PRD), skip Q9 and note `design_ui_scope: not applicable` in `prd-locked.md`.
+
+**Question (one intake turn):** Deliver Q9 as **one message** with the three bullets below (bundled prompt is the exception to “one bullet = one message” — still **wait** for a complete answer before locking). If any bullet is TBD, follow up until concrete.
+
+"This PRD includes web or app work. I need an explicit lock on design:
+
+1. **Is there net-new product or visual design work** for this slice (new screens, flows, or brand/visual changes), or is this **engineering-only / reuse** of existing UI patterns and copy?
+
+2. **Design source of truth:** Do you have assets we should treat as authoritative? (Figma link, exported PNGs/screenshots, wireframes, or **none — build strictly from PRD text**)
+
+3. If **no new design** but UI still changes: confirm **who owns layout/interaction decisions** during implementation (e.g. team lead, existing design system only)."
+
+**Lock in `prd-locked.md` (concrete, no TBD when web/app in scope):**
+
+- `design_new_work:` **yes** | **no** (engineering-only / reuse existing patterns)
+- `design_assets:` Figma URL and/or repo paths to PNGs/screenshots/wireframes — or **`none`** if there are no files (PRD-only UI)
+- If Figma URL only: instruct user to export relevant frames as PNG before Council when agents must *see* pixels.
+- Optional: `design_waiver:` only if stakeholder explicitly waives design review — **owner + one-line risk note**
+
+**You may not lock the PRD** while web/app are in scope and Q9 fields above are missing, **TBD**, or vague ("we'll see in implementation"). **No Figma is fine** — the required output is an **explicit** decision: new design vs not, and where truth lives (files vs PRD-only vs waived).
 
 ## Output
 
@@ -120,6 +138,11 @@ Write all answers to `~/forge/brain/prds/<task-id>/prd-locked.md`:
 **Timeline:** EOW  
 **Rollback:** API v1 is still live, 2FA is optional, no DB breaking changes.  
 **Success Metrics:** 2FA adoption > 50% within 2 weeks.
+
+**Design / UI (Q9 — include when web or app in scope):**
+- **design_new_work:** no (reuse existing auth patterns)
+- **design_assets:** none (PRD describes screens; no Figma)
+- **design_waiver:** (omit unless used)
 
 ---
 
@@ -224,7 +247,7 @@ Write all answers to `~/forge/brain/prds/<task-id>/prd-locked.md`:
 
 ## Commit
 
-After locking all 8 questions, commit the prd-locked.md:
+After locking all **mandatory** questions (Q1–Q8 always; **Q9 when web or app is in scope**), commit the prd-locked.md:
 
 ```bash
 git -C ~/forge/brain add prds/<task-id>/prd-locked.md
@@ -237,7 +260,8 @@ Next: Council reasoning to negotiate contracts across surfaces.
 
 Before claiming intake complete:
 
-- [ ] All 8 questions answered (no TBD, no skipped, no "we'll figure it out")
+- [ ] Q1–Q8 answered (no TBD, no skipped, no "we'll figure it out")
+- [ ] **Q9 answered when web or app is in scope** — `design_new_work` + `design_assets` (or `design_ui_scope: not applicable` documented when Q9 skipped)
 - [ ] Each answer confirmed in the user's own words and written back for approval
 - [ ] Contradictions between answers detected and resolved before locking
 - [ ] prd-locked.md written to `~/forge/brain/prds/<task-id>/` and committed to brain

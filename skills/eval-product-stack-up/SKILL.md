@@ -62,6 +62,7 @@ If you notice any of these, STOP and do not proceed:
 - **Services are started in alphabetical or arbitrary order instead of dependency order** — Service B depending on Service A will fail to connect if A is not yet healthy. STOP. Resolve the dependency graph and start in topological order: infrastructure first, then services that depend on it.
 - **`stack-down` is not called when eval fails** — Services left running from a failed eval contaminate the next run with leftover data, open connections, and consumed offsets. STOP. `stack-down` must be called unconditionally in the cleanup path, whether eval passed or failed.
 - **Health check is a TCP port probe only (port accepting connections)** — A port open means the OS socket is bound, not that the application is ready. STOP. Health checks must be HTTP endpoint checks (or equivalent application-level readiness probes) that verify the application is actually serving requests.
+- **A configured service in `product.md` has no `deploy_doc` and no `start`+`health`** — There is nothing executable to automate. STOP. Return user to `/workspace` Step 3b or `/scan` Step 1 to add a runbook path or commands; do not pretend stack-up can proceed.
 - **Stack-up is declared successful before every *configured* service is verified** — A stack missing a configured service will produce eval failures that look like code bugs. STOP. Every service listed in product.md must pass its health check. Services *not* listed in product.md are not started and not checked — that is correct behaviour, not a bug.
 
 ## Overview

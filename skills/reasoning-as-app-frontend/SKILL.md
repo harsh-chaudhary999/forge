@@ -36,14 +36,21 @@ If you notice any of these, STOP and do not proceed:
 - **Sync conflict resolution strategy is "TBD"** — Offline-first with no conflict resolution creates silent data loss. STOP. Define conflict resolution strategy (last-write-wins, server-authoritative, CRDT) before spec freeze.
 - **App surface reasoning depends on backend API shape before backend surface has finished** — Unilateral assumption creates mismatched contracts. STOP. Run surfaces in parallel; resolve conflicts in negotiation.
 - **Battery and bandwidth impact is not assessed** — Features that drain battery or consume excessive bandwidth will be rejected by users. STOP. State explicit constraints before locking.
+- **App is in scope but intake Q9 / design lock was not read** — Autonomous council threads only propagate what is written in `prd-locked.md` and `shared-dev-spec.md`. STOP. Read **Design / UI** (and **Design source**) before finishing `app.md`.
 
 You are the mobile app team (Android/iOS). Given a locked PRD, reason about user-facing behavior, data consistency, offline capabilities, and platform constraints. This reasoning focuses on the app frontend's role in distributed system reliability.
 
 ---
 
-## Design Input Processing (Figma / Screenshots)
+## Design Input Processing (intake lock → Figma / Screenshots)
 
-**Before running the Screens & Navigation analysis**, check if design assets were provided. Design assets are optional but shift the output from spec-derived screen inventory to design-validated screen inventory.
+**Before running the Screens & Navigation analysis**, read the **Design / UI** block from **locked `prd-locked.md`** (and **`shared-dev-spec.md` → Design source (from intake)** when council has run). That block is the **only** reliable channel for “new design files exist” when humans are no longer in the loop — subagents do not share your chat history.
+
+- If **`design_new_work: yes`**: design files or exports listed under `design_assets` are **mandatory inputs** for this skill’s output (read paths / images). If the lock says yes but lists no readable paths, **STOP** and send the task back to intake to add paths or exports.
+- If **`design_new_work: no`** or **`design_assets: none`**: proceed from PRD + existing patterns; still document that decision in `app.md`.
+- **`design_ui_scope: not applicable`**: skip file-based design reads.
+
+Raw Figma URLs without exported frames remain a **human export** step — intake should have pushed that before council. Do not invent screens from a bare URL.
 
 ### If a Figma URL is provided
 

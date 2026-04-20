@@ -41,7 +41,18 @@ Build a codebase knowledge graph for the Forge brain. Works on any existing repo
 
 ---
 
-### Step 1 — Check for existing scan
+### Step 1 — Deployment / runbook readiness (from `product.md`)
+
+When `~/forge/brain/products/<slug>/product.md` exists, **read it before** invoking `scan-codebase` / `forge_scan.py`:
+
+- For each `### <project>` block, check for **`deploy_doc`** (path relative to that project’s `repo:`) **or** a usable **`start`** + **`health`** pair.
+- If **missing**: run the same README / `docker-compose` discovery as **`/workspace` Step 3b**. If still insufficient, **pause** the scan once, require a doc path or `start`/`health`, update `product.md`, then continue. **Do not** complete `/scan` for that slug while deploy fields are empty (same bar as workspace).
+
+This keeps the first workspace pass authoritative while allowing `/scan --refresh` without repeating the whole wizard if `product.md` is already complete.
+
+---
+
+### Step 2 — Check for existing scan
 
 ```bash
 cat ~/forge/brain/products/<slug>/codebase/SCAN.json 2>/dev/null
@@ -62,7 +73,7 @@ If scan is >7 days old → proceed automatically with re-scan, note: "Scan is <N
 
 ---
 
-### Step 2 — Invoke scan-codebase skill
+### Step 3 — Invoke scan-codebase skill
 
 **REQUIRED SKILL:** Use `scan-codebase` skill for all phases.
 
@@ -94,7 +105,7 @@ Run the scan-codebase skill for each project role. Process roles in this order:
 
 ---
 
-### Step 3 — Show results
+### Step 4 — Show results
 
 After scan completes:
 
@@ -144,7 +155,7 @@ If over token budget (>15K):
 
 ---
 
-### Step 4 — Auto-trigger context (from /workspace)
+### Step 5 — Auto-trigger context (from /workspace)
 
 When `/scan` is invoked automatically at the end of `/workspace` init:
 

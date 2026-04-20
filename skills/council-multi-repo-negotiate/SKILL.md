@@ -36,6 +36,7 @@ If you notice any of these, STOP and do not proceed:
 - **Conflict between two surfaces is "deferred to implementation"** — Build-time conflict resolution costs 10x more than council-time resolution. STOP. Invoke dreamer to resolve the conflict now.
 - **Spec is frozen before all surface reasoning files are written to brain** — Provenance is lost. STOP. Write all surface outputs to brain before calling spec-freeze.
 - **Council is invoked before PRD is locked** — Unlocked PRD means the scope can change mid-council. STOP. Confirm PRD lock (brain decision ID) before invoking any surface reasoning.
+- **Web or app is in scope but intake design fields never reach `shared-dev-spec.md`** — Subagents and parallel surface skills only see what is written down. If `design_new_work` / `design_assets` from `prd-locked.md` are not copied into the spec, autonomous reasoning invents UI from prose alone. STOP. Paste the intake **Design / UI** block verbatim under `## Design source (from intake)` before surface work is treated as complete.
 - **Only 1-2 surfaces are "affected" so the rest are skipped** — Surfaces that appear unaffected often discover hidden dependencies. STOP. All surfaces must reason, even if briefly.
 
 Master orchestration skill that brings together all 4 surface reasoning skills and all 5 contract skills to negotiate conflicts and lock the shared-dev-spec.
@@ -53,6 +54,7 @@ Verify the PRD is locked (status = LOCKED). Extract:
 - Success criteria: what must work?
 - Affected repos: which codebases change?
 - Interfaces: what contracts matter (API, events, cache, DB, search)?
+- **Design / UI (from intake `prd-locked.md`):** `design_new_work`, `design_assets`, optional `design_waiver`, or `design_ui_scope: not applicable`. When web or app repos are in scope, these fields **must exist** (per `intake-interrogate` Q9). **Pass the full locked PRD text (including the Design / UI section) into every surface reasoning invocation** so agents do not rely on chat memory alone.
 
 ### Step 1.2: Invoke All 4 Surface Reasoning Skills in Parallel
 Invoke these skills in parallel (no dependencies between them):
@@ -231,6 +233,18 @@ Create the master `/home/lordvoldemort/Videos/forge/brain/prds/[task-id]/shared-
 ## Product Request Document (PRD)
 
 [Locked PRD from intake, all surfaces agree on scope & success criteria]
+
+---
+
+## Design source (from intake)
+
+**HARD-GATE:** Copy verbatim from `prd-locked.md` the subsection **Design / UI (Q9)** (or `design_ui_scope: not applicable` when backend-only).
+
+- `design_new_work:` (yes | no / engineering-only)
+- `design_assets:` (paths, Figma note, or `none`)
+- `design_waiver:` (only if present)
+
+Surface reasoning (web, app) and tech plans **must** treat this block as authoritative for “is there new visual work?” and “where are the pixels?” — not inferred from hallway chat.
 
 ---
 
@@ -530,7 +544,7 @@ This marks the spec as immutable in the brain.
 - [ ] Identify any unresolved conflicts
 - [ ] Escalate unresolved conflicts to `/inline-dreamer`
 - [ ] Document decision trail for all conflicts
-- [ ] Consolidate shared-dev-spec.md with all sections
+- [ ] Consolidate shared-dev-spec.md with all sections (including **Design source (from intake)** when web or app is in scope)
 - [ ] Validate spec completeness
 - [ ] Use `/brain-write` to lock spec
 - [ ] Report: DONE, spec locked, ready for tech-planning
@@ -551,6 +565,7 @@ Before claiming council complete:
 - [ ] All 4 surfaces (backend, web frontend, app frontend, infra) produced reasoning outputs
 - [ ] All 5 contracts negotiated (REST API, event bus, cache, DB schema, search)
 - [ ] No TBD fields remain in shared-dev-spec
+- [ ] **Design source** subsection present or explicitly `not applicable` when scope includes web/app
 - [ ] All cross-surface conflicts resolved — none deferred to implementation
 - [ ] shared-dev-spec.md locked and written to brain via brain-write
 - [ ] spec-freeze invoked to prevent post-council mutations

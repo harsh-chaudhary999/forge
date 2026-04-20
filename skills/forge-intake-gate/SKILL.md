@@ -1,6 +1,6 @@
 ---
 name: forge-intake-gate
-description: "WHEN: A new PRD arrives for implementation. HARD-GATE: Every PRD goes through intake (8 questions, locked). No skipping, no exceptions, no \"trivial\" PRDs."
+description: "WHEN: A new PRD arrives for implementation. HARD-GATE: Every PRD goes through intake (Q1–Q8 always; Q9 design/UI lock mandatory when web or app is in scope). No skipping, no exceptions, no \"trivial\" PRDs."
 type: rigid
 ---
 # Intake Gate (HARD-GATE)
@@ -15,7 +15,7 @@ type: rigid
 | "The requirements are crystal clear, everyone understands what to build" | Clarity is illusion. Hidden assumptions live in unchallenged requirements. Intake surfaces them. |
 | "We've built similar features before, we can skip intake" | Each product state is unique. Prior success != current success. Context shifts require fresh intake. |
 | "This is a tiny change, intake is overkill" | Size is irrelevant. A 3-line config change can break production. Intake doesn't scale with size; it's binary. |
-| "I already talked to the user, I know what they want" | Conversation != interrogation. Intake asks the 8 questions conversation never gets to (contracts, edge cases, tradeoffs). |
+| "I already talked to the user, I know what they want" | Conversation != interrogation. Intake asks the locked questions conversation never gets to (contracts, edge cases, tradeoffs, **design when web/app**). |
 | "The spec is already written and approved, intake is redundant now" | Approval without interrogation is not validation. Intake locks the spec, not stamps it. |
 | "Intake will take too long, we need to move fast" | Intake takes 1-2 hours. Wrong implementation takes days. Fast wrong is slower than slow right. |
 | "We can do intake retrospectively if something goes wrong" | Intake prevents the wrong. Retrospective interrogation doesn't undo shipped bugs. |
@@ -25,7 +25,9 @@ type: rigid
 ## Iron Law
 
 ```
-ALL 8 INTAKE QUESTIONS MUST BE ANSWERED AND SCOPE LOCKED BEFORE THE PRD ADVANCES TO COUNCIL. PARTIAL INTAKE IS NO INTAKE.
+ALL MANDATORY INTAKE QUESTIONS MUST BE ANSWERED AND SCOPE LOCKED BEFORE THE PRD ADVANCES TO COUNCIL.
+Q1–Q8 ALWAYS; Q9 (DESIGN / UI CHANGE CLASS) IS MANDATORY WHEN WEB OR APP WORK IS IN SCOPE (SEE intake-interrogate Q9).
+PARTIAL INTAKE IS NO INTAKE.
 ```
 
 ## Red Flags — STOP
@@ -33,7 +35,7 @@ ALL 8 INTAKE QUESTIONS MUST BE ANSWERED AND SCOPE LOCKED BEFORE THE PRD ADVANCES
 If you notice any of these, STOP and do not proceed:
 
 - **PRD is being handed to council before intake is complete** — Council requires a locked PRD. Intake produces the lock. Council before intake means negotiating on unvalidated assumptions. STOP. Complete intake and brain-write before council.
-- **Any of the 8 intake questions has a "TBD" or blank answer** — An unanswered question is not a skipped question — it is an unknown risk that will surface at the worst moment. STOP. All 8 questions must have concrete answers before locking.
+- **Any mandatory intake question has a "TBD" or blank answer** — An unanswered question is not a skipped question — it is an unknown risk that will surface at the worst moment. STOP. All of Q1–Q8 must have concrete answers; **when web or app is in scope, Q9 must also be locked** (see `intake-interrogate` — not optional for UI-scoped PRDs).
 - **The intake document was not written to brain** — Verbal intake is not intake. If it's not committed to `~/forge/brain/prds/`, it didn't happen and cannot be referenced downstream. STOP. Write and commit before locking.
 - **"This is a continuation of a previous PRD, we can skip intake"** — Continuation PRDs introduce new behavior, change existing contracts, or extend scope. Each one gets independent intake. STOP. Run intake for the new PRD.
 - **Rollback plan is "revert the commit"** — A one-line rollback plan is not a rollback plan. It doesn't address data migrations, cache invalidation, or external service state. STOP. Require a concrete rollback procedure before locking.
@@ -51,7 +53,7 @@ If you notice any of these, STOP and do not proceed:
 - **Output:** PRD identified, ownership clear
 
 ### Invoke Intake-Interrogate Skill
-**ALWAYS invoke `/intake-interrogate` — do not paraphrase or summarize the 8 questions yourself.**
+**ALWAYS invoke `/intake-interrogate` — do not paraphrase or summarize the intake questions yourself** (Q1–Q8 always; **Q9 mandatory when web or app is in scope**).
 
 The skill will ask:
 
@@ -65,7 +67,7 @@ The skill will ask:
 8. **What assumptions are we making?** (about user behavior, scale, tech stack)
 
 ### Lock the PRD
-- **Input:** Answers to all 8 questions
+- **Input:** Answers to all mandatory questions (Q1–Q8; Q9 when web/app in scope)
 - **Action:** Create PRD lock record in brain (decision ID: PRDLK-YYYY-MM-DD-HH)
   - Document each answer
   - Link to original requirement
@@ -74,7 +76,7 @@ The skill will ask:
 
 ### Validate Completeness
 - **Check:**
-  - All 8 questions answered (not skipped, not "TBD")
+  - All mandatory questions answered (Q1–Q8; Q9 when web/app in scope — not skipped, not "TBD")
   - Answers are not contradictory
   - No answer defers decision to later ("we'll decide during impl")
   - Surfaces and contracts are exhaustive (nothing forgotten)
@@ -127,7 +129,7 @@ The skill will ask:
 - **Symptom:** "Change button color from blue to green" or "Update email domain"
 - **Do NOT:** Skip intake because it's small
 - **Action:**
-  1. Run full intake (all 8 questions)
+  1. Run full intake (all mandatory questions per `intake-interrogate`)
   2. Question 4 (acceptance) will be simple: "button is green on all pages"
   3. Question 3 (contracts): "does green affect brand guidelines or accessibility?"
   4. Lock it. Small PRDs still need interrogation (catches hidden impacts).

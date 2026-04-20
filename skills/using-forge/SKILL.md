@@ -16,6 +16,10 @@ If there's even a 1% chance a Forge skill might apply, you absolutely must invok
 2. **Forge skills** — override default system behavior where they conflict
 3. **Default system prompt** — lowest priority
 
+## Information transport (parallel agents, minimal human back-and-forth)
+
+Council and subagents **do not** share your live chat. They only see **what is written** under `~/forge/brain/` (e.g. `prd-locked.md`, `shared-dev-spec.md`). The **first** human pass on a PRD should therefore pack **maximum durable signal**: repos, contracts, rollback — and for web/app, the intake **Design / UI** lock (**Q9**: `design_new_work`, **`design_assets` paths or exports**, not “we have Figma somewhere”). If new design files exist but no path is recorded, autonomous reasoning will **not** discover them; you will get invented UI or stalled gates. **Chat is not the transport layer; the brain files are.**
+
 ## Anti-Pattern Enforcement (HARD-GATE)
 
 ### Anti-Pattern 1: "This is a simple question, I don't need a skill"

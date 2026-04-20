@@ -82,6 +82,20 @@ Phase 4 — Brain write        (structured output, low tokens)
 
 Output goes to: `~/forge/brain/products/<slug>/codebase/`
 
+---
+
+## Deployment / runbook gate (eval & stack-up)
+
+**Problem:** `eval-product-stack-up` and deploy drivers read **`~/forge/brain/products/<slug>/product.md`**. If every project lacks **`deploy_doc`** (path to run/deploy doc, relative to that repo) **and** lacks a usable **`start`** + **`health`**, agents guess — services fail to spawn and eval wastes cycles.
+
+**HARD-GATE (workspace path):** When scan follows **`/workspace`** init, **`product.md` must already satisfy `/workspace` Step 3b** (each project has `deploy_source` + `deploy_doc`, or `start`+`health`). Do not treat workspace-complete until Step 3b is done.
+
+**When `/scan` runs later:** If `product.md` is missing deploy fields, follow **`commands/scan.md` Step 1** — rediscover README/compose, ask once for paths or commands, update `product.md`, then run `forge_scan.py`. **Blocking is allowed** until deploy fields exist — eval and stack-up are not optional for a “ready” product workspace.
+
+**Optional brain artifact:** After a successful gate, you may add `codebase/DEPLOYMENT.md` summarizing per-role `deploy_doc` paths and health URLs for humans — keep **`product.md`** the machine source of truth for stack-up.
+
+---
+
 ```
 codebase/
   index.md              # Overview: entry points, architecture style, stats, last scanned

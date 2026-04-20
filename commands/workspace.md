@@ -1,6 +1,6 @@
 ---
 name: workspace
-description: Initialize or open a Forge workspace. Point it at any folder — it scans for git repos, infers roles from folder names, detects languages, and builds product.md automatically. No manual config needed.
+description: Initialize or open a Forge workspace. Point it at any folder — it scans for git repos, infers roles from folder names, detects languages, runs a deploy/runbook gate (README or user-provided doc), then builds product.md. No manual merge-order config needed.
 trigger: /workspace
 ---
 
@@ -105,6 +105,34 @@ If the user corrects something, apply it before continuing. Do not re-scan — j
 
 ---
 
+### Step 3b — Deployment & local run documentation (HARD-GATE before `product.md`)
+
+**Why:** Spawned agents (`eval-product-stack-up`, `/eval`, deploy drivers) read **`product.md`**, not chat. If run/deploy steps never get written, stack-up becomes guesswork and eval fails for the wrong reasons.
+
+For **each** detected repo (before writing Step 5 `product.md`):
+
+1. **Auto-detect** — Read, in order, the first file that exists:
+   `README.md`, `readme.md`, `README.rst`, `docs/README.md`, `docs/DEVELOPMENT.md`, `docs/DEPLOY.md`, `DEPLOY.md`, `CONTRIBUTING.md`.
+2. Also note if repo root has `docker-compose.yml` or `compose.yaml`.
+3. **“Sufficient”** = the doc (or compose file) gives a reviewer enough to run the service locally **and** know it is up (commands + health URL or port or `docker compose` service + implied URL), **or** clearly points to another path (e.g. “see `docs/local.md`”) — then follow that path once.
+
+**If sufficient:** You will record in Step 5 for that project at minimum:
+- `deploy_source: readme` | `compose` | `external-doc`
+- `deploy_doc: <path-relative-to-repo>` (e.g. `README.md`, `docs/local.md`)
+
+Optionally copy explicit `start`, `stop`, `health`, `port` into `product.md` **only when** they are unambiguous from the doc; otherwise leave them blank — `deploy_doc` is still the source of truth.
+
+**If not sufficient:** **STOP** before Step 5 and ask the user **for that repo** (one message can cover all repos in a small table):
+
+- **A)** Path **relative to repo root** to the file that contains deploy / local run steps (Forge will use this for stack-up and eval prep), **or**
+- **B)** Paste the lines to store as `start`, optional `stop`, `health`, optional `port` in `product.md`.
+
+There is **no “skip deploy” path** — you cannot run a meaningful **`eval-product-stack-up`** or E2E eval without knowing how to start and verify each service. If the user truly has no docs yet, **do not create the workspace** until they provide (A) or (B).
+
+**Do not skip Step 3b** — every project row must have **`deploy_source` + `deploy_doc`** or **`start` + `health`** (minimum) before `product.md` is written.
+
+---
+
 ### Step 4 — Ask only what cannot be detected
 
 After scan, ask **only** what is missing and cannot be inferred:
@@ -115,7 +143,7 @@ After scan, ask **only** what is missing and cannot be inferred:
 
 2. **Role clarification** — only for ambiguous folder names (see Step 2)
 
-That's it. Do NOT ask about ports, DB credentials, frameworks, or merge order.
+That's it for *undetectable* product identity. **Step 3b** already handled deploy/runbook pointers. Do NOT ask about ports, DB credentials, frameworks, or merge order here.
 
 ---
 
@@ -140,6 +168,9 @@ Generate `~/forge/brain/products/<slug>/product.md` from the scan results:
 - language: node
 - framework: express
 - branch: main
+- deploy_source: readme
+- deploy_doc: README.md
+# From Step 3b: pointer to run/deploy truth (required)
 
 ### web
 - repo: ~/jh/web
@@ -148,6 +179,9 @@ Generate `~/forge/brain/products/<slug>/product.md` from the scan results:
 - language: typescript
 - framework: next
 - branch: main
+- deploy_source: readme
+- deploy_doc: README.md
+# Optional if obvious from README: start, stop, health, port
 
 ### app
 - repo: ~/jh/app
@@ -156,6 +190,8 @@ Generate `~/forge/brain/products/<slug>/product.md` from the scan results:
 - language: dart
 - framework: flutter
 - branch: main
+- deploy_source: readme
+- deploy_doc: README.md
 
 ## Infrastructure
 # ── Optional — only needed for DB/cache/queue-dependent eval scenarios ──
@@ -180,6 +216,8 @@ Then confirm and auto-trigger codebase scan:
    → app      (~/jh/app)
 
    Infrastructure: not configured (optional — add with /workspace add-infra <slug>)
+
+   Deploy / run: each project has `deploy_doc` or start+health in product.md (Step 3b).
 ```
 
 ### Step 5a — Bootstrap brain as Obsidian vault (first time only)
@@ -303,6 +341,8 @@ After scan completes, show final confirmation:
    → app      (~/jh/app)      → brain/products/<slug>/codebase/
 
    Infrastructure: not configured (optional — add with /workspace add-infra <slug>)
+
+   Deploy / run: each project has `deploy_doc` or start+health in product.md (Step 3b).
    Codebase scan: ✅ done (re-run any time: /scan <slug>)
    Cross-repo module links: ✅ phase56 (if multi-repo)
    Wikilink audit: optional `--phase57-write-report` → `wikilink-orphan-report.md`

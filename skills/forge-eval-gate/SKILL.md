@@ -18,6 +18,7 @@ type: rigid
 | "The 3-retry limit is too strict, we should allow more retries" | 3 retries is not a limitation, it's a signal. If eval fails after 3 attempts, the feature is broken, not the eval. Fix the feature. |
 | "This is just a config change, it doesn't need full eval" | Config changes affect all downstream consumers. Eval catches config mismatches that code review never will. |
 | "We can defer eval to post-merge, do it in staging" | Once merged, the bug is in main. Eval is pre-merge only. Post-merge eval is incident response, not quality control. |
+| "Conductor / agent stopped after implement or review — eval was never run" | **Orchestration is incomplete.** `conductor-orchestrate` **must** enter **P4.4** (`eval-product-stack-up` + drivers) after reviews unless the human **logs an explicit task ABORT**. Partial runs are not shippable. |
 | "The performance test results look good from the code, we don't need eval" | Code metrics don't equal runtime behavior. Network latency, contention, GC pauses all appear at runtime, not in code. |
 | "Eval caught a flaky test, we can just remove the flaky test" | A flaky test is a symptom of real behavior. Removing the test hides the problem. Fix the underlying flakiness. |
 | "This change doesn't touch user flows, eval isn't critical" | Internal changes affect reliability. All changes affect user experience eventually (latency, availability, correctness). Eval all. |

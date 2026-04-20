@@ -44,30 +44,24 @@ You are the mobile app team (Android/iOS). Given a locked PRD, reason about user
 
 ## Design Input Processing (intake lock → Figma / Screenshots)
 
-**Before running the Screens & Navigation analysis**, read the **Design / UI** block from **locked `prd-locked.md`** (and **`shared-dev-spec.md` → Design source (from intake)** when council has run). That block is the **only** reliable channel for “new design files exist” when humans are no longer in the loop — subagents do not share your chat history.
+**Before running the Screens & Navigation analysis**, read the **Design / UI** block from **locked `prd-locked.md`** (and **`shared-dev-spec.md` → Design source (from intake)** when council has run). That block must include **`design_intake_anchor`** when Q9 applied — proof the **single design source of truth** was asked and answered. That block is the **only** reliable channel for “new design files exist” when humans are no longer in the loop — subagents do not share your chat history.
 
-- If **`design_new_work: yes`**: design files or exports listed under `design_assets` are **mandatory inputs** for this skill’s output (read paths / images). If the lock says yes but lists no readable paths, **STOP** and send the task back to intake to add paths or exports.
+- If **`design_new_work: yes`**: implementable inputs are **mandatory** — paths under `~/forge/brain/prds/<task-id>/design/` or repo exports, **or** **`figma_file_key` + `figma_root_node_ids`** for MCP/REST fetch (see Design Input Processing). If the lock says yes but only wiki/Figma URLs without keys, nodes, or files, **STOP** and send the task back to intake.
 - If **`design_new_work: no`** or **`design_assets: none`**: proceed from PRD + existing patterns; still document that decision in `app.md`.
 - **`design_ui_scope: not applicable`**: skip file-based design reads.
 
-Raw Figma URLs without exported frames remain a **human export** step — intake should have pushed that before council. Do not invent screens from a bare URL.
+Bare Figma/wiki URLs without **file key + node ids** or **on-disk exports** are not a transport layer — intake must materialize design per **`intake-interrogate` Q9** before council. Do not invent screens from a bare URL.
 
-### If a Figma URL is provided
+### Priority order (best → fallback)
 
-Figma share links are not directly readable. Request the user to export frames:
+1. **Readable files on disk** — `~/forge/brain/prds/<task-id>/design/` or repo paths from `prd-locked.md` / `shared-dev-spec.md`. Read with the Read tool.
+2. **Figma MCP (e.g. Cursor)** — When `figma_file_key` + `figma_root_node_ids` are locked, use **Figma MCP** to fetch nodes, variables, and dev-mode constraints before asking for PNGs. Write `~/forge/brain/prds/<task-id>/design/MCP_INGEST.md` (timestamp, nodes, summary) for downstream agents.
+3. **Figma REST** — If MCP unavailable and user provides token + file key, use `GET https://api.figma.com/v1/files/{file_key}`; persist structured notes under `design/`.
+4. **Human export** — Request PNG exports into `~/forge/brain/prds/<task-id>/design/` only when 2–3 are not available.
 
-```
-Please export the relevant screens as PNG files (File → Export → select frames → PNG)
-and provide the file paths. Alternatively, share the Figma file key and personal access
-token so I can guide API extraction.
-```
+### If only a share URL or wiki link exists
 
-If they provide the Figma REST API response JSON:
-```
-GET https://api.figma.com/v1/files/{file_key}
-Authorization: Bearer {personal_access_token}
-```
-Parse the `document` → `pages` → `frames` hierarchy to extract screen names, component structure, and prototype connections between screens.
+**STOP** — require implementable design (brain paths, figma key+nodes, or `design_waiver: prd_only`). Do not proceed with screen inventory from prose alone when `design_new_work: yes`.
 
 ### If screenshots or exported PNGs are provided
 

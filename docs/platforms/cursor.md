@@ -26,7 +26,7 @@ Open Cursor in the Forge directory. The `.cursorrules` file provides project-lev
 
 | Feature | Status |
 |---|---|
-| Skills (58) | Full support |
+| Skills (68) | Full support |
 | Agents (4) | Full support |
 | Hooks | SessionStart via `hooks-cursor.json` |
 | Commands (15) | All slash commands available |

@@ -37,6 +37,7 @@ If you notice any of these, STOP and do not proceed:
 - **Spec is frozen before all surface reasoning files are written to brain** — Provenance is lost. STOP. Write all surface outputs to brain before calling spec-freeze.
 - **Council is invoked before PRD is locked** — Unlocked PRD means the scope can change mid-council. STOP. Confirm PRD lock (brain decision ID) before invoking any surface reasoning.
 - **Web or app is in scope but intake design fields never reach `shared-dev-spec.md`** — Subagents and parallel surface skills only see what is written down. If `design_new_work` / `design_assets` from `prd-locked.md` are not copied into the spec, autonomous reasoning invents UI from prose alone. STOP. Paste the intake **Design / UI** block verbatim under `## Design source (from intake)` before surface work is treated as complete.
+- **`design_new_work: yes` but `shared-dev-spec.md` lacks implementable design** — Missing **`design_brain_paths`** and missing **`figma_file_key` + `figma_root_node_ids`**, with no **`design_waiver: prd_only`**, means council cannot lock pixels. STOP. Re-open intake or add materialized `design/` artifacts before treating negotiation as complete.
 - **Only 1-2 surfaces are "affected" so the rest are skipped** — Surfaces that appear unaffected often discover hidden dependencies. STOP. All surfaces must reason, even if briefly.
 
 Master orchestration skill that brings together all 4 surface reasoning skills and all 5 contract skills to negotiate conflicts and lock the shared-dev-spec.
@@ -219,7 +220,7 @@ For each resolved conflict, update the conflict log:
 
 ### Step 5.1: Consolidate All Agreements
 
-Create the master `/home/lordvoldemort/Videos/forge/brain/prds/[task-id]/shared-dev-spec.md`:
+Create the master `~/forge/brain/prds/<task-id>/shared-dev-spec.md`:
 
 ```markdown
 # Shared Development Spec
@@ -240,11 +241,16 @@ Create the master `/home/lordvoldemort/Videos/forge/brain/prds/[task-id]/shared-
 
 **HARD-GATE:** Copy verbatim from `prd-locked.md` the subsection **Design / UI (Q9)** (or `design_ui_scope: not applicable` when backend-only).
 
+- `design_intake_anchor:` (verbatim from `prd-locked.md` — user’s answer to single design source of truth)
 - `design_new_work:` (yes | no / engineering-only)
-- `design_assets:` (paths, Figma note, or `none`)
-- `design_waiver:` (only if present)
+- `design_assets:` (human pointers: links, Confluence — optional for people)
+- **`design_brain_paths`:** (paths under `~/forge/brain/prds/<task-id>/design/` — **required when `design_new_work: yes`** unless figma keys below are present)
+- **`figma_file_key` + `figma_root_node_ids`:** (when Figma is authoritative — enables MCP/REST)
+- `design_waiver: prd_only` + owner + risk (only if present)
 
-Surface reasoning (web, app) and tech plans **must** treat this block as authoritative for “is there new visual work?” and “where are the pixels?” — not inferred from hallway chat.
+**Council must add one line of implementable contract for net-new UI:** e.g. “Implementation spacing/typography/component states for [feature] must match Figma nodes `<ids>` or files under `design/` listed above.”
+
+Surface reasoning (web, app) and tech plans **must** treat this block as authoritative for “is there new visual work?” and “where are the pixels?” — not inferred from hallway chat. **Wiki-only URLs without brain paths or figma key+nodes are not sufficient** when `design_new_work: yes` — return to intake before treating council output as complete.
 
 ---
 

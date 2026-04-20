@@ -23,6 +23,15 @@ Before any vector or FTS index ships, prefer **YAML frontmatter** on new decisio
 
 ```
 ~/forge/brain/
+├── prds/                                  # Per-task PRD delivery (conductor path; parallel to product slug dirs)
+│   └── <task-id>/
+│       ├── prd-locked.md
+│       ├── shared-dev-spec.md
+│       ├── design/                        # REQUIRED for net-new UI: exports, MCP_INGEST.md, README (see intake Q9 + conductor P4.0b)
+│       ├── qa/                            # Optional: PRD_ANALYSIS.md, manual-test-cases.csv, TEST_SUITE_REPORT.md (see qa-prd-analysis, qa-manual-test-cases-from-prd)
+│       ├── tech-plans/
+│       └── eval/
+│
 ├── products/                              # All product, PRD, and delivery context
 │   └── {product-slug}/
 │       ├── prd/
@@ -107,7 +116,10 @@ Before any vector or FTS index ships, prefer **YAML frontmatter** on new decisio
 
 ### Directory Annotations
 
+**prds/** — Task-scoped conductor path (`<task-id>/`) aligned with `intake-interrogate`, `conductor-orchestrate`, and `~/forge/brain/prds/<task-id>/prd-locked.md`. Holds **`design/`** for net-new UI (exports, `MCP_INGEST.md`, `README.md`). Distinct from **`products/{slug}/prd/{prd-id}/`** layout; teams may use one or both — do not assume artifacts exist in both without checking.
+
 **products/** — Contains all PRD-specific context and delivery artifacts
+- Optional **`forge_qa_csv_before_eval: true`** in `product.md` (see `templates/forge-product.md`): when set, **`conductor-orchestrate`** requires approved **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** before **`[P4.0-EVAL-YAML]`** so TDD and eval trace to the same acceptance inventory.
 - Each product gets its own slug (e.g., `auth-service`, `web-ui`)
 - Each PRD gets a unique ID (e.g., `PRD-20260410-001`)
 - Council, contracts, evals, and learnings are nested under PRD ID

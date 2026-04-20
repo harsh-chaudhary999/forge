@@ -7,6 +7,8 @@ requires: [brain-read]
 
 # Eval Scenario Format
 
+**Related (manual QA backlog):** For **atomic manual test cases** in CSV (PRD → spreadsheet / TMS import), use **`qa-manual-test-cases-from-prd`** after **`qa-prd-analysis`**. This skill defines **YAML for automated eval drivers** only.
+
 ## Anti-Pattern Preamble: Why Scenario Authors Write Broken Scenarios
 
 ### Anti-Pattern 1: "Scenarios are flaky, let's skip eval and ship"

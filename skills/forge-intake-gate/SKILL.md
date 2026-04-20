@@ -26,7 +26,7 @@ type: rigid
 
 ```
 ALL MANDATORY INTAKE QUESTIONS MUST BE ANSWERED AND SCOPE LOCKED BEFORE THE PRD ADVANCES TO COUNCIL.
-Q1–Q8 ALWAYS; Q9 (DESIGN / UI CHANGE CLASS) IS MANDATORY WHEN WEB OR APP WORK IS IN SCOPE (SEE intake-interrogate Q9).
+Q1–Q8 ALWAYS; Q9 (DESIGN / UI CHANGE CLASS + IMPLEMENTABLE DESIGN WHEN NET-NEW UI) IS MANDATORY WHEN WEB OR APP WORK IS IN SCOPE (SEE intake-interrogate Q9).
 PARTIAL INTAKE IS NO INTAKE.
 ```
 
@@ -36,6 +36,8 @@ If you notice any of these, STOP and do not proceed:
 
 - **PRD is being handed to council before intake is complete** — Council requires a locked PRD. Intake produces the lock. Council before intake means negotiating on unvalidated assumptions. STOP. Complete intake and brain-write before council.
 - **Any mandatory intake question has a "TBD" or blank answer** — An unanswered question is not a skipped question — it is an unknown risk that will surface at the worst moment. STOP. All of Q1–Q8 must have concrete answers; **when web or app is in scope, Q9 must also be locked** (see `intake-interrogate` — not optional for UI-scoped PRDs).
+- **`design_new_work: yes` without implementable design** — Confluence/wiki-only links or bare Figma URLs **without** `figma_file_key` + `figma_root_node_ids` **and without** files under `~/forge/brain/prds/<task-id>/design/` (or other readable paths) **and without** `design_waiver: prd_only` are **not** a locked PRD. STOP. Re-run intake until Q9 satisfies **`intake-interrogate`** implementability rules.
+- **`design_intake_anchor` missing when Q9 applies** — For any web/app or user-visible UI scope, `prd-locked.md` **must** include **`design_intake_anchor`** (the user’s explicit answer to the single design source of truth). If absent, STOP. Re-run **`intake-interrogate` Q9**; do not treat intake as complete.
 - **`prd-locked.md` is missing Q4 registry fields** — `intake-interrogate` requires **`repo_registry_confidence`** and **`repo_naming_mismatch_notes`** (and **`product_md_update_required`** when needed) alongside **Repos Affected**. STOP. Re-run Q4; do not accept letter-only MCQ without those locks.
 - **The intake document was not written to brain** — Verbal intake is not intake. If it's not committed to `~/forge/brain/prds/`, it didn't happen and cannot be referenced downstream. STOP. Write and commit before locking.
 - **"This is a continuation of a previous PRD, we can skip intake"** — Continuation PRDs introduce new behavior, change existing contracts, or extend scope. Each one gets independent intake. STOP. Run intake for the new PRD.
@@ -77,7 +79,7 @@ The skill will ask:
 
 ### Validate Completeness
 - **Check:**
-  - All mandatory questions answered (Q1–Q8; Q9 when web/app in scope — not skipped, not "TBD")
+  - All mandatory questions answered (Q1–Q8; Q9 when web/app in scope — not skipped, not "TBD"; if `design_new_work: yes`, implementable design or explicit waiver per `intake-interrogate`)
   - Answers are not contradictory
   - No answer defers decision to later ("we'll decide during impl")
   - Surfaces and contracts are exhaustive (nothing forgotten)

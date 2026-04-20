@@ -186,6 +186,7 @@ The skill will:
 Before locking spec, verify:
 
 - [ ] Locked PRD provided (from intake-gate)
+- [ ] If web/app or user-visible UI: **`design_intake_anchor`** present in `prd-locked.md` per **`intake-interrogate` Q9** (proves design source-of-truth was asked)
 - [ ] Codebase scan checked — fresh (<7 days), stale (warned), or absent (warned with greenfield exception)
 - [ ] Council materials prepared (agenda, 1-pager, constraints)
 - [ ] `/council-multi-repo-negotiate` skill invoked

@@ -18,7 +18,7 @@ Same plugin system as Claude Code. Restart Cursor to activate.
 
 ### Google Antigravity (Auto)
 Skills are auto-discovered from `.agent/skills/` directory.
-- 58 skills available via native skill loading
+- 68 skills available via native skill loading
 - `AGENTS.md` and `GEMINI.md` provide project context
 
 ### Gemini CLI (Auto)

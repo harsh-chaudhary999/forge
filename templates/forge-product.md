@@ -9,6 +9,10 @@ name: my-product
 description: One sentence describing what this product does.
 version: 1.0.0
 
+# When true, conductor State 4b requires approved ~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv
+# (qa-prd-analysis + qa-manual-test-cases-from-prd) and [P4.0-QA-CSV] BEFORE [P4.0-EVAL-YAML] and TDD RED.
+forge_qa_csv_before_eval: false
+
 ## Repos
 
 # List every repo in this product. Order determines default merge order.

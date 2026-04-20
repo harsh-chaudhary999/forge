@@ -1,6 +1,6 @@
 ---
 name: intake-interrogate
-description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Asks 8 core questions one at a time; Q4 forces product.md↔PRD audience cross-check (no false-confidence repo picks); Q9 (design / UI change class) is mandatory when web or app work is in scope."
+description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Asks 8 core questions one at a time; Q4 forces product.md↔PRD audience cross-check (no false-confidence repo picks); Q9 (design / UI change class + implementable design assets) is mandatory when web or app work is in scope."
 type: rigid
 requires: [brain-write]
 ---
@@ -26,6 +26,7 @@ requires: [brain-write]
 ```
 Q1–Q8 MUST ALWAYS BE ANSWERED WITH CONCRETE, LOCKED ANSWERS BEFORE THE PRD ADVANCES TO COUNCIL.
 WHEN WEB OR MOBILE APP WORK IS IN SCOPE (SEE Q9), Q9 IS ALSO MANDATORY — SAME BAR AS Q1–Q8 (NO TBD, NO “SKIP”).
+WHEN Q9 APPLIES, THE AGENT MUST ASK THE SINGLE DESIGN SOURCE OF TRUTH QUESTION AND RECORD design_intake_anchor — NEVER SKIP OR INFER.
 A TBD ANSWER IS NO ANSWER. PARTIAL INTAKE IS NO INTAKE.
 ```
 
@@ -44,6 +45,8 @@ If you notice any of these, STOP and do not proceed:
 - **Rollback plan is "just redeploy the old version"** — Not a real rollback plan for schema changes, cache migrations, or event stream additions. STOP. Get a concrete rollback procedure.
 - **User skips a question saying "that's not relevant"** — Every question was added because of a real project failure. STOP. Ask the question anyway; the user decides what's in scope, not which questions get asked.
 - **PRD touches web or app but Q9 (design / UI change class) was not asked, was skipped, or is TBD** — Surfaces without an explicit design decision ship on hidden assumptions. STOP. Ask Q9 and lock an answer (including **no new design work** or **engineering-only UI**) before PRD lock.
+- **`design_new_work: yes` but design is not machine-implementable** — A wiki/Confluence link, bare Figma share URL, or “we’ll export later” is not a durable transport layer for council or subagents. STOP. Require **implementable design** per Q9 rules (brain `design/` paths, or `figma_file_key` + `figma_root_node_ids`, or an explicit **`design_waiver`** with owner + risk). Do not lock until one of those is true.
+- **User-visible or design-related work without asking “design source of truth” out loud** — If Q9 applies (see **When to ask** below) or the PRD reads like UI/design work, you **must** ask the explicit question: **“What is the single design source of truth for implementers?”** and capture the answer in `prd-locked.md`. **Never infer** from links in chat, **never skip** because “Figma was mentioned earlier,” **never assume** engineering-only without the user saying so. Silent skip = blocked intake.
 - **Q4 repo choice without `repo_registry_confidence` + naming check** — You invented certainty. STOP. Reread `product.md` project **`role:`** names and **`repo:`** path segments against the PRD’s **stated audience and surface** (who/what the change is for). If they **diverge**, you must **not** lock “minimal MCQ” alone — record **`repo_naming_mismatch_notes`** and **`product_md_update_required`** or get human sign-off.
 - **PRD is locked without brain-write recording the decision** — The lock exists only in chat context and will be lost. STOP. Write to brain before calling PRD locked.
 
@@ -118,26 +121,52 @@ If you notice any of these, STOP and do not proceed:
 
 **Q9: Design & UI change class (mandatory when web or app is in scope)**
 
-**When to ask (HARD-GATE):** If **Q4** lists any repo or surface that is clearly **web** or **mobile app** (e.g. `web-*`, `app-*`, `*-dashboard`, `*-mobile`), or the PRD describes **user-visible UI** changes, you **MUST** ask Q9 before locking. If the PRD is **backend/infra only** (no web or app in Q4 and no UI in the PRD), skip Q9 and note `design_ui_scope: not applicable` in `prd-locked.md`.
+**When to ask (HARD-GATE):** Ask Q9 **before locking** if **any** of the following is true:
 
-**Question (one intake turn):** Deliver Q9 as **one message** with the three bullets below (bundled prompt is the exception to “one bullet = one message” — still **wait** for a complete answer before locking). If any bullet is TBD, follow up until concrete.
+1. **Q4** lists any repo or surface that is clearly **web** or **mobile app** (e.g. `web-*`, `app-*`, `*-dashboard`, `*-mobile`), **or**
+2. The PRD text (title, body, acceptance criteria) describes **user-visible** changes: screens, pages, layouts, navigation, widgets, dashboards, modals, **spacing/typography/color**, icons, illustrations, animations, **“UI”**, **“UX”**, mockups, **Figma**, Zeplin, screenshots, “pixel-perfect”, “match design”, **visual** parity, onboarding flow, empty states, **or**
+3. The user or PRD says the work is **design-related** or **front-end visible** even if Q4 looked backend-heavy.
 
-"This PRD includes web or app work. I need an explicit lock on design:
+**Only skip Q9** when the PRD is **backend/infra only** (no web or app in Q4 **and** no UI/design signals in the PRD text). Then note `design_ui_scope: not applicable` and **`design_intake_anchor: not applicable (backend-only / no user-visible UI)`** in `prd-locked.md`.
+
+**NEVER SKIP — explicit question (audible in transcript):** In the Q9 turn you **must** include this sentence verbatim (so implementers and logs prove it was asked):
+
+> **“What is the single design source of truth for implementers — exact file paths under the Forge brain, or Figma file key + root node IDs, or an explicit waiver to build only from PRD text?”**
+
+Do not substitute a vague “do you have a Figma link?” alone; the user must choose **paths / keys / waiver**.
+
+**Question (one intake turn):** Deliver Q9 as **one message** with the bullets below (bundled prompt is the exception to “one bullet = one message” — still **wait** for a complete answer before locking). If any bullet is TBD, follow up until concrete.
+
+"This PRD includes web or app work (or user-visible UI). I need an explicit lock on design:
 
 1. **Is there net-new product or visual design work** for this slice (new screens, flows, or brand/visual changes), or is this **engineering-only / reuse** of existing UI patterns and copy?
 
-2. **Design source of truth:** Do you have assets we should treat as authoritative? (Figma link, exported PNGs/screenshots, wireframes, or **none — build strictly from PRD text**)
+2. **Design source of truth (mandatory):** What is the **single** source of truth for implementers? (Brain `design/` paths, Figma key + node IDs for MCP, exports in-repo, **or** explicit PRD-only waiver with owner + risk — not a wiki landing page alone.)
 
-3. If **no new design** but UI still changes: confirm **who owns layout/interaction decisions** during implementation (e.g. team lead, existing design system only)."
+3. If **no new design** but UI still changes: confirm **who owns layout/interaction decisions** during implementation (e.g. team lead, existing design system only).
+
+4. **If Figma is authoritative:** Does your environment have **Figma MCP** (e.g. Cursor)? If yes, we will pull nodes by **file key + node id**; if no, we need **checked-in exports** or REST access — not a bare browser URL alone."
 
 **Lock in `prd-locked.md` (concrete, no TBD when web/app in scope):**
 
+- **`design_intake_anchor`:** One sentence — the user’s **exact** answer to **“single design source of truth”** (which paths, which Figma key+nodes, or PRD-only waiver with owner). **Required whenever Q9 is asked.** Proves the question was not skipped.
 - `design_new_work:` **yes** | **no** (engineering-only / reuse existing patterns)
-- `design_assets:` Figma URL and/or repo paths to PNGs/screenshots/wireframes — or **`none`** if there are no files (PRD-only UI)
-- If Figma URL only: instruct user to export relevant frames as PNG before Council when agents must *see* pixels.
-- Optional: `design_waiver:` only if stakeholder explicitly waives design review — **owner + one-line risk note**
+- `design_assets:` Human-readable pointers (Figma page links, Confluence, Slack) — **optional** for humans; these **do not** satisfy implementability alone.
+- **Implementable design (HARD-GATE when `design_new_work: yes`):** You **must** lock **at least one** of the following before advancing to council:
+  - **`design_brain_paths`:** Paths under `~/forge/brain/prds/<task-id>/design/` (e.g. exported PNG/SVG/PDF, `README.md` listing frames, MCP transcript saved as `.md`) — files agents can `Read` without chat context; **or**
+  - **`figma_file_key`** + **`figma_root_node_ids`** (comma-separated node ids) — so implementers can use **Figma MCP** or REST to fetch structure; **or**
+  - **`design_waiver: prd_only`** — stakeholder **owner name** + **one-line risk** explicitly accepting implementation from PRD prose only with no pixel parity gate.
+- When `design_new_work: no` or PRD-only UI: set **`design_assets: none`** and omit figma fields unless you still want a file key for optional reference.
 
-**You may not lock the PRD** while web/app are in scope and Q9 fields above are missing, **TBD**, or vague ("we'll see in implementation"). **No Figma is fine** — the required output is an **explicit** decision: new design vs not, and where truth lives (files vs PRD-only vs waived).
+**INSUFFICIENT to lock when `design_new_work: yes` (treat as TBD — keep asking):**
+
+- Only a **Confluence / wiki / Google Doc URL** with no files under `~/forge/brain/.../design/` and no `figma_file_key` + `figma_root_node_ids`.
+- Only a **bare Figma share URL** with no **file key + node id(s)** and no exports under brain or repo paths agents can read.
+- “Design is in Figma / we’ll export before build” with **no** committed path and **no** waiver.
+
+**If Figma URL exists but implementability uses MCP or REST:** Still record **`figma_file_key`** and **`figma_root_node_ids`** in `prd-locked.md` (parse from URL when possible). Tell the user to place exports under `~/forge/brain/prds/<task-id>/design/` **before council** if MCP will not be used in-session.
+
+**You may not lock the PRD** while web/app are in scope and Q9 fields above are missing, **TBD**, or vague ("we'll see in implementation"). **`design_new_work: yes` without implementable design + without `design_waiver: prd_only` is a blocked lock.** **No Figma is fine** when the explicit choice is **engineering-only / PRD-only / waived** with the fields above.
 
 ## Output
 
@@ -172,8 +201,12 @@ Write all answers to `~/forge/brain/prds/<task-id>/prd-locked.md`:
 **Success Metrics:** 2FA adoption > 50% within 2 weeks.
 
 **Design / UI (Q9 — include when web or app in scope):**
+- **design_intake_anchor:** User stated: build login from existing design system only; no new Figma.
 - **design_new_work:** no (reuse existing auth patterns)
 - **design_assets:** none (PRD describes screens; no Figma)
+- **design_brain_paths:** (omit — not net-new design)
+- **figma_file_key:** (omit)
+- **figma_root_node_ids:** (omit)
 - **design_waiver:** (omit unless used)
 
 ---
@@ -295,6 +328,8 @@ Before claiming intake complete:
 - [ ] Q1–Q8 answered (no TBD, no skipped, no "we'll figure it out")
 - [ ] **Q4 registry lock:** `repo_registry_confidence`, `repo_naming_mismatch_notes`, `product_md_update_required` present in `prd-locked.md` alongside **Repos Affected** (no letter-only MCQ without these)
 - [ ] **Q9 answered when web or app is in scope** — `design_new_work` + `design_assets` (or `design_ui_scope: not applicable` documented when Q9 skipped)
+- [ ] **If `design_new_work: yes`:** `design_brain_paths` **or** (`figma_file_key` + `figma_root_node_ids`) **or** `design_waiver: prd_only` with owner + risk — not URL-only
+- [ ] **If Q9 was in scope:** `design_intake_anchor` line present (verbatim answer to single design source of truth)
 - [ ] Each answer confirmed in the user's own words and written back for approval
 - [ ] Contradictions between answers detected and resolved before locking
 - [ ] prd-locked.md written to `~/forge/brain/prds/<task-id>/` and committed to brain

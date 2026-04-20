@@ -18,7 +18,9 @@ If there's even a 1% chance a Forge skill might apply, you absolutely must invok
 
 ## Information transport (parallel agents, minimal human back-and-forth)
 
-Council and subagents **do not** share your live chat. They only see **what is written** under `~/forge/brain/` (e.g. `prd-locked.md`, `shared-dev-spec.md`). The **first** human pass on a PRD should therefore pack **maximum durable signal**: repos, contracts, rollback — and for web/app, the intake **Design / UI** lock (**Q9**: `design_new_work`, **`design_assets` paths or exports**, not “we have Figma somewhere”). If new design files exist but no path is recorded, autonomous reasoning will **not** discover them; you will get invented UI or stalled gates. **Chat is not the transport layer; the brain files are.**
+Council and subagents **do not** share your live chat. They only see **what is written** under `~/forge/brain/` (e.g. `prd-locked.md`, `shared-dev-spec.md`). The **first** human pass on a PRD should therefore pack **maximum durable signal**: repos, contracts, rollback — and for web/app, the intake **Design / UI** lock (**Q9**: `design_new_work`, plus **implementable** inputs: **`design_brain_paths`** under `~/forge/brain/prds/<task-id>/design/` and/or **`figma_file_key` + `figma_root_node_ids`** for MCP/REST — not wiki-only or bare Figma URLs). Prefer **Figma MCP** (when available) to pull nodes and save `design/MCP_INGEST.md`. If new design exists but nothing is on disk in brain, autonomous reasoning will **not** discover it; you will get invented UI or stalled gates. **Chat is not the transport layer; the brain files are.**
+
+**Non-negotiable for agents:** (1) **Never skip** asking **“What is the single design source of truth?”** when the PRD is user-visible or design-related — see **`intake-interrogate` Q9**. (2) **Never open Phase 4.1 / dispatch feature implementation** until **`[P4.0-EVAL-YAML]`** is logged with **at least one** scenario file under `~/forge/brain/prds/<task-id>/eval/` and **`[P4.0-TDD-RED]`** per policy — see **`conductor-orchestrate` State 4b**. When **`forge_qa_csv_before_eval: true`** in **`product.md`**, also require **`[P4.0-QA-CSV]`** after approved **`qa/manual-test-cases.csv`** so **TDD** and **eval execution** trace to the same acceptance set — see **`qa-manual-test-cases-from-prd`**. Procedural text is not a CI bot: **you** must refuse to skip these steps.
 
 ## Anti-Pattern Enforcement (HARD-GATE)
 
@@ -253,6 +255,7 @@ WHEN THERE IS A 1% CHANCE A SKILL APPLIES, INVOKE IT BEFORE ANY RESPONSE. PROCES
 - **Brain:** `~/forge/brain/` (git repo, source of truth)
 - **Product config:** `~/forge/brain/products/<slug>/product.md` (repos, roles, infra)
 - **Codebase scan:** `~/forge/brain/products/<slug>/codebase/` (module map, patterns, API surface)
+- **Manual QA from PRD:** `~/forge/brain/prds/<task-id>/qa/` — `PRD_ANALYSIS.md`, `manual-test-cases.csv` (`qa-prd-analysis`, `qa-manual-test-cases-from-prd`)
 - **Skills:** `~/.claude/skills/<skill-name>/SKILL.md`
 - **Subagents:** `~/.claude/agents/<agent-name>.md`
 

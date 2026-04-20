@@ -19,6 +19,10 @@ requires: [intake-interrogate, product-context-load, brain-read, brain-write, fo
 | "The conductor can adapt the order for this case" | The state machine order exists because each phase produces inputs the next phase requires. Skipping phases means missing inputs. |
 | "We shipped dispatch / partial implement — good enough for now" | **Without P4.4 eval there is no proof the product works.** Stopping after P4.1 or P4.3 is an orchestration failure, not a shortcut. Same for skipping **RED** tests before feature code. |
 | "Tests can be implied from the tech plan; no separate test pass" | Plans are prose until **failing tests exist** (`forge-tdd`). If no subagent run produced RED then GREEN, TDD was not executed. |
+| "`design_new_work: yes` but we can start UI code from the Confluence link" | Chat and wiki URLs are **not** the brain transport layer. Without **`[DESIGN-INGEST]`** evidence on disk, implementers invent pixels. Same failure class as skipping intake Q9 implementability. |
+| "Eval YAML after the feature — faster to code first" | **State 4b is before State 5.** Without `~/forge/brain/prds/<task-id>/eval/*.yaml` and **`[P4.0-EVAL-YAML]`**, there is nothing for **`eval-coordinate-multi-surface`** to run in P4.4 and no proof the journey was agreed. Coding first is an orchestration failure. |
+| "`WAIVE_EVAL_YAML` so we can ship" | **Not allowed** for normal delivery. Only **`ABORT_TASK`** (human, logged) ends the run without eval artifacts — that is **not** a shipped feature. |
+| "`forge_qa_csv_before_eval: true` but we'll add the CSV after eval YAML" | Defeats the point: **RED** and **eval** must align to the **same** signed acceptance rows. CSV comes **first** when the flag is set. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -26,6 +30,7 @@ requires: [intake-interrogate, product-context-load, brain-read, brain-write, fo
 
 ```
 THE ORCHESTRATOR IS THE SINGLE SOURCE OF STATE. NO PHASE IS SKIPPED, NO TRANSITION IS UNAUTHORIZED, AND NO SUBAGENT ESCALATION IS IGNORED.
+NO P4.1 / IMPLEMENTATION DISPATCH WITHOUT [P4.0-EVAL-YAML] (scenario_files>=1) AND [P4.0-TDD-RED] PER POLICY — THERE IS NO STANDARD "WAIVE_EVAL_YAML" FOR SHIPPABLE WORK.
 ```
 
 ## Red Flags — STOP
@@ -41,13 +46,15 @@ If you notice any of these, STOP and do not proceed:
 - **Conductor retries self-heal more than 3 times on the same failure** — Exceeds the cap defined in self-heal-loop-cap. STOP. Escalate to human with full failure context.
 - **Orchestration stops after P4.1 dispatch or P4.3 QA without entering P4.4 eval** — Partial delivery leaves **no E2E proof** and violates `forge-eval-gate`. STOP unless the human explicitly **aborts the task** with a logged `ABORT` reason. "Ran out of time" is not a valid skip for eval on a claimed-complete feature.
 - **No logged `P4.0-TDD-RED` (or equivalent) before production commits** — `forge-tdd` was not applied: no failing tests were written and run first. STOP. Back up to test authoring before more feature code.
+- **P4.1 UI dispatch without `[DESIGN-INGEST]` when `design_new_work: yes`** — Net-new visual work requires materialized design in `~/forge/brain/prds/<task-id>/design/` **or** locked `figma_file_key` + `figma_root_node_ids` with MCP/API notes in brain — unless `design_waiver: prd_only` is explicit. STOP. Run **Phase 4.0b** first (see below).
+- **`[P4.1-DISPATCH]` or `[DISPATCH]` implementation lines without prior `[P4.0-EVAL-YAML]`** — At least **one** `*.yaml` (or agreed extension) must exist under `~/forge/brain/prds/<task-id>/eval/` and the log must show **`[P4.0-EVAL-YAML] scenario_files=<n>`** with **n≥1**. If the log jumps from tech plan to `IMPLEMENTATION_STARTED`, STOP — you are replaying the known failure mode; back up to **`eval-scenario-format`** + **`eval-translate-english`**.
 
 ## Purpose
 
 The Conductor is the master state machine that orchestrates a single task (PRD) through the entire Forge lifecycle:
 
 ```
-Intake → Load Product → Council → Tech Plans → **Eval YAML + RED tests** → Dispatch (GREEN) → Review → **Eval (E2E)** → PR Set
+Intake → Load Product → Council → Tech Plans → **QA CSV (when `forge_qa_csv_before_eval`)** → **Eval YAML + RED tests** → **Design ingest (when net-new UI)** → Dispatch (GREEN) → Review → **Eval (E2E)** → PR Set
 ```
 
 The Conductor:
@@ -81,8 +88,18 @@ The Conductor:
                     └──────────┬──────────┘
                                │
                     ┌──────────▼──────────┐
+                    │ P4.0a: QA CSV      │
+                    │ (if product flag)  │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
                     │  P4.0: EVAL YAML +  │
                     │  RED tests (TDD)    │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │ P4.0b: DESIGN INGEST │
+                    │ (if net-new UI)      │
                     └──────────┬──────────┘
                                │
                     ┌──────────┴──────────┐
@@ -253,16 +270,34 @@ Ensure **consensus** across all repos (no conflicting contracts).
 ### State 4b: Eval scenarios + RED tests (HARD-GATE before implementation)
 **ENTRY:** All tech plans written and `shared-dev-spec.md` locked.  
 **ACTION:**
-  1. **Eval scenarios (YAML):** Materialize executable scenarios under `~/forge/brain/prds/<task-id>/eval/` (or the task’s agreed folder) using **`eval-scenario-format`** + **`eval-translate-english`** from PRD + shared-dev-spec. Log `[P4.0-EVAL-YAML] scenario_files=<n>`.
-  2. **TDD — RED first:** For each repo, dispatch **`dev-implementer`** (or a test-focused subagent with the same rigor) with **`forge-tdd`** attached to the prompt. **First deliverable only:** automated tests that encode acceptance criteria from the tech plan — **must run and fail (RED)** before any production feature code ships for that repo. Log `[P4.0-TDD-RED] repo=<repo> test_files=<list> red_confirmed=yes`.
-  3. Conductor **does not** advance to State 5 until every in-scope repo has `red_confirmed=yes` (or explicit human `WAIVE_TDD` logged with reason — not default).
+  0. **Manual QA CSV (acceptance inventory — before eval YAML and before feature TDD):** When the product’s **`product.md`** sets **`forge_qa_csv_before_eval: true`**, or when the task charter explicitly requires a QA CSV deliverable, complete **`qa-prd-analysis`** + **`qa-manual-test-cases-from-prd`** through **Step 7 approval** so **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** exists with **≥1** approved row. Log **`[P4.0-QA-CSV] task_id=<id> rows=<n> approved=yes`**. If the flag is **false** or unset, this step is **recommended** for traceability — still log **`[P4.0-QA-CSV] skipped=not_required`** when intentionally omitted. The only escape when the flag is **true** is **`[ABORT_TASK]`** with human owner — not silent skip.
+  1. **Eval scenarios (YAML) — before any feature dispatch, after step 0 when applicable:** Materialize **at least one** executable scenario file under `~/forge/brain/prds/<task-id>/eval/` using **`eval-scenario-format`** + **`eval-translate-english`** from PRD + shared-dev-spec **and** (when `manual-test-cases.csv` exists) **trace rows by `Id` in scenario names or comments**. **Do not** log implementation dispatch until this directory exists on disk. Log **`[P4.0-EVAL-YAML] scenario_files=<n>`** with **`n≥1`**. If the team truly cannot author scenarios yet, the only allowed escape is **`[ABORT_TASK]`** with human owner — not silent skip.
+  2. **TDD — RED first:** For each repo, dispatch **`dev-implementer`** (or a test-focused subagent with the same rigor) with **`forge-tdd`** attached to the prompt. **First deliverable only:** automated tests that encode acceptance from the **tech plan** and, when present, **approved CSV rows** — **must run and fail (RED)** before any production feature code ships for that repo. Log `[P4.0-TDD-RED] repo=<repo> test_files=<list> red_confirmed=yes`.
+  3. Conductor **does not** leave State 4b until **all** of the following hold: (a) when **`forge_qa_csv_before_eval: true`**, **`[P4.0-QA-CSV]`** with `approved=yes`; (b) **`[P4.0-EVAL-YAML]`** with `scenario_files≥1`; (c) every in-scope repo has `red_confirmed=yes` (or explicit human **`WAIVE_TDD`** logged with reason — not default). When the flag is false, (a) may be `skipped=not_required` per step 0. Next: State **4b-design** when applicable, else State 5.
 
-**SUCCESS CONDITION:** Eval YAML exists for critical journeys; every repo has a logged RED test run.  
-**FAILURE CONDITION:** Skipped scenario authoring or skipped RED.  
+**SUCCESS CONDITION:** QA CSV gate satisfied per `product.md`; `eval/` exists with ≥1 scenario file; **`[P4.0-EVAL-YAML]`** logged; every repo has logged RED (or waived TDD).  
+**FAILURE CONDITION:** Missing QA CSV when required; missing `eval/`; missing `[P4.0-EVAL-YAML]`; skipped RED.  
 **ESCALATION:** Missing deploy/runbook in `product.md` → user must fix workspace (`/workspace` Step 3b) before `eval-product-stack-up` can succeed.
 
+### State 4b-design: Design ingestion (HARD-GATE before P4.1 when net-new UI)
+**APPLIES WHEN:** `prd-locked.md` / `shared-dev-spec.md` → **Design source (from intake)** has **`design_new_work: yes`** AND the product includes a **web** or **app** repo — **unless** `design_waiver: prd_only` (with owner + risk) is locked.
+
+**ENTRY:** State 4b complete (`[P4.0-TDD-RED]` per policy).
+
+**ACTION:**
+  1. Confirm **implementable design** per **`intake-interrogate` Q9**: files under `~/forge/brain/prds/<task-id>/design/` **or** locked **`figma_file_key`** + **`figma_root_node_ids`** with a written summary **`design/MCP_INGEST.md`** or **`design/README.md`** in that folder (what was pulled, when, which tool: Figma MCP vs REST vs exports).
+  2. If **Figma MCP** is available in the host: **fetch target nodes first**; do not default to “please export PNG” while MCP can supply structure.
+  3. If implementable inputs are still missing → **STOP**; return to intake or council to materialize design — **do not** enter State 5 / P4.1 for web/app UI work.
+
+**LOGGING:**
+```
+[DESIGN-INGEST] task_id=<id> timestamp=<ISO8601> evidence=brain/prds/<task-id>/design/... figma_mcp=<yes|no|n/a> status=PASS|BLOCKED
+```
+
+**SUCCESS CONDITION:** `[DESIGN-INGEST] … status=PASS` logged, or gate **not applicable** (backend-only / `design_new_work: no` / `design_waiver: prd_only`).
+
 ### State 5: Dispatch Subagents (Dev Implementers — GREEN + completion)
-**ENTRY:** State 4b complete (RED logged per repo).  
+**ENTRY:** **`[P4.0-EVAL-YAML]` logged with `scenario_files≥1`** **and** State 4b complete (RED logged per repo per policy, **and** **`[P4.0-QA-CSV]`** satisfied per `forge_qa_csv_before_eval` / step 0) **and** State **4b-design** satisfied or not applicable. **If `[P4.0-EVAL-YAML]` is missing, State 5 is forbidden.**  
 **ACTION:**
   1. Create a worktree per repo (if not already from 4b, reuse policy per `worktree-per-project-per-task`).
   2. Dispatch `dev-implementer` subagent for each repo IN PARALLEL (safe: no shared state between repos).
@@ -289,12 +324,12 @@ Ensure **consensus** across all repos (no conflicting contracts).
 ### State 6: Two-Stage Review
 **ENTRY:** All dev subagents complete.  
 **ACTION:** In sequence (NOT parallel, to avoid wasted review work):
-  1. **Stage 1: Spec Reviewer**
+  1. **Stage 1: Spec Reviewer + design parity (when applicable)**
      - Dispatches `spec-reviewer` subagent per repo.
      - Checks: Does code implement the tech plan? Are all success criteria met?
-     - If PASS, advance to Stage 2.
      - If FAIL, send back to dev-implementer with detailed feedback.
-  2. **Stage 2: Code-Quality Reviewer** (only if Stage 1 passes)
+     - If PASS and **`design_new_work: yes`** for a **web** or **app** repo (no `design_waiver: prd_only`), run **design parity** for that repo per **Phase 4.2** (`design-implementation-reviewer` / `figma-design-sync`, or `skipped=no_harness` + human sign-off).
+  2. **Stage 2: Code-Quality Reviewer** (only if Stage 1 passes for all repos)
      - Dispatches `code-quality-reviewer` subagent per repo.
      - Checks: Code patterns, naming, file size, test coverage, comments.
      - If PASS, advance to Eval.
@@ -372,10 +407,14 @@ The Conductor manages the complete delivery cycle: dispatching dev work, reviewi
 
 #### Phase 4.0: Eval YAML + RED tests (same as State 4b)
 **ENTRY:** Tech plans + `shared-dev-spec.md` locked.  
-**ACTION:** Same as **State 4b** above — scenarios on disk; **forge-tdd** RED logged per repo before Phase 4.1 feature work.
+**ACTION:** Same as **State 4b** above — **step 0 QA CSV when required**, then **`eval/` with ≥1 YAML**, **`[P4.0-EVAL-YAML]`** logged, then **forge-tdd** RED logged per repo **before** Phase 4.1 feature work. **Phase 4.1 is invalid without `[P4.0-EVAL-YAML]`** (and invalid without **`[P4.0-QA-CSV]`** when **`forge_qa_csv_before_eval: true`**).
+
+#### Phase 4.0b: Design ingestion (same as State 4b-design)
+**ENTRY:** Phase 4.0 complete.  
+**ACTION:** Same as **State 4b-design** above — materialize design to `~/forge/brain/prds/<task-id>/design/` or lock figma key+nodes with ingest notes; log `[DESIGN-INGEST]`. **Blocks Phase 4.1** when applicable and not satisfied.
 
 #### Phase 4.1: Dispatch (Create Worktrees, Dispatch Dev-Implementers — GREEN)
-**ENTRY:** Phase 4.0 complete (`[P4.0-TDD-RED]` logged per repo).  
+**ENTRY:** **`[P4.0-EVAL-YAML]` with `scenario_files≥1`** **and** **`[P4.0-QA-CSV]`** per step 0 policy **and** Phase 4.0 complete (`[P4.0-TDD-RED]` logged per repo per policy) **and** Phase **4.0b** satisfied or not applicable.  
 **ACTION:**
   1. Invoke `worktree-per-project-per-task` skill to create isolated worktrees per repo.
   2. For each repo IN PARALLEL:
@@ -401,10 +440,14 @@ The Conductor manages the complete delivery cycle: dispatching dev work, reviewi
   1. For each repo IN SEQUENCE:
      - Dispatch `spec-reviewer` subagent.
      - Spec reviewer checks: Does code implement the tech plan? All success criteria met?
-     - If PASS → advance to Phase 4.3.
-     - If FAIL → generate detailed feedback, send back to dev-implementer.
-  2. Dev-implementer fixes and re-commits. Conductor re-runs spec review.
-  3. Max 2 rounds per repo. If still failing, escalate.
+     - If **FAIL** → detailed feedback to dev-implementer; do not advance that repo toward Phase 4.3.
+     - If **PASS** → when **`design_new_work: yes`** and this repo is **web** or **app** (and no `design_waiver: prd_only`), immediately run **design parity** on that repo:
+       - Dispatch **`design-implementation-reviewer`** or **`figma-design-sync`** (Task tool / Cursor subagents **when the harness exposes them**) against locked Figma nodes or `~/forge/brain/prds/<task-id>/design/` baselines.
+       - If neither exists, log `[P4.2-DESIGN-PARITY] skipped=no_harness` and **block merge** until a human records visual sign-off in brain or conductor log (or waive in writing).
+       - Design parity **FAIL** → same handling as spec FAIL (feedback to dev-implementer).
+     - When spec and (if applicable) design parity both **PASS** for that repo, it may advance toward Phase 4.3 with the batch.
+  2. Dev-implementer fixes and re-commits. Conductor re-runs from spec review for failed repos.
+  3. Max 2 rounds per repo per stage. If still failing, escalate.
 
 **SUCCESS CONDITION:** All repos pass spec review.  
 **FAILURE CONDITION:** Spec reviewer FAIL after 2 fix attempts.  
@@ -416,6 +459,7 @@ The Conductor manages the complete delivery cycle: dispatching dev work, reviewi
 [P4.2-REVIEW] task_id=<id> repo=<repo> reviewer=spec-reviewer timestamp=<ISO8601> status=PASS|FAIL
 [P4.2-REVIEW] task_id=<id> repo=<repo> fix_attempt=<n> timestamp=<ISO8601> status=RE_REVIEW
 [P4.2-REVIEW] task_id=<id> all_repos=<count> passed=<count> status=<ALL_PASS|BLOCKED>
+[P4.2-DESIGN-PARITY] task_id=<id> repo=<repo> reviewer=design-implementation-reviewer|figma-design-sync|skipped result=<PASS|FAIL|SKIP>
 ```
 
 #### Phase 4.3: QA — Code Quality Reviewer (Patterns, Naming, Coverage)
@@ -890,9 +934,11 @@ conductor_state task_id=<id>
 - [ ] Logs human-readable, timestamped, machine-parseable.
 
 ### Phase 4 (Delivery & Verification)
-- [ ] **P4.0 Prerequisites:** Eval scenario YAML written; **`forge-tdd` RED** logged per repo (`[P4.0-TDD-RED]`); conductor log shows subagent runs for tests-before-feature.
-- [ ] **P4.1 Dispatch:** worktree-per-project-per-task invoked. Dev-implementers dispatched in parallel **after** RED (GREEN implementation).
-- [ ] **P4.2 Review:** spec-reviewer invoked per repo. Max 2 fix rounds per repo. Escalation on final FAIL.
+- [ ] **P4.0 Prerequisites:** When **`forge_qa_csv_before_eval: true`** in `product.md`, **`[P4.0-QA-CSV]`** with approved `manual-test-cases.csv` **before** `[P4.0-EVAL-YAML]`; else log `skipped=not_required` if intentional.
+- [ ] **P4.0 Prerequisites:** `~/forge/brain/prds/<task-id>/eval/` contains **≥1** scenario file; **`[P4.0-EVAL-YAML] scenario_files≥1`** logged; **`forge-tdd` RED** logged per repo (`[P4.0-TDD-RED]`); conductor log shows subagent runs for tests-before-feature. **Never** log `[P4.1-DISPATCH]` before `[P4.0-EVAL-YAML]`.
+- [ ] **P4.0b Design ingest:** When `design_new_work: yes` and web/app in scope, `[DESIGN-INGEST]` logged with brain `design/` or figma key+nodes evidence — before P4.1.
+- [ ] **P4.1 Dispatch:** worktree-per-project-per-task invoked. Dev-implementers dispatched in parallel **after** RED and design gate (GREEN implementation).
+- [ ] **P4.2 Review:** spec-reviewer invoked per repo; **design-implementation-reviewer** or **figma-design-sync** when harness exists and net-new UI. Max 2 fix rounds per repo. Escalation on final FAIL.
 - [ ] **P4.3 QA:** code-quality-reviewer invoked per repo. Max 2 fix rounds per repo. Escalation on final FAIL.
 - [ ] **P4.4 Eval:** **`eval-product-stack-up` explicitly invoked**; multi-surface eval drivers run (API, DB, Web, App, Cache, Search, Bus). Orchestration **invalid** if this step is skipped on a non-aborted task.
 - [ ] **P4.5 Self-Heal:** On eval failure: locate fault → triage → fix → verify. Max 3 attempts. Escalate after 3 failures.
@@ -937,7 +983,8 @@ Before claiming orchestration complete:
 
 - [ ] PRD locked in brain before council was dispatched
 - [ ] All 4 surfaces reasoned and all 5 contracts locked before build dispatch
-- [ ] **P4.0:** Eval YAML on disk; **`forge-tdd` RED** logged per repo before GREEN implementation
+- [ ] **P4.0:** `[P4.0-QA-CSV]` per product policy; `eval/*.yaml` (≥1) on disk; **`[P4.0-EVAL-YAML]`** logged; **`forge-tdd` RED** logged per repo before GREEN implementation
+- [ ] **P4.0b:** `[DESIGN-INGEST]` when net-new UI; waived or N/A documented otherwise
 - [ ] All subagent statuses resolved (no NEEDS_CONTEXT or BLOCKED outstanding) before eval
 - [ ] **P4.4 eval invoked** (not skipped after partial implement); eval returned GREEN before any PRs were raised
 - [ ] conductor.log committed with all phase transitions, subagent dispatches, and escalations

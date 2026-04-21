@@ -29,7 +29,7 @@ Open Cursor in the Forge directory. The `.cursorrules` file provides project-lev
 | Skills (68) | Full support |
 | Agents (4) | Full support |
 | Hooks | SessionStart via `hooks-cursor.json` |
-| Commands (15) | All slash commands available |
+| Commands (17) | All slash commands available |
 | Brain | Full read/write |
 | Worktrees | Full isolation |
 | `.cursorrules` | Project-level AI context |
@@ -46,6 +46,12 @@ Open Cursor in the Forge directory. The `.cursorrules` file provides project-lev
 - Hook config uses `hooks-cursor.json` (snake_case keys) instead of `hooks.json`
 - Session-start output uses `additional_context` (snake_case) instead of `hookSpecificOutput.additionalContext`
 - `.cursorrules` provides additional project context (Claude Code uses `CLAUDE.md`)
+
+## Plan mode vs Agent mode (Cursor UI)
+
+Cursor exposes **Plan** vs **Agent** in the UI. Map them to Forge’s portable **planning-style** vs **execution-style** phases — see **[`session-modes-forge.md`](session-modes-forge.md)** (same convention for every supported host).
+
+**Quick map:** **`/intake`**, **`/council`**, **`/plan` review** → Plan. **`/build`**, **`/eval`**, **`/heal`** → Agent. Hooks cannot toggle this for you.
 
 ## Limitations
 - Hook format differences require separate config file (`hooks-cursor.json`)

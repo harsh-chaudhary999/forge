@@ -7,3 +7,5 @@ Invoke the `forge-worktree-gate` skill first to ensure worktree isolation, then 
 This requires approved tech plans. If no plans are approved, direct the user to run `/plan` first.
 
 Each task gets a fresh git worktree per project. The dev-implementer subagent builds using strict TDD: write failing test (RED) → implement minimal code (GREEN) → refactor while tests pass.
+
+**Session style:** Prefer **execution-style** for `/build` (edits, tests, terminals). See **`docs/platforms/session-modes-forge.md`**.

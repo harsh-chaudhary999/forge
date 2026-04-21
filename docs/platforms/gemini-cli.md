@@ -35,6 +35,10 @@ Start Gemini CLI in the Forge directory. The extension loads `GEMINI.md` which p
 3. **GEMINI.md:** Contains `@./skills/using-forge/SKILL.md` which loads the bootstrap skill
 4. **Skill Access:** Skills can be invoked via Gemini's native tool calls
 
+## Forge phase session styles
+
+Gemini CLI has no Forge slash-command layer unless you add one; invoke skills by name. Use **planning-style** vs **execution-style** prompts per Forge phase — see **[`session-modes-forge.md`](session-modes-forge.md)**.
+
 ## Limitations
 
 - **No hooks:** Gemini CLI does not have a SessionStart hook system; context is loaded via extension config

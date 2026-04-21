@@ -29,10 +29,10 @@ Start a new Claude Code session. You should see Forge context injected (the `usi
 
 | Feature | Status |
 |---|---|
-| Skills (63) | Full support via Skill tool |
+| Skills (68) | Full support via Skill tool |
 | Agents (4) | Full support via Agent tool |
 | Hooks | SessionStart injects `using-forge` bootstrap |
-| Commands (15) | All slash commands available |
+| Commands (17) | All slash commands available |
 | Brain | Full read/write to `~/forge/brain/` |
 | Worktrees | Full git worktree isolation |
 
@@ -40,8 +40,12 @@ Start a new Claude Code session. You should see Forge context injected (the `usi
 
 1. **Session Start:** The `hooks/session-start` script runs on every session start, clear, or compact event
 2. **Context Injection:** The `using-forge` skill content is injected as `additionalContext` via `hookSpecificOutput`
-3. **Skill Loading:** All 63 skills in `skills/` are available via the `Skill` tool
+3. **Skill Loading:** All 68 skills in `skills/` are available via the `Skill` tool
 4. **Agent Dispatch:** 4 subagents are available via the `Agent` tool with isolation via worktrees
+
+## Forge phase session styles
+
+Claude Code does not use Cursor’s **Plan/Agent** labels. Use the same **Forge-native** split everywhere: **planning-style** (intake, council, plan review) vs **execution-style** (build, eval, heal). Achieve it with **prompts**, **permission scope**, and **human checkpoints** — see **[`session-modes-forge.md`](session-modes-forge.md)**.
 
 ## Limitations
 None — Claude Code is the primary platform. All features are fully supported.

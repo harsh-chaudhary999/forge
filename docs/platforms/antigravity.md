@@ -39,6 +39,10 @@ Open the Forge directory in Antigravity. Skills should be listed in the agent's 
 | GEMINI.md | Auto-loaded (takes precedence) |
 | MCP integration | Compatible with Forge's tool-based approach |
 
+## Forge phase session styles
+
+Antigravity’s UI controls how aggressively the agent edits and runs tools. Map Forge phases to **planning-style** vs **execution-style** as in **[`session-modes-forge.md`](session-modes-forge.md)** — the same document used for Cursor, Claude Code, and CLI hosts.
+
 ## How It Works
 
 ### Three-Level Skill Loading

@@ -36,6 +36,10 @@ Start a Copilot CLI session in the Forge directory. The `using-forge` bootstrap 
 2. **Context Injection:** Outputs `using-forge` content in the standard `additionalContext` JSON format
 3. **Tool Mapping:** Skills reference Claude Code tool names; see `references/copilot-tools.md` for Copilot equivalents
 
+## Forge phase session styles
+
+Copilot CLI is prompt- and permission-driven. Apply **planning-style** vs **execution-style** phases as in **[`session-modes-forge.md`](session-modes-forge.md)**.
+
 ## Tool Name Mapping
 
 Forge skills use Claude Code tool names. On Copilot CLI:

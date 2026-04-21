@@ -83,13 +83,13 @@ PRD → Intake → Council → Spec freeze → Tech plans
 ```
 
 † *Optional but recommended; **mandatory** when `forge_qa_csv_before_eval: true` in `product.md`.*  
-‡ *When web/app work has **net-new UI** per intake Q9.*
+‡ *When web/app work has **net-new UI**, intake must lock **design** in `prd-locked.md` (see **`intake-interrogate`**) — not a fixed “question count.”*
 
 ### Pipeline stages (conceptual)
 
 | Stage | What happens | Gate |
 |---|---|---|
-| **Intake** | **Q1–Q8** always; **Q9 (design / UI)** when web, app, or user-visible UI is in scope. Locks `prd-locked.md` in the brain — including **design source of truth** (`design_intake_anchor`) and implementable design fields when applicable. | HARD-GATE |
+| **Intake** | Mandatory **`prd-locked.md`** **sections** (not a fixed number of user questions): product, goal, success criteria, **repos + registry** (`repo_registry_confidence`, mismatch notes, `product_md_update_required`), contracts, timeline, rollback, metrics — plus **design / UI** (`design_intake_anchor`, implementable design or waiver) when web, app, or user-visible UI is in scope. **Confidence-first:** pre-fill from PRD + `product.md`, ask **low-confidence / high-stakes** doubts only; **variable** user turns — **stop** when every required section is concrete. Skill **`intake-interrogate`** uses **Q1–Q9** only as an **internal checklist** name for those sections. | HARD-GATE |
 | **Council** | Four surfaces (backend, web, app, infra) + five contracts (REST, events, cache, DB, search) negotiate → **`shared-dev-spec.md`**. | HARD-GATE |
 | **Spec freeze** | Spec is immutable until re-council. | HARD-GATE |
 | **Tech plans** | Per-repo plans: **exact files**, complete code snippets, exact commands (`tech-plan-write-per-project`). Informed by **codebase scan** when present. | Human approval typical |
@@ -125,7 +125,7 @@ PRD → Intake → Council → Spec freeze → Tech plans
 
 ## Design & UI
 
-- **Intake Q9** (mandatory for web/app / user-visible scope): **`design_intake_anchor`** records the explicit answer to **“single design source of truth”**; implementable paths or **`figma_file_key` + `figma_root_node_ids`**, or a documented waiver — not wiki-only links.
+- **Intake — design / UI** (mandatory for web/app / user-visible scope): the user must see the **verbatim** design source-of-truth question from **`intake-interrogate`** in chat (not only text in `prd-locked.md`); then **`design_intake_anchor`**, implementable paths or **`figma_file_key` + `figma_root_node_ids`**, or a documented waiver — not wiki-only links.
 - **Surface skills** (`reasoning-as-web-frontend`, `reasoning-as-app-frontend`): **Figma MCP first** when the host provides it; then REST; human export as fallback.
 - **Council / spec-freeze** copy design fields into **`shared-dev-spec.md`**; thin design blocks **block** freeze when net-new UI lacks implementable inputs.
 
@@ -187,7 +187,7 @@ forge_qa_csv_before_eval: false   # true = conductor requires [P4.0-QA-CSV] befo
 | OpenCode | Supported | `.opencode/plugins/forge.js` |
 | JetBrains AI | Manual | `templates/junie-guidelines.md` → `.junie/guidelines.md` |
 
-**Guides:** [`docs/platforms/`](docs/platforms/)
+**Guides:** [`docs/platforms/`](docs/platforms/) — **Planning vs execution sessions (all hosts):** [`docs/platforms/session-modes-forge.md`](docs/platforms/session-modes-forge.md)
 
 ---
 
@@ -225,8 +225,8 @@ Problem, goals, metrics, scope, acceptance criteria.
 
 ### 2. Intake (`/intake`)
 
-- **Q1–Q8** — scope, success, contracts, timeline, rollback, metrics, registry confidence, etc.
-- **Q9** when web/app / UI — **design source of truth**, implementable assets or waiver, **`design_intake_anchor`**.
+- **Intake** — all **required `prd-locked.md` sections** elicited **doubt-first**; **any number of user turns**; stop when concrete (scope, success, repos + registry, contracts, timeline, rollback, metrics, and **design** when UI applies).
+- **Design / UI** when web/app / user-visible — **design source of truth**, implementable assets or waiver, **`design_intake_anchor`**.
 
 Output: **`~/forge/brain/prds/<task-id>/prd-locked.md`**.
 
@@ -281,7 +281,7 @@ Retrospective scoring and brain learnings.
 | `/workspace` | Register product repos, roles, deploy/runbook fields |
 | `/scan` | Codebase → brain graph (`scan-codebase`) |
 | `/forge` | Full pipeline driver |
-| `/intake` | PRD lock (Q1–Q8 + Q9 when UI) |
+| `/intake` | PRD lock (`prd-locked.md` sections + design when UI; confidence-first) |
 | `/council` | Multi-surface negotiation |
 | `/plan` | Per-repo tech plans |
 | `/build` | TDD implementation in worktrees |

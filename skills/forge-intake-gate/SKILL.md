@@ -1,6 +1,6 @@
 ---
 name: forge-intake-gate
-description: "WHEN: A new PRD arrives for implementation. HARD-GATE: Every PRD goes through intake (Q1–Q8 always; Q9 design/UI lock mandatory when web or app is in scope). No skipping, no exceptions, no \"trivial\" PRDs."
+description: "WHEN: A new PRD arrives for implementation. HARD-GATE: Every PRD goes through intake-interrogate; mandatory **lock fields** in prd-locked.md must be satisfied (confidence-first questioning allowed). Q9 design/UI lock mandatory when web, app, or user-visible UI is in scope. No skipping intake, no exceptions, no \"trivial\" PRDs."
 type: rigid
 ---
 # Intake Gate (HARD-GATE)
@@ -25,9 +25,10 @@ type: rigid
 ## Iron Law
 
 ```
-ALL MANDATORY INTAKE QUESTIONS MUST BE ANSWERED AND SCOPE LOCKED BEFORE THE PRD ADVANCES TO COUNCIL.
-Q1–Q8 ALWAYS; Q9 (DESIGN / UI CHANGE CLASS + IMPLEMENTABLE DESIGN WHEN NET-NEW UI) IS MANDATORY WHEN WEB OR APP WORK IS IN SCOPE (SEE intake-interrogate Q9).
-PARTIAL INTAKE IS NO INTAKE.
+ALL MANDATORY prd-locked.md FIELDS (intake-interrogate TEMPLATE + Q4 REGISTRY + Q9 WHEN UI SCOPE APPLIES) MUST BE CONCRETE BEFORE COUNCIL.
+CONFIDENCE-FIRST QUESTIONING IS ALLOWED — RITUAL RE-ASKING OF EVERY NUMBERED QUESTION IS NOT REQUIRED WHEN PRD + product.md ALREADY SUPPLY HIGH-CONFIDENCE ANSWERS THE USER CONFIRMS.
+THE COUNT OF USER MESSAGES IS NOT FIXED: STOP INTAKE WHEN LOCK FIELDS ARE COMPLETE AND DOUBTS ARE CLEARED — DO NOT PAD QUESTIONS TO HIT A HISTORICAL QUOTA.
+PARTIAL INTAKE (ANY MANDATORY FIELD STILL TBD) IS NO INTAKE.
 ```
 
 ## Red Flags — STOP
@@ -35,9 +36,10 @@ PARTIAL INTAKE IS NO INTAKE.
 If you notice any of these, STOP and do not proceed:
 
 - **PRD is being handed to council before intake is complete** — Council requires a locked PRD. Intake produces the lock. Council before intake means negotiating on unvalidated assumptions. STOP. Complete intake and brain-write before council.
-- **Any mandatory intake question has a "TBD" or blank answer** — An unanswered question is not a skipped question — it is an unknown risk that will surface at the worst moment. STOP. All of Q1–Q8 must have concrete answers; **when web or app is in scope, Q9 must also be locked** (see `intake-interrogate` — not optional for UI-scoped PRDs).
+- **Any mandatory lock field in `prd-locked.md` is "TBD" or blank** — Unknown risk. STOP. Every required section from **`intake-interrogate`** must be concrete; **when web or app / user-visible UI is in scope, Q9 fields must also be locked** (see `intake-interrogate`). **Low-confidence** gaps must be elicited; **high-confidence** lines may be pre-filled + confirmed instead of ritual re-asks.
 - **`design_new_work: yes` without implementable design** — Confluence/wiki-only links or bare Figma URLs **without** `figma_file_key` + `figma_root_node_ids` **and without** files under `~/forge/brain/prds/<task-id>/design/` (or other readable paths) **and without** `design_waiver: prd_only` are **not** a locked PRD. STOP. Re-run intake until Q9 satisfies **`intake-interrogate`** implementability rules.
 - **`design_intake_anchor` missing when Q9 applies** — For any web/app or user-visible UI scope, `prd-locked.md` **must** include **`design_intake_anchor`** (the user’s explicit answer to the single design source of truth). If absent, STOP. Re-run **`intake-interrogate` Q9**; do not treat intake as complete.
+- **Verbatim design-source-of-truth blockquote never appeared in the intake thread** — If Q9 applies, the user must have seen **`intake-interrogate`’s exact blockquote question** in an assistant message during that intake (not only `design_intake_anchor` in the file). If logs/transcript show the anchor was written without that line ever shown, STOP — intake is invalid; re-run intake.
 - **`prd-locked.md` is missing Q4 registry fields** — `intake-interrogate` requires **`repo_registry_confidence`** and **`repo_naming_mismatch_notes`** (and **`product_md_update_required`** when needed) alongside **Repos Affected**. STOP. Re-run Q4; do not accept letter-only MCQ without those locks.
 - **The intake document was not written to brain** — Verbal intake is not intake. If it's not committed to `~/forge/brain/prds/`, it didn't happen and cannot be referenced downstream. STOP. Write and commit before locking.
 - **"This is a continuation of a previous PRD, we can skip intake"** — Continuation PRDs introduce new behavior, change existing contracts, or extend scope. Each one gets independent intake. STOP. Run intake for the new PRD.
@@ -56,21 +58,10 @@ If you notice any of these, STOP and do not proceed:
 - **Output:** PRD identified, ownership clear
 
 ### Invoke Intake-Interrogate Skill
-**ALWAYS invoke `/intake-interrogate` — do not paraphrase or summarize the intake questions yourself** (Q1–Q8 always; **Q9 mandatory when web or app is in scope**).
-
-The skill will ask:
-
-1. **What is the core user problem?** (not the solution)
-2. **What surfaces does this touch?** (web, app, backend, infra, admin)
-3. **What contracts must change?** (API versions, events, schema, cache keys)
-4. **What are the acceptance criteria?** (not "works", but "user can X in <time>")
-5. **What are the anti-goals?** (what must NOT happen)
-6. **What does success look like in 3 months?** (metrics, usage patterns)
-7. **What are the hard constraints?** (compliance, performance, cost, backwards-compat)
-8. **What assumptions are we making?** (about user behavior, scale, tech stack)
+**ALWAYS invoke `intake-interrogate` — do not invent a parallel questionnaire.** It uses **confidence-first** elicitation: pre-fill from PRD + `product.md`, ask **low-confidence / high-stakes** doubts, and still require every **mandatory lock field** (including Q4 registry lines and Q9 when UI applies). See the skill’s **Lock dimensions (Q1–Q9 reference)** — conversation order follows **doubt severity**, not fixed Q1→Q9 chat.
 
 ### Lock the PRD
-- **Input:** Answers to all mandatory questions (Q1–Q8; Q9 when web/app in scope)
+- **Input:** Completed `prd-locked.md` with all mandatory fields (Q1–Q8 dimensions + Q9 when in scope)
 - **Action:** Create PRD lock record in brain (decision ID: PRDLK-YYYY-MM-DD-HH)
   - Document each answer
   - Link to original requirement
@@ -79,7 +70,7 @@ The skill will ask:
 
 ### Validate Completeness
 - **Check:**
-  - All mandatory questions answered (Q1–Q8; Q9 when web/app in scope — not skipped, not "TBD"; if `design_new_work: yes`, implementable design or explicit waiver per `intake-interrogate`)
+  - All mandatory **lock fields** satisfied (Q1–Q8 dimensions + Q9 when web/app/UI in scope — not "TBD"; if `design_new_work: yes`, implementable design or explicit waiver per `intake-interrogate`; ritual verbal questions optional when confirm-only path was used)
   - Answers are not contradictory
   - No answer defers decision to later ("we'll decide during impl")
   - Surfaces and contracts are exhaustive (nothing forgotten)

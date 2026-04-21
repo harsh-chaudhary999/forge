@@ -16,6 +16,8 @@ python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain
 
 See **`docs/forge-task-verification.md`** in the Forge repo.
 
+**Session style:** Prefer **execution-style** for `/eval` (stack-up, drivers, logs). See **`docs/platforms/session-modes-forge.md`**.
+
 This brings up the entire product stack from worktrees, then runs multi-driver eval scenarios across all surfaces (web via CDP, API via HTTP, DB via MySQL, cache via Redis, search via ES, mobile via ADB as applicable).
 
 Nothing merges without eval green. If eval fails, use `/heal` to diagnose and fix.

@@ -7,3 +7,5 @@ Invoke the `tech-plan-write-per-project` skill to generate implementation plans.
 This requires a locked shared dev spec from council. If no spec exists, direct the user to run `/council` first.
 
 Each plan contains bite-sized tasks (2-5 minutes each) with exact file paths, complete code, and no placeholders. Plans are written per project in the product.
+
+**Session style:** Prefer **planning-style** while authoring or **reviewing** tech plans; switch to **execution-style** for `/build`. See **`docs/platforms/session-modes-forge.md`**.

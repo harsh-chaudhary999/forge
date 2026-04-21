@@ -1,8 +1,18 @@
 {
-  "display_name": "Forge",
-  "author": "Harsh Chaudhary",
-  "category": "productivity",
-  "icon": "assets/forge-icon.png",
-  "repository": "https://github.com/harsh-chaudhary999/forge",
-  "keywords": ["orchestration", "multi-repo", "product", "tdd", "eval", "brain", "council"]
+  "name": "forge",
+  "description": "Marketplace entry for the Forge plugin — multi-repo product orchestration, skills, and eval gates.",
+  "owner": {
+    "name": "Harsh Chaudhary"
+  },
+  "plugins": [
+    {
+      "name": "forge",
+      "description": "Multi-repo product orchestration. Takes a PRD and ships it end-to-end across any product stack.",
+      "version": "1.0.0",
+      "source": "./",
+      "author": {
+        "name": "Harsh Chaudhary"
+      }
+    }
+  ]
 }

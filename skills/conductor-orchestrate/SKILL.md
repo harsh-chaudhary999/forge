@@ -290,7 +290,7 @@ Ensure **consensus** across all repos (no conflicting contracts).
 **ENTRY:** State 4b complete (`[P4.0-TDD-RED]` per policy).
 
 **ACTION:**
-  1. Confirm **implementable design** per **`intake-interrogate` Q9**: files under `~/forge/brain/prds/<task-id>/design/` **or** locked **`figma_file_key`** + **`figma_root_node_ids`** with a written summary **`design/MCP_INGEST.md`** or **`design/README.md`** in that folder (what was pulled, when, which tool: Figma MCP vs REST vs exports).
+  1. Confirm **implementable design** per **`intake-interrogate` Q9**: files under `~/forge/brain/prds/<task-id>/design/` **or** locked **`lovable_github_repo`** (+ optional **`lovable_path_prefix`**) with a pinned ref and **`design/LOVABLE_SYNC.md`** or registry note (see **`docs/platforms/lovable.md`**) **or** locked **`figma_file_key`** + **`figma_root_node_ids`** with a written summary **`design/MCP_INGEST.md`** or **`design/README.md`** in that folder (what was pulled, when, which tool: Figma MCP vs REST vs exports).
   2. If **Figma MCP** is available in the host: **fetch target nodes first**; do not default to “please export PNG” while MCP can supply structure.
   3. If implementable inputs are still missing → **STOP**; return to intake or council to materialize design — **do not** enter State 5 / P4.1 for web/app UI work.
 

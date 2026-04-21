@@ -136,7 +136,7 @@ PRD → Intake → Council → Spec freeze → Tech plans
 ## Design & UI
 
 - **Intake — design / UI** (mandatory for web/app / user-visible scope): the user must see the **verbatim** design source-of-truth question from **`intake-interrogate`** in chat (not only text in `prd-locked.md`); then **`design_intake_anchor`**, implementable paths or **`figma_file_key` + `figma_root_node_ids`**, or a documented waiver — not wiki-only links.
-- **Surface skills** (`reasoning-as-web-frontend`, `reasoning-as-app-frontend`): **Figma MCP first** when the host provides it; then REST; human export as fallback.
+- **Surface skills** (`reasoning-as-web-frontend`, `reasoning-as-app-frontend`): **Lovable → GitHub** when `lovable_github_repo` is locked (**[`docs/platforms/lovable.md`](docs/platforms/lovable.md)**); **Figma MCP first** when the host provides it; then REST; human export as fallback.
 - **Council / spec-freeze** copy design fields into **`shared-dev-spec.md`**; thin design blocks **block** freeze when net-new UI lacks implementable inputs.
 
 ---
@@ -207,6 +207,7 @@ forge_qa_csv_before_eval: true   # set false only if you intentionally skip CSV 
 | GitHub Copilot CLI | Supported | Session hook + `COPILOT_CLI` |
 | OpenCode | Supported | `.opencode/plugins/forge.js` |
 | JetBrains AI | Manual | `templates/junie-guidelines.md` → `.junie/guidelines.md` |
+| Lovable (UI) | Design + export path | No plugin — lock **GitHub-synced repo** or brain exports per **[`docs/platforms/lovable.md`](docs/platforms/lovable.md)** |
 
 **Guides:** [`docs/platforms/`](docs/platforms/) — **Planning vs execution sessions (all hosts):** [`docs/platforms/session-modes-forge.md`](docs/platforms/session-modes-forge.md) — **Merged `skills/` installs (Cursor, Claude Code, OpenCode copy):** [`docs/platforms/plugin-skill-layout.md`](docs/platforms/plugin-skill-layout.md)
 

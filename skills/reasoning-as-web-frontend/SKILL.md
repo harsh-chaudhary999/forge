@@ -66,23 +66,25 @@ You represent:
 - **Accessibility** - WCAG compliance, keyboard navigation, screen readers
 - **Web platform constraints** - Browser compatibility, networking, device considerations
 
-## Design Input Processing (Figma / Screenshots / MCP)
+## Design Input Processing (Lovable / Figma / Screenshots / MCP)
 
 **Before running the Analysis Framework**, check if design assets were provided. Design assets are optional but change what you can produce — with them, you move from spec-derived reasoning to spec-validated reasoning.
 
 ### Priority order (best → fallback)
 
 1. **Readable files on disk** — Paths under `~/forge/brain/prds/<task-id>/design/` or repo-relative exports listed in `prd-locked.md` / `shared-dev-spec.md`. **Read them first** with the Read tool (images + `README.md` / ingest notes).
-2. **Figma MCP (when the host provides it — e.g. Cursor)** — If `prd-locked.md` contains **`figma_file_key`** + **`figma_root_node_ids`**, use the **Figma MCP** tools to fetch file metadata, nodes, variables, and dev-mode context **before** asking a human for PNGs. Persist a short summary under `~/forge/brain/prds/<task-id>/design/MCP_INGEST.md` (timestamp, nodes pulled, tool used) so council threads and subagents do not depend on chat.
-3. **Figma REST API** — If MCP is unavailable but the user provides a **personal access token** and **file key**, use `GET https://api.figma.com/v1/files/{file_key}` (and nodes endpoint as needed). Same persistence rule: capture enough structured detail in the brain so downstream phases are not chat-scoped.
-4. **Human export** — Only when MCP and API are unavailable or unauthorized: request PNG/SVG exports into `~/forge/brain/prds/<task-id>/design/` and re-lock paths in intake if necessary.
+2. **Lovable + GitHub (AI-built UI)** — When `prd-locked.md` locks **`lovable_github_repo`** (`owner/repo`) and optional **`lovable_path_prefix`** (e.g. subfolder inside a monorepo), treat that **synced** tree as the live UI source: inventory `src/` routes, layouts, and shadcn/Tailwind usage from **files**, not from a bare `lovable.dev` link. Persist **`~/forge/brain/prds/<task-id>/design/LOVABLE_SYNC.md`** when you ingest (repo, branch or SHA, who resolves Lovable ↔ product-repo conflicts). If only a Lovable **browser URL** is given with **no** GitHub repo + ref and **no** brain exports, **STOP** — same implementability bar as a bare Figma URL (see **`docs/platforms/lovable.md`**).
+3. **Figma MCP (when the host provides it — e.g. Cursor)** — If `prd-locked.md` contains **`figma_file_key`** + **`figma_root_node_ids`**, use the **Figma MCP** tools to fetch file metadata, nodes, variables, and dev-mode context **before** asking a human for PNGs. Persist a short summary under `~/forge/brain/prds/<task-id>/design/MCP_INGEST.md` (timestamp, nodes pulled, tool used) so council threads and subagents do not depend on chat.
+4. **Figma REST API** — If MCP is unavailable but the user provides a **personal access token** and **file key**, use `GET https://api.figma.com/v1/files/{file_key}` (and nodes endpoint as needed). Same persistence rule: capture enough structured detail in the brain so downstream phases are not chat-scoped.
+5. **Human export** — Only when MCP and API are unavailable or unauthorized: request PNG/SVG exports into `~/forge/brain/prds/<task-id>/design/` and re-lock paths in intake if necessary.
 
 ### If only a bare Figma or wiki URL exists
 
 Figma share links (`figma.com/file/...` or `figma.com/design/...`) are **not** directly readable as pixels in plain markdown. **Do not** invent layouts from the URL alone.
 
-- If **`figma_file_key` + `figma_root_node_ids`** are present → use **Priority order** steps 2 or 3 (MCP, then REST).
-- If not present → **STOP** and return to intake: require implementable assets per **`intake-interrogate` Q9** (brain `design/` paths, figma keys + nodes, or explicit `design_waiver: prd_only`).
+- If **`figma_file_key` + `figma_root_node_ids`** are present → use **Priority order** Figma steps (MCP, then REST).
+- If **`lovable_github_repo`** is present → read the GitHub-synced tree per step 2 above.
+- If none of the above and no sufficient disk exports → **STOP** and return to intake: require implementable assets per **`intake-interrogate` Q9** (brain `design/` paths, **Lovable GitHub repo + ref**, figma keys + nodes, or explicit `design_waiver: prd_only`).
 
 Wiki-only links (Confluence, Notion, etc.) **without** files in brain or repo and **without** figma key+nodes are **not** authoritative for autonomous UI — treat as a blocker until materialized.
 

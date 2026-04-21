@@ -170,7 +170,7 @@ The numbering below is a **checklist of fields** that must appear in `prd-locked
 
 1. **Is there net-new product or visual design work** for this slice (new screens, flows, or brand/visual changes), or is this **engineering-only / reuse** of existing UI patterns and copy?
 
-2. **Design source of truth (follow-up to the blockquote):** Brain `design/` paths, Figma key + node IDs for MCP, exports in-repo, **or** explicit PRD-only waiver with owner + risk — not a wiki landing page alone.
+2. **Design source of truth (follow-up to the blockquote):** Brain `design/` paths, **Lovable → GitHub** repo + branch/SHA (see **`lovable_github_repo`**), Figma key + node IDs for MCP, other exports in-repo, **or** explicit PRD-only waiver with owner + risk — not a wiki landing page alone.
 
 3. If **no new design** but UI still changes: confirm **who owns layout/interaction decisions** during implementation (e.g. team lead, existing design system only).
 
@@ -183,6 +183,7 @@ The numbering below is a **checklist of fields** that must appear in `prd-locked
 - `design_assets:` Human-readable pointers (Figma page links, Confluence, Slack) — **optional** for humans; these **do not** satisfy implementability alone.
 - **Implementable design (HARD-GATE when `design_new_work: yes`):** You **must** lock **at least one** of the following before advancing to council:
   - **`design_brain_paths`:** Paths under `~/forge/brain/prds/<task-id>/design/` (e.g. exported PNG/SVG/PDF, `README.md` listing frames, MCP transcript saved as `.md`) — files agents can `Read` without chat context; **or**
+  - **`lovable_github_repo`** (`owner/repo`) + optional **`lovable_path_prefix`** (subfolder in a monorepo) + **pinned branch/tag/commit** (in the PRD or `design/LOVABLE_SYNC.md`) — [Lovable](https://lovable.dev) UI synced to GitHub so agents read **source files**, not only a builder URL; see **`docs/platforms/lovable.md`**; **or**
   - **`figma_file_key`** + **`figma_root_node_ids`** (comma-separated node ids) — so implementers can use **Figma MCP** or REST to fetch structure; **or**
   - **`design_waiver: prd_only`** — stakeholder **owner name** + **one-line risk** explicitly accepting implementation from PRD prose only with no pixel parity gate.
 - When `design_new_work: no` or PRD-only UI: set **`design_assets: none`** and omit figma fields unless you still want a file key for optional reference.
@@ -191,6 +192,7 @@ The numbering below is a **checklist of fields** that must appear in `prd-locked
 
 - Only a **Confluence / wiki / Google Doc URL** with no files under `~/forge/brain/.../design/` and no `figma_file_key` + `figma_root_node_ids`.
 - Only a **bare Figma share URL** with no **file key + node id(s)** and no exports under brain or repo paths agents can read.
+- Only a **Lovable project URL** with **no** **`lovable_github_repo`** (or equivalent registry path) **and** no **`design_brain_paths`** agents can read.
 - “Design is in Figma / we’ll export before build” with **no** committed path and **no** waiver.
 
 **If Figma URL exists but implementability uses MCP or REST:** Still record **`figma_file_key`** and **`figma_root_node_ids`** in `prd-locked.md` (parse from URL when possible). Tell the user to place exports under `~/forge/brain/prds/<task-id>/design/` **before council** if MCP will not be used in-session.
@@ -357,7 +359,7 @@ Before claiming intake complete:
 - [ ] All **non–Q9 lock dimensions** (Q1–Q8 reference) and **Q9 when applicable** are present in `prd-locked.md` (no TBD, no "we'll figure it out") — **any number of user turns** is fine; **ritual question count** is irrelevant
 - [ ] **Q4 registry lock:** `repo_registry_confidence`, `repo_naming_mismatch_notes`, `product_md_update_required` present in `prd-locked.md` alongside **Repos Affected** (no letter-only MCQ without these)
 - [ ] **Q9 answered when web or app is in scope** — `design_new_work` + `design_assets` (or `design_ui_scope: not applicable` documented when Q9 skipped)
-- [ ] **If `design_new_work: yes`:** `design_brain_paths` **or** (`figma_file_key` + `figma_root_node_ids`) **or** `design_waiver: prd_only` with owner + risk — not URL-only
+- [ ] **If `design_new_work: yes`:** `design_brain_paths` **or** (`lovable_github_repo` + pinned ref) **or** (`figma_file_key` + `figma_root_node_ids`) **or** `design_waiver: prd_only` with owner + risk — not URL-only
 - [ ] **If Q9 was in scope:** `design_intake_anchor` line present **and** the **verbatim blockquote** design-source-of-truth question appears in **this** intake thread before lock
 - [ ] Each answer confirmed in the user's own words and written back for approval
 - [ ] Contradictions between answers detected and resolved before locking

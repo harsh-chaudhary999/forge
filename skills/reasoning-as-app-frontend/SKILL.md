@@ -42,11 +42,11 @@ You are the mobile app team (Android/iOS). Given a locked PRD, reason about user
 
 ---
 
-## Design Input Processing (intake lock → Figma / Screenshots)
+## Design Input Processing (intake lock → Lovable / Figma / Screenshots)
 
 **Before running the Screens & Navigation analysis**, read the **Design / UI** block from **locked `prd-locked.md`** (and **`shared-dev-spec.md` → Design source (from intake)** when council has run). That block must include **`design_intake_anchor`** when Q9 applied — proof the **single design source of truth** was asked and answered. That block is the **only** reliable channel for “new design files exist” when humans are no longer in the loop — subagents do not share your chat history.
 
-- If **`design_new_work: yes`**: implementable inputs are **mandatory** — paths under `~/forge/brain/prds/<task-id>/design/` or repo exports, **or** **`figma_file_key` + `figma_root_node_ids`** for MCP/REST fetch (see Design Input Processing). If the lock says yes but only wiki/Figma URLs without keys, nodes, or files, **STOP** and send the task back to intake.
+- If **`design_new_work: yes`**: implementable inputs are **mandatory** — paths under `~/forge/brain/prds/<task-id>/design/` or repo exports, **or** **`lovable_github_repo`** (+ optional **`lovable_path_prefix`**) with a pinned ref for **Lovable → GitHub** UI (see **`docs/platforms/lovable.md`**), **or** **`figma_file_key` + `figma_root_node_ids`** for MCP/REST fetch (see Design Input Processing). If the lock says yes but only wiki/Figma/Lovable **browser** URLs without keys, repo, nodes, or files, **STOP** and send the task back to intake.
 - If **`design_new_work: no`** or **`design_assets: none`**: proceed from PRD + existing patterns; still document that decision in `app.md`.
 - **`design_ui_scope: not applicable`**: skip file-based design reads.
 
@@ -55,13 +55,14 @@ Bare Figma/wiki URLs without **file key + node ids** or **on-disk exports** are 
 ### Priority order (best → fallback)
 
 1. **Readable files on disk** — `~/forge/brain/prds/<task-id>/design/` or repo paths from `prd-locked.md` / `shared-dev-spec.md`. Read with the Read tool.
-2. **Figma MCP (e.g. Cursor)** — When `figma_file_key` + `figma_root_node_ids` are locked, use **Figma MCP** to fetch nodes, variables, and dev-mode constraints before asking for PNGs. Write `~/forge/brain/prds/<task-id>/design/MCP_INGEST.md` (timestamp, nodes, summary) for downstream agents.
-3. **Figma REST** — If MCP unavailable and user provides token + file key, use `GET https://api.figma.com/v1/files/{file_key}`; persist structured notes under `design/`.
-4. **Human export** — Request PNG exports into `~/forge/brain/prds/<task-id>/design/` only when 2–3 are not available.
+2. **Lovable + GitHub** — When **`lovable_github_repo`** is locked, read the synced **React/TS** tree (and optional **`lovable_path_prefix`**) the same way as web **`reasoning-as-web-frontend`**: routes, layouts, shared components. Persist **`design/LOVABLE_SYNC.md`** on ingest when helpful. Web-first Lovable exports still inform **native shell** flows (navigation, forms) when the PRD ties them together.
+3. **Figma MCP (e.g. Cursor)** — When `figma_file_key` + `figma_root_node_ids` are locked, use **Figma MCP** to fetch nodes, variables, and dev-mode constraints before asking for PNGs. Write `~/forge/brain/prds/<task-id>/design/MCP_INGEST.md` (timestamp, nodes, summary) for downstream agents.
+4. **Figma REST** — If MCP unavailable and user provides token + file key, use `GET https://api.figma.com/v1/files/{file_key}`; persist structured notes under `design/`.
+5. **Human export** — Request PNG exports into `~/forge/brain/prds/<task-id>/design/` only when 2–4 are not available.
 
 ### If only a share URL or wiki link exists
 
-**STOP** — require implementable design (brain paths, figma key+nodes, or `design_waiver: prd_only`). Do not proceed with screen inventory from prose alone when `design_new_work: yes`.
+**STOP** — require implementable design (brain paths, **Lovable GitHub repo + ref**, figma key+nodes, or `design_waiver: prd_only`). Do not proceed with screen inventory from prose alone when `design_new_work: yes`.
 
 ### If screenshots or exported PNGs are provided
 

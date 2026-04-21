@@ -42,7 +42,7 @@ NO SPEC CHANGES AFTER FREEZE WITHOUT FULL COUNCIL RE-NEGOTIATION. A SMALL TWEAK 
   - No unresolved conflicts (all consensus or escalated with dreamer decision)
   - Each surface agreed to their scope and contract specifications
   - No "TBD" remains anywhere in the spec
-  - **Design implementability:** When **Design source (from intake)** has **`design_new_work: yes`**, the spec must include **`design_brain_paths`** and/or **`figma_file_key` + `figma_root_node_ids`** (or explicit `design_waiver: prd_only`) plus a one-line **implementable UI contract** (which frames/nodes/files implementation must match). If only wiki/Figma URLs without those fields → STOP. Return to intake or council — do not freeze.
+  - **Design implementability:** When **Design source (from intake)** has **`design_new_work: yes`**, the spec must include **`design_brain_paths`** and/or **`lovable_github_repo`** (+ optional **`lovable_path_prefix`**, pinned ref) and/or **`figma_file_key` + `figma_root_node_ids`** (or explicit `design_waiver: prd_only`) plus a one-line **implementable UI contract** (which frames/nodes/files/repo paths implementation must match). If only wiki/Figma/Lovable **browser** URLs without those fields → STOP. Return to intake or council — do not freeze.
 - **If any check fails:** STOP. Return to `forge-council-gate`. Do not freeze an incomplete spec.
 
 ### Step 2: Generate Spec Hash

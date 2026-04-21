@@ -311,7 +311,7 @@ Ready to proceed to Phase 1.
    Input: seed/prds/01-favorites-cross-surface-sync.md
 
 2. Invoke: /intake-interrogate
-   Answer all 8 questions:
+   Complete intake (`intake-interrogate`): mandatory **prd-locked.md** fields, confidence-first (no TBD):
    ├─ Q1: Core user problem
    │  Expected: "Allow users to save favorite products and sync across web/mobile"
    ├─ Q2: Affected surfaces
@@ -339,7 +339,7 @@ Ready to proceed to Phase 1.
 
 **Assertions:**
 - ✅ PRD locked (decision ID recorded in brain at brain/self-test/{SELF_TEST_RUN_ID}/PRDLK-*)
-- ✅ All 8 questions answered (no "TBD" or "TK")
+- ✅ All mandatory intake lock fields satisfied (no "TBD" or "TK")
 - ✅ All 4 surfaces enumerated (backend-api, web-dashboard, app-mobile, shared-schemas)
 - ✅ 5 contracts identified (API, DB, Cache, Events, Search)
 - ✅ Acceptance criteria quantified (not vague)
@@ -1154,7 +1154,7 @@ Duration: 5-10 minutes
 | Phase | Component | Pass Criteria | Fail If | Blocker |
 |-------|-----------|--------------|---------|---------|
 | **0** | Environment | All 4 infrastructure services online, seed data loaded, brain initialized | Any service offline, seed data missing, brain not writable | NEEDS_INFRA_CHANGE |
-| **1** | Intake | PRD locked (PRDLK-* decision in brain), all 8 questions answered, no TBD | PRD not locked, any question TBD, surfaces not enumerated | BLOCKED (cannot proceed to Phase 2) |
+| **1** | Intake | PRD locked (PRDLK-* decision in brain), mandatory lock fields complete, no TBD | PRD not locked, any mandatory field TBD, surfaces not enumerated | BLOCKED (cannot proceed to Phase 2) |
 | **1** | Contracts | All 5 contracts identified (API, DB, Cache, Events, Search) | Any contract missing or incomplete | BLOCKED |
 | **2** | Council | All 4 surfaces reviewed (backend, web, app, infra), all contract terms negotiated | Any surface missing, any contract term TBD, unresolved conflicts | BLOCKED |
 | **2** | Spec Freeze | Shared-dev-spec locked (SPECLOCK-* decision in brain) | Spec not frozen, lock file missing | BLOCKED (cannot proceed to Phase 3) |
@@ -1225,7 +1225,7 @@ grep "status:" brain/self-test/${SELF_TEST_RUN_ID}/PRDLK-*.md
 1. Verify PRD file exists: `cat seed/prds/01-favorites-cross-surface-sync.md` (not empty)
 2. Verify SELF_TEST_BRAIN env var set: `echo $SELF_TEST_BRAIN` (should output path)
 3. Verify brain-write skill available: `cat skills/brain-write/SKILL.md` (check exists)
-4. Check for TBD values in answers (run intake-interrogate again, answer all 8 questions)
+4. Check for TBD values in `prd-locked.md` (run `intake-interrogate` again; elicit remaining doubts)
 5. Manually create decision file if skill fails:
    ```bash
    cat > brain/self-test/${SELF_TEST_RUN_ID}/PRDLK-SHOPAPP-FAVORITES.md <<'EOF'
@@ -1410,7 +1410,7 @@ git status | grep "CONFLICT"
 | Phase | Duration | Notes |
 |-------|----------|-------|
 | **Phase 0** | 2-3 min | Environment setup, data seeding |
-| **Phase 1** | 5-10 min | PRD intake, 8 questions, lock decision |
+| **Phase 1** | 5-10 min | PRD intake, mandatory lock fields, lock decision |
 | **Phase 2** | 15-20 min | Multi-surface council, contract negotiation, conflict resolution (if any) |
 | **Phase 3** | 30-45 min | Tech plans for 4 repos, build 4 repos in parallel worktrees (4 tasks each), TDD cycle per task |
 | **Phase 4** | 20-30 min | Code review (2 reviewers per repo), eval stack up (5 min), 6 drivers (6 scenarios each, ~25 total) |
@@ -1675,7 +1675,7 @@ Before declaring Forge production-ready, verify all items:
 
 **Phase 1 (Intake):**
 - [ ] `/forge-intake-gate` invoked
-- [ ] All 8 questions answered
+- [ ] All mandatory intake lock fields satisfied
 - [ ] PRD locked in brain (decision ID recorded)
 
 **Phase 2 (Council):**

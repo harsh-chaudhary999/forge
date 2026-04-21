@@ -1,0 +1,28 @@
+# Recommended for scan-forge CI and local dev:
+#   pip install -r tools/scan_forge/requirements.txt
+#
+# - PyYAML: OpenAPI YAML + schema digest
+# - tree-sitter + grammars: phase 5.1 AST pass (HTTP-shaped calls) → ``forge_scan_ast_http_calls.txt`` → phase56
+PyYAML>=6.0.1
+tree-sitter>=0.21.0
+tree-sitter-javascript>=0.23.0
+tree-sitter-typescript>=0.23.0
+tree-sitter-python>=0.23.0
+tree-sitter-go>=0.23.0
+tree-sitter-rust>=0.23.0
+tree-sitter-java>=0.23.0
+tree-sitter-c>=0.23.0
+tree-sitter-cpp>=0.23.0
+tree-sitter-ruby>=0.23.0
+tree-sitter-c-sharp>=0.23.0
+tree-sitter-kotlin>=0.23.0
+tree-sitter-scala>=0.23.0
+tree-sitter-php>=0.23.0
+tree-sitter-swift>=0.0.1
+tree-sitter-lua>=0.5.0
+tree-sitter-zig>=1.0.0
+tree-sitter-powershell>=0.23.0
+tree-sitter-elixir>=0.3.0
+tree-sitter-objc>=3.0.0
+tree-sitter-julia>=0.23.0
+tree-sitter-verilog>=1.0.0

@@ -191,7 +191,7 @@ type: reference
 
 ### HARD-GATE
 
-**Definition:** A non-negotiable process gate marked with a HARD-GATE label. Enforced by 5+ MUST bullets that cannot be skipped or rationalized away. Examples: intake (MUST interrogate 8 questions), council (MUST negotiate all contracts), eval (MUST pass critical scenarios), TDD (MUST write test first).
+**Definition:** A non-negotiable process gate marked with a HARD-GATE label. Enforced by 5+ MUST bullets that cannot be skipped or rationalized away. Examples: intake (MUST satisfy mandatory **prd-locked.md** fields via **`intake-interrogate`**, confidence-first), council (MUST negotiate all contracts), eval (MUST pass critical scenarios), TDD (MUST write test first).
 
 **Usage Context:** When you encounter a HARD-GATE, you have no choice but to execute it fully. It cannot be shortcut due to schedule pressure, complexity, or other factors. Red flags within HARD-GATE steps are not advisory — they are mandatory stop conditions.
 

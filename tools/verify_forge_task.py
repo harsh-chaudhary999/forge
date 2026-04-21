@@ -1,0 +1,298 @@
+#!/usr/bin/env python3
+"""
+Machine checks for Forge task readiness under a git-backed brain.
+
+Validates (when applicable):
+  - At least one eval scenario file under prds/<task-id>/eval/
+  - conductor.log ordering: [P4.0-EVAL-YAML] before any [P4.1-DISPATCH]
+  - forge_qa_csv_before_eval: true -> qa/manual-test-cases.csv + log order vs eval
+  - Net-new design (prd-locked) -> design/ artifacts or [DESIGN-INGEST] before P4.1
+  - Optional --strict-tdd: [P4.0-TDD-RED] before first [P4.1-DISPATCH]
+
+Stdlib only — no PyYAML required (product.md may mix markdown headings with YAML).
+
+Usage (from Forge repo root, brain elsewhere):
+  python3 tools/verify_forge_task.py --task-id my-feature --brain ~/forge/brain
+
+Usage (brain repo checked out as cwd, Forge path explicit):
+  python3 /path/to/forge/tools/verify_forge_task.py --task-id my-feature --brain .
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import re
+import sys
+from pathlib import Path
+
+
+RE_PRODUCT_LINE = re.compile(r"^\*\*Product:\*\*\s*(.+)\s*$", re.MULTILINE)
+RE_NAME_FIELD = re.compile(r"^name:\s*(.+)\s*$", re.MULTILINE)
+RE_QA_FLAG_TRUE = re.compile(r"^forge_qa_csv_before_eval:\s*true\s*$", re.MULTILINE)
+RE_DESIGN_NEW_YES = re.compile(
+    r"(?:\*\*design_new_work:\*\*|design_new_work:)\s*yes\b", re.IGNORECASE
+)
+RE_DESIGN_WAIVER_PRD = re.compile(r"design_waiver.*prd_only", re.IGNORECASE)
+RE_P40_EVAL = re.compile(r"\[P4\.0-EVAL-YAML\]")
+RE_P41_DISPATCH = re.compile(r"\[P4\.1-DISPATCH\]")
+RE_P40_QA_APPROVED = re.compile(r"\[P4\.0-QA-CSV\].*approved=yes")
+RE_P40_QA_SKIPPED = re.compile(r"\[P4\.0-QA-CSV\].*skipped=not_required")
+RE_DESIGN_INGEST = re.compile(r"\[DESIGN-INGEST\]")
+RE_P40_TDD_RED = re.compile(r"\[P4\.0-TDD-RED\]")
+
+
+def _first_line_number(pattern: re.Pattern[str], lines: list[str]) -> int | None:
+    for i, line in enumerate(lines, start=1):
+        if pattern.search(line):
+            return i
+    return None
+
+
+def _read_text(path: Path) -> str:
+    return path.read_text(encoding="utf-8", errors="replace")
+
+
+def _parse_prd_product_name(prd_path: Path) -> str | None:
+    if not prd_path.is_file():
+        return None
+    text = _read_text(prd_path)
+    m = RE_PRODUCT_LINE.search(text)
+    return m.group(1).strip() if m else None
+
+
+def _resolve_product_slug(
+    brain: Path, prd_path: Path, product_slug: str | None
+) -> tuple[str | None, Path | None]:
+    """Return (slug, product.md path) for policy reads."""
+    products = brain / "products"
+    if product_slug:
+        pm = products / product_slug / "product.md"
+        return (product_slug, pm if pm.is_file() else None)
+
+    pname = _parse_prd_product_name(prd_path)
+    if not pname or not products.is_dir():
+        return (None, None)
+    want = pname.casefold()
+    for pm in sorted(products.glob("*/product.md")):
+        m = RE_NAME_FIELD.search(_read_text(pm))
+        if m and m.group(1).strip().casefold() == want:
+            return (pm.parent.name, pm)
+    return (None, None)
+
+
+def _product_requires_qa_before_eval(product_md: Path | None) -> bool:
+    if not product_md or not product_md.is_file():
+        return False
+    return bool(RE_QA_FLAG_TRUE.search(_read_text(product_md)))
+
+
+def _prd_net_new_design(prd_text: str) -> bool:
+    return bool(RE_DESIGN_NEW_YES.search(prd_text))
+
+
+def _prd_design_waiver_prd_only(prd_text: str) -> bool:
+    return bool(RE_DESIGN_WAIVER_PRD.search(prd_text))
+
+
+def _eval_yaml_count(eval_dir: Path) -> int:
+    if not eval_dir.is_dir():
+        return 0
+    n = 0
+    for p in eval_dir.iterdir():
+        if p.is_file() and p.suffix.lower() in (".yaml", ".yml"):
+            n += 1
+    return n
+
+
+def _csv_data_rows(csv_path: Path) -> int:
+    if not csv_path.is_file():
+        return 0
+    lines = [ln.strip() for ln in _read_text(csv_path).splitlines() if ln.strip()]
+    return max(0, len(lines) - 1)  # assume one header row
+
+
+def _design_file_count(design_dir: Path) -> int:
+    if not design_dir.is_dir():
+        return 0
+    return sum(1 for p in design_dir.rglob("*") if p.is_file())
+
+
+def verify(
+    brain: Path,
+    task_id: str,
+    product_slug: str | None,
+    strict_tdd: bool,
+    require_log: bool,
+) -> list[str]:
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    task_dir = brain / "prds" / task_id
+    if not task_dir.is_dir():
+        errors.append(f"Task directory missing: {task_dir}")
+        return errors
+
+    prd_locked = task_dir / "prd-locked.md"
+    slug, product_md = _resolve_product_slug(brain, prd_locked, product_slug)
+    if product_slug and not product_md:
+        errors.append(f"--product {product_slug}: missing {brain / 'products' / product_slug / 'product.md'}")
+    require_qa = _product_requires_qa_before_eval(product_md)
+
+    eval_dir = task_dir / "eval"
+    n_yaml = _eval_yaml_count(eval_dir)
+    if n_yaml < 1:
+        errors.append(
+            f"Need at least one eval scenario (*.yaml/*.yml) under {eval_dir} "
+            "(State 4b / forge-eval-gate)."
+        )
+
+    qa_csv = task_dir / "qa" / "manual-test-cases.csv"
+    if require_qa:
+        rows = _csv_data_rows(qa_csv)
+        if rows < 1:
+            errors.append(
+                f"forge_qa_csv_before_eval: true but missing or empty data rows in {qa_csv}"
+            )
+
+    log_path = task_dir / "conductor.log"
+    prd_text = _read_text(prd_locked) if prd_locked.is_file() else ""
+
+    if not log_path.is_file():
+        msg = f"No conductor.log at {log_path} — log ordering checks skipped."
+        if require_log:
+            errors.append(msg.rstrip(" — log ordering checks skipped.") + " (--require-log)")
+        else:
+            warnings.append(msg)
+        lines: list[str] = []
+    else:
+        lines = _read_text(log_path).splitlines()
+
+    if lines:
+        ln_eval = _first_line_number(RE_P40_EVAL, lines)
+        ln_p41 = _first_line_number(RE_P41_DISPATCH, lines)
+        ln_qa_ok = _first_line_number(RE_P40_QA_APPROVED, lines)
+        ln_tdd = _first_line_number(RE_P40_TDD_RED, lines)
+
+        if ln_p41 is not None and ln_eval is None:
+            errors.append(
+                "conductor.log has [P4.1-DISPATCH] but no [P4.0-EVAL-YAML] — invalid orchestration."
+            )
+        if ln_p41 is not None and ln_eval is not None and ln_p41 < ln_eval:
+            errors.append(
+                f"conductor.log: first [P4.1-DISPATCH] (line {ln_p41}) is before "
+                f"[P4.0-EVAL-YAML] (line {ln_eval})."
+            )
+
+        if require_qa and ln_eval is not None:
+            if ln_qa_ok is None:
+                if RE_P40_QA_SKIPPED.search("\n".join(lines)):
+                    errors.append(
+                        "[P4.0-QA-CSV] skipped=not_required in log but "
+                        "forge_qa_csv_before_eval: true requires approved=yes before eval."
+                    )
+                else:
+                    errors.append(
+                        "forge_qa_csv_before_eval: true requires [P4.0-QA-CSV] ... approved=yes "
+                        f"before [P4.0-EVAL-YAML] (eval first seen line {ln_eval})."
+                    )
+            elif ln_qa_ok >= ln_eval:
+                errors.append(
+                    f"forge_qa_csv_before_eval: true but [P4.0-QA-CSV] approved (line {ln_qa_ok}) "
+                    f"is not before [P4.0-EVAL-YAML] (line {ln_eval})."
+                )
+
+        if strict_tdd and ln_p41 is not None:
+            if ln_tdd is None or ln_tdd > ln_p41:
+                errors.append(
+                    "--strict-tdd: require [P4.0-TDD-RED] before first [P4.1-DISPATCH] "
+                    f"(tdd_line={ln_tdd}, p41_line={ln_p41})."
+                )
+        elif ln_p41 is not None and (ln_tdd is None or ln_tdd > ln_p41):
+            warnings.append(
+                f"[P4.0-TDD-RED] missing or after first [P4.1-DISPATCH] "
+                f"(tdd={ln_tdd}, p41={ln_p41}). Use --strict-tdd to fail on this."
+            )
+
+    # Net-new design: materialized under design/ and/or logged before P4.1
+    if _prd_net_new_design(prd_text) and not _prd_design_waiver_prd_only(prd_text):
+        design_dir = task_dir / "design"
+        dcount = _design_file_count(design_dir)
+        if dcount < 1:
+            if not lines:
+                errors.append(
+                    "prd-locked indicates net-new design without prd_only waiver: "
+                    "design/ is empty and conductor.log is missing — add brain design/ "
+                    "artifacts or commit conductor.log with [DESIGN-INGEST]."
+                )
+            else:
+                ln_p41_d = _first_line_number(RE_P41_DISPATCH, lines)
+                ln_ingest = _first_line_number(RE_DESIGN_INGEST, lines)
+                if ln_ingest is None or (
+                    ln_p41_d is not None and ln_ingest > ln_p41_d
+                ):
+                    errors.append(
+                        "prd-locked indicates net-new design without prd_only waiver: "
+                        "expected files under design/ and/or [DESIGN-INGEST] in conductor.log "
+                        "before first [P4.1-DISPATCH]."
+                    )
+
+    for w in warnings:
+        print(f"WARN: {w}", file=sys.stderr)
+
+    if slug and product_md:
+        print(f"INFO: Using product slug={slug!r} ({product_md})", file=sys.stderr)
+
+    return errors
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(description="Verify Forge brain task gates (eval, log order, QA, design).")
+    p.add_argument("--task-id", required=True, help="prds/<task-id> directory name")
+    p.add_argument(
+        "--brain",
+        default=None,
+        help="Brain root (default: $FORGE_BRAIN or ~/forge/brain)",
+    )
+    p.add_argument(
+        "--product",
+        default=None,
+        help="Product slug under brain/products/<slug>/product.md (optional if prd-locked matches name:)",
+    )
+    p.add_argument(
+        "--strict-tdd",
+        action="store_true",
+        help="Fail if [P4.0-TDD-RED] is missing or after first [P4.1-DISPATCH]",
+    )
+    p.add_argument(
+        "--require-log",
+        action="store_true",
+        help="Fail if conductor.log is missing (default: warn only)",
+    )
+    args = p.parse_args()
+
+    home = Path.home()
+    brain = (
+        Path(args.brain).expanduser()
+        if args.brain
+        else Path(os.environ.get("FORGE_BRAIN", str(home / "forge" / "brain"))).expanduser()
+    )
+
+    errs = verify(
+        brain=brain,
+        task_id=args.task_id,
+        product_slug=args.product,
+        strict_tdd=args.strict_tdd,
+        require_log=args.require_log,
+    )
+    if errs:
+        print("Forge task verification FAILED:", file=sys.stderr)
+        for e in errs:
+            print(f"  - {e}", file=sys.stderr)
+        return 1
+    print(f"OK: task {args.task_id!r} under {brain}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

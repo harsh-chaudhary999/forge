@@ -1,9 +1,20 @@
 ---
-description: "Run multi-surface council — negotiate contracts across backend, web, app, and infra"
+name: council
+description: "Partial slice — multi-surface council only. Invoke forge-council-gate and council-multi-repo-negotiate; lock shared-dev-spec and contracts. Requires locked PRD first."
 ---
 
-Invoke the `forge-council-gate` skill to run the multi-surface council.
+Invoke the **`forge-council-gate`** skill, then **`council-multi-repo-negotiate`**, to run **council only**.
 
-This requires a locked PRD from intake. If no locked PRD exists for the current task, direct the user to run `/intake` first.
+This requires a **locked PRD** from intake. If no **`prd-locked.md`** exists for the current task, direct the user to run **`/intake`** first.
 
-The council invokes 4 surface reasoning skills (backend, web, app, infra) and negotiates cross-service contracts (REST APIs, DB schemas, events, cache, search). Unresolvable conflicts are escalated to the dreamer for inline resolution.
+The council invokes the four surface reasoning skills (backend, web, app, infra) and negotiates cross-service contracts (REST, DB, events, cache, search). Unresolvable conflicts escalate per **`dream-resolve-inline`** / dreamer rules in **`conductor-orchestrate`**.
+
+<HARD-GATE>
+Do NOT write per-repo **tech plans** or start **State 4b** inside this command unless the user explicitly asks — council’s output is **`shared-dev-spec.md`** (and related contract artifacts), not implementation.
+</HARD-GATE>
+
+**Forge plugin scope:** Brain under **`~/forge/brain/`**; skills from this repo’s **`skills/`**.
+
+**vs `/forge`:** **`/council`** is a **partial** slice. Full E2E is **`/forge`** — see **`commands/forge.md`**.
+
+**Session style:** Prefer **planning-style**. See **`docs/platforms/session-modes-forge.md`**.

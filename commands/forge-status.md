@@ -1,12 +1,18 @@
 ---
-description: "Show current Forge status: active product, pending PRDs, eval state, brain health"
+name: forge-status
+description: "Read-only snapshot of brain health: active product, pending PRDs, eval state, decisions, worktrees — no pipeline side effects."
 ---
 
-Show the current Forge status:
-1. Read `~/forge/brain/` to find the most recently active product
-2. List any pending PRDs (intake-started but not locked)
-3. Show current eval state if any evals are in progress
-4. Report brain health: last commit date and total decision count
-5. List any open worktrees across active products
+Produce a **concise status** summary for the **Forge brain** (read-only; no skill dispatch required unless the user asks to go deeper).
 
-Format output as a concise status summary, one line per item.
+1. Inspect **`~/forge/brain/`** for the most recently active **product** (e.g. under **`products/<slug>/`**).
+2. List **pending PRDs** (intake started but not locked), if detectable from **`prds/`** layout.
+3. Note any **in-progress eval** artifacts or logs if obvious from **`prds/<task-id>/`**.
+4. **Brain health:** last git commit on brain (if a repo), approximate **decisions** count under **`decisions/`** if present.
+5. **Worktrees:** list open worktrees tied to active products if discoverable via git or documented paths.
+
+Format: **one line per item**, scannable.
+
+**Forge plugin scope:** **`~/forge/brain/`** only; no third-party status APIs.
+
+**vs `/forge`:** Status is **observability**, not orchestration. Full E2E: **`commands/forge.md`**.

@@ -47,6 +47,10 @@ The template (`templates/junie-guidelines.md`) covers:
 - Skill invocation guidance
 - Directory structure reference
 
+## Forge phase session styles
+
+Junie / JetBrains AI follows **guidelines**, not Forge hooks. Use **planning-style** vs **execution-style** prompts per Forge phase — see **[`session-modes-forge.md`](session-modes-forge.md)**.
+
 ## Limitations
 
 - **Manual setup:** Must copy template to each project individually

@@ -35,6 +35,7 @@ If you notice any of these, STOP and do not proceed:
 - **PRD mentions a repo not in product.md** — Either the repo should be added to product.md or the PRD has a typo. STOP. Reconcile before proceeding to council.
 - **Product context is loaded after council has already started** — Council needs topology to identify affected surfaces. STOP. Always load product context before invoking any surface reasoning.
 - **Service start/stop commands in product.md are not verified** — Wrong startup commands make eval-product-stack-up fail. STOP. Verify commands are executable before surfacing to downstream phases.
+- **A project has neither `deploy_doc` nor (`start` and `health`)** — Stack-up has no runbook. STOP. Send the user back to `/workspace` Step 3b or `/scan` Step 1 to record deploy truth before council or eval that needs a live stack.
 
 Given a product slug (from the locked PRD), load and validate:
 
@@ -81,6 +82,8 @@ Given a product slug (from the locked PRD), load and validate:
    cat ~/forge/brain/products/<slug>/codebase/index.md
    ```
 
+   `SCAN.json` may list each repo under **`repos.<role>`** (with top-level fields aggregated across roles). Use those entries when you need per-role `scanned_at`, `commit`, or file counts.
+
    Extract and record:
    - **Last-scanned timestamp** — warn if older than 7 days: `⚠️ Codebase scan is N days old — run /scan to refresh before planning`
    - **Architecture style** — include in context-loaded.md so council surfaces get it
@@ -90,6 +93,8 @@ Given a product slug (from the locked PRD), load and validate:
    If codebase scan is absent:
    - Add a note to context-loaded.md: `⚠️ No codebase scan found — run /scan <slug> before council to give surface agents architecture context`
    - Do NOT block or fail — scan is advisory, not required for first-time setup
+
+   **Downstream routing (pass this forward in context):** Any phase that must name **concrete files** in product repos (council, tech-plan, eval YAML, design notes) should **take filenames and module boundaries from this scan output first** (`index.md`, `modules/*.md`, `api-surface.md`, hub lists in `SCAN.json`). Repo tree exploration is a **fallback** when scan is absent, stale, or a path is provably wrong after checking brain.
 
 7. **Output**
    Write to `~/forge/brain/prds/<task-id>/context-loaded.md`:

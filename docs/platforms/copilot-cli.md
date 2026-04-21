@@ -26,7 +26,7 @@ Start a Copilot CLI session in the Forge directory. The `using-forge` bootstrap 
 
 | Feature | Status |
 |---|---|
-| Skills (58) | Available via skill invocation |
+| Skills (68) | Available via skill invocation |
 | Session bootstrap | Auto via hook detection |
 | Tool mapping | `references/copilot-tools.md` |
 
@@ -35,6 +35,10 @@ Start a Copilot CLI session in the Forge directory. The `using-forge` bootstrap 
 1. **Platform Detection:** The `hooks/session-start` script checks for `COPILOT_CLI` env var
 2. **Context Injection:** Outputs `using-forge` content in the standard `additionalContext` JSON format
 3. **Tool Mapping:** Skills reference Claude Code tool names; see `references/copilot-tools.md` for Copilot equivalents
+
+## Forge phase session styles
+
+Copilot CLI is prompt- and permission-driven. Apply **planning-style** vs **execution-style** phases as in **[`session-modes-forge.md`](session-modes-forge.md)**.
 
 ## Tool Name Mapping
 

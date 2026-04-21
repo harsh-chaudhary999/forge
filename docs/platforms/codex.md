@@ -35,6 +35,10 @@ Start a Codex session in the Forge directory. The `AGENTS.md` content should be 
 2. **Rule Enforcement:** AGENTS.md contains Forge's core rules (intake first, council before code, worktree per task, eval gates everything, brain persistence)
 3. **Anti-Pattern Blocking:** The rationalization table in AGENTS.md prevents common shortcuts
 
+## Forge phase session styles
+
+Codex is **context-only** (no Forge slash commands or hooks). Session style is entirely **prompt discipline**: **planning-style** for locking scope and contracts in prose before asking for file edits; **execution-style** for implementation and running tests. See **[`session-modes-forge.md`](session-modes-forge.md)**.
+
 ## Limitations
 
 - **No skills system:** Codex does not have a Skill tool; skills cannot be invoked directly

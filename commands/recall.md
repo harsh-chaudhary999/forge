@@ -1,10 +1,14 @@
 ---
-description: "Search brain for past decisions, patterns, and gotchas"
+name: recall
+description: "Search — invoke brain-recall for past decisions, patterns, and gotchas in ~/forge/brain (hybrid search per skill)."
 ---
 
-Invoke the `brain-recall` skill.
+Invoke the **`brain-recall`** skill.
 
-The user's argument is a search query (e.g., "cache invalidation", "auth middleware", "seed product").
-If no query was provided, ask the user what they want to search for.
+The user’s argument is a **search query** (topics, components, past incidents). If empty, ask what to search for.
 
-Brain-recall uses hybrid search: grep patterns + tag filtering + recency weighting to find relevant decisions, patterns, and gotchas from `~/forge/brain/`.
+**`brain-recall`** searches **`~/forge/brain/`** (grep, tags, recency) per the skill — read-only.
+
+**Forge plugin scope:** Brain read only.
+
+**vs `/forge`:** **`/recall`** does not run delivery. Full E2E: **`commands/forge.md`**.

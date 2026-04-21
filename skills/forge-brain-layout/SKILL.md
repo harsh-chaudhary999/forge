@@ -17,12 +17,21 @@ The brain is **not** a task tracker, issue system, or temporary notes file. It i
 
 ### Phase 2 prep (embeddings / hybrid index — optional today)
 
-Before any vector or FTS index ships, prefer **YAML frontmatter** on new decision files: stable `id`, `updated` (ISO-8601 date), `product` / `project` where applicable, and optional `supersedes: <prior-id>` for knowledge updates. Use predictable `##` section boundaries in long notes so a later indexer can chunk without splitting mid-thought. Codebase scans already emit `SCAN.json` under `products/<slug>/codebase/`; optional **`route-aliases.tsv`** there augments phase56 route matching.
+Before any vector or FTS index ships, prefer **YAML frontmatter** on new decision files: stable `id`, `updated` (ISO-8601 date), `product` / `project` where applicable, and optional `supersedes: <prior-id>` for knowledge updates. Use predictable `##` section boundaries in long notes so a later indexer can chunk without splitting mid-thought. Codebase scans already emit `SCAN.json` under `products/<slug>/codebase/`; optional **`route-aliases.tsv`** there augments phase56 route matching. Each scan run also writes **`graph.json`**, **`SCAN_SUMMARY.md`**, and **`.forge_scan_manifest.json`**; the runner keeps per-role temp inputs under **`<run_dir>/_role/<role>/`** (see `tools/scan_forge/scan_paths.py`) so multi-repo inventories are not overwritten.
 
 ## Directory Tree
 
 ```
 ~/forge/brain/
+├── prds/                                  # Per-task PRD delivery (conductor path; parallel to product slug dirs)
+│   └── <task-id>/
+│       ├── prd-locked.md
+│       ├── shared-dev-spec.md
+│       ├── design/                        # REQUIRED for net-new UI: exports, MCP_INGEST.md, README (see intake Q9 + conductor P4.0b)
+│       ├── qa/                            # Optional: PRD_ANALYSIS.md, manual-test-cases.csv, TEST_SUITE_REPORT.md (see qa-prd-analysis, qa-manual-test-cases-from-prd)
+│       ├── tech-plans/
+│       └── eval/
+│
 ├── products/                              # All product, PRD, and delivery context
 │   └── {product-slug}/
 │       ├── prd/
@@ -54,7 +63,10 @@ Before any vector or FTS index ships, prefer **YAML frontmatter** on new decisio
 │       │           └── {prd-id}-retrospective.md  # Post-PR dreamer retrospective
 │       ├── codebase/                       # Codebase knowledge graph (from /scan)
 │       │   ├── route-aliases.tsv           # Optional — extra synthetic API route lines for phase56 (same columns as phase35 routes)
-│       │   ├── SCAN.json                     # Scan metadata: timestamp, commit SHA, file count
+│       │   ├── SCAN.json                     # Scan metadata: `repos.<role>` per repo + aggregated top-level fields (see scan-codebase)
+│       │   ├── SCAN_SUMMARY.md               # One-page scan orientation + limitations (regenerated each scan)
+│       │   ├── graph.json                    # Derived module + cross-repo edge graph (regenerated)
+│       │   ├── .forge_scan_manifest.json     # Per-role git tree/head fingerprints (tooling)
 │       │   ├── index.md                      # Architecture style, module map, entry points
 │       │   ├── patterns.md                   # Detected architecture patterns with evidence
 │       │   ├── api-surface.md                # REST endpoints, exported symbols, event schemas
@@ -104,7 +116,11 @@ Before any vector or FTS index ships, prefer **YAML frontmatter** on new decisio
 
 ### Directory Annotations
 
+**prds/** — Task-scoped conductor path (`<task-id>/`) aligned with `intake-interrogate`, `conductor-orchestrate`, and `~/forge/brain/prds/<task-id>/prd-locked.md`. Holds **`design/`** for net-new UI (exports, `MCP_INGEST.md`, `README.md`). Distinct from **`products/{slug}/prd/{prd-id}/`** layout; teams may use one or both — do not assume artifacts exist in both without checking.
+
 **products/** — Contains all PRD-specific context and delivery artifacts
+- **`forge_qa_csv_before_eval`** in **`~/forge/brain/products/<slug>/product.md`** is a **product-level switch** (omit or `false` = no CSV hard gate; **`true` = hard gate**): when **`true`**, **`conductor-orchestrate`** **must not** log **`[P4.0-EVAL-YAML]`** until approved **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** exists and **`[P4.0-QA-CSV]`** is logged — so TDD and eval trace to the same acceptance inventory. Calling the switch “optional” only means **teams choose** whether CSV is mandatory for that product; the gate is **not** optional once the flag is on.
+- Optional **machine gate** on the brain repo: run **`python3 <forge>/tools/verify_forge_task.py --task-id <id> --brain ~/forge/brain`** in CI — see Forge **`docs/forge-task-verification.md`** (checks `eval/*.yaml`, `conductor.log` ordering, QA CSV when the flag is true, net-new **design/** evidence).
 - Each product gets its own slug (e.g., `auth-service`, `web-ui`)
 - Each PRD gets a unique ID (e.g., `PRD-20260410-001`)
 - Council, contracts, evals, and learnings are nested under PRD ID

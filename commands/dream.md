@@ -1,9 +1,17 @@
 ---
-description: "Run dreamer retrospective — score decisions, extract patterns and gotchas to brain"
+name: dream
+description: "Partial slice — dreamer retrospective or inline conflict resolution per dream-retrospect-post-pr / dream-resolve-inline; writes learnings to brain."
 ---
 
-Invoke the dreamer agent in retrospective mode.
+Invoke the **dreamer** agent (or equivalent skills **`dream-retrospect-post-pr`**, **`dream-resolve-inline`**) as appropriate:
 
-The dreamer reviews the full run log, classifies all decisions as successes/rework/pattern opportunities, scores each on impact and confidence, and extracts reusable patterns and gotchas to `~/forge/brain/`.
+- **Post-ship retrospective:** After merges / feature complete — score decisions, extract patterns and gotchas into **`~/forge/brain/`**.
+- **Inline during work:** When council or eval surfaces unresolved cross-service conflict — counterfactual / resolution path per **`dream-resolve-inline`**.
 
-If run during active work (not post-PR), the dreamer operates in inline conflict resolution mode instead — using counterfactual analysis to resolve conflicting positions.
+<HARD-GATE>
+Do NOT use retrospective mode to **waive** **`forge-eval-gate`** or merge on **RED** eval — dreamer resolves **conflicts**, not quality gates.
+</HARD-GATE>
+
+**Forge plugin scope:** Agent definition **`agents/`** + skills **`dream-*`** in this repo; brain under **`~/forge/brain/`**.
+
+**vs `/forge`:** **`/dream`** is often the **tail** of a full **`/forge`** run but can be invoked alone after delivery. Full pipeline ordering: **`conductor-orchestrate`** / **`commands/forge.md`**.

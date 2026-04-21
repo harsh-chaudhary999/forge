@@ -68,11 +68,11 @@ For any rule or gate:
 - Correct response: No. Run anyway. See output.
 
 **Example 2: Intake gate (forge-intake-gate)**
-- Letter: "Every PRD goes through intake (8 questions, locked)"
+- Letter: "Every PRD goes through intake (mandatory lock fields in prd-locked.md, confidence-first elicitation)"
 - Spirit: "Discover hidden assumptions, lock requirements before building"
-- Application: Ask all 8 questions (not 4), lock answers (not "TBD"), ensure completeness
+- Application: Satisfy every mandatory lock field (not "TBD"); ask **doubts and low-confidence gaps**, not a ritual questionnaire when the PRD already states the answer
 - Shortcut temptation: "This is a simple feature, the requirements are obvious"
-- Correct response: No. Ask all 8. Simple features often hide complex requirements.
+- Correct response: No. Still run **intake** and satisfy **mandatory lock fields** — but **probe doubts** (contracts, rollback, Q4 mismatch, Q9 implementability) even when the PRD “looks obvious”; do not equate “simple” with “skip locking.”
 
 **Example 3: Worktree gate (forge-worktree-gate)**
 - Letter: "Every task gets fresh worktree"

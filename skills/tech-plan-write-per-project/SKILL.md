@@ -17,6 +17,7 @@ requires: [brain-read]
 | "I'll group related changes into one big task" | Tasks over 5 minutes need splitting. Big tasks hide complexity and make progress tracking impossible. |
 | "The bash commands are obvious" | "Obviously" wrong commands waste a self-heal loop iteration. Write the exact command including flags, paths, and environment variables. |
 | "I'll reference the spec instead of repeating details" | The implementer (dev-implementer subagent) works in an isolated worktree with only the plan. Self-contained tasks prevent NEEDS_CONTEXT status. |
+| "I'll discover file paths by exploring the repo" | Duplicates work the scan already did and burns tokens. Read `~/forge/brain/products/<slug>/codebase/` first; put paths from `index.md` / `modules/*.md` / `api-surface.md` into tasks, then open sources only when writing full file bodies. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -41,6 +42,8 @@ If you notice any of these, STOP and do not proceed:
 ## Overview
 
 This skill converts a locked shared-dev-spec into bite-sized, executable technical implementation plans per project. Each task is 2-5 minutes of execution with exact file paths, complete code (no placeholders), and exact bash commands.
+
+**Order of operations for paths:** Before naming files in tasks, load **`~/forge/brain/products/<slug>/codebase/`** (at least `index.md`, `SCAN.json`, and the `modules/*.md` files that match the spec’s surfaces). Derive **exact repo-relative paths** from that brain material, then read the product repo only to pull current file contents for “complete code” blocks. If scan is missing or >7 days old, note it and align with `product-context-load` / user on **`/scan <slug>`** before finalizing paths.
 
 ---
 

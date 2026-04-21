@@ -26,10 +26,10 @@ Open Cursor in the Forge directory. The `.cursorrules` file provides project-lev
 
 | Feature | Status |
 |---|---|
-| Skills (58) | Full support |
+| Skills (68) | Full support |
 | Agents (4) | Full support |
 | Hooks | SessionStart via `hooks-cursor.json` |
-| Commands (15) | All slash commands available |
+| Commands (17) | All slash commands available |
 | Brain | Full read/write |
 | Worktrees | Full isolation |
 | `.cursorrules` | Project-level AI context |
@@ -47,11 +47,27 @@ Open Cursor in the Forge directory. The `.cursorrules` file provides project-lev
 - Session-start output uses `additional_context` (snake_case) instead of `hookSpecificOutput.additionalContext`
 - `.cursorrules` provides additional project context (Claude Code uses `CLAUDE.md`)
 
+## Plan mode vs Agent mode (Cursor UI)
+
+Cursor exposes **Plan** vs **Agent** in the UI. Map them to Forge’s portable **planning-style** vs **execution-style** phases — see **[`session-modes-forge.md`](session-modes-forge.md)** (same convention for every supported host).
+
+**Quick map:** **`/intake`**, **`/council`**, **`/plan` review** → Plan. **`/build`**, **`/eval`**, **`/heal`** → Agent. Hooks cannot toggle this for you.
+
 ## Limitations
 - Hook format differences require separate config file (`hooks-cursor.json`)
 - Some advanced Claude Code features may not be available
 
 ## Troubleshooting
+
+### Duplicate or nested `skills/` (agents read stale intake)
+
+Same issue as other merged-tree installs — see **[`plugin-skill-layout.md`](plugin-skill-layout.md)**.
+
+**Quick check (Cursor):**
+
+```bash
+bash scripts/verify-forge-plugin-install.sh --platform cursor
+```
 
 **`.cursorrules` not loading:**
 - Verify the file exists at repo root: `ls -la .cursorrules`

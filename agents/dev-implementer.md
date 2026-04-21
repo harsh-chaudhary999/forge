@@ -53,7 +53,8 @@ The following rationalizations are lies. Reject them:
 - Receive full context: task text, shared-dev-spec, per-project tech plan, repo state
 - Do not ask clarifying questions
 - Do not refactor or over-engineer
-- Proceed directly to file reading
+- **HARD-GATE — refuse silently dangerous dispatches:** If the conductor dispatch is for **feature / UI / non-test-only** work and **`~/forge/brain/prds/<task-id>/eval/`** does not exist or contains **zero** scenario files, **or** the handoff does not cite a logged **`[P4.0-EVAL-YAML]`** line, return **`BLOCKED_ORCHESTRATION`** to the conductor — **do not** write production code until State 4b is complete (`conductor-orchestrate` State 4b). When **`product.md`** sets **`forge_qa_csv_before_eval: true`** (including when a **full `/forge`** run persisted **`true`** per **`commands/forge.md`**), also require **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** with **≥1** row and a logged **`[P4.0-QA-CSV]`** before feature code. Test-only RED tasks from the same phase are OK if the prompt explicitly says **tests-first / TDD RED** only. **Teams:** run **`tools/verify_forge_task.py`** on the brain in CI so the same gates are machine-checked on commit (`docs/forge-task-verification.md`).
+- Proceed directly to file reading when gates pass
 
 ### 1.5. Task Type Classification (NEW)
 
@@ -69,6 +70,7 @@ Before starting, identify the task type:
 This informs scope and review focus.
 
 ### 2. File Reading
+- Task text should already name paths; if something is ambiguous, check **`~/forge/brain/products/<slug>/codebase/`** (`modules/*.md`, `index.md`) **before** spelunking the repo with broad search
 - Read all relevant source files needed for the task
 - Read existing tests to understand testing patterns
 - Read cross-service contracts if affecting multiple services (API specs, DB schemas, event schemas)

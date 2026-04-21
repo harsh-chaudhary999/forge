@@ -1,9 +1,19 @@
 ---
-description: "Run two-stage code review — spec compliance first, then code quality"
+name: review
+description: "Partial slice — two-stage review: forge-trust-code (spec compliance) then code quality. Read-heavy first; execution-style when applying fixes."
 ---
 
-Invoke the `forge-trust-code` skill to run the two-stage review pipeline.
+Invoke **`forge-trust-code`** to run the **two-stage review** pipeline.
 
-**Stage 1 — Spec Reviewer:** Skeptical adversary that reads actual code (doesn't trust the implementer's report). Maps each requirement to code line-by-line. Checks for over-building beyond spec scope.
+**Stage 1 — Spec reviewer:** Maps requirements to **actual code**; rejects trust in implementer narrative alone.  
+**Stage 2 — Code quality reviewer:** Runs only if Stage 1 passes; broader quality dimensions per project standards.
 
-**Stage 2 — Code Quality Reviewer:** Evaluates across 11 dimensions including naming, file size, complexity, test coverage, performance, security, and observability. Only runs if Stage 1 passes.
+<HARD-GATE>
+Do NOT skip Stage 1 for “small” diffs when **`forge-trust-code`** is in scope — spec claims must be verified against code.
+</HARD-GATE>
+
+**Forge plugin scope:** This repo’s review integration; brain + product repos as the skill specifies.
+
+**vs `/forge`:** **`/review`** is a **partial** slice (post-implementation gate). Full E2E: **`commands/forge.md`**.
+
+**Session style:** Bias **planning-style** for read-heavy spec review; **execution-style** when applying fixes. See **`docs/platforms/session-modes-forge.md`**.

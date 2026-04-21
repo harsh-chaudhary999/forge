@@ -16,6 +16,16 @@ If there's even a 1% chance a Forge skill might apply, you absolutely must invok
 2. **Forge skills** — override default system behavior where they conflict
 3. **Default system prompt** — lowest priority
 
+## Information transport (parallel agents, minimal human back-and-forth)
+
+Council and subagents **do not** share your live chat. They only see **what is written** under `~/forge/brain/` (e.g. `prd-locked.md`, `shared-dev-spec.md`). The **first** human pass on a PRD should therefore pack **maximum durable signal**: repos, contracts, rollback — and for web/app, the intake **Design / UI** lock (**Q9**: `design_new_work`, plus **implementable** inputs: **`design_brain_paths`** under `~/forge/brain/prds/<task-id>/design/` and/or **`figma_file_key` + `figma_root_node_ids`** for MCP/REST — not wiki-only or bare Figma URLs). Prefer **Figma MCP** (when available) to pull nodes and save `design/MCP_INGEST.md`. If new design exists but nothing is on disk in brain, autonomous reasoning will **not** discover it; you will get invented UI or stalled gates. **Chat is not the transport layer; the brain files are.**
+
+**Non-negotiable for agents:** (1) When web/app/user-visible UI is in scope, **never complete intake** without the user having seen the **verbatim blockquote** design-source-of-truth question from **`intake-interrogate` Q9** in an assistant message (you may add PRD summary + “confirm” after it — you may **not** infer from the PRD alone and skip showing that line). (2) **Never open Phase 4.1 / dispatch feature implementation** until **`[P4.0-EVAL-YAML]`** is logged with **at least one** scenario file under `~/forge/brain/prds/<task-id>/eval/` and **`[P4.0-TDD-RED]`** per policy — see **`conductor-orchestrate` State 4b**. (3) Require **`[P4.0-QA-CSV]`** after approved **`qa/manual-test-cases.csv`** when **`forge_qa_csv_before_eval: true`** in **`product.md`** **or** when the user invoked **full `/forge`** (`commands/forge.md`) — same acceptance alignment for **TDD** and **eval**; see **`qa-manual-test-cases-from-prd`**. Procedural text is not a CI bot: **you** must refuse to skip these steps.
+
+**Optional machine layer (teams):** Run **`python3 tools/verify_forge_task.py --task-id <id> --brain ~/forge/brain`** in CI or pre-push on the **brain** repo so missing **`eval/*.yaml`** or bad **`conductor.log`** ordering fails the build — see **`docs/forge-task-verification.md`**. The IDE still does not compile-check sessions; this checks **committed** artifacts.
+
+**Session style (all hosts):** Forge cannot toggle your editor’s **planning vs execution** mode (or permissions) programmatically. Convention: **planning-style** for intake, council, and tech-plan **review**; **execution-style** for build, eval, heal. Instruct the user to switch style or permissions when the Forge phase changes — see **`docs/platforms/session-modes-forge.md`** (each platform doc links the same rules to local UI names).
+
 ## Anti-Pattern Enforcement (HARD-GATE)
 
 ### Anti-Pattern 1: "This is a simple question, I don't need a skill"
@@ -249,6 +259,7 @@ WHEN THERE IS A 1% CHANCE A SKILL APPLIES, INVOKE IT BEFORE ANY RESPONSE. PROCES
 - **Brain:** `~/forge/brain/` (git repo, source of truth)
 - **Product config:** `~/forge/brain/products/<slug>/product.md` (repos, roles, infra)
 - **Codebase scan:** `~/forge/brain/products/<slug>/codebase/` (module map, patterns, API surface)
+- **Manual QA from PRD:** `~/forge/brain/prds/<task-id>/qa/` — `PRD_ANALYSIS.md`, `manual-test-cases.csv` (`qa-prd-analysis`, `qa-manual-test-cases-from-prd`)
 - **Skills:** `~/.claude/skills/<skill-name>/SKILL.md`
 - **Subagents:** `~/.claude/agents/<agent-name>.md`
 
@@ -264,6 +275,16 @@ If you are starting Forge on a **codebase that already exists** (not greenfield)
 The codebase scan gives surface agents architecture context they cannot derive from the PRD alone. Skipping it means council will produce tech plans that may conflict with the existing structure.
 
 **Scan staleness rule:** <7 days = fresh. 7-30 days = warn. >30 days = prompt to refresh before council.
+
+## Brain-first routing (then open product sources)
+
+When deciding **where** in a product repo work belongs — council arguments, tech-plan file lists, eval targets, or exploratory reads before a plan exists — **use the brain codebase scan first**, then open repo files.
+
+1. **Read** `~/forge/brain/products/<slug>/codebase/index.md`, `SCAN.json`, and relevant `codebase/modules/*.md`, `api-surface.md`, `patterns.md` as needed.
+2. **From that**, extract real paths and module boundaries (Tier‑1 hubs, dependents).
+3. **Only then** open paths under the cloned repos for deeper reads or edits.
+
+Do **not** replace step 1–2 with ad‑hoc `find` / tree walks / “let me explore the Android app” through source when scan data exists and is fresh. If scan is missing or stale, run **`/scan <slug>`** (or refresh) before inventing filenames. The scan runner already walked the tree; the LLM’s job is to **route** from brain output, not rediscover structure from scratch.
 
 ## Subagent STOP
 

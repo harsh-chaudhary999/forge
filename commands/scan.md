@@ -6,6 +6,8 @@ trigger: /scan
 
 # /scan
 
+**Forge plugin:** Invokes **`scan-codebase`** / **`forge_scan`** from **this** repo; outputs go under **`~/forge/brain/products/<slug>/codebase/`** (per skill). Not a substitute for **`/forge`** delivery.
+
 Build a codebase knowledge graph for the Forge brain. Works on any existing repo — no prior Forge setup needed. Produces navigable Obsidian markdown files that agents can query without re-reading source code.
 
 ## Usage
@@ -41,7 +43,18 @@ Build a codebase knowledge graph for the Forge brain. Works on any existing repo
 
 ---
 
-### Step 1 — Check for existing scan
+### Step 1 — Deployment / runbook readiness (from `product.md`)
+
+When `~/forge/brain/products/<slug>/product.md` exists, **read it before** invoking `scan-codebase` / `forge_scan.py`:
+
+- For each `### <project>` block, check for **`deploy_doc`** (path relative to that project’s `repo:`) **or** a usable **`start`** + **`health`** pair.
+- If **missing**: run the same README / `docker-compose` discovery as **`/workspace` Step 3b**. If still insufficient, **pause** the scan once, require a doc path or `start`/`health`, update `product.md`, then continue. **Do not** complete `/scan` for that slug while deploy fields are empty (same bar as workspace).
+
+This keeps the first workspace pass authoritative while allowing `/scan --refresh` without repeating the whole wizard if `product.md` is already complete.
+
+---
+
+### Step 2 — Check for existing scan
 
 ```bash
 cat ~/forge/brain/products/<slug>/codebase/SCAN.json 2>/dev/null
@@ -62,7 +75,7 @@ If scan is >7 days old → proceed automatically with re-scan, note: "Scan is <N
 
 ---
 
-### Step 2 — Invoke scan-codebase skill
+### Step 3 — Invoke scan-codebase skill
 
 **REQUIRED SKILL:** Use `scan-codebase` skill for all phases.
 
@@ -90,11 +103,11 @@ Run the scan-codebase skill for each project role. Process roles in this order:
 2. `shared` / `lib` (often imported by everything)
 3. `web` / `mobile` (consumer layers)
 
-**Script order (multi-repo — see `scan-codebase` SKILL):** optional `validate-product-roles.sh` on `product.md` → per repo `phase1-inventory.sh` → `phase35-extract.sh` (first routes run **without** `append`, later repos **with** `append`) → per repo `phase4-brain-write.sh` (pass `ROLE` = basename of that repo path) → once `phase5-cross-repo.sh` → once `phase56-autolink-crossrepo.sh` → optional `phase57-validate-brain-wikilinks.sh --write-report` → **`cleanup.sh`** to clear `/tmp/forge_scan_*.txt`.
+**Runner (multi-repo — see `scan-codebase` SKILL):** one invocation — `python3 tools/forge_scan.py` (or `PYTHONPATH=tools python3 -m scan_forge`) with `--brain-codebase`, `--repos role:path …`, optional `--product-md` (validates roles), optional `--phase57-write-report`, optional **`--cleanup`** (removes `forge_scan_*.txt` in the temp run directory). Phases 1 → 3.5 → 4 → 5 → 56 → 57 run in order inside `tools/scan_forge/`. See `tools/README.md`.
 
 ---
 
-### Step 3 — Show results
+### Step 4 — Show results
 
 After scan completes:
 
@@ -144,7 +157,7 @@ If over token budget (>15K):
 
 ---
 
-### Step 4 — Auto-trigger context (from /workspace)
+### Step 5 — Auto-trigger context (from /workspace)
 
 When `/scan` is invoked automatically at the end of `/workspace` init:
 

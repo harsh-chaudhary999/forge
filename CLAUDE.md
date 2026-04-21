@@ -41,7 +41,7 @@ requires: [other-skill-name]
 
 | Thing | Location |
 |---|---|
-| Skills (63) | `skills/` |
+| Skills (68) | `skills/` |
 | Agents (4) | `agents/` |
 | Commands (15) | `commands/` |
 | Plugin hooks | `hooks/` |

@@ -7,6 +7,8 @@ requires: [brain-read]
 
 # Eval Scenario Format
 
+**Related (manual QA backlog):** For **atomic manual test cases** in CSV (PRD → spreadsheet / TMS import), use **`qa-manual-test-cases-from-prd`** after **`qa-prd-analysis`**. This skill defines **YAML for automated eval drivers** only.
+
 ## Anti-Pattern Preamble: Why Scenario Authors Write Broken Scenarios
 
 ### Anti-Pattern 1: "Scenarios are flaky, let's skip eval and ship"
@@ -96,6 +98,30 @@ If you notice any of these, STOP and do not proceed:
 The eval scenario format is a declarative YAML specification for defining multi-surface user journey tests. Each scenario describes a sequence of driver actions across web, API, database, cache, search, and message bus layers, with clear expected results and failure handling policies.
 
 Scenarios are executable by `eval-coordinate-multi-surface` and support comprehensive validation across an entire system's execution surface.
+
+## Minimum smoke scenario (unblock P4.4)
+
+To reach **`[P4.0-EVAL-YAML]`** and **`/eval`** without boiling the ocean, commit **one** minimal file under `~/forge/brain/prds/<task-id>/eval/` (e.g. `smoke.yaml`) with **one journey** and **one driver** your stack actually runs (often **`api-http`** against **`health`**). Expand coverage after GREEN.
+
+```yaml
+scenario: stack-smoke
+description: One API health check to prove eval wiring and stack-up.
+preconditions: []
+steps:
+  - id: "step_1"
+    driver: "api-http"
+    action: "call"
+    method: "GET"
+    url: "http://localhost:3000/health"
+    timeout_ms: 5000
+    expected:
+      status: 200
+postconditions: []
+metadata:
+  tags: ["smoke"]
+```
+
+Then grow steps per **`eval-scenario-format`** below. Optional CI: **`tools/verify_forge_task.py`** only checks that **≥1** YAML exists and log order — not scenario quality.
 
 ## Schema
 

@@ -34,6 +34,8 @@ Non-technical stakeholders can describe user flows in plain English, and the ski
 - Add sensible defaults (timeouts, expected results)
 - Include both UI validation and backend verification steps
 
+**Upstream manual QA:** When **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** exists (from **`qa-manual-test-cases-from-prd`**), read it and **carry each relevant `Id` into scenario `name` / `description` / top-level comments** so **P4.4 eval execution** traces to the same acceptance rows that **TDD RED** tests were expected to cover. Do not invent parallel journeys that contradict approved CSV steps.
+
 ## Anti-Pattern Preamble: Why Plain English Isn't Enough
 
 Teams often rationalize skipping YAML translation or cutting corners. Here's why these rationalizations fail:

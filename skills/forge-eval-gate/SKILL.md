@@ -18,9 +18,13 @@ type: rigid
 | "The 3-retry limit is too strict, we should allow more retries" | 3 retries is not a limitation, it's a signal. If eval fails after 3 attempts, the feature is broken, not the eval. Fix the feature. |
 | "This is just a config change, it doesn't need full eval" | Config changes affect all downstream consumers. Eval catches config mismatches that code review never will. |
 | "We can defer eval to post-merge, do it in staging" | Once merged, the bug is in main. Eval is pre-merge only. Post-merge eval is incident response, not quality control. |
+| "Conductor / agent stopped after implement or review — eval was never run" | **Orchestration is incomplete.** `conductor-orchestrate` **must** enter **P4.4** (`eval-product-stack-up` + drivers) after reviews unless the human **logs an explicit task ABORT**. Partial runs are not shippable. |
+| "We skipped writing `eval/*.yaml` and went straight to implementation" | **Invalid orchestration.** **State 4b** requires **`[P4.0-EVAL-YAML]`** with **≥1** file under `~/forge/brain/prds/<task-id>/eval/` **before** P4.1. No eval scenarios → P4.4 has nothing faithful to run; you only have ad-hoc manual checks. **CI:** wire **`tools/verify_forge_task.py`** (`docs/forge-task-verification.md`) so this state fails the merge, not just the session. |
+| "Eval passed but nobody checked against approved QA CSV" | When **`forge_qa_csv_before_eval: true`**, GREEN eval should **exercise the same journeys** as **`qa/manual-test-cases.csv`** (IDs referenced in YAML). Otherwise “passing eval” is not proof the signed acceptance set ran. |
 | "The performance test results look good from the code, we don't need eval" | Code metrics don't equal runtime behavior. Network latency, contention, GC pauses all appear at runtime, not in code. |
 | "Eval caught a flaky test, we can just remove the flaky test" | A flaky test is a symptom of real behavior. Removing the test hides the problem. Fix the underlying flakiness. |
 | "This change doesn't touch user flows, eval isn't critical" | Internal changes affect reliability. All changes affect user experience eventually (latency, availability, correctness). Eval all. |
+| "Eval is GREEN so layout must match Figma" | Default eval drivers are **behavior-first**. **`design_new_work: yes`** tasks still need **design parity** (`design-implementation-reviewer` / **figma-design-sync** in conductor P4.2, or human visual sign-off when the harness has no design subagent). Do not treat API-green as pixel-perfect. |
 
 ## Iron Law
 
@@ -35,6 +39,7 @@ If you notice any of these, STOP and do not proceed:
 - **A PR is raised before eval passes** — Merging without eval means deploying untested code. STOP. Eval must return GREEN before any PR is raised.
 - **Eval is run against uncommitted code** — Eval must test what will be merged, not what is in progress. STOP. Commit all changes before running eval.
 - **Eval driver is skipped because the service is "not changed"** — Unchanged services still verify integration. STOP. All drivers must run regardless of which services changed.
+- **Feature code or `[P4.1-DISPATCH]` appears in logs without `[P4.0-EVAL-YAML]`** — Eval scenarios were never authored. STOP. Back up to **`eval-scenario-format`** + **`eval-translate-english`**; do not treat the task as shippable.
 - **Eval fails but team proceeds citing "it's a known flaky test"** — Known flakiness is a real bug. STOP. Fix the flakiness or remove the test; do not proceed past a failing eval.
 - **Self-heal has run 3 times and eval still fails** — The cap has been reached. STOP. Escalate to human with full failure context. Do not attempt a 4th self-heal cycle.
 - **Eval verdict is YELLOW and team treats it as GREEN** — YELLOW means non-critical failures. STOP. Investigate YELLOW scenarios before merging; do not treat YELLOW as acceptable.

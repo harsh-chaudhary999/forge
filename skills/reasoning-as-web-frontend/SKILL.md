@@ -33,6 +33,17 @@ If you notice any of these, STOP and do not proceed:
 - **Accessibility requirements are absent** — Accessibility is a legal and product requirement, not optional. STOP. State WCAG level and any known constraints before spec freeze.
 - **Web surface reasoning relies on API shape before backend surface has produced its analysis** — Unilateral assumption about API contract. STOP. Run all 4 surfaces in parallel, then resolve conflicts in negotiation.
 - **State management approach is left as "TBD"** — Undefined state architecture creates integration conflicts during build. STOP. Specify state boundaries (app/page/component) before locking the spec.
+- **Web is in scope but intake Q9 / design lock was not read** — Parallel agents only see written artifacts. STOP. Read **Design / UI** from locked PRD (and **Design source (from intake)** in `shared-dev-spec.md` when present) before finishing `web.md`.
+
+## Intake design lock (before UI analysis)
+
+**HARD-GATE for autonomous handoff:** The first human loop should have locked **Q9** in `prd-locked.md` (`design_intake_anchor`, `design_new_work`, `design_assets`, implementable paths or figma keys, optional waiver). You **must** read that block before writing components, routes, or screen lists. If **`design_intake_anchor`** is missing while web UI is in scope, **STOP** — intake was incomplete; do not invent design ownership.
+
+- If **`design_new_work: yes`**: enumerate every **brain path** (`~/forge/brain/prds/<task-id>/design/…`) or **repo path** to exported assets you will read, **or** use **`figma_file_key` + `figma_root_node_ids`** from `prd-locked.md` with **Figma MCP** (preferred when the host exposes it) to fetch nodes before claiming screen inventory. If implementable inputs are missing, **STOP** — council cannot proceed on invented pixels; escalate intake gap.
+- If **`design_new_work: no`** (engineering-only / reuse): say so explicitly and anchor UI to existing patterns or PRD prose only.
+- If **`design_ui_scope: not applicable`**: state one line and skip design-file reads.
+
+Council and subagents **do not** learn about new Figma/PNG drops unless they appear in **locked PRD + `shared-dev-spec.md` → Design source (from intake)**. Chat context alone is not a transport layer.
 
 ## Purpose
 
@@ -55,25 +66,25 @@ You represent:
 - **Accessibility** - WCAG compliance, keyboard navigation, screen readers
 - **Web platform constraints** - Browser compatibility, networking, device considerations
 
-## Design Input Processing (Figma / Screenshots)
+## Design Input Processing (Figma / Screenshots / MCP)
 
 **Before running the Analysis Framework**, check if design assets were provided. Design assets are optional but change what you can produce — with them, you move from spec-derived reasoning to spec-validated reasoning.
 
-### If a Figma URL is provided
+### Priority order (best → fallback)
 
-Figma share links (`figma.com/file/...` or `figma.com/design/...`) are not directly readable. Request the user to:
+1. **Readable files on disk** — Paths under `~/forge/brain/prds/<task-id>/design/` or repo-relative exports listed in `prd-locked.md` / `shared-dev-spec.md`. **Read them first** with the Read tool (images + `README.md` / ingest notes).
+2. **Figma MCP (when the host provides it — e.g. Cursor)** — If `prd-locked.md` contains **`figma_file_key`** + **`figma_root_node_ids`**, use the **Figma MCP** tools to fetch file metadata, nodes, variables, and dev-mode context **before** asking a human for PNGs. Persist a short summary under `~/forge/brain/prds/<task-id>/design/MCP_INGEST.md` (timestamp, nodes pulled, tool used) so council threads and subagents do not depend on chat.
+3. **Figma REST API** — If MCP is unavailable but the user provides a **personal access token** and **file key**, use `GET https://api.figma.com/v1/files/{file_key}` (and nodes endpoint as needed). Same persistence rule: capture enough structured detail in the brain so downstream phases are not chat-scoped.
+4. **Human export** — Only when MCP and API are unavailable or unauthorized: request PNG/SVG exports into `~/forge/brain/prds/<task-id>/design/` and re-lock paths in intake if necessary.
 
-```
-Please export the relevant frames as PNG files and provide the file paths,
-OR share the Figma file key so I can guide extraction.
-```
+### If only a bare Figma or wiki URL exists
 
-If the user provides a Figma file key, they can export via Figma's REST API:
-```
-GET https://api.figma.com/v1/files/{file_key}
-Authorization: Bearer {personal_access_token}
-```
-The response JSON contains the full component tree — if the user pastes this, extract the node hierarchy, component names, and frame structure from it.
+Figma share links (`figma.com/file/...` or `figma.com/design/...`) are **not** directly readable as pixels in plain markdown. **Do not** invent layouts from the URL alone.
+
+- If **`figma_file_key` + `figma_root_node_ids`** are present → use **Priority order** steps 2 or 3 (MCP, then REST).
+- If not present → **STOP** and return to intake: require implementable assets per **`intake-interrogate` Q9** (brain `design/` paths, figma keys + nodes, or explicit `design_waiver: prd_only`).
+
+Wiki-only links (Confluence, Notion, etc.) **without** files in brain or repo and **without** figma key+nodes are **not** authoritative for autonomous UI — treat as a blocker until materialized.
 
 ### If screenshots or exported PNGs are provided
 

@@ -14,7 +14,7 @@ git clone https://github.com/harsh-chaudhary999/forge ~/forge
 ```
 
 No install script needed. Antigravity reads:
-- `.agent/skills/` — All 58 Forge skills (symlinked from `skills/`)
+- `.agent/skills/` — All 68 Forge skills (symlinked from `skills/`)
 - `AGENTS.md` — Project-level agent instructions
 - `GEMINI.md` — Antigravity-specific context (takes precedence over AGENTS.md)
 
@@ -34,10 +34,14 @@ Open the Forge directory in Antigravity. Skills should be listed in the agent's 
 
 | Feature | Status |
 |---|---|
-| Skills (58) | Full native support via `.agent/skills/` |
+| Skills (68) | Full native support via `.agent/skills/` |
 | AGENTS.md | Auto-loaded as project context |
 | GEMINI.md | Auto-loaded (takes precedence) |
 | MCP integration | Compatible with Forge's tool-based approach |
+
+## Forge phase session styles
+
+Antigravity’s UI controls how aggressively the agent edits and runs tools. Map Forge phases to **planning-style** vs **execution-style** as in **[`session-modes-forge.md`](session-modes-forge.md)** — the same document used for Cursor, Claude Code, and CLI hosts.
 
 ## How It Works
 
@@ -73,8 +77,10 @@ type: rigid | flexible
 ## Troubleshooting
 
 **Skills not appearing:**
-- Verify symlinks: `ls -la .agent/skills/` — each should point to `../../skills/`
-- Recreate symlinks: `cd .agent/skills && for s in ../../skills/*/; do ln -sf "$s" "$(basename $s)"; done`
+- Verify symlinks: `ls -la .agent/skills/` — each should point to `../../skills/<skill-name>`
+- Counts should match canonical `skills/` (one symlink per skill dir): `test "$(ls -1 skills | wc -l)" -eq "$(ls -1 .agent/skills | wc -l)"`
+- Find missing links: `comm -23 <(ls -1 skills | sort) <(ls -1 .agent/skills | sort)`
+- Recreate all symlinks: `cd .agent/skills && for s in ../../skills/*/; do ln -sfn "$s" "$(basename "$s")"; done`
 
 **AGENTS.md not loaded:**
 - Verify file exists at repo root

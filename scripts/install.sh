@@ -69,6 +69,7 @@ install_claude_code() {
   echo "Installing for Claude Code..."
   mkdir -p "${plugin_dir}"
 
+  rm -rf "${plugin_dir}/skills"
   cp -r "${FORGE_DIR}/skills"                "${plugin_dir}/skills"
   cp -r "${FORGE_DIR}/agents"                "${plugin_dir}/agents"
   cp -r "${FORGE_DIR}/hooks"                 "${plugin_dir}/hooks"
@@ -144,6 +145,9 @@ install_claude_code() {
   " 2>/dev/null || echo "  Warning: Could not update settings.json (Node.js required)"
 
   echo "  Done: ${plugin_dir}"
+  if [[ -x "${FORGE_DIR}/scripts/verify-forge-plugin-install.sh" ]]; then
+    echo "  Verify merged skill trees: bash \"${FORGE_DIR}/scripts/verify-forge-plugin-install.sh\" --platform claude-code"
+  fi
 }
 
 uninstall_claude_code() {
@@ -170,6 +174,9 @@ install_cursor() {
   echo "Installing for Cursor..."
   mkdir -p "${plugin_dir}"
 
+  # Replace skills wholesale so stale layouts (e.g. accidental skills/skills/) cannot persist
+  # after a merge-style cp.
+  rm -rf "${plugin_dir}/skills"
   cp -r "${FORGE_DIR}/skills"             "${plugin_dir}/skills"
   cp -r "${FORGE_DIR}/agents"             "${plugin_dir}/agents"
   cp -r "${FORGE_DIR}/commands"           "${plugin_dir}/commands"
@@ -202,6 +209,10 @@ RULES
   echo "  Done: ${plugin_dir}"
   echo "  Global Cursor rules: ${global_rules_dir}/forge.mdc (loads in every project)"
   echo "  Note: Restart Cursor to activate."
+  if [[ -x "${FORGE_DIR}/scripts/verify-forge-plugin-install.sh" ]]; then
+    echo "  Verify plugin skill layout: bash \"${FORGE_DIR}/scripts/verify-forge-plugin-install.sh\" --platform cursor"
+    echo "  (all IDEs with merged skills/: --all)"
+  fi
 }
 
 uninstall_cursor() {
@@ -292,12 +303,16 @@ install_opencode() {
   mkdir -p "${plugin_dir}"
 
   ln -sf "${FORGE_DIR}" "${plugin_dir}/forge" 2>/dev/null || {
+    rm -rf "${plugin_dir}/skills"
     cp -r "${FORGE_DIR}/skills" "${plugin_dir}/skills"
     cp -r "${FORGE_DIR}/agents" "${plugin_dir}/agents"
     cp "${FORGE_DIR}/.opencode/plugins/forge.js" "${plugin_dir}/forge.js"
   }
 
   echo "  Done: ${plugin_dir}"
+  if [[ -x "${FORGE_DIR}/scripts/verify-forge-plugin-install.sh" ]]; then
+    echo "  Verify: bash \"${FORGE_DIR}/scripts/verify-forge-plugin-install.sh\" --platform opencode"
+  fi
 }
 
 uninstall_opencode() {

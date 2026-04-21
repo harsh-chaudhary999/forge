@@ -1,9 +1,18 @@
 ---
-description: "Diagnose and fix eval failures — locate fault, triage, debug, fix (max 3 attempts)"
+name: heal
+description: "Partial slice — self-heal after eval RED: locate fault, triage, fix, verify (max 3 loops). Invoke self-heal-locate-fault then triage/debug skills per conductor."
 ---
 
-Invoke the `self-heal-locate-fault` skill to begin the self-heal loop.
+Invoke **`self-heal-locate-fault`** to begin the **self-heal** loop after a failed **`/eval`** (or equivalent **`forge-eval-gate`** outcome).
 
-The self-heal pipeline: locate which service failed → triage the failure (flaky test, bad test, real bug, or environment issue) → systematic debug (4-phase investigation) → fix in the affected project.
+Pipeline: **locate** failing service → **triage** (flaky test, bad test, real bug, environment) per **`self-heal-triage`** → **systematic debug** (**`self-heal-systematic-debug`**) → **fix** → **re-verify** (re-run eval). Cap: **3** attempts per **`self-heal-loop-cap`**; then **escalate** to the human with evidence.
 
-Maximum 3 retry attempts. If the issue persists after 3 loops, escalation to the user is required.
+<HARD-GATE>
+Do NOT silently drop failing eval scenarios — after three failed heal loops, **STOP** and escalate; do not merge or declare success.
+</HARD-GATE>
+
+**Forge plugin scope:** Skills under **`skills/self-heal-*`**; evidence in brain and repo worktrees.
+
+**vs `/forge`:** **`/heal`** is a **reactive** slice after eval. Full E2E including eval green path and PR set: **`commands/forge.md`** (`/forge`).
+
+**Session style:** Prefer **execution-style**. See **`docs/platforms/session-modes-forge.md`**.

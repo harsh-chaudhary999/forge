@@ -1,7 +1,16 @@
 """Mirror curated repository Markdown + OpenAPI specs into ``brain_codebase/repo-docs/``.
 
-Produces verbatim byte-identical snapshots with ``content_sha256`` provenance in
-``index.json``. Incremental: unchanged files (same SHA) are not re-copied.
+Markdown files are enriched (not verbatim) by ``repo_docs_extract``:
+  - YAML frontmatter (source_repo, commit, doc_type, scanned_at)
+  - Heading outline appended for navigation
+  - ADR structured fields (Status, Context, Decision, Consequences)
+  - Wikilinks to matching brain module/class nodes
+  - Per-section rows fed into SEARCH_INDEX.md
+
+OpenAPI/Swagger YAML/JSON files are stored verbatim (structured data, not narrative).
+
+Incremental: source SHA tracked; files only re-enriched when source changes or
+extract_version bumps. Stale brain files removed when source docs are deleted.
 
 Per-repo optional policy (``forge-scan-docs.policy.yaml`` / ``.forge-repo-docs.yaml``):
   ``deny_path_contains``      — never copy or index
@@ -26,7 +35,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from . import fs_util, log, repo_docs_policy
+from . import fs_util, log, repo_docs_extract, repo_docs_policy
 
 _ROOT_DOC_NAMES = frozenset(
     {
@@ -150,14 +159,18 @@ def mirror_repo_docs(brain_codebase: Path, repos: list[tuple[str, Path]]) -> dic
     head_by_role: dict[str, str] = {role: _git_head(path.resolve()) for role, path in repos}
 
     # Load existing index to enable incremental skip
-    existing_index: dict[str, str] = {}  # brain_relative -> content_sha256
+    # key: brain_relative → (source_sha256, extract_version)
+    existing_index: dict[str, tuple[str, int]] = {}
     idx_path = root / "index.json"
     if idx_path.is_file():
         try:
             prev = json.loads(idx_path.read_text(encoding="utf-8"))
             for e in prev.get("files", []):
-                if e.get("brain_relative") and e.get("content_sha256"):
-                    existing_index[e["brain_relative"]] = e["content_sha256"]
+                if e.get("brain_relative") and e.get("source_sha256"):
+                    existing_index[e["brain_relative"]] = (
+                        e["source_sha256"],
+                        e.get("extract_version", 0),
+                    )
         except (OSError, json.JSONDecodeError):
             pass
 
@@ -165,6 +178,7 @@ def mirror_repo_docs(brain_codebase: Path, repos: list[tuple[str, Path]]) -> dic
     all_written: list[dict[str, Any]] = []
     all_index_only: list[dict[str, Any]] = []
     all_skipped: list[dict[str, Any]] = []
+    all_search_rows: list[dict[str, str]] = []
     total_bytes = 0
 
     for role_idx, (role, repo) in enumerate(repos):
@@ -225,29 +239,60 @@ def mirror_repo_docs(brain_codebase: Path, repos: list[tuple[str, Path]]) -> dic
                 continue
 
             data = w.src.read_bytes()
-            digest = hashlib.sha256(data).hexdigest()
+            source_digest = hashlib.sha256(data).hexdigest()
             dest = root / role / Path(w.rel)
             brain_rel = str(dest.relative_to(brain_codebase)).replace("\\", "/")
+            is_markdown = w.rel.lower().endswith(".md")
 
-            # Incremental: skip write if content unchanged
-            if existing_index.get(brain_rel) == digest and dest.is_file():
-                log.log_step(f"repo_docs_mirror unchanged={brain_rel}")
-            else:
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                dest.write_bytes(data)
+            # Incremental: skip if source unchanged AND extract version unchanged
+            prev_sha, prev_ver = existing_index.get(brain_rel, ("", -1))
+            needs_write = (
+                source_digest != prev_sha
+                or prev_ver != repo_docs_extract._EXTRACT_VERSION
+                or not dest.is_file()
+            )
 
-            b = len(data)
-            total_bytes += b
-            all_written.append({
+            entry: dict[str, Any] = {
                 "role": role,
                 "source_relative": w.rel,
                 "brain_relative": brain_rel,
                 "source_head": head,
-                "bytes": b,
-                "content_sha256": digest,
+                "source_sha256": source_digest,
+                "extract_version": repo_docs_extract._EXTRACT_VERSION if is_markdown else 0,
                 "tier": "snapshot",
                 "scanned_at": scanned_at,
-            })
+            }
+
+            if needs_write:
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                if is_markdown:
+                    enriched, meta = repo_docs_extract.enrich_markdown(
+                        data, w.rel, role, head, scanned_at, brain_codebase
+                    )
+                    dest.write_bytes(enriched)
+                    entry["doc_type"] = meta["doc_type"]
+                    entry["headings_count"] = meta["headings_count"]
+                    entry["brain_links_count"] = meta["brain_links_count"]
+                    all_search_rows.extend(meta["search_rows"])
+                    b = len(enriched)
+                else:
+                    dest.write_bytes(data)
+                    b = len(data)
+                entry["bytes"] = b
+            else:
+                log.log_step(f"repo_docs_mirror unchanged={brain_rel}")
+                entry["bytes"] = dest.stat().st_size if dest.is_file() else len(data)
+                # Re-collect search rows from existing enriched file for index rebuild
+                if is_markdown and dest.is_file():
+                    existing_text = dest.read_text(encoding="utf-8", errors="replace")
+                    doc_type = repo_docs_extract.detect_doc_type(w.rel, existing_text)
+                    entry["doc_type"] = doc_type
+                    all_search_rows.extend(
+                        repo_docs_extract.extract_search_rows(role, w.rel, existing_text, doc_type)
+                    )
+
+            total_bytes += entry["bytes"]
+            all_written.append(entry)
             repo_file_count += 1
 
     # Remove stale brain files no longer in any repo
@@ -259,6 +304,9 @@ def mirror_repo_docs(brain_codebase: Path, repos: list[tuple[str, Path]]) -> dic
                 stale.unlink(missing_ok=True)
                 log.log_step(f"repo_docs_mirror removed stale={old_rel}")
 
+    # Write search index
+    repo_docs_extract.write_search_index(root, all_search_rows)
+
     policies_used = [
         {"role": r, "policy_path": policies[r].policy_path, "max_bytes_per_file": policies[r].max_bytes_per_file, "max_files": policies[r].max_files}
         for r, _ in repos
@@ -269,8 +317,13 @@ def mirror_repo_docs(brain_codebase: Path, repos: list[tuple[str, Path]]) -> dic
         "\n".join([
             "# Repo documentation mirror",
             "",
-            "Verbatim **snapshots** of curated Markdown and OpenAPI specs, plus **index-only** rows for policy-excluded paths.",
-            "See **`index.json`** for `content_sha256`, tiers, and skips. **`INDEX.md`** has a human-readable table.",
+            "Enriched Markdown snapshots of curated docs from each scanned repo.",
+            "Each `.md` file has: **YAML frontmatter** (source, commit, doc_type) + "
+            "**heading outline** + **ADR fields** (if applicable) + "
+            "**brain node wikilinks** (auto-detected).",
+            "",
+            "**`SEARCH_INDEX.md`** — one row per section across all docs for topic search.",
+            "**`INDEX.md`** — file inventory table. **`index.json`** — machine-readable metadata.",
             "",
             "Default inclusion: `docs/**`, `doc/**`, `guides/**`, `adr/**`, `rfc/**`, root `*.md`, `openapi*.yaml/json`, `swagger*.yaml/json`.",
             "Optional per-repo policy: `forge-scan-docs.policy.yaml` — keys: `deny_path_contains`, `index_only_path_contains`, `allow_extra_path_contains`, `max_files`, `max_bytes_per_file`.",
@@ -285,9 +338,10 @@ def mirror_repo_docs(brain_codebase: Path, repos: list[tuple[str, Path]]) -> dic
 
     # Write index.json
     doc: dict[str, Any] = {
-        "forge_repo_docs_mirror_version": 2,
+        "forge_repo_docs_mirror_version": 3,
         "written_at": scanned_at,
-        "verbatim_snapshot_bytes": True,
+        "extract_version": repo_docs_extract._EXTRACT_VERSION,
+        "enriched_markdown": True,
         "policies_used": policies_used,
         "files": all_written,
         "index_only": all_index_only,
@@ -297,6 +351,7 @@ def mirror_repo_docs(brain_codebase: Path, repos: list[tuple[str, Path]]) -> dic
             "index_only_rows": len(all_index_only),
             "skipped": len(all_skipped),
             "snapshot_bytes": total_bytes,
+            "search_index_rows": len(all_search_rows),
         },
     }
     idx_path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
@@ -305,19 +360,19 @@ def mirror_repo_docs(brain_codebase: Path, repos: list[tuple[str, Path]]) -> dic
     lines = [
         "# Repo docs mirror index",
         "",
-        f"_v2 — {scanned_at} — snapshots are byte-identical; SHA-256 listed below._",
+        f"_v3 — {scanned_at} — Markdown files enriched with frontmatter, outline, ADR fields, and brain links._",
         "",
         "## Snapshots",
         "",
-        "| Role | Source | Brain path | HEAD | Bytes | SHA-256 (first 12) |",
-        "|---|---|---|---|---:|---|",
+        "| Role | Source | Type | Brain path | HEAD | Bytes |",
+        "|---|---|---|---|---|---:|",
     ]
     for e in all_written:
         head = e["source_head"]
         short = head[:12] + "…" if len(head) > 12 else head
-        sha = e.get("content_sha256", "")[:12]
+        doc_type = e.get("doc_type", "")
         lines.append(
-            f"| `{e['role']}` | `{e['source_relative']}` | `{e['brain_relative']}` | `{short}` | {e['bytes']} | `{sha}…` |"
+            f"| `{e['role']}` | `{e['source_relative']}` | {doc_type} | `{e['brain_relative']}` | `{short}` | {e['bytes']} |"
         )
     if all_index_only:
         lines.extend(["", "## Index only (no copy)", "", "| Role | Source | Bytes |", "|---|---|---:|"])
@@ -335,7 +390,7 @@ def mirror_repo_docs(brain_codebase: Path, repos: list[tuple[str, Path]]) -> dic
 
     log.log_step(
         f"repo_docs_mirror snapshots={len(all_written)} index_only={len(all_index_only)} "
-        f"skipped={len(all_skipped)} bytes={total_bytes} under {root}",
+        f"skipped={len(all_skipped)} bytes={total_bytes} search_rows={len(all_search_rows)} under {root}",
     )
 
     return {

@@ -198,13 +198,27 @@ def main() -> int:
         mirrored_readme = brain / "repo-docs" / _ROLE_UI / "README.md"
         assert mirrored_api.is_file(), mirrored_api
         assert mirrored_readme.is_file(), mirrored_readme
-        assert "Smoke fixture" in mirrored_api.read_text(encoding="utf-8")
+        api_text = mirrored_api.read_text(encoding="utf-8")
+        # Enriched: frontmatter present
+        assert api_text.startswith("---\n"), "mirrored .md should start with YAML frontmatter"
+        assert "source_repo:" in api_text
+        assert "doc_type:" in api_text
+        # Original content preserved
+        assert "Smoke fixture" in api_text
+        # readme enriched with correct doc_type
+        readme_text = mirrored_readme.read_text(encoding="utf-8")
+        assert "doc_type: readme" in readme_text, readme_text[:300]
+        # Search index built
+        assert (brain / "repo-docs" / "SEARCH_INDEX.md").is_file()
+        search_text = (brain / "repo-docs" / "SEARCH_INDEX.md").read_text(encoding="utf-8")
+        assert _ROLE_SVC in search_text, "search index should contain svc role rows"
         assert (brain / "repo-docs" / "INDEX.md").is_file()
         idx = json.loads((brain / "repo-docs" / "index.json").read_text(encoding="utf-8"))
-        assert idx.get("forge_repo_docs_mirror_version") == 2
+        assert idx.get("forge_repo_docs_mirror_version") == 3
+        assert idx.get("enriched_markdown") is True
         assert idx.get("totals", {}).get("snapshot_files", 0) >= 2
         snapshots = idx.get("files") or []
-        assert any("content_sha256" in e and len(e["content_sha256"]) == 64 for e in snapshots)
+        assert any("source_sha256" in e for e in snapshots)
         # Policy: allow_extra should be mirrored
         assert (brain / "repo-docs" / _ROLE_SVC / "extras" / "special.md").is_file()
         # Policy: index_only CHANGELOG should NOT be copied but appear in index_only list

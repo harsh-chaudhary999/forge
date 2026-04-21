@@ -72,6 +72,7 @@ Before any vector or FTS index ships, prefer **YAML frontmatter** on new decisio
 │       │   ├── api-surface.md                # REST endpoints, exported symbols, event schemas
 │       │   ├── gotchas.md                    # TODOs, FIXMEs, test-case-derived edge cases
 │       │   ├── cross-repo.md                 # Cross-repo API calls, shared types, env contracts
+│       │   ├── repo-docs/                    # Verbatim curated Markdown + OpenAPI spec mirrors from scanned repos (docs/, ADRs, READMEs…); INDEX.md + index.json (content_sha256)
 │       │   └── modules/                      # One .md per module/feature directory
 │       │       ├── <module-name>.md          # Exports, imports, dependents, edge cases
 │       │       └── ...

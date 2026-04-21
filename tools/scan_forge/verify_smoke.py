@@ -95,6 +95,24 @@ export default function App() {
 """,
         encoding="utf-8",
     )
+    # Repo-docs mirror fixtures
+    (backend / "docs").mkdir(parents=True, exist_ok=True)
+    (backend / "docs" / "api.md").write_text("# API notes\n\nSmoke fixture for repo-docs mirror.\n", encoding="utf-8")
+    (backend / "extras").mkdir(parents=True, exist_ok=True)
+    (backend / "extras" / "special.md").write_text("# Extra\n\nPolicy allow_extra.\n", encoding="utf-8")
+    (backend / "CHANGELOG.md").write_text("# Changelog\n\nIndex-only smoke.\n", encoding="utf-8")
+    (backend / "DO_NOT_MIRROR_secret.md").write_text("# Secret\n", encoding="utf-8")
+    (backend / "forge-scan-docs.policy.yaml").write_text(
+        "version: 1\n"
+        "deny_path_contains:\n"
+        '  - "DO_NOT_MIRROR"\n'
+        "allow_extra_path_contains:\n"
+        '  - "extras/"\n'
+        "index_only_path_contains:\n"
+        '  - "CHANGELOG"\n',
+        encoding="utf-8",
+    )
+    (web / "README.md").write_text("# Web smoke\n\nRoot readme for repo-docs mirror.\n", encoding="utf-8")
     return backend, web
 
 
@@ -157,6 +175,30 @@ def main() -> int:
         msrc = mod_backend_src.read_text(encoding="utf-8", errors="replace")
         assert "## HTTP routes (auto)" in msrc, "backend src module should list API paths from route inventory"
         assert "/api/hello" in msrc, "route inventory should surface /api/hello on module note"
+        # Repo-docs mirror assertions
+        mirrored_api = brain / "repo-docs" / "backend" / "docs" / "api.md"
+        mirrored_readme = brain / "repo-docs" / "web" / "README.md"
+        assert mirrored_api.is_file(), mirrored_api
+        assert mirrored_readme.is_file(), mirrored_readme
+        assert "Smoke fixture" in mirrored_api.read_text(encoding="utf-8")
+        assert (brain / "repo-docs" / "INDEX.md").is_file()
+        idx = json.loads((brain / "repo-docs" / "index.json").read_text(encoding="utf-8"))
+        assert idx.get("forge_repo_docs_mirror_version") == 2
+        assert idx.get("totals", {}).get("snapshot_files", 0) >= 2
+        snapshots = idx.get("files") or []
+        assert any("content_sha256" in e and len(e["content_sha256"]) == 64 for e in snapshots)
+        # Policy: allow_extra should be mirrored
+        assert (brain / "repo-docs" / "backend" / "extras" / "special.md").is_file()
+        # Policy: index_only CHANGELOG should NOT be copied but should appear in index
+        assert not (brain / "repo-docs" / "backend" / "CHANGELOG.md").is_file()
+        index_only = idx.get("index_only") or []
+        assert any("CHANGELOG" in e.get("source_relative", "") for e in index_only)
+        # Policy: deny should be absent from both snapshot and index
+        skipped = idx.get("skipped") or []
+        assert any(
+            "DO_NOT_MIRROR" in e.get("source_relative", "") and e.get("reason") == "deny_policy"
+            for e in skipped
+        )
     finally:
         import shutil
 

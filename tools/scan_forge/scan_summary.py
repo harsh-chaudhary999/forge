@@ -83,7 +83,10 @@ def write_scan_summary(brain_codebase: Path, repos: list[tuple[str, Path]]) -> P
             "## Cross-repo",
             "",
             "- **`cross-repo-automap.md`** — URL ↔ route joins with provenance tags "
-            "(`OPENAPI`, `GREP_SUBSTRING`, `GREP_TEMPLATE`, `MANUAL_ALIAS`).",
+            "(`OPENAPI`, `GREP_SUBSTRING`, `GREP_TEMPLATE`, `MANUAL_ALIAS`, `TOPOLOGY_DECLARED`, `SHARED_TYPE`, `EVENT_BUS`).",
+            "- **`repo-docs/`** — verbatim Markdown + OpenAPI spec snapshots from scanned repos (`docs/`, ADRs, READMEs…). "
+            "See `repo-docs/INDEX.md` (human table) and `repo-docs/index.json` (`content_sha256`, per-repo policy). "
+            "Disable: `FORGE_REPO_DOCS_MIRROR=0`.",
             "",
             "## API / schema hints",
             "",

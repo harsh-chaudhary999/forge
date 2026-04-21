@@ -56,6 +56,7 @@ def run_scan(
         phase5,
         phase56,
         phase57,
+        repo_docs_mirror,
         scan_graph_export,
         scan_manifest,
         scan_paths,
@@ -124,6 +125,17 @@ def run_scan(
         t0 = time.perf_counter()
         phase57.run_phase57(brain, write_report=phase57_write_report)
         timings["phase57"] = int((time.perf_counter() - t0) * 1000)
+
+    t0 = time.perf_counter()
+    rd = repo_docs_mirror.mirror_repo_docs(brain, repos)
+    timings["repo_docs_mirror"] = int((time.perf_counter() - t0) * 1000)
+    meta["repo_docs_mirror"] = {
+        "enabled": rd.get("enabled"),
+        "snapshot_files": len(rd.get("files", [])),
+        "index_only_rows": len(rd.get("index_only", [])),
+        "skipped": len(rd.get("skipped", [])),
+        "total_bytes": rd.get("total_bytes", 0),
+    }
 
     if do_cleanup:
         cleanup.run_cleanup(run_dir)

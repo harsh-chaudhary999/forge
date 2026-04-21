@@ -94,6 +94,8 @@ Given a product slug (from the locked PRD), load and validate:
    - Add a note to context-loaded.md: `⚠️ No codebase scan found — run /scan <slug> before council to give surface agents architecture context`
    - Do NOT block or fail — scan is advisory, not required for first-time setup
 
+   **Downstream routing (pass this forward in context):** Any phase that must name **concrete files** in product repos (council, tech-plan, eval YAML, design notes) should **take filenames and module boundaries from this scan output first** (`index.md`, `modules/*.md`, `api-surface.md`, hub lists in `SCAN.json`). Repo tree exploration is a **fallback** when scan is absent, stale, or a path is provably wrong after checking brain.
+
 7. **Output**
    Write to `~/forge/brain/prds/<task-id>/context-loaded.md`:
    ```markdown

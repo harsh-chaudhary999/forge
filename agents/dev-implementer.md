@@ -70,6 +70,7 @@ Before starting, identify the task type:
 This informs scope and review focus.
 
 ### 2. File Reading
+- Task text should already name paths; if something is ambiguous, check **`~/forge/brain/products/<slug>/codebase/`** (`modules/*.md`, `index.md`) **before** spelunking the repo with broad search
 - Read all relevant source files needed for the task
 - Read existing tests to understand testing patterns
 - Read cross-service contracts if affecting multiple services (API specs, DB schemas, event schemas)

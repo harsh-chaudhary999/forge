@@ -140,10 +140,10 @@ Two **rigid** skills support **manual / TMS-style** acceptance **before** implem
 | **`qa-prd-analysis`** | Structured PRD analysis → **`~/forge/brain/prds/<task-id>/qa/PRD_ANALYSIS.md`** before bulk CSV work. |
 | **`qa-manual-test-cases-from-prd`** | Atomic **CSV** (8 columns + **Source**), estimation, reuse/deprecation tracking, approvals, final report. |
 
-Set in **`templates/forge-product.md`** (copy to your real **`product.md`**):
+Set in your real **`~/forge/brain/products/<slug>/product.md`** (author via **`/workspace`** or edit in place):
 
 ```yaml
-forge_qa_csv_before_eval: false   # true = conductor requires [P4.0-QA-CSV] before [P4.0-EVAL-YAML]
+forge_qa_csv_before_eval: true   # conductor requires [P4.0-QA-CSV] before [P4.0-EVAL-YAML]; set false only if you intentionally skip CSV
 ```
 
 **`eval-translate-english`** should reference **CSV `Id`s** in YAML when both exist so **P4.4** exercises the signed inventory.
@@ -211,7 +211,7 @@ Then **`/scan <slug>`** so council and tech plans have **codebase context**.
 
 ## Describing your product
 
-Canonical template: **[`templates/forge-product.md`](templates/forge-product.md)** — copy to **`~/forge/brain/products/<slug>/product.md`**. It includes **services**, **infrastructure**, optional **`forge_qa_csv_before_eval`**, and repo metadata the conductor and eval drivers read.
+The **only** file drivers and the conductor read is **`~/forge/brain/products/<slug>/product.md`**. Create or extend it with **`/workspace`** (repos, deploy gate, services) and **`product-context-load`**. There is no bundled copy-template step — edit **`product.md`** directly so flags like **`forge_qa_csv_before_eval`** match how you actually run delivery.
 
 ---
 
@@ -320,7 +320,7 @@ forge/
 ├── docs/
 │   ├── platforms/          # Cursor, Claude Code, …
 │   └── examples/
-├── templates/              # forge-product.md, JetBrains, …
+├── templates/              # JetBrains junie-guidelines, …
 ├── .claude-plugin/
 ├── .cursor-plugin/         # Cursor manifest (plugin.json)
 ├── .agent/skills/          # Antigravity symlinks → skills/

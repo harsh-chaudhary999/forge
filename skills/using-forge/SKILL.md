@@ -276,6 +276,16 @@ The codebase scan gives surface agents architecture context they cannot derive f
 
 **Scan staleness rule:** <7 days = fresh. 7-30 days = warn. >30 days = prompt to refresh before council.
 
+## Brain-first routing (then open product sources)
+
+When deciding **where** in a product repo work belongs — council arguments, tech-plan file lists, eval targets, or exploratory reads before a plan exists — **use the brain codebase scan first**, then open repo files.
+
+1. **Read** `~/forge/brain/products/<slug>/codebase/index.md`, `SCAN.json`, and relevant `codebase/modules/*.md`, `api-surface.md`, `patterns.md` as needed.
+2. **From that**, extract real paths and module boundaries (Tier‑1 hubs, dependents).
+3. **Only then** open paths under the cloned repos for deeper reads or edits.
+
+Do **not** replace step 1–2 with ad‑hoc `find` / tree walks / “let me explore the Android app” through source when scan data exists and is fresh. If scan is missing or stale, run **`/scan <slug>`** (or refresh) before inventing filenames. The scan runner already walked the tree; the LLM’s job is to **route** from brain output, not rediscover structure from scratch.
+
 ## Subagent STOP
 
 If you are a dispatched subagent (dev-implementer, spec-reviewer, code-quality-reviewer, dreamer):

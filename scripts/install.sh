@@ -5,11 +5,28 @@
 #   bash scripts/install.sh                         # Auto-detect and install all
 #   bash scripts/install.sh --platform claude-code  # Single platform
 #   bash scripts/install.sh --uninstall             # Remove from all platforms
+#
+# Must be run with **bash** (not `sh`): the script uses bash arrays and `[[`.
 
 set -euo pipefail
 
+if [ -z "${BASH_VERSION:-}" ]; then
+  echo "ERROR: Run with bash, not sh. Example: bash scripts/install.sh" >&2
+  exit 1
+fi
+
 FORGE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 FORGE_VERSION=$(node -e "console.log(require('${FORGE_DIR}/package.json').version)" 2>/dev/null || echo "1.0.0")
+
+# Copy optional repo files (forks or sparse checkouts may omit them; do not abort set -e).
+copy_optional_file() {
+  local src="$1" dest="$2"
+  if [[ -f "$src" ]]; then
+    cp "$src" "$dest"
+  else
+    echo "  (skip optional: ${src##*/} — not in repo)" >&2
+  fi
+}
 
 # ── Argument Parsing ─────────────────────────────────────────────────────
 TARGET_PLATFORM=""
@@ -49,10 +66,20 @@ echo "Source: ${FORGE_DIR}"
 echo ""
 
 # ── Platform Detection ───────────────────────────────────────────────────
+# Cursor: many installs have no `cursor` on PATH until "Shell Command: Install" in the app.
+# Still install if the user data dir exists (after first launch) or the app bundle is present (macOS).
+detect_cursor() {
+  command -v cursor >/dev/null 2>&1 && return 0
+  [[ -d "${HOME}/.cursor" ]] && return 0
+  [[ "$(uname -s)" == "Darwin" && -d "/Applications/Cursor.app" ]] && return 0
+  [[ "$(uname -s)" == "Darwin" && -d "${HOME}/Applications/Cursor.app" ]] && return 0
+  return 1
+}
+
 detect_platforms() {
   local detected=()
   command -v claude >/dev/null 2>&1 && detected+=("claude-code")
-  command -v cursor >/dev/null 2>&1 && detected+=("cursor")
+  detect_cursor && detected+=("cursor")
   [ -d "${HOME}/.gemini/antigravity" ] && detected+=("antigravity")
   command -v gemini >/dev/null 2>&1 && detected+=("gemini-cli")
   command -v codex >/dev/null 2>&1 && detected+=("codex")
@@ -76,9 +103,9 @@ install_claude_code() {
   cp -r "${FORGE_DIR}/commands"              "${plugin_dir}/commands"
   cp    "${FORGE_DIR}/package.json"          "${plugin_dir}/package.json"
   cp    "${FORGE_DIR}/CLAUDE.md"             "${plugin_dir}/CLAUDE.md"
-  cp    "${FORGE_DIR}/GEMINI.md"             "${plugin_dir}/GEMINI.md"
   cp    "${FORGE_DIR}/AGENTS.md"             "${plugin_dir}/AGENTS.md"
-  cp    "${FORGE_DIR}/gemini-extension.json"  "${plugin_dir}/gemini-extension.json"
+  copy_optional_file "${FORGE_DIR}/GEMINI.md" "${plugin_dir}/GEMINI.md"
+  copy_optional_file "${FORGE_DIR}/gemini-extension.json" "${plugin_dir}/gemini-extension.json"
   cp -r "${FORGE_DIR}/.claude-plugin"        "${plugin_dir}/.claude-plugin"
 
   # Make hook scripts executable (graceful — not all files may exist)
@@ -143,6 +170,12 @@ install_claude_code() {
     });
     fs.writeFileSync('${settings_file}', JSON.stringify(data, null, 2));
   " 2>/dev/null || echo "  Warning: Could not update settings.json (Node.js required)"
+
+  if ! command -v node >/dev/null 2>&1; then
+    echo "  Note: Node.js not found on PATH — plugin files were copied, but installed_plugins.json"
+    echo "        and ~/.claude/settings.json were not merged. Install Node and re-run this step, or"
+    echo "        enable the plugin manually in Claude Code."
+  fi
 
   echo "  Done: ${plugin_dir}"
   if [[ -x "${FORGE_DIR}/scripts/verify-forge-plugin-install.sh" ]]; then
@@ -306,7 +339,7 @@ install_opencode() {
     rm -rf "${plugin_dir}/skills"
     cp -r "${FORGE_DIR}/skills" "${plugin_dir}/skills"
     cp -r "${FORGE_DIR}/agents" "${plugin_dir}/agents"
-    cp "${FORGE_DIR}/.opencode/plugins/forge.js" "${plugin_dir}/forge.js"
+    copy_optional_file "${FORGE_DIR}/.opencode/plugins/forge.js" "${plugin_dir}/forge.js"
   }
 
   echo "  Done: ${plugin_dir}"
@@ -409,7 +442,7 @@ else
   # Auto-detect and install all
   if $UNINSTALL; then
     echo "Uninstalling from all platforms..."
-    for platform in claude-code antigravity codex opencode gemini-cli copilot-cli jetbrains; do
+    for platform in claude-code cursor antigravity codex opencode gemini-cli copilot-cli jetbrains; do
       run_for_platform "$platform" "uninstall"
     done
   else
@@ -417,6 +450,14 @@ else
     detected=$(detect_platforms)
     echo "Detected: ${detected}"
     echo ""
+    # If only JetBrains matched, auto-detect often missed Cursor / Claude (no CLI, never opened app).
+    if [[ "${detected}" == "jetbrains" ]]; then
+      echo "No Cursor / Claude / Codex / … binaries or marker dirs found."
+      echo "If you use Cursor or Claude Code anyway, run explicitly (creates ~/.cursor or cache dirs):"
+      echo "  bash scripts/install.sh --platform cursor"
+      echo "  bash scripts/install.sh --platform claude-code"
+      echo ""
+    fi
     for platform in $detected; do
       run_for_platform "$platform" "install"
       echo ""

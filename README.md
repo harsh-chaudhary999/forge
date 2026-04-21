@@ -43,6 +43,8 @@ cd ~/forge
 
 ### 2. Install
 
+Use **bash** (not `sh` / dash). If auto-detect skips your IDE (e.g. Cursor without the shell command on PATH), pass **`--platform`** explicitly — see [Cursor troubleshooting](docs/platforms/cursor.md#installsh-did-not-install-forge-for-cursor-auto-detect-skipped-cursor).
+
 ```bash
 bash scripts/install.sh
 ```

@@ -59,6 +59,16 @@ Cursor exposes **Plan** vs **Agent** in the UI. Map them to Forge’s portable *
 
 ## Troubleshooting
 
+### `install.sh` did not install Forge for Cursor (auto-detect skipped Cursor)
+
+Auto-detect looks for the **`cursor`** shell command, a **`~/.cursor`** directory (after you have opened Cursor at least once), or **Cursor.app** under `/Applications` or `~/Applications` (macOS). On a brand-new machine with none of those, run an explicit install:
+
+```bash
+cd ~/forge && bash scripts/install.sh --platform cursor
+```
+
+That creates `~/.cursor/plugins/local/forge` and `~/.cursor/rules/forge.mdc` even before first launch. In Cursor, use **Command Palette → “Shell Command: Install 'cursor' command in PATH”** so future auto-detect works.
+
 ### Duplicate or nested `skills/` (agents read stale intake)
 
 Same issue as other merged-tree installs — see **[`plugin-skill-layout.md`](plugin-skill-layout.md)**.

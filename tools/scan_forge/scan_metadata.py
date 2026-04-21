@@ -66,6 +66,20 @@ def merge_scan_json(brain_dir: Path, repo: Path, role: str, scan_tmp: Path) -> N
 
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+    def _read_int_file(path: Path) -> int:
+        if not path.is_file():
+            return 0
+        try:
+            return int(path.read_text(encoding="utf-8").strip())
+        except (OSError, ValueError):
+            return 0
+
+    filtered_methods = scan_tmp / "forge_scan_methods_filtered.txt"
+    methods_in_inventory = (
+        _line_count(filtered_methods) if filtered_methods.is_file() else _line_count(scan_tmp / "forge_scan_methods_all.txt")
+    )
+    methods_skipped = _read_int_file(scan_tmp / "forge_scan_methods_skipped.txt")
+
     entry = {
         "repo_path": str(repo),
         "role": role,
@@ -76,7 +90,8 @@ def merge_scan_json(brain_dir: Path, repo: Path, role: str, scan_tmp: Path) -> N
         "tier1_hubs": _line_count(scan_tmp / "forge_scan_tier1.txt"),
         "tier2_hubs": _line_count(scan_tmp / "forge_scan_tier2.txt"),
         "types_in_inventory": _line_count(scan_tmp / "forge_scan_types_all.txt"),
-        "methods_in_inventory": _line_count(scan_tmp / "forge_scan_methods_all.txt"),
+        "methods_in_inventory": methods_in_inventory,
+        "methods_skipped_low_signal": methods_skipped,
         "functions_in_inventory": _line_count(scan_tmp / "forge_scan_functions_all.txt"),
         "ui_files_in_inventory": _line_count(scan_tmp / "forge_scan_ui_all.txt"),
     }
@@ -105,6 +120,7 @@ def merge_scan_json(brain_dir: Path, repo: Path, role: str, scan_tmp: Path) -> N
     out["tier2_hubs"] = _sum_field("tier2_hubs")
     out["types_in_inventory"] = _sum_field("types_in_inventory")
     out["methods_in_inventory"] = _sum_field("methods_in_inventory")
+    out["methods_skipped_low_signal"] = _sum_field("methods_skipped_low_signal")
     out["functions_in_inventory"] = _sum_field("functions_in_inventory")
     out["ui_files_in_inventory"] = _sum_field("ui_files_in_inventory")
     out["role"] = role

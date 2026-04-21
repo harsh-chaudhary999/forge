@@ -60,6 +60,7 @@ def run_scan(
         scan_manifest,
         scan_paths,
         scan_summary,
+        topology_reader,
         validate_roles,
     )
 
@@ -81,8 +82,10 @@ def run_scan(
     timings: dict[str, int] = meta["phase_timings_ms"]
     wall0 = time.perf_counter()
 
+    topology = None
     if product_md is not None and product_md.is_file():
         validate_roles.run_validate_roles(product_md)
+        topology = topology_reader.read_topology(product_md)
 
     for i, (role, path) in enumerate(repos):
         role_dir = scan_paths.role_scan_dir(run_dir, role)
@@ -101,10 +104,10 @@ def run_scan(
     timings["openapi_schema_digest"] = int((time.perf_counter() - t0) * 1000)
 
     t0 = time.perf_counter()
-    phase5.run_phase5([p for _, p in repos], run_dir)
+    phase5.run_phase5([p for _, p in repos], run_dir, topology=topology)
     timings["phase5"] = int((time.perf_counter() - t0) * 1000)
     t0 = time.perf_counter()
-    phase56.run_phase56(brain, run_dir)
+    phase56.run_phase56(brain, run_dir, topology=topology)
     timings["phase56"] = int((time.perf_counter() - t0) * 1000)
 
     t0 = time.perf_counter()

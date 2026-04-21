@@ -40,7 +40,7 @@ def _append_repo_lines(
             f.write(f"{repo_name}\t{rel}:{lineno}:{content}\n")
 
 
-def run_phase5(repos: list[Path], scan_tmp: Path) -> None:
+def run_phase5(repos: list[Path], scan_tmp: Path, topology=None) -> None:
     scan_tmp.mkdir(parents=True, exist_ok=True)
     log.log_start("phase5", f"repo_count={len(repos)} repos={';'.join(str(r) for r in repos)}")
 
@@ -60,6 +60,8 @@ def run_phase5(repos: list[Path], scan_tmp: Path) -> None:
         "forge_scan_all_types.txt",
         "forge_scan_all_env_vars.txt",
         "forge_scan_dynamic_urls.txt",
+        "forge_scan_shared_types.tsv",
+        "forge_scan_event_bus.tsv",
     ):
         (scan_tmp / name).write_text("", encoding="utf-8")
 
@@ -173,13 +175,17 @@ def run_phase5(repos: list[Path], scan_tmp: Path) -> None:
     # 5.2 types
     print()
     print("[5.2] Scanning exported types for shared type detection...")
+    # repo_name -> list of (type_decl_line, rel_path)
+    type_by_repo: dict[str, list[tuple[str, str]]] = {}
     for repo in repos:
         repo = repo.resolve()
+        name = repo.name
         raw = grep_util.run_grep_rn(
             repo,
             r"^export interface \|^export type \|^export class \|^type \|^interface ",
             ["*.ts"],
         )
+        type_by_repo[name] = []
         with (scan_tmp / "forge_scan_all_types.txt").open("a", encoding="utf-8", errors="replace") as f:
             for ln in raw.splitlines():
                 if "node_modules" in ln:
@@ -187,19 +193,55 @@ def run_phase5(repos: list[Path], scan_tmp: Path) -> None:
                 parts = ln.split(":", 2)
                 if len(parts) < 3:
                     continue
-                f.write(parts[2] + "\n")
+                abs_p, _lineno, content = parts[0], parts[1], parts[2]
+                try:
+                    rel = Path(abs_p).resolve().relative_to(repo).as_posix()
+                except ValueError:
+                    rel = abs_p
+                f.write(content + "\n")
+                type_by_repo[name].append((content.strip(), rel))
+
     type_text = (scan_tmp / "forge_scan_all_types.txt").read_text(encoding="utf-8", errors="replace")
     type_lines = [ln.strip() for ln in type_text.splitlines() if ln.strip()]
     total_decl = len(type_lines)
     ctr = Counter(type_lines)
     dup_distinct = sum(1 for n in ctr.values() if n > 1)
     print(f"  Total type declarations: {total_decl}")
+
+    # Build shared-types TSV: type_name\trepo_a\trel_a\trepo_b\trel_b
+    shared_tsv_rows: list[str] = []
+    type_name_re = re.compile(
+        r"\b(?:class|interface|type|enum)\s+([A-Z][a-zA-Z0-9_]*)"
+    )
+    if len(repos) >= 2:
+        # Build lookup: normalized_decl -> [(repo_name, rel_path)]
+        decl_map: dict[str, list[tuple[str, str]]] = {}
+        for repo_name, entries in type_by_repo.items():
+            for decl, rel in entries:
+                decl_map.setdefault(decl, []).append((repo_name, rel))
+        for decl, locs in decl_map.items():
+            if len(locs) < 2:
+                continue
+            m = type_name_re.search(decl)
+            type_name = m.group(1) if m else decl[:40]
+            for i in range(len(locs)):
+                for j in range(i + 1, len(locs)):
+                    ra, pa = locs[i]
+                    rb, pb = locs[j]
+                    shared_tsv_rows.append(f"{type_name}\t{ra}\t{pa}\t{rb}\t{pb}")
+
+    (scan_tmp / "forge_scan_shared_types.tsv").write_text(
+        "\n".join(shared_tsv_rows) + ("\n" if shared_tsv_rows else ""),
+        encoding="utf-8",
+    )
+
     if dup_distinct:
         print("  Types appearing in 2+ repos (potential shared contracts):")
         dups = sorted(((ln, c) for ln, c in ctr.items() if c > 1), key=lambda x: -x[1])[:50]
         for line, n in dups:
             print(f"    ({n}x) {line[:120]}")
-    log.log_stat(f"phase=5.2 type_declarations={total_decl} duplicate_type_lines={dup_distinct}")
+    print(f"  Shared type pairs written to forge_scan_shared_types.tsv: {len(shared_tsv_rows)}")
+    log.log_stat(f"phase=5.2 type_declarations={total_decl} duplicate_type_lines={dup_distinct} shared_type_pairs={len(shared_tsv_rows)}")
 
     # 5.3 env
     print()
@@ -234,42 +276,65 @@ def run_phase5(repos: list[Path], scan_tmp: Path) -> None:
         f"phase=5.3 env_var_lines={len(env_lines.splitlines())} distinct_process_env_keys={len(proc_keys)}",
     )
 
-    # 5.4 producers/consumers (stdout only in bash)
+    # 5.4 producers/consumers → forge_scan_event_bus.tsv
+    # columns: role\trel_path\tlineno\tkind\tpattern\ttopic
     print()
     print("[5.4] Scanning event/message bus producers and consumers...")
     prod_pat = r"publish(\|produce(\|emit(\|sendMessage\|kafkaProducer\|channel\.send\|rabbitMQ\.publish\|\.send("
     cons_pat = r"subscribe(\|consume(\|\.on(\|kafkaConsumer\|channel\.receive\|rabbitMQ\.consume\|@KafkaListener\|\.listen("
+
+    _topic_arg_re = re.compile(r"""['"]([\w.\-/]+)['"]""")
+    known_topics: set[str] = set()
+    if topology is not None:
+        known_topics = topology.all_topics()
+
+    def _resolve_topic(content: str) -> str:
+        """Best-effort: extract first quoted string that looks like a topic name."""
+        for m in _topic_arg_re.finditer(content):
+            candidate = m.group(1)
+            if known_topics and candidate in known_topics:
+                return candidate
+            if re.search(r"[.\-]", candidate) or candidate.islower():
+                return candidate
+        return ""
+
+    event_bus_rows: list[str] = []
+
+    def _scan_bus_kind(kind: str, pattern: str) -> None:
+        for repo in repos:
+            repo = repo.resolve()
+            role_name = repo.name
+            raw = grep_util.run_grep_rn(repo, pattern, ["*.ts", "*.py", "*.go", "*.java", "*.kt"])
+            for ln in raw.splitlines():
+                if "node_modules" in ln or "test" in ln.lower():
+                    continue
+                parts = ln.split(":", 2)
+                if len(parts) < 3:
+                    continue
+                abs_p, lineno, content = parts[0], parts[1], parts[2]
+                try:
+                    rel = Path(abs_p).resolve().relative_to(repo).as_posix()
+                except ValueError:
+                    continue
+                topic = _resolve_topic(content)
+                pat_matched = next(
+                    (p for p in pattern.split(r"\|") if p.rstrip("(").replace("\\", "") in content),
+                    pattern.split(r"\|")[0],
+                )
+                event_bus_rows.append(f"{role_name}\t{rel}\t{lineno}\t{kind}\t{pat_matched}\t{topic}")
+                print(f"  [{kind}] {role_name}: {rel}:{lineno}:{content[:80]}")
+
     print("  Producers:")
-    for repo in repos:
-        repo = repo.resolve()
-        raw = grep_util.run_grep_rn(repo, prod_pat, ["*.ts", "*.py", "*.go", "*.java", "*.kt"])
-        for ln in raw.splitlines():
-            if "node_modules" in ln or "test" in ln.lower():
-                continue
-            parts = ln.split(":", 2)
-            if len(parts) < 3:
-                continue
-            try:
-                rel = Path(parts[0]).resolve().relative_to(repo).as_posix()
-            except ValueError:
-                continue
-            print(f"    {repo.name}: {rel}:{parts[1]}:{parts[2]}")
+    _scan_bus_kind("pub", prod_pat)
     print("  Consumers:")
-    for repo in repos:
-        repo = repo.resolve()
-        raw = grep_util.run_grep_rn(repo, cons_pat, ["*.ts", "*.py", "*.go", "*.java", "*.kt"])
-        for ln in raw.splitlines():
-            if "node_modules" in ln or "test" in ln.lower():
-                continue
-            parts = ln.split(":", 2)
-            if len(parts) < 3:
-                continue
-            try:
-                rel = Path(parts[0]).resolve().relative_to(repo).as_posix()
-            except ValueError:
-                continue
-            print(f"    {repo.name}: {rel}:{parts[1]}:{parts[2]}")
-    log.log_step("phase=5.4 producer_consumer_grep_complete (see_stdout_above_for_hits)")
+    _scan_bus_kind("sub", cons_pat)
+
+    (scan_tmp / "forge_scan_event_bus.tsv").write_text(
+        "\n".join(event_bus_rows) + ("\n" if event_bus_rows else ""),
+        encoding="utf-8",
+    )
+    print(f"  Event bus rows written to forge_scan_event_bus.tsv: {len(event_bus_rows)}")
+    log.log_stat(f"phase=5.4 event_bus_rows={len(event_bus_rows)} pub={sum(1 for r in event_bus_rows if '\tpub\t' in r)} sub={sum(1 for r in event_bus_rows if '\tsub\t' in r)}")
 
     # 5.5 prep URLs (simplified: harvest from js_calls + broad /api patterns)
     print()

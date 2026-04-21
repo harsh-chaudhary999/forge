@@ -3,9 +3,53 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 
-from . import log, route_module_enrich, scan_metadata, stub_writers
+from . import inventory_text, log, route_module_enrich, scan_metadata, stub_writers
+
+_VIS_RE = re.compile(
+    r"\bpublic\b"          # Java, Kotlin, Go, C#
+    r"|\bexport\b"          # TypeScript / JavaScript
+    r"|\bpub fn\b"          # Rust
+    r"|\bopen fun\b"        # Kotlin open
+    r"|\bdef [a-zA-Z]"      # Python: def that doesn't start with _
+)
+
+
+def _filter_method_lines(
+    methods_path: Path,
+    tier1_path: Path,
+    filtered_path: Path,
+) -> int:
+    """Write tier1+public method lines to filtered_path; return skipped count."""
+    if not methods_path.is_file():
+        filtered_path.write_text("", encoding="utf-8")
+        return 0
+
+    tier1_files: set[str] = set()
+    if tier1_path.is_file():
+        for ln in tier1_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            ln = ln.strip()
+            if ln:
+                tier1_files.add(ln)
+
+    kept: list[str] = []
+    skipped = 0
+    for line in methods_path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if not line.strip():
+            continue
+        fpath, _lineno, content = inventory_text.parse_grep_line(line)
+        if fpath in tier1_files:
+            kept.append(line)
+            continue
+        if _VIS_RE.search(content):
+            kept.append(line)
+            continue
+        skipped += 1
+
+    filtered_path.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+    return skipped
 
 
 def run_phase4(
@@ -63,6 +107,7 @@ def run_phase4(
     functions, skipped = stub_writers.write_function_stubs(brain_dir, repo, role, funcs_path, skipped)
     print(f"  Written: {functions} function nodes")
 
+    methods_skipped_low_signal = 0
     print()
     if os.environ.get("FORGE_PHASE4_SKIP_METHODS") == "1":
         print("[4.3d] Skipping method nodes (FORGE_PHASE4_SKIP_METHODS=1)")
@@ -71,11 +116,24 @@ def run_phase4(
         print(f"[4.3d] Skipping — {methods_path} missing (run phase1)")
         methods = 0
     else:
-        print("[4.3d] Generating method nodes from forge_scan_methods_all.txt (every grep hit)...")
         n_m = len(methods_path.read_text(encoding="utf-8", errors="replace").splitlines())
-        print(f"  Input: {n_m} lines")
-        methods, skipped = stub_writers.write_method_stubs(brain_dir, repo, role, methods_path, skipped)
+        if os.environ.get("FORGE_PHASE4_METHODS_ALL") == "1":
+            print("[4.3d] Generating method nodes (FORGE_PHASE4_METHODS_ALL=1 — no filter)...")
+            print(f"  Input: {n_m} lines")
+            methods, skipped = stub_writers.write_method_stubs(brain_dir, repo, role, methods_path, skipped)
+        else:
+            print("[4.3d] Generating method nodes (tier1+public filter; set FORGE_PHASE4_METHODS_ALL=1 to disable)...")
+            print(f"  Input: {n_m} lines")
+            tier1_path = scan_tmp / "forge_scan_tier1.txt"
+            filtered_path = scan_tmp / "forge_scan_methods_filtered.txt"
+            methods_skipped_low_signal = _filter_method_lines(methods_path, tier1_path, filtered_path)
+            n_filtered = n_m - methods_skipped_low_signal
+            print(f"  After filter: {n_filtered} (skipped {methods_skipped_low_signal} low-signal)")
+            methods, skipped = stub_writers.write_method_stubs(brain_dir, repo, role, filtered_path, skipped)
         print(f"  Written: {methods} method nodes")
+    (scan_tmp / "forge_scan_methods_skipped.txt").write_text(
+        str(methods_skipped_low_signal) + "\n", encoding="utf-8"
+    )
 
     print()
     print("[4.3e] Generating page nodes from forge_scan_ui_all.txt...")

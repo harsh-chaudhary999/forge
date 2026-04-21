@@ -77,8 +77,10 @@ type: rigid | flexible
 ## Troubleshooting
 
 **Skills not appearing:**
-- Verify symlinks: `ls -la .agent/skills/` — each should point to `../../skills/`
-- Recreate symlinks: `cd .agent/skills && for s in ../../skills/*/; do ln -sf "$s" "$(basename $s)"; done`
+- Verify symlinks: `ls -la .agent/skills/` — each should point to `../../skills/<skill-name>`
+- Counts should match canonical `skills/` (one symlink per skill dir): `test "$(ls -1 skills | wc -l)" -eq "$(ls -1 .agent/skills | wc -l)"`
+- Find missing links: `comm -23 <(ls -1 skills | sort) <(ls -1 .agent/skills | sort)`
+- Recreate all symlinks: `cd .agent/skills && for s in ../../skills/*/; do ln -sfn "$s" "$(basename "$s")"; done`
 
 **AGENTS.md not loaded:**
 - Verify file exists at repo root

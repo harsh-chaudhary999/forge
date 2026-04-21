@@ -47,6 +47,16 @@ Start a new Claude Code session. You should see Forge context injected (the `usi
 
 Claude Code does not use Cursor’s **Plan/Agent** labels. Use the same **Forge-native** split everywhere: **planning-style** (intake, council, plan review) vs **execution-style** (build, eval, heal). Achieve it with **prompts**, **permission scope**, and **human checkpoints** — see **[`session-modes-forge.md`](session-modes-forge.md)**.
 
+## Plugin skill layout (merged `skills/`)
+
+Claude Code loads skills from the plugin cache (`~/.claude/plugins/cache/forge-plugin/forge/<version>/skills/`). Stale or nested `skills/skills/` trees cause the same “wrong intake” class of bugs as on Cursor. After install, run:
+
+```bash
+bash scripts/verify-forge-plugin-install.sh --platform claude-code
+```
+
+See **[`plugin-skill-layout.md`](plugin-skill-layout.md)**.
+
 ## Limitations
 None — Claude Code is the primary platform. All features are fully supported.
 

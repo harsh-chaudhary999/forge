@@ -187,7 +187,7 @@ forge_qa_csv_before_eval: false   # true = conductor requires [P4.0-QA-CSV] befo
 | OpenCode | Supported | `.opencode/plugins/forge.js` |
 | JetBrains AI | Manual | `templates/junie-guidelines.md` → `.junie/guidelines.md` |
 
-**Guides:** [`docs/platforms/`](docs/platforms/) — **Planning vs execution sessions (all hosts):** [`docs/platforms/session-modes-forge.md`](docs/platforms/session-modes-forge.md)
+**Guides:** [`docs/platforms/`](docs/platforms/) — **Planning vs execution sessions (all hosts):** [`docs/platforms/session-modes-forge.md`](docs/platforms/session-modes-forge.md) — **Merged `skills/` installs (Cursor, Claude Code, OpenCode copy):** [`docs/platforms/plugin-skill-layout.md`](docs/platforms/plugin-skill-layout.md)
 
 ---
 

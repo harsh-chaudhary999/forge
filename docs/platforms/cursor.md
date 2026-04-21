@@ -59,6 +59,16 @@ Cursor exposes **Plan** vs **Agent** in the UI. Map them to Forge’s portable *
 
 ## Troubleshooting
 
+### Duplicate or nested `skills/` (agents read stale intake)
+
+Same issue as other merged-tree installs — see **[`plugin-skill-layout.md`](plugin-skill-layout.md)**.
+
+**Quick check (Cursor):**
+
+```bash
+bash scripts/verify-forge-plugin-install.sh --platform cursor
+```
+
 **`.cursorrules` not loading:**
 - Verify the file exists at repo root: `ls -la .cursorrules`
 - Restart Cursor after adding the file

@@ -6,6 +6,8 @@ trigger: /scan
 
 # /scan
 
+**Forge plugin:** Invokes **`scan-codebase`** / **`forge_scan`** from **this** repo; outputs go under **`~/forge/brain/products/<slug>/codebase/`** (per skill). Not a substitute for **`/forge`** delivery.
+
 Build a codebase knowledge graph for the Forge brain. Works on any existing repo — no prior Forge setup needed. Produces navigable Obsidian markdown files that agents can query without re-reading source code.
 
 ## Usage

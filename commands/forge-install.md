@@ -1,49 +1,50 @@
 ---
-description: "Show platform-specific Forge installation instructions"
+name: forge-install
+description: "Show Forge plugin installation instructions for Cursor, Claude Code, Antigravity, CLIs, and JetBrains — paths and scripts in this repo only."
 ---
 
-Display Forge installation instructions for all supported platforms:
+Display **Forge plugin** installation instructions for all supported platforms (this repository).
 
 ## Supported Platforms
 
 ### Claude Code (Auto)
 Forge is auto-detected as a plugin. Restart Claude Code to activate.
-- Plugin manifest: `.claude-plugin/plugin.json`
-- Hook injection: `hooks/session-start` injects `using-forge` at session start
+- Plugin manifest: **`.claude-plugin/plugin.json`**
+- Hook injection: **`hooks/session-start`** injects **`using-forge`** at session start
 
 ### Cursor (Auto)
-Same plugin system as Claude Code. Restart Cursor to activate.
-- Plugin manifest: `.cursor-plugin/plugin.json`
-- Project context: `.cursorrules` provides project-level AI guidelines
+Same plugin pattern. Restart Cursor to activate.
+- Plugin manifest: **`.cursor-plugin/plugin.json`**
+- Project context: **`.cursorrules`**
 
 ### Google Antigravity (Auto)
-Skills are auto-discovered from `.agent/skills/` directory.
-- 68 skills available via native skill loading
-- `AGENTS.md` and `GEMINI.md` provide project context
+Skills from **`.agent/skills/`** (symlinks to **`skills/`**).
+- **`AGENTS.md`**, **`GEMINI.md`**
 
 ### Gemini CLI (Auto)
-Extension auto-detected from `gemini-extension.json`.
-- Context loaded from `GEMINI.md` → `skills/using-forge/SKILL.md`
+**`gemini-extension.json`**; context from **`GEMINI.md`**
 
 ### OpenAI Codex (Auto)
-Codex reads `AGENTS.md` at session start automatically.
+**`AGENTS.md`** at session start
 
 ### GitHub Copilot CLI (Auto)
-Session-start hook detects Copilot CLI and injects context.
-- Tool mapping: `references/copilot-tools.md`
+Session-start hook; see **`references/copilot-tools.md`** for tool mapping
 
 ### JetBrains AI (Manual)
-Copy the guidelines template to each project:
 ```bash
 mkdir -p <your-project>/.junie
 cp templates/junie-guidelines.md <your-project>/.junie/guidelines.md
 ```
+(**`templates/junie-guidelines.md`** lives in **this** Forge repo.)
 
-## Fallback Install Script
+## Fallback install script
+
 ```bash
 bash scripts/install.sh                         # All platforms
 bash scripts/install.sh --platform antigravity  # Single platform
 bash scripts/install.sh --uninstall             # Remove
 ```
 
-See `docs/platforms/` for detailed per-platform guides.
+See **`docs/platforms/`** for per-platform guides.
+
+**vs `/forge`:** This command only **documents install**; it does not run the delivery pipeline. Full E2E: **`commands/forge.md`**.

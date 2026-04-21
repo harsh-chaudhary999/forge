@@ -1,10 +1,14 @@
 ---
-description: "Trace the provenance of a decision — who decided, when, why, what it blocked"
+name: why
+description: "Lookup — invoke brain-why to trace provenance of a decision (who, when, why, alternatives, outcomes)."
 ---
 
-Invoke the `brain-why` skill.
+Invoke the **`brain-why`** skill.
 
-The user's argument is a decision ID (e.g., D20260410-001) or a search term.
-If no argument was provided, ask the user which decision they want to trace.
+The user’s argument is a **decision ID** (e.g. **`D20260410-001`**) or a **search term**. If nothing was provided, ask which decision to trace.
 
-This walks the decision's provenance chain: who decided → when → why → what alternatives were considered → what it unblocked or blocked → linked decisions.
+Output: provenance chain — who decided → when → why → alternatives → what it blocked or unblocked → linked decisions — under **`~/forge/brain/`**.
+
+**Forge plugin scope:** Brain read; **`brain-why`** skill only.
+
+**vs `/forge`:** Lookup only, not delivery. Full E2E: **`commands/forge.md`**.

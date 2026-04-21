@@ -23,6 +23,7 @@ requires: [intake-interrogate, product-context-load, brain-read, brain-write, fo
 | "Eval YAML after the feature — faster to code first" | **State 4b is before State 5.** Without `~/forge/brain/prds/<task-id>/eval/*.yaml` and **`[P4.0-EVAL-YAML]`**, there is nothing for **`eval-coordinate-multi-surface`** to run in P4.4 and no proof the journey was agreed. Coding first is an orchestration failure. |
 | "`WAIVE_EVAL_YAML` so we can ship" | **Not allowed** for normal delivery. Only **`ABORT_TASK`** (human, logged) ends the run without eval artifacts — that is **not** a shipped feature. |
 | "`forge_qa_csv_before_eval: true` but we'll add the CSV after eval YAML" | Defeats the point: **RED** and **eval** must align to the **same** signed acceptance rows. CSV comes **first** when the flag is set. |
+| "`/forge` but we'll skip CSV because `product.md` never set the flag" | **`commands/forge.md` (`/forge`) = full pipeline:** State 4b **mandates** **`qa-prd-analysis`** + **`qa-manual-test-cases-from-prd`** and **`[P4.0-QA-CSV]`** before **`[P4.0-EVAL-YAML]`** — same as **`forge_qa_csv_before_eval: true`**. Persist **`forge_qa_csv_before_eval: true`** in **`product.md`** if it was missing or false. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -31,6 +32,7 @@ requires: [intake-interrogate, product-context-load, brain-read, brain-write, fo
 ```
 THE ORCHESTRATOR IS THE SINGLE SOURCE OF STATE. NO PHASE IS SKIPPED, NO TRANSITION IS UNAUTHORIZED, AND NO SUBAGENT ESCALATION IS IGNORED.
 NO P4.1 / IMPLEMENTATION DISPATCH WITHOUT [P4.0-EVAL-YAML] (scenario_files>=1) AND [P4.0-TDD-RED] PER POLICY — THERE IS NO STANDARD "WAIVE_EVAL_YAML" FOR SHIPPABLE WORK.
+NO FULL /forge PIPELINE (commands/forge.md) WITHOUT [P4.0-QA-CSV] approved=yes BEFORE [P4.0-EVAL-YAML] — SET forge_qa_csv_before_eval: true IN product.md IF UNSET OR FALSE.
 ```
 
 ## Red Flags — STOP
@@ -270,13 +272,16 @@ Ensure **consensus** across all repos (no conflicting contracts).
 ### State 4b: Eval scenarios + RED tests (HARD-GATE before implementation)
 **ENTRY:** All tech plans written and `shared-dev-spec.md` locked.  
 **ACTION:**
-  0. **Manual QA CSV (acceptance inventory — before eval YAML and before feature TDD):** When the product’s **`product.md`** sets **`forge_qa_csv_before_eval: true`**, or when the task charter explicitly requires a QA CSV deliverable, complete **`qa-prd-analysis`** + **`qa-manual-test-cases-from-prd`** through **Step 7 approval** so **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** exists with **≥1** approved row. Log **`[P4.0-QA-CSV] task_id=<id> rows=<n> approved=yes`**. If the flag is **false** or unset, this step is **recommended** for traceability — still log **`[P4.0-QA-CSV] skipped=not_required`** when intentionally omitted. The only escape when the flag is **true** is **`[ABORT_TASK]`** with human owner — not silent skip.
+  0. **Manual QA CSV (acceptance inventory — before eval YAML and before feature TDD):**
+  - **Full pipeline entrypoint (`/forge` — `commands/forge.md`):** The user chose **end-to-end automation**, not a partial phase. **Always** complete **`qa-prd-analysis`** + **`qa-manual-test-cases-from-prd`** through **Step 7 approval** so **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** exists with **≥1** approved row. Log **`[P4.0-QA-CSV] task_id=<id> rows=<n> approved=yes`**. **Do not** log **`[P4.0-QA-CSV] skipped=not_required`**. If **`~/forge/brain/products/<slug>/product.md`** has **`forge_qa_csv_before_eval`** unset or **`false`**, **set it to `true`** when this step completes so **`verify_forge_task.py`** and later runs match **`/forge`** semantics.
+  - **Partial runs** (orchestration **without** the **`/forge`** entrypoint — e.g. user only ran **`/plan`** or asked for “council only”): When **`forge_qa_csv_before_eval: true`** in **`product.md`**, or when the **task charter** explicitly requires a QA CSV deliverable, same requirements as the **`/forge`** bullet (mandatory CSV + log). If the flag is **false** or unset **and** the run is **partial**, this step is **recommended** — log **`[P4.0-QA-CSV] skipped=not_required`** only when intentionally omitted for that partial run.
+  - **Escape:** When CSV is mandatory (**flag true** **or** **`/forge`**), the only escape is **`[ABORT_TASK]`** with human owner — not silent skip.
   1. **Eval scenarios (YAML) — before any feature dispatch, after step 0 when applicable:** Materialize **at least one** executable scenario file under `~/forge/brain/prds/<task-id>/eval/` using **`eval-scenario-format`** + **`eval-translate-english`** from PRD + shared-dev-spec **and** (when `manual-test-cases.csv` exists) **trace rows by `Id` in scenario names or comments**. **Do not** log implementation dispatch until this directory exists on disk. Log **`[P4.0-EVAL-YAML] scenario_files=<n>`** with **`n≥1`**. If the team truly cannot author scenarios yet, the only allowed escape is **`[ABORT_TASK]`** with human owner — not silent skip.
   2. **TDD — RED first:** For each repo, dispatch **`dev-implementer`** (or a test-focused subagent with the same rigor) with **`forge-tdd`** attached to the prompt. **First deliverable only:** automated tests that encode acceptance from the **tech plan** and, when present, **approved CSV rows** — **must run and fail (RED)** before any production feature code ships for that repo. Log `[P4.0-TDD-RED] repo=<repo> test_files=<list> red_confirmed=yes`.
-  3. Conductor **does not** leave State 4b until **all** of the following hold: (a) when **`forge_qa_csv_before_eval: true`**, **`[P4.0-QA-CSV]`** with `approved=yes`; (b) **`[P4.0-EVAL-YAML]`** with `scenario_files≥1`; (c) every in-scope repo has `red_confirmed=yes` (or explicit human **`WAIVE_TDD`** logged with reason — not default). When the flag is false, (a) may be `skipped=not_required` per step 0. Next: State **4b-design** when applicable, else State 5.
+  3. Conductor **does not** leave State 4b until **all** of the following hold: (a) **`[P4.0-QA-CSV]`** with `approved=yes` when **`forge_qa_csv_before_eval: true`** **or** the run is **full `/forge`** (`commands/forge.md`); when the flag is false/unset **and** the run is **partial** (not **`/forge`**), (a) may be `skipped=not_required` per step 0; (b) **`[P4.0-EVAL-YAML]`** with `scenario_files≥1`; (c) every in-scope repo has `red_confirmed=yes` (or explicit human **`WAIVE_TDD`** logged with reason — not default). Next: State **4b-design** when applicable, else State 5.
 
-**SUCCESS CONDITION:** QA CSV gate satisfied per `product.md`; `eval/` exists with ≥1 scenario file; **`[P4.0-EVAL-YAML]`** logged; every repo has logged RED (or waived TDD).  
-**FAILURE CONDITION:** Missing QA CSV when required; missing `eval/`; missing `[P4.0-EVAL-YAML]`; skipped RED.  
+**SUCCESS CONDITION:** QA CSV satisfied when required (**`forge_qa_csv_before_eval: true`** or **full `/forge`**); `eval/` exists with ≥1 scenario file; **`[P4.0-EVAL-YAML]`** logged; every repo has logged RED (or waived TDD).  
+**FAILURE CONDITION:** Missing QA CSV when required (**flag true** or **`/forge`**); missing `eval/`; missing `[P4.0-EVAL-YAML]`; skipped RED.  
 **ESCALATION:** Missing deploy/runbook in `product.md` → user must fix workspace (`/workspace` Step 3b) before `eval-product-stack-up` can succeed.
 
 ### State 4b-design: Design ingestion (HARD-GATE before P4.1 when net-new UI)
@@ -297,7 +302,7 @@ Ensure **consensus** across all repos (no conflicting contracts).
 **SUCCESS CONDITION:** `[DESIGN-INGEST] … status=PASS` logged, or gate **not applicable** (backend-only / `design_new_work: no` / `design_waiver: prd_only`).
 
 ### State 5: Dispatch Subagents (Dev Implementers — GREEN + completion)
-**ENTRY:** **`[P4.0-EVAL-YAML]` logged with `scenario_files≥1`** **and** State 4b complete (RED logged per repo per policy, **and** **`[P4.0-QA-CSV]`** satisfied per `forge_qa_csv_before_eval` / step 0) **and** State **4b-design** satisfied or not applicable. **If `[P4.0-EVAL-YAML]` is missing, State 5 is forbidden.**  
+**ENTRY:** **`[P4.0-EVAL-YAML]` logged with `scenario_files≥1`** **and** State 4b complete (RED logged per repo per policy, **and** **`[P4.0-QA-CSV]`** satisfied per step 0: **`approved=yes`** when **`forge_qa_csv_before_eval: true`** **or** full **`/forge`**, else **`skipped=not_required`** allowed **only** for **partial** runs) **and** State **4b-design** satisfied or not applicable. **If `[P4.0-EVAL-YAML]` is missing, State 5 is forbidden.**  
 **ACTION:**
   1. Create a worktree per repo (if not already from 4b, reuse policy per `worktree-per-project-per-task`).
   2. Dispatch `dev-implementer` subagent for each repo IN PARALLEL (safe: no shared state between repos).
@@ -407,7 +412,7 @@ The Conductor manages the complete delivery cycle: dispatching dev work, reviewi
 
 #### Phase 4.0: Eval YAML + RED tests (same as State 4b)
 **ENTRY:** Tech plans + `shared-dev-spec.md` locked.  
-**ACTION:** Same as **State 4b** above — **step 0 QA CSV when required**, then **`eval/` with ≥1 YAML**, **`[P4.0-EVAL-YAML]`** logged, then **forge-tdd** RED logged per repo **before** Phase 4.1 feature work. **Phase 4.1 is invalid without `[P4.0-EVAL-YAML]`** (and invalid without **`[P4.0-QA-CSV]`** when **`forge_qa_csv_before_eval: true`**).
+**ACTION:** Same as **State 4b** above — **step 0 QA CSV when required** (**`forge_qa_csv_before_eval: true`** **or** full **`/forge`**), then **`eval/` with ≥1 YAML**, **`[P4.0-EVAL-YAML]`** logged, then **forge-tdd** RED logged per repo **before** Phase 4.1 feature work. **Phase 4.1 is invalid without `[P4.0-EVAL-YAML]`** (and invalid without **`[P4.0-QA-CSV]`** **`approved=yes`** when **`forge_qa_csv_before_eval: true`** **or** full **`/forge`**).
 
 #### Phase 4.0b: Design ingestion (same as State 4b-design)
 **ENTRY:** Phase 4.0 complete.  
@@ -945,7 +950,7 @@ conductor_state task_id=<id>
 - [ ] Logs human-readable, timestamped, machine-parseable.
 
 ### Phase 4 (Delivery & Verification)
-- [ ] **P4.0 Prerequisites:** When **`forge_qa_csv_before_eval: true`** in `product.md`, **`[P4.0-QA-CSV]`** with approved `manual-test-cases.csv` **before** `[P4.0-EVAL-YAML]`; else log `skipped=not_required` if intentional.
+- [ ] **P4.0 Prerequisites:** **`[P4.0-QA-CSV]`** with approved `manual-test-cases.csv` **before** `[P4.0-EVAL-YAML]` when **`forge_qa_csv_before_eval: true`** **or** entrypoint is **full `/forge`** (`commands/forge.md`); for **partial** runs with flag false/unset, log `skipped=not_required` only if CSV is intentionally omitted.
 - [ ] **P4.0 Prerequisites:** `~/forge/brain/prds/<task-id>/eval/` contains **≥1** scenario file; **`[P4.0-EVAL-YAML] scenario_files≥1`** logged; **`forge-tdd` RED** logged per repo (`[P4.0-TDD-RED]`); conductor log shows subagent runs for tests-before-feature. **Never** log `[P4.1-DISPATCH]` before `[P4.0-EVAL-YAML]`.
 - [ ] **P4.0b Design ingest:** When `design_new_work: yes` and web/app in scope, `[DESIGN-INGEST]` logged with brain `design/` or figma key+nodes evidence — before P4.1.
 - [ ] **P4.1 Dispatch:** worktree-per-project-per-task invoked. Dev-implementers dispatched in parallel **after** RED and design gate (GREEN implementation).

@@ -6,6 +6,8 @@ trigger: /workspace
 
 # /workspace
 
+**Forge plugin:** This command is defined in the **Forge** repository; it writes **`~/forge/brain/products/<slug>/product.md`** and related brain layout — not third-party workspace products.
+
 Set up a Forge workspace by scanning an existing folder structure. Works with any layout — Forge detects git repos, infers roles, and auto-detects languages. Only asks what it cannot figure out itself.
 
 ## Usage

@@ -17,6 +17,7 @@ Forge ships a feature across **multiple repos** without embedding a runtime fram
 - [Design & UI](#design--ui)
 - [QA & test artifacts](#qa--test-artifacts)
 - [Codebase knowledge & file targeting](#codebase-knowledge--file-targeting)
+- [Service topology](#service-topology)
 - [What makes it different](#what-makes-it-different)
 - [Platform setup](#platform-setup)
 - [Getting started with an existing project](#getting-started-with-an-existing-project)
@@ -174,10 +175,99 @@ forge_qa_csv_before_eval: true   # set false only if you intentionally skip CSV 
 
 ## Codebase knowledge & file targeting
 
-1. **`/scan`** runs **`tools/scan_forge/`** → **`~/forge/brain/products/<slug>/codebase/`** (modules, hubs, `SCAN.json`, graphs).
+1. **`/scan`** runs **`tools/scan_forge/`** → **`~/forge/brain/products/<slug>/codebase/`** — producing:
+   - **Module + class stubs** (`modules/`, `classes/`, `pages/`) — wikilinked Obsidian-format knowledge graph
+   - **`graph.json`** — full dependency graph with cross-repo edges
+   - **`SCAN.json`** — timestamp, commit SHA, file counts, method inventory stats, cross-repo edge counts
+   - **`SCAN_SUMMARY.md`** — human-readable narrative of what was found
+   - **`repo-docs/`** — enriched snapshots of curated docs from each repo (see below)
+   - **`cross-repo-automap.md`** — all detected cross-repo links with provenance labels
 2. **`product-context-load`** surfaces scan metadata and **warns** if scan is missing or **>7 days** old.
 3. **`tech-plan-write-per-project`** must list **exact file paths** (plans are what **`dev-implementer`** relies on in isolation).
 4. **Implementer** reads the paths and contracts named in the plan — it does not re-derive the repo map from scratch if the plan is complete.
+
+### Repo-docs mirror (`brain/codebase/repo-docs/`)
+
+`/scan` automatically mirrors curated documentation from each scanned repo into the brain so council, tech-plan, and eval phases can read actual docs — not just code structure.
+
+**What gets mirrored:** `docs/**`, `doc/**`, `guides/**`, `adr/**`, `rfc/**`, root `*.md` files (README, CONTRIBUTING, CHANGELOG, SECURITY, ARCHITECTURE…), `openapi*.yaml/json`, `swagger*.yaml/json`.
+
+**Enrichment applied to every `.md` file:**
+- YAML frontmatter — `source_repo`, `source_file`, `commit`, `doc_type`, `scanned_at`
+- Heading outline — extracted `##`/`###` hierarchy appended for navigation
+- ADR structured fields — `Status`, `Context`, `Decision`, `Consequences` parsed from ADR files
+- Brain node wikilinks — auto-detected links to matching `modules/` and `classes/` nodes
+
+**Index files written under `repo-docs/`:**
+- **`SEARCH_INDEX.md`** — one row per section across all docs; use this to find relevant documentation before reading full files
+- **`INDEX.md`** — file inventory table with role, type, HEAD, and byte count
+- **`index.json`** — machine-readable metadata with `source_sha256`, `doc_type`, `extract_version`, policy results
+
+**Incremental:** source SHA + extract version tracked — files are only re-enriched when the source changes or the enrichment logic is bumped.
+
+**Per-repo policy** (`forge-scan-docs.policy.yaml` in the repo root):
+
+```yaml
+version: 1
+deny_path_contains:
+  - "DO_NOT_MIRROR"        # never copy or index
+index_only_path_contains:
+  - "CHANGELOG"            # appear in index.json but no file copy
+allow_extra_path_contains:
+  - "extras/"              # include beyond the default set
+max_files: 80              # per-repo cap (default: 120)
+max_bytes_per_file: 102400 # per-repo size cap (default: 512 KB)
+```
+
+Disable entirely: `FORGE_REPO_DOCS_MIRROR=0`.
+
+### Cross-repo edge types
+
+`/scan` detects and labels relationships between repos in `cross-repo-automap.md`:
+
+| Edge type | Source | Meaning |
+|---|---|---|
+| `GREP_SUBSTRING` | URL string in source matches route in another repo | Direct HTTP call detected by static analysis |
+| `OPENAPI` | Call-site URL matched against OpenAPI spec path | Verified against the consuming service's spec |
+| `TOPOLOGY_DECLARED` | `product.md` topology says A calls B but URL is dynamic | Declared dependency (env var / template literal) — verify manually |
+| `SHARED_TYPE` | Same type name found in `classes/` of two repos | Shared data contract across services |
+| `EVENT_BUS` | Producer keyword in one repo + consumer keyword in another | Kafka/event-bus publish→subscribe link |
+
+Unresolved edges (call-sites with no matched route) are listed in an **`## Unresolved Edges`** section at the bottom of `cross-repo-automap.md` — visible, not silently dropped.
+
+---
+
+## Service topology
+
+Add a `## Service Topology` section to **`~/forge/brain/products/<slug>/product.md`** to unlock cross-repo edge inference in `/scan`. This is optional but recommended for multi-service products — without it, scan can only detect routes via literal URL strings in source code.
+
+```markdown
+## Service Topology
+
+### backend-api
+calls: [auth-service, notification-service]
+publishes: [user.created, order.placed]
+db-owner: [users_db, orders_db]
+config: [DATABASE_URL, JWT_SECRET]
+
+### frontend
+calls: [backend-api]
+subscribes: []
+config: [NEXT_PUBLIC_API_URL]
+
+### auth-service
+calls: []
+subscribes: [user.created]
+db-owner: [auth_db]
+config: [JWT_SECRET, REDIS_URL]
+```
+
+**How scan uses this:**
+- `calls` — when a call-site URL is dynamic (env var, template literal, constant), scan writes a `TOPOLOGY_DECLARED` edge instead of silently dropping it
+- `publishes` / `subscribes` — matched against grep hits for producer/consumer keywords to produce `EVENT_BUS` edges
+- Unknown keys are ignored — the format is forward-compatible
+
+Role names (`backend-api`, `frontend`, …) must match the `--repos <role>:<path>` labels used during `/scan`.
 
 ---
 
@@ -377,6 +467,20 @@ Rigid skills typically include: **Anti-Pattern Preamble**, **Iron Law**, **Red F
 Two common layouts coexist:
 
 1. **`~/forge/brain/products/<slug>/`** — `product.md`, **`codebase/`** (from `/scan`), patterns, optional nested PRD material.
+
+   **`codebase/`** contains:
+
+   | Path | Contents |
+   |---|---|
+   | `modules/` | One `.md` stub per module — imports, exports, API routes, wikilinks |
+   | `classes/` | One `.md` stub per class/type — signatures, cross-repo `SHARED_TYPE` links |
+   | `pages/` | One `.md` per source file — static import wikilinks, imported-by back-links |
+   | `graph.json` | Full dependency graph (nodes + edges, versioned) |
+   | `SCAN.json` | Timestamp, commit SHA, file counts, method inventory, cross-repo edge counts |
+   | `SCAN_SUMMARY.md` | Human-readable scan narrative |
+   | `cross-repo-automap.md` | All cross-repo edges with provenance labels + unresolved section |
+   | `repo-docs/` | Enriched Markdown + OpenAPI snapshots; `SEARCH_INDEX.md`, `INDEX.md`, `index.json` |
+
 2. **`~/forge/brain/prds/<task-id>/`** — **task** artifacts: **`prd-locked.md`**, **`shared-dev-spec.md`**, **`tech-plans/`**, **`eval/`**, **`qa/`** (`PRD_ANALYSIS.md`, **`manual-test-cases.csv`**, reports), **`design/`** (exports, MCP ingest notes), **`council/`** (or team-specific **`reasoning/`** for surface write-ups), eval verdicts, **`conductor.log`** (recommended), etc.
 
 The brain should be a **git repo** so history and provenance are preserved.

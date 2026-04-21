@@ -8,6 +8,8 @@ Validates (when applicable):
   - forge_qa_csv_before_eval: true -> qa/manual-test-cases.csv + log order vs eval
   - Net-new design (prd-locked) -> design/ artifacts or [DESIGN-INGEST] before P4.1
   - Optional --strict-tdd: [P4.0-TDD-RED] before first [P4.1-DISPATCH]
+  - Optional --gates-dir: read gate JSON ledger (written by post-commit.cjs)
+    instead of (or as supplement to) conductor.log regex parsing.
 
 Stdlib only — no PyYAML required (product.md may mix markdown headings with YAML).
 
@@ -16,11 +18,15 @@ Usage (from Forge repo root, brain elsewhere):
 
 Usage (brain repo checked out as cwd, Forge path explicit):
   python3 /path/to/forge/tools/verify_forge_task.py --task-id my-feature --brain .
+
+Usage (with gate JSON ledger from post-commit.cjs):
+  python3 tools/verify_forge_task.py --task-id my-feature --brain ~/forge/brain --gates-dir ~/forge/brain/prds/my-feature/gates
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import sys
@@ -118,12 +124,37 @@ def _design_file_count(design_dir: Path) -> int:
     return sum(1 for p in design_dir.rglob("*") if p.is_file())
 
 
+def _load_gates_ledger(gates_dir: Path | None) -> dict[str, dict]:
+    """
+    Load gate JSON artifacts written by post-commit.cjs from gates_dir.
+    Returns a mapping of gate_id -> artifact dict.
+    Only gates with status="satisfied" are included.
+
+    If gates_dir is None or does not exist, returns an empty dict (caller
+    falls back to conductor.log regex parsing as before).
+    """
+    if not gates_dir or not gates_dir.is_dir():
+        return {}
+    ledger: dict[str, dict] = {}
+    for jf in gates_dir.glob("*.json"):
+        try:
+            data = json.loads(jf.read_text(encoding="utf-8", errors="replace"))
+            gate_id = data.get("gate_id", "")
+            status = data.get("status", "")
+            if gate_id and status == "satisfied":
+                ledger[gate_id] = data
+        except (json.JSONDecodeError, OSError):
+            pass  # skip unreadable/invalid gate files
+    return ledger
+
+
 def verify(
     brain: Path,
     task_id: str,
     product_slug: str | None,
     strict_tdd: bool,
     require_log: bool,
+    gates_dir: Path | None = None,
 ) -> list[str]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -138,6 +169,18 @@ def verify(
     if product_slug and not product_md:
         errors.append(f"--product {product_slug}: missing {brain / 'products' / product_slug / 'product.md'}")
     require_qa = _product_requires_qa_before_eval(product_md)
+
+    # Load gate JSON ledger from post-commit.cjs (if available)
+    # Prefer ledger over conductor.log regex where both exist; fall back gracefully.
+    effective_gates_dir = gates_dir or (task_dir / "gates")
+    ledger = _load_gates_ledger(effective_gates_dir)
+    using_ledger = bool(ledger)
+    if using_ledger:
+        print(
+            f"INFO: Gate ledger loaded from {effective_gates_dir} "
+            f"({len(ledger)} satisfied gates: {sorted(ledger)})",
+            file=sys.stderr,
+        )
 
     eval_dir = task_dir / "eval"
     n_yaml = _eval_yaml_count(eval_dir)
@@ -168,23 +211,59 @@ def verify(
     else:
         lines = _read_text(log_path).splitlines()
 
+    # When a gate ledger is available, use it for gate presence checks.
+    # Ordering checks still use conductor.log line numbers (ledger has timestamps,
+    # but line ordering in the log is the canonical ordering authority).
+    if using_ledger:
+        # Presence checks via ledger
+        has_eval_yaml  = "P4.0-EVAL-YAML" in ledger
+        has_dispatch   = "P4.1-DISPATCH"  in ledger
+        has_qa_ok      = "P4.0-QA-CSV"   in ledger
+        has_tdd_red    = "P4.0-TDD-RED"  in ledger
+
+        if has_dispatch and not has_eval_yaml:
+            errors.append(
+                "Gate ledger: [P4.1-DISPATCH] satisfied but [P4.0-EVAL-YAML] missing — invalid orchestration."
+            )
+        if require_qa and has_eval_yaml and not has_qa_ok:
+            errors.append(
+                "Gate ledger: forge_qa_csv_before_eval: true requires [P4.0-QA-CSV] satisfied "
+                "before [P4.0-EVAL-YAML]."
+            )
+        if strict_tdd and has_dispatch and not has_tdd_red:
+            errors.append(
+                "--strict-tdd: gate ledger shows [P4.1-DISPATCH] but [P4.0-TDD-RED] is absent."
+            )
+        elif has_dispatch and not has_tdd_red:
+            warnings.append(
+                "[P4.0-TDD-RED] absent from gate ledger (dispatch happened without TDD RED). "
+                "Use --strict-tdd to fail on this."
+            )
+
+        # For ordering within the log (QA before eval, TDD before dispatch),
+        # fall through to conductor.log line checks below only when lines exist.
+
     if lines:
         ln_eval = _first_line_number(RE_P40_EVAL, lines)
         ln_p41 = _first_line_number(RE_P41_DISPATCH, lines)
         ln_qa_ok = _first_line_number(RE_P40_QA_APPROVED, lines)
         ln_tdd = _first_line_number(RE_P40_TDD_RED, lines)
 
-        if ln_p41 is not None and ln_eval is None:
-            errors.append(
-                "conductor.log has [P4.1-DISPATCH] but no [P4.0-EVAL-YAML] — invalid orchestration."
-            )
+        if not using_ledger:
+            # Presence checks via conductor.log (fallback when no ledger)
+            if ln_p41 is not None and ln_eval is None:
+                errors.append(
+                    "conductor.log has [P4.1-DISPATCH] but no [P4.0-EVAL-YAML] — invalid orchestration."
+                )
+
+        # Ordering checks always use conductor.log line numbers (ledger has no line order)
         if ln_p41 is not None and ln_eval is not None and ln_p41 < ln_eval:
             errors.append(
                 f"conductor.log: first [P4.1-DISPATCH] (line {ln_p41}) is before "
                 f"[P4.0-EVAL-YAML] (line {ln_eval})."
             )
 
-        if require_qa and ln_eval is not None:
+        if require_qa and ln_eval is not None and not using_ledger:
             if ln_qa_ok is None:
                 if RE_P40_QA_SKIPPED.search("\n".join(lines)):
                     errors.append(
@@ -202,17 +281,18 @@ def verify(
                     f"is not before [P4.0-EVAL-YAML] (line {ln_eval})."
                 )
 
-        if strict_tdd and ln_p41 is not None:
-            if ln_tdd is None or ln_tdd > ln_p41:
-                errors.append(
-                    "--strict-tdd: require [P4.0-TDD-RED] before first [P4.1-DISPATCH] "
-                    f"(tdd_line={ln_tdd}, p41_line={ln_p41})."
+        if not using_ledger:
+            if strict_tdd and ln_p41 is not None:
+                if ln_tdd is None or ln_tdd > ln_p41:
+                    errors.append(
+                        "--strict-tdd: require [P4.0-TDD-RED] before first [P4.1-DISPATCH] "
+                        f"(tdd_line={ln_tdd}, p41_line={ln_p41})."
+                    )
+            elif ln_p41 is not None and (ln_tdd is None or ln_tdd > ln_p41):
+                warnings.append(
+                    f"[P4.0-TDD-RED] missing or after first [P4.1-DISPATCH] "
+                    f"(tdd={ln_tdd}, p41={ln_p41}). Use --strict-tdd to fail on this."
                 )
-        elif ln_p41 is not None and (ln_tdd is None or ln_tdd > ln_p41):
-            warnings.append(
-                f"[P4.0-TDD-RED] missing or after first [P4.1-DISPATCH] "
-                f"(tdd={ln_tdd}, p41={ln_p41}). Use --strict-tdd to fail on this."
-            )
 
     # Net-new design: materialized under design/ and/or logged before P4.1
     if _prd_net_new_design(prd_text) and not _prd_design_waiver_prd_only(prd_text):
@@ -269,6 +349,17 @@ def main() -> int:
         action="store_true",
         help="Fail if conductor.log is missing (default: warn only)",
     )
+    p.add_argument(
+        "--gates-dir",
+        default=None,
+        help=(
+            "Path to gate JSON ledger directory written by post-commit.cjs "
+            "(e.g. brain/prds/<task-id>/gates). "
+            "When present, gate presence checks use the JSON ledger instead of "
+            "conductor.log regex; ordering checks still use conductor.log line numbers. "
+            "Defaults to prds/<task-id>/gates under the brain directory."
+        ),
+    )
     args = p.parse_args()
 
     home = Path.home()
@@ -278,12 +369,15 @@ def main() -> int:
         else Path(os.environ.get("FORGE_BRAIN", str(home / "forge" / "brain"))).expanduser()
     )
 
+    gates_dir = Path(args.gates_dir).expanduser() if args.gates_dir else None
+
     errs = verify(
         brain=brain,
         task_id=args.task_id,
         product_slug=args.product,
         strict_tdd=args.strict_tdd,
         require_log=args.require_log,
+        gates_dir=gates_dir,
     )
     if errs:
         print("Forge task verification FAILED:", file=sys.stderr)

@@ -4,6 +4,8 @@
 
 Forge ships a feature across **multiple repos** without embedding a runtime framework in your product code: **skills** (markdown + YAML), **subagents**, **hooks**, and **commands** encode process. **68 skills**, **4 subagents**, **17 slash commands**. Works with **Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Copilot CLI, OpenCode, JetBrains AI** (see [Platform Setup](#platform-setup)).
 
+**`/forge`** (`commands/forge.md`) is the **full end-to-end** entrypoint: same phases as **`conductor-orchestrate`**, including **mandatory** State 4b **manual QA CSV** (`qa-prd-analysis` → `qa-manual-test-cases-from-prd` → approved `qa/manual-test-cases.csv` → `[P4.0-QA-CSV]`) **before** `[P4.0-EVAL-YAML]`, then eval YAML, TDD RED, design ingest when applicable, dispatch, reviews, **P4.4 eval**, self-heal, PR set, dream/brain. Other slash commands are **partial slices** — see [Commands reference](#commands-reference) and [Orchestration model](#orchestration-model-automation-vs-approvals).
+
 ---
 
 ## Table of contents
@@ -24,6 +26,7 @@ Forge ships a feature across **multiple repos** without embedding a runtime fram
 - [Repository layout](#repository-layout)
 - [Brain layout](#brain-layout)
 - [Machine verification (optional CI)](#machine-verification-optional-ci)
+- [Orchestration model (automation vs approvals)](#orchestration-model-automation-vs-approvals)
 - [Troubleshooting](#troubleshooting)
 - [Requirements & license](#requirements--license)
 
@@ -69,6 +72,7 @@ You should see **using-forge** and the skill catalog (**68 skills** when install
 | A **process plugin**: rules, gates, and workflows your agent is expected to follow | A replacement for your language/framework or CI provider |
 | **Markdown skills** + optional **Python** (`tools/scan_forge/`) for codebase inventory | LangChain, Playwright, or Puppeteer in your product (explicitly out of scope for plugin code) |
 | A **brain** (`~/forge/brain/`) for PRDs, specs, scans, QA CSV, eval YAML, and decisions | **IDE enforcement is procedural** — pair with optional **[machine verification](#machine-verification-optional-ci)** (`tools/verify_forge_task.py` + CI) so bad ordering or missing `eval/` fails the build, not just the chat |
+| **Parallel subagents** (e.g. four council surfaces, per-repo **`dev-implementer`**) for independent work | **Not a background daemon** — phases do not auto-advance when files appear on disk; the **agent** must invoke the next skill/phase (or you say “continue”). **`/forge`** documents full sequencing; it does not replace host session limits or human gates where skills require approval |
 
 ---
 
@@ -82,7 +86,11 @@ PRD → Intake → Council → Spec freeze → Tech plans
          → Build (GREEN) → Review → Eval (execute) → Self-heal → PR set → Brain / dream
 ```
 
-† *Optional but recommended; **mandatory** when `forge_qa_csv_before_eval: true` in `product.md`.*  
+† **Manual QA CSV (`qa/manual-test-cases.csv`):**  
+- **`/forge` (full pipeline):** **Always mandatory** in State 4b before `[P4.0-EVAL-YAML]` — do **not** log `[P4.0-QA-CSV] skipped=not_required`. Orchestrator should pass **`entrypoint = full pipeline (/forge)`** into **`conductor-orchestrate`**. If `forge_qa_csv_before_eval` is missing or `false` in **`product.md`**, a **`/forge`** run **sets it to `true`** when CSV is produced so CI and later runs stay aligned.  
+- **Partial commands** (`/intake`, `/council`, `/plan`, …): **Mandatory** when **`forge_qa_csv_before_eval: true`** in **`~/forge/brain/products/<slug>/product.md`** or the task charter requires a CSV; otherwise **recommended** — may log `[P4.0-QA-CSV] skipped=not_required` when intentionally omitted for that partial run only.  
+- **CSV rows** are **acceptance / TMS-style** atomic cases (8 columns + **Source**), **not** a catalog of unit tests — see [QA & test artifacts](#qa--test-artifacts).
+
 ‡ *When web/app work has **net-new UI**, intake must lock **design** in `prd-locked.md` (see **`intake-interrogate`**) — not a fixed “question count.”*
 
 ### Pipeline stages (conceptual)
@@ -93,7 +101,7 @@ PRD → Intake → Council → Spec freeze → Tech plans
 | **Council** | Four surfaces (backend, web, app, infra) + five contracts (REST, events, cache, DB, search) negotiate → **`shared-dev-spec.md`**. | HARD-GATE |
 | **Spec freeze** | Spec is immutable until re-council. | HARD-GATE |
 | **Tech plans** | Per-repo plans: **exact files**, complete code snippets, exact commands (`tech-plan-write-per-project`). Informed by **codebase scan** when present. | Human approval typical |
-| **Phase 4** | See [Delivery gates](#delivery-gates-phase-4) — **eval YAML + TDD RED** (and optional QA CSV / design ingest) **before** feature dispatch. | HARD-GATE |
+| **Phase 4** | See [Delivery gates](#delivery-gates-phase-4) — **eval YAML + TDD RED** + **QA CSV when required** (`forge_qa_csv_before_eval: true` **or** full **`/forge`**) + **design ingest** when applicable — **all before** P4.1 feature dispatch. | HARD-GATE |
 | **Build** | **`dev-implementer`**: TDD GREEN in **isolated worktrees**. | HARD-GATE (TDD) |
 | **Review** | Spec + code-quality reviewers; optional **design parity** reviewers when net-new UI and harness supports them. | HARD-GATE |
 | **Eval (execute)** | **`eval-product-stack-up`** + multi-surface drivers; scenarios from **`eval/*.yaml`**. | HARD-GATE |
@@ -103,23 +111,23 @@ PRD → Intake → Council → Spec freeze → Tech plans
 
 ### Brain as transport
 
-**Council and subagents do not read your live chat.** They read what is written under **`~/forge/brain/`** (e.g. `prd-locked.md`, `shared-dev-spec.md`, `design/`, `qa/`, `eval/`). If design or acceptance lives only in a wiki URL, downstream phases have nothing durable to implement or test against.
+**Council and subagents do not read your live chat.** They read what is written under **`~/forge/brain/`** (e.g. **`prd-locked.md`**, **`shared-dev-spec.md`**, **`design/`**, **`qa/`**, **`eval/`**, **`council/`** / **`reasoning/`** for surface artifacts). If design or acceptance lives only in a wiki URL, downstream phases have nothing durable to implement or test against.
 
 ---
 
 ## Delivery gates (Phase 4)
 
-**`conductor-orchestrate`** defines **State 4b** before **State 5 (dispatch)**:
+**`conductor-orchestrate`** defines **State 4b** before **State 5 (dispatch)**. Rules are spelled out in **`skills/conductor-orchestrate/SKILL.md`**; **`commands/forge.md`** pins the stricter **full-pipeline** CSV path for **`/forge`**.
 
 | Order | Artifact / log | Purpose |
 |---:|---|---|
-| **0** | **`[P4.0-QA-CSV]`** (when `forge_qa_csv_before_eval: true`) | Approved **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** — same acceptance inventory TDD and eval should trace to. |
-| **1** | **`[P4.0-EVAL-YAML]`** + `eval/*.yaml` (≥1 file) | Executable scenarios for **`eval-coordinate-multi-surface`** / **P4.4**. **No standard waive** for shippable work; only logged **`ABORT_TASK`**. |
-| **2** | **`[P4.0-TDD-RED]`** per repo (or logged **`WAIVE_TDD`**) | Failing tests before production feature code (**`forge-tdd`**). |
+| **0** | **`[P4.0-QA-CSV]`** | **Approved** **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** (≥1 row after **`qa-prd-analysis`** + **`qa-manual-test-cases-from-prd`** Step 7). **Required** when **`forge_qa_csv_before_eval: true`** in **`product.md`** **or** the run is **full `/forge`** (then also persist **`forge_qa_csv_before_eval: true`** if it was unset/false). **Partial** run + flag false/unset: may log **`skipped=not_required`** only if CSV is intentionally omitted. |
+| **1** | **`[P4.0-EVAL-YAML]`** + `eval/*.yaml` (≥1 file) | Executable scenarios for **`eval-coordinate-multi-surface`** / **P4.4** (**YAML** drivers — not a substitute for repo **BDD** files; see [QA & test artifacts](#qa--test-artifacts)). **No standard waive** for shippable work; only logged **`ABORT_TASK`**. |
+| **2** | **`[P4.0-TDD-RED]`** per repo (or logged **`WAIVE_TDD`**) | **Automated** tests in product repos: **RED before GREEN** (**`forge-tdd`**). May be **unit, service, or BDD-style** — team choice; must encode tech plan + trace **CSV `Id`s** when CSV exists. |
 | **3** | **`[DESIGN-INGEST]`** when **net-new UI** | Materialized design under **`design/`** or locked Figma key + node IDs + ingest notes — unless **`design_waiver: prd_only`**. |
 | **4** | **P4.1 dispatch** | Feature implementation only after the above per policy. |
 
-**`dev-implementer`** is instructed to return **`BLOCKED_ORCHESTRATION`** if dispatch skips **`eval/`** or (when the product flag is set) skips approved QA CSV — see `agents/dev-implementer.md`.
+**`dev-implementer`** returns **`BLOCKED_ORCHESTRATION`** if dispatch skips **`eval/`**, **`[P4.0-EVAL-YAML]`**, or (when **`forge_qa_csv_before_eval: true`** — including after a **`/forge`** run set it) skips approved QA CSV — see **`agents/dev-implementer.md`**.
 
 ---
 
@@ -133,22 +141,32 @@ PRD → Intake → Council → Spec freeze → Tech plans
 
 ## QA & test artifacts
 
-Two **rigid** skills support **manual / TMS-style** acceptance **before** implementation and eval authoring (when you opt in):
+Forge uses **three** linked layers. None replaces the others:
+
+| Layer | Where it lives | What it is |
+|---|---|---|
+| **1. Manual QA CSV** | **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** | **Acceptance inventory**: atomic rows for humans / TMS (**8 columns** + optional **`Source`** per **`qa-manual-test-cases-from-prd`**). **Not** a list of unit-test methods — rows are verifiable **user/API-visible** outcomes (**`Web`**, **`Android`**, **`API`**, etc.). |
+| **2. Eval YAML** | **`~/forge/brain/prds/<task-id>/eval/*.yaml`** | **Machine-runnable** scenarios for **P4.4** (**`eval-scenario-format`**, **`eval-translate-english`**, drivers: web CDP, API HTTP, DB, cache, search, mobile, …). This is Forge’s **E2E / multi-surface execution** spec. **Does not** require Gherkin in your product repo. |
+| **3. Repo automated tests** | Your repos (worktrees) | **`forge-tdd`**: **RED → GREEN → refactor**. Can be **unit**, **integration**, or **BDD** (Cucumber, etc.) — whatever the repo runs in CI. **First** failing tests that encode the **tech plan** (and **CSV `Id`s`** when CSV exists), **then** production code. |
+
+**Rigid skills for CSV path:**
 
 | Skill | Role |
 |---|---|
 | **`qa-prd-analysis`** | Structured PRD analysis → **`~/forge/brain/prds/<task-id>/qa/PRD_ANALYSIS.md`** before bulk CSV work. |
-| **`qa-manual-test-cases-from-prd`** | Atomic **CSV** (8 columns + **Source**), estimation, reuse/deprecation tracking, approvals, final report. |
+| **`qa-manual-test-cases-from-prd`** | Atomic **CSV**, Step 3 + Step 7 approvals, estimation, reuse/deprecation, final report. **HARD-GATE:** no production CSV rows before sample approval; no final report before count approval. |
 
-Set in your real **`~/forge/brain/products/<slug>/product.md`** (author via **`/workspace`** or edit in place):
+**Product policy** — edit **`~/forge/brain/products/<slug>/product.md`** (create with **`/workspace`**; there is **no** bundled `forge-product.md` template in-repo):
 
 ```yaml
-forge_qa_csv_before_eval: true   # conductor requires [P4.0-QA-CSV] before [P4.0-EVAL-YAML]; set false only if you intentionally skip CSV
+# When true: conductor requires [P4.0-QA-CSV] before [P4.0-EVAL-YAML] on partial runs too.
+# /forge always mandates CSV in State 4b and may set this to true if it was false/missing.
+forge_qa_csv_before_eval: true   # set false only if you intentionally skip CSV on partial runs
 ```
 
-**`eval-translate-english`** should reference **CSV `Id`s** in YAML when both exist so **P4.4** exercises the signed inventory.
+**Traceability:** **`eval-translate-english`** should carry **CSV `Id`s** into YAML **names/comments** when both exist so **P4.4** and **RED** stay aligned with the **signed** acceptance set.
 
-**Distinction:** **`eval-scenario-format`** = **YAML** for **automated** eval drivers. **`qa-manual-test-cases-from-prd`** = **CSV** for humans / Xray / TestRail style workflows. Both can run; they are not duplicates.
+**Commands:** **`/eval`** **runs** existing YAML against the stack — it does **not** author CSV or YAML (that is **State 4b**). **`/forge`** drives **full** State 4b including CSV when you want end-to-end automation in one entrypoint.
 
 ---
 
@@ -171,6 +189,7 @@ forge_qa_csv_before_eval: true   # conductor requires [P4.0-QA-CSV] before [P4.0
 - **Documented edge cases & escalation** — `BLOCKED`, `NEEDS_CONTEXT`, `NEEDS_COORDINATION`, `NEEDS_INFRA_CHANGE`, `DONE_WITH_CONCERNS` across skills.
 - **Decision trees** in many skills for repeated judgment calls (contracts, merge order, triage).
 - **Optional machine-adjacent hooks** — install per IDE; see `docs/platforms/`.
+- **Slash commands** (`commands/*.md`) — each documents **partial** vs **`/forge`** full E2E, **`name:`** / **`description:`**, and **`<HARD-GATE>`** where phases must not blur.
 
 ---
 
@@ -244,9 +263,15 @@ One plan per repo; **exact paths**, code, commands; TDD ordering inside plans. U
 
 ### 6. Phase 4 prep (before `/build`)
 
-Per conductor: **QA CSV** (if product flag) → **`eval/*.yaml`** + **`[P4.0-EVAL-YAML]`** → **TDD RED** + **`[P4.0-TDD-RED]`** → **design ingest** if net-new UI → then dispatch.
+Per **`conductor-orchestrate`** State 4b (order matters):
 
-Skills: **`eval-scenario-format`**, **`eval-translate-english`**, **`forge-tdd`**, **`qa-*`** as needed.
+1. **`qa-prd-analysis`** → **`qa-manual-test-cases-from-prd`** through approvals → **`manual-test-cases.csv`** + **`[P4.0-QA-CSV]`** — **always** on **`/forge`**; on **partial** runs per **`forge_qa_csv_before_eval`** / charter (else log `skipped=not_required` if intentionally skipped).  
+2. **`eval/*.yaml`** + **`[P4.0-EVAL-YAML]`** — at least one scenario (**`eval-scenario-format`**, **`eval-translate-english`**).  
+3. **`forge-tdd` RED** + **`[P4.0-TDD-RED]`** per in-scope repo — failing **automated** tests (unit/service/BDD per team) **before** production feature code.  
+4. **`[DESIGN-INGEST]`** when net-new UI applies.  
+5. Then **P4.1** dispatch (**`/build`** or conductor dispatch).
+
+Using **`/forge`** is intended to **not stop** after tech plans: same sequence through PR set / dream unless **`[ABORT_TASK]`** or **BLOCKED** escalation.
 
 ### 7. Build (`/build`)
 
@@ -276,25 +301,27 @@ Retrospective scoring and brain learnings.
 
 ## Commands reference
 
+Each file under **`commands/`** has YAML **`name:`** + **`description:`**, optional **`<HARD-GATE>`** blocks, **Forge plugin scope**, and **`vs /forge`** where relevant — so agents know **partial** vs **full** behavior.
+
 | Command | Purpose |
 |---|---|
-| `/workspace` | Register product repos, roles, deploy/runbook fields |
-| `/scan` | Codebase → brain graph (`scan-codebase`) |
-| `/forge` | Full pipeline driver |
-| `/intake` | PRD lock (`prd-locked.md` sections + design when UI; confidence-first) |
-| `/council` | Multi-surface negotiation |
-| `/plan` | Per-repo tech plans |
-| `/build` | TDD implementation in worktrees |
-| `/eval` | Multi-surface eval |
-| `/heal` | Self-heal loop |
-| `/review` | Two-stage review |
-| `/dream` | Dreamer / retrospective |
-| `/why` | Decision provenance |
-| `/recall` | Search brain |
-| `/remember` | Record decision |
-| `/forge-status` | Forge / plugin status |
-| `/forge-test` | Self-test on seed product |
-| `/forge-install` | Install instructions |
+| **`/forge`** | **Full E2E** — invoke **`conductor-orchestrate`** with **`entrypoint = full pipeline (/forge)`**: intake → context → council → tech plans → **State 4b (mandatory QA CSV + eval YAML + TDD RED + design gate)** → dispatch → reviews → **P4.4 eval** → heal → **PR set / merges** → dream/brain. Does **not** stop at planning. |
+| **`/workspace`** | Register product **`product.md`**, repos, roles, deploy/runbook (`scan` / eval prerequisites). |
+| **`/scan`** | Codebase → brain graph (**`scan-codebase`**); not a substitute for **`/forge`**. |
+| **`/intake`** | **Partial** — PRD lock only (**`forge-intake-gate`**, **`intake-interrogate`**). |
+| **`/council`** | **Partial** — multi-surface council only; needs locked PRD. |
+| **`/plan`** | **Partial** — per-repo tech plans; needs locked **`shared-dev-spec.md`**. |
+| **`/build`** | **Partial** — worktrees + **TDD GREEN**; **must not** bypass State 4b gates (**`dev-implementer`**). |
+| **`/eval`** | **Partial** — **`forge-eval-gate`**: stack-up + run **`eval/*.yaml`**; does **not** create CSV/YAML. |
+| **`/heal`** | **Partial** — self-heal after eval failure (max **3** loops). |
+| **`/review`** | **Partial** — **`forge-trust-code`** two-stage review. |
+| **`/dream`** | Dreamer retrospective or inline conflict resolution (**`dream-*`**). |
+| **`/why`** | **`brain-why`** — decision provenance. |
+| **`/recall`** | **`brain-recall`** — search brain. |
+| **`/remember`** | **`brain-write`** — record decision / learning. |
+| **`/forge-status`** | Read-only brain / plugin snapshot. |
+| **`/forge-test`** | **Meta** — **`forge-self-test`** on **bundled seed** product (validates **this** repo), **not** your product’s **`/forge`**. |
+| **`/forge-install`** | Show install paths for supported IDEs. |
 
 ---
 
@@ -320,7 +347,7 @@ forge/
 ├── docs/
 │   ├── platforms/          # Cursor, Claude Code, …
 │   └── examples/
-├── templates/              # JetBrains junie-guidelines, …
+├── templates/              # e.g. JetBrains junie-guidelines (no bundled forge-product; product = brain product.md)
 ├── .claude-plugin/
 ├── .cursor-plugin/         # Cursor manifest (plugin.json)
 ├── .agent/skills/          # Antigravity symlinks → skills/
@@ -347,7 +374,7 @@ Rigid skills typically include: **Anti-Pattern Preamble**, **Iron Law**, **Red F
 Two common layouts coexist:
 
 1. **`~/forge/brain/products/<slug>/`** — `product.md`, **`codebase/`** (from `/scan`), patterns, optional nested PRD material.
-2. **`~/forge/brain/prds/<task-id>/`** — **task** artifacts: `prd-locked.md`, `shared-dev-spec.md`, **`tech-plans/`**, **`eval/`**, **`qa/`** (PRD analysis, manual CSV, reports), **`design/`** (exports, MCP ingest notes), eval verdicts, etc.
+2. **`~/forge/brain/prds/<task-id>/`** — **task** artifacts: **`prd-locked.md`**, **`shared-dev-spec.md`**, **`tech-plans/`**, **`eval/`**, **`qa/`** (`PRD_ANALYSIS.md`, **`manual-test-cases.csv`**, reports), **`design/`** (exports, MCP ingest notes), **`council/`** (or team-specific **`reasoning/`** for surface write-ups), eval verdicts, **`conductor.log`** (recommended), etc.
 
 The brain should be a **git repo** so history and provenance are preserved.
 
@@ -361,9 +388,19 @@ Forge does not run inside your compiler. To move Phase 4 checks from **“please
 python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain
 ```
 
-It enforces **at least one** `eval/*.yaml`, optional **`conductor.log`** ordering (`[P4.0-EVAL-YAML]` before `[P4.1-DISPATCH]`, QA CSV gate when `forge_qa_csv_before_eval: true`, net-new **design/** or `[DESIGN-INGEST]`), and optional **`--strict-tdd`**.
+It enforces **at least one** `eval/*.yaml`, optional **`conductor.log`** ordering (`[P4.0-EVAL-YAML]` before `[P4.1-DISPATCH]`, **QA CSV + `[P4.0-QA-CSV]`** when **`forge_qa_csv_before_eval: true`**, net-new **design/** or `[DESIGN-INGEST]`), and optional **`--strict-tdd`**.
+
+After a successful **`/forge`** run, **`product.md`** should carry **`forge_qa_csv_before_eval: true`** so this verifier matches **full-pipeline** semantics.
 
 Full reference: **[`docs/forge-task-verification.md`](docs/forge-task-verification.md)**. GitHub Actions template: **[`.github/workflows/forge-brain-guard.yml`](.github/workflows/forge-brain-guard.yml)** (usually copied or invoked from the **brain** repo, not only from Forge).
+
+---
+
+## Orchestration model (automation vs approvals)
+
+- **Skills and subagents** encode **procedure**, **artifacts**, **gates**, and **safe parallelism** (e.g. four council surfaces, multiple **`dev-implementer`** worktrees). They do **not** replace **human** judgment at lock points (intake design, QA CSV sample/count approvals per **`qa-manual-test-cases-from-prd`**, merge rights, secrets).
+- **Nothing auto-chains** when a folder updates under **`~/forge/brain/`** — the **next** phase runs when **you** or the **agent** continues (same session or a new one). Say **“execute State 4b next”** or use **`/forge`** for the documented full sequence.
+- **Approvals** are concentrated where mistakes are expensive; **bulk work** (reads, drafts, parallel implementation) still benefits from subagents.
 
 ---
 

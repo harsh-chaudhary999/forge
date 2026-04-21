@@ -54,6 +54,55 @@ If you notice any of these, STOP and do not proceed:
 - **`screenshot()` is called but the image is not linked in eval evidence** — Screenshots without file path references in the output are invisible to the eval judge. STOP. Every `screenshot()` call must record the file path in the scenario output.
 - **ANR dialogs are dismissed without logging** — An ANR indicates the app's main thread was blocked. Dismissing it silently hides a testable bug. STOP. Log the ANR occurrence and record it as a FAIL before dismissing.
 
+## Host and device resolution (before `connect()`)
+
+Use this **every** eval run so failures are **actionable** (missing SDK vs no device vs wrong device), not opaque.
+
+### 1. Preconditions (fail fast with a clear message)
+
+- **`adb` in PATH** — If `which adb` fails, tell the user: install **Android SDK Platform-Tools**, or set **`ANDROID_HOME`** (or **`ANDROID_SDK_ROOT`**) and add **`$ANDROID_HOME/platform-tools`** to **PATH**. Do not guess paths.
+- **`ANDROID_HOME`** — If `adb` works but `emulator` / `avdmanager` are needed and are missing from PATH, same fix (often **`$ANDROID_HOME/emulator`** and **`$ANDROID_HOME/cmdline-tools/latest/bin`**).
+
+### 2. Discover in the right order (`adb` vs `emulator`)
+
+**`adb devices -l` only shows emulators that are already running** and connected to adb. It will **not** list AVDs that exist on disk but are powered off.
+
+Use **both** layers:
+
+1. **Running targets** — **`adb devices -l`** (or **`adb devices`**) for **already booted** emulators (`emulator-5554`, …) and **USB** devices (`device`, not `unauthorized` / `offline` unless you can fix with **`adb kill-server`** + replug).
+2. **Installable / offline AVDs** — **`emulator -list-avds`** (binary usually under **`$ANDROID_HOME/emulator`**; put that dir on **PATH**). That lists **AVD names** you can **boot** with **`emulator`** even though they do **not** yet appear under `adb devices`.
+
+**No AVDs in `emulator -list-avds`** does not rule out a **physical** device on USB — still use **`adb devices`**.
+
+### 3. Boot path when the target is an AVD, not yet in `adb devices`
+
+When the scenario, **`product.md`**, or the user names an **AVD** (or API level → pick matching AVD from **`emulator -list-avds`**) but **`adb devices`** does not yet show that emulator:
+
+1. Ensure **`emulator`** is on **PATH** (typically **`$ANDROID_HOME/emulator`**).
+2. Start it in the background, e.g. **`emulator -avd <AvdName> -no-snapshot-load &`** (add **`-gpu`** / **`-no-window`** flags per host/CI needs). Older installs may accept **`emulator @<AvdName>`** — use what works on the host.
+3. **`adb wait-for-device`** — wait until **some** device serial appears; then confirm the serial you care about (often **`emulator-5554`** incrementing).
+4. **Boot complete** — poll **`adb shell getprop sys.boot_completed`** (and/or boot animation) until **`1`** before **`connect()`** / **`launch()`** — same requirement as elsewhere in this skill (emulator “listed” in adb can still be booting).
+
+If **`emulator`** is missing, or **`emulator -list-avds`** is empty and no USB device exists, **STOP** and tell the user: install system images / create an AVD in **Android Studio Device Manager** or **`avdmanager`**, or attach a device — do not assume an emulator will appear.
+
+### 4. Choose `device_id` (priority order) — after boot if needed
+
+1. **Eval scenario / driver config** — **`device_id`**, **`ANDROID_SERIAL`**, **`emulator_id`**, or **`avd_name`** / **API level** pin: if **`avd_name`** (or resolvable AVD) is given and not running, follow **Boot path when the target is an AVD** (step 3 above), then connect to the resulting **`emulator-555x`** serial.
+2. **`product.md`** — **`services.<app>.emulator_id`** (serial) or team field for **AVD name** / API — same: boot first if only AVD is known.
+3. **Environment** — **`ANDROID_SERIAL`** when it matches a **current** `adb devices` row (after any boot).
+4. **Single running device** — Exactly **one** usable row → may use **`default`** without asking.
+5. **Multiple running devices, no pin** — **Interactive:** list rows + **ask once**. **CI:** **FAIL** — set **`ANDROID_SERIAL`** / scenario pin, or start **only one** emulator before eval.
+
+### 5. Create AVD / “API x” from nothing (`avdmanager`)
+
+- Prefer **booting an existing AVD** that matches the requested **API level** (or closest name from **`emulator -list-avds`**).
+- **Creating** a new AVD (**`avdmanager create avd`**) + **installing** system images (**`sdkmanager`**) is **slow**, **license-** and **network-sensitive**, and often **breaks unattended**. If it fails, return **BLOCKED** with the exact stderr (e.g. **`sdkmanager --licenses`**, missing **`cmdline-tools`**, accept licenses).
+- If spawn/create is impossible, return **`success: false`** with env/SDK/timeout detail — **never** silently skip mobile eval.
+
+### 6. Unbiased expectation
+
+This block improves **debuggability** and **interactive** UX; it does **not** guarantee one-command greenfield emulators on every laptop. **CI** should still document: **pre-start** one emulator (or attach one device) and set **`ANDROID_SERIAL`**, or pass **`avd_name`** / boot script so **`emulator`** + **`adb wait-for-device`** succeed without prompts.
+
 ## Architecture
 
 ### ADB (Android Debug Bridge)

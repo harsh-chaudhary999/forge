@@ -40,6 +40,38 @@ If you notice any of these, STOP and do not proceed:
 - **App state from prior scenario is not cleared before new scenario** — Leftover keychain entries, cached tokens, or persisted user defaults contaminate subsequent test runs. STOP. Reset app state with `app.terminate()` + `xcrun simctl privacy reset` before each scenario.
 - **`screenshot()` is called but the image is not attached to the eval report** — Screenshots without links to evidence are invisible to the eval judge. STOP. Every `screenshot()` call must save the file and record the path in the scenario output.
 
+## Host and simulator resolution (before `connect()`)
+
+Mirror the Android driver: **detect → pin from config → else ask (interactive) or FAIL (CI)**.
+
+### 1. Preconditions (fail fast with a clear message)
+
+- **`xcrun` / Xcode** — If `xcrun simctl list devices` fails, tell the user to install **Xcode** (simulators need full **Xcode.app**, not Command Line Tools alone). **License:** accepting the Xcode license is **one-time host prep** (open **Xcode** once, or run **`xcodebuild -license`** as an **interactive** admin session on that Mac). **Do not** run **`sudo`** (or any password-prompting step) inside the eval driver / CI job — it **hangs or fails** unattended. If the failure is “license not accepted”, return **BLOCKED** with that diagnosis and point the operator at host prep, not at embedding sudo in the scenario.
+- **`DEVELOPER_DIR`** — If multiple Xcode.app copies exist and the wrong one is selected, document **`export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`**.
+
+### 2. Discover what exists
+
+Run **`xcrun simctl list devices available`** (and/or `booted`) and parse **Booted** / **Shutdown** simulators with **name**, **UDID**, and **runtime** (iOS version).
+
+Physical devices are a separate flow (developer disk image, pairing); if eval targets device UDID, verify it appears under **`xcrun xctrace list devices`** or `devicectl` per host OS — if unsupported here, **FAIL** with “device path not implemented in this driver” rather than guessing.
+
+### 3. Choose `simulator_id` (priority order)
+
+1. **Eval scenario / driver config** — If YAML names **`simulator_id`**, **`SIMULATOR_UDID`**, or **iOS runtime + device name** (team convention), resolve to a UDID from the list.
+2. **`product.md`** — If **`services.<app>.simulator_id`** (or Forge seed convention **`default`**) matches a listed UDID or name, use it.
+3. **Environment** — If **`SIMULATOR_UDID`** (or team **`IOS_SIMULATOR_UDID`**) is set and valid, use it.
+4. **Single booted simulator** — If exactly **one** is **Booted**, **`default`** may target it.
+5. **Multiple matches, no pin** — **Interactive:** list **name — iOS version — UDID** and **ask once** which to boot/use unless the user already specified in this task. **CI:** **FAIL** with instructions to set **`SIMULATOR_UDID`** or scenario UDID, or boot exactly one simulator before eval.
+
+### 4. “Boot iOS x” / runtime request (explicit user or scenario only)
+
+- **`xcrun simctl boot <UDID>`** when **Shutdown**; wait with **`xcrun simctl bootstatus <UDID> -b`** before **`launch()`** (aligns with Red Flags above).
+- If the user asks for a **runtime that is not installed** (e.g. iOS 18.2 simulator not present), **FAIL** with: run **`xcodebuild -downloadPlatform iOS`** / Xcode **Settings → Platforms**, or pick an installed runtime — do not fabricate UDIDs.
+
+### 5. Unbiased expectation
+
+Simulator **discovery and boot** is reliable on macOS CI when images are preinstalled; **downloading** new runtimes inside eval is usually **too slow and flaky** for a gate. Prefer **fail with install instructions** over silent hangs.
+
 ## Prerequisites
 
 - Xcode installed (provides `xcrun`, `simctl`, `xcodebuild`)

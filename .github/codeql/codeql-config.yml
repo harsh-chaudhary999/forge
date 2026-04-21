@@ -1,0 +1,22 @@
+# CodeQL / GitHub code scanning — ignore dependency trees and build outputs.
+# Ref: https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/customizing-code-scanning
+name: Forge CodeQL config
+
+paths-ignore:
+  - "**/node_modules/**"
+  - "**/vendor/**"
+  - "**/dist/**"
+  - "**/build/**"
+  - "**/target/**"
+  - "**/.next/**"
+  - "**/out/**"
+  - "**/coverage/**"
+  - "**/__pycache__/**"
+  - "**/.git/**"
+  - "**/.venv/**"
+  - "**/venv/**"
+  - "**/.tox/**"
+  - "**/.mypy_cache/**"
+  - "**/.pytest_cache/**"
+  - "**/.gradle/**"
+  - "**/.cursor/plugins/cache/**"

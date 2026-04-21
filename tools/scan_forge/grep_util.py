@@ -33,7 +33,9 @@ def filter_grep_lines(stdout: str, repo: Path) -> str:
     for line in stdout.splitlines():
         if "node_modules" in line:
             continue
-        if "/dist/" in line or "/build/" in line:
+        if "/dist/" in line or "/build/" in line or "/target/" in line:
+            continue
+        if "/.next/" in line:
             continue
         if "/.git/" in line:
             continue

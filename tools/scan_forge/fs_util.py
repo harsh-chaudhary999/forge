@@ -29,6 +29,14 @@ SKIP_DIR_NAMES = {
     "dist",
     "build",
     "coverage",
+    # Rust / Maven (and similar) artifact trees — not product source
+    "target",
+    # Common JS / web output dirs
+    ".next",
+    "out",
+    ".turbo",
+    ".nuxt",
+    ".output",
 }
 
 SKIP_PATH_PARTS = ("/.git/",)
@@ -89,8 +97,6 @@ def _rel_has_excluded_dir(rel_posix: str) -> bool:
     parts = rel_posix.split("/")
     for x in parts:
         if x in SKIP_DIR_NAMES:
-            return True
-        if x in ("vendor", "dist", "build"):
             return True
     return False
 

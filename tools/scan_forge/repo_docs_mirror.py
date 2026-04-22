@@ -15,7 +15,9 @@ extract_version bumps. Stale brain files removed when source docs are deleted.
 Per-repo optional policy (``forge-scan-docs.policy.yaml`` / ``.forge-repo-docs.yaml``):
   ``deny_path_contains``      — never copy or index
   ``index_only_path_contains`` — appear in index.json but no file copy
-  ``allow_extra_path_contains`` — include beyond the default set
+  ``allow_extra_path_contains`` — include non-default paths (e.g. ``.rst``) beyond normal rules
+  ``restrict_markdown_to_doc_dirs`` — when **true**, only mirror ``.md`` under ``docs/``,
+  ``adr/``, etc. (legacy). Default **false**: every ``.md`` is eligible (except skip paths).
   ``max_files``               — per-repo file cap (default: FORGE_REPO_DOCS_MAX_FILES)
   ``max_bytes_per_file``      — per-repo size cap (default: FORGE_REPO_DOCS_MAX_BYTES)
 
@@ -105,15 +107,10 @@ def _is_openapi_spec(rel_posix: str) -> bool:
     return any(stem.startswith(n) for n in _OPENAPI_NAMES) and ext in ("yaml", "yml", "json")
 
 
-def _should_mirror_default(rel_posix: str) -> bool:
+def _markdown_in_doc_dirs_only(rel_posix: str) -> bool:
+    """Legacy: only ``.md`` under well-known doc trees or canonical root filenames."""
     r = rel_posix.replace("\\", "/")
     rl = r.lower()
-    if any(s in rl for s in _SKIP_SUBSTR):
-        return False
-    if _is_openapi_spec(r):
-        return True
-    if not rl.endswith(".md"):
-        return False
     parts = r.split("/")
     base = parts[-1].lower() if parts else ""
     for prefix in ("docs/", "doc/", "guides/", "adr/", "rfc/"):
@@ -128,8 +125,27 @@ def _should_mirror_default(rel_posix: str) -> bool:
     return False
 
 
+def _should_mirror_default(rel_posix: str) -> bool:
+    """OpenAPI/Swagger files and (by default) every markdown file not under skip paths."""
+    r = rel_posix.replace("\\", "/")
+    rl = r.lower()
+    if any(s in rl for s in _SKIP_SUBSTR):
+        return False
+    if _is_openapi_spec(r):
+        return True
+    return rl.endswith(".md")
+
+
 def _include_path(rel: str, pol: repo_docs_policy.RepoDocsPolicy) -> bool:
-    if _should_mirror_default(rel):
+    r = rel.replace("\\", "/")
+    rl = r.lower()
+    if any(s in rl for s in _SKIP_SUBSTR):
+        return False
+    if _is_openapi_spec(r):
+        return True
+    if rl.endswith(".md"):
+        if pol.restrict_markdown_to_doc_dirs:
+            return _markdown_in_doc_dirs_only(rel)
         return True
     return repo_docs_policy.path_extra_allowed(rel, pol.allow_extra_path_contains)
 
@@ -325,8 +341,8 @@ def mirror_repo_docs(brain_codebase: Path, repos: list[tuple[str, Path]]) -> dic
             "**`SEARCH_INDEX.md`** — one row per section across all docs for topic search.",
             "**`INDEX.md`** — file inventory table. **`index.json`** — machine-readable metadata.",
             "",
-            "Default inclusion: `docs/**`, `doc/**`, `guides/**`, `adr/**`, `rfc/**`, root `*.md`, `openapi*.yaml/json`, `swagger*.yaml/json`.",
-            "Optional per-repo policy: `forge-scan-docs.policy.yaml` — keys: `deny_path_contains`, `index_only_path_contains`, `allow_extra_path_contains`, `max_files`, `max_bytes_per_file`.",
+            "Default inclusion: **all** `*.md` (except skip paths), plus `openapi*.yaml/json`, `swagger*.yaml/json`.",
+            "Optional per-repo policy: `forge-scan-docs.policy.yaml` — keys: `restrict_markdown_to_doc_dirs` (legacy doc-tree only), `deny_path_contains`, `index_only_path_contains`, `allow_extra_path_contains`, `max_files`, `max_bytes_per_file`.",
             "",
             "Disable: `FORGE_REPO_DOCS_MIRROR=0`. Caps: `FORGE_REPO_DOCS_MAX_FILES`, `FORGE_REPO_DOCS_MAX_BYTES`.",
             "",

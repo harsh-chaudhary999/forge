@@ -25,6 +25,10 @@ class RepoDocsPolicy:
     index_only_path_contains: list[str] = field(default_factory=list)
     allow_extra_path_contains: list[str] = field(default_factory=list)
     policy_path: str | None = None
+    #: When True, only mirror ``.md`` under ``docs/``, ``adr/``, etc. (legacy layout).
+    #: Default **False**: every ``.md`` file is eligible (still subject to skip paths,
+    #: deny/index_only, and ``max_files``) so prose can live at arbitrary paths.
+    restrict_markdown_to_doc_dirs: bool = False
 
 
 def _default_limits() -> tuple[int, int]:
@@ -127,7 +131,13 @@ def load_repo_docs_policy(repo: Path) -> RepoDocsPolicy:
         out.deny_path_contains = _str_list("deny_path_contains")
         out.index_only_path_contains = _str_list("index_only_path_contains")
         out.allow_extra_path_contains = _str_list("allow_extra_path_contains")
+        if data.get("restrict_markdown_to_doc_dirs") is not None:
+            out.restrict_markdown_to_doc_dirs = bool(data["restrict_markdown_to_doc_dirs"])
+        # Legacy key (inverse semantics); ``true`` was a no-op once all-md became default.
+        if data.get("include_all_markdown") is False:
+            out.restrict_markdown_to_doc_dirs = True
         break
+
     return out
 
 

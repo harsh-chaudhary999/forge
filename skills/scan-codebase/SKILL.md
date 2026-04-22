@@ -3,6 +3,13 @@ name: scan-codebase
 description: "WHEN: You need to map an existing codebase into the Forge brain — building an Obsidian-format knowledge graph of module relationships, architecture patterns, API surface, and documented edge cases. Invoked automatically after /workspace init and manually via /scan."
 type: rigid
 requires: [brain-write]
+version: 1.0.0
+preamble-tier: 2
+triggers: []
+allowed-tools:
+  - Bash
+  - Read
+  - Write
 ---
 
 # Scan Codebase

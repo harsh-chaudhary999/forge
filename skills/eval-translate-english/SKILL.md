@@ -3,6 +3,12 @@ name: eval-translate-english
 description: "WHEN: A user journey is described in English and must be converted into executable eval YAML. Input: plain English flow. Output: executable YAML scenario with driver actions, targets, and expected results."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers: []
+allowed-tools:
+  - Bash
+  - Write
 ---
 
 # eval-translate-english

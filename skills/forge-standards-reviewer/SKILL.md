@@ -3,6 +3,12 @@ name: forge-standards-reviewer
 description: "WHEN: A PR or diff is ready for review and must be audited against Forge's own project rules (CLAUDE.md, AGENTS.md, skill format constraints). Runs AFTER spec-reviewer and code-quality-reviewer as the final enforcement gate."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers: []
+allowed-tools:
+  - Bash
+  - Read
 ---
 
 # Forge Standards Reviewer (HARD-GATE)

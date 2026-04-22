@@ -3,6 +3,11 @@ name: contract-schema-db
 description: "WHEN: Council has identified database schema conflicts across services and needs a locked contract. Defines migrations, backward compatibility, indexing, constraints, and safe change procedures."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers: []
+allowed-tools:
+  - Write
 ---
 
 # Database Schema Contract Negotiation

@@ -3,6 +3,11 @@ name: contract-search
 description: "WHEN: Council has identified search contract conflicts across services and needs a locked contract. Defines index mapping, analyzer, consistency, update semantics, refresh policy, and reindex procedures."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers: []
+allowed-tools:
+  - Write
 ---
 
 # Contract-Search Skill

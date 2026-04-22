@@ -3,6 +3,14 @@ name: pr-set-coordinate
 description: "WHEN: Eval has passed and branches are ready to merge across multiple repos. Raise coordinated PRs in merge order with depends-on links. HARD-GATE: Wait for each merge before raising the next."
 type: rigid
 requires: [brain-read, brain-write]
+version: 1.0.0
+preamble-tier: 3
+triggers: []
+allowed-tools:
+  - Bash
+  - Edit
+  - Read
+  - Write
 ---
 
 # PR Set Coordinate — Multi-Repo Coordinated PR Management

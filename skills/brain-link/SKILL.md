@@ -3,6 +3,12 @@ name: brain-link
 description: "WHEN: You are writing a new decision, superseding an old one, or querying relationships across decisions. Create semantic edges between decisions and link concepts across products/projects/time."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 2
+triggers: []
+allowed-tools:
+  - Bash
+  - Write
 ---
 
 # brain-link: Semantic Decision Linking

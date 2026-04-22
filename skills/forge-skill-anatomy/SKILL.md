@@ -2,6 +2,14 @@
 name: forge-skill-anatomy
 description: "Template, rigor checklist, and CSO guidelines for creating new Forge skills. Reference when writing or reviewing any skill."
 type: reference
+version: 2.0.0
+preamble-tier: 1
+triggers:
+  - "writing a new skill"
+  - "reviewing a skill"
+  - "what sections does a skill need"
+allowed-tools:
+  - Read
 ---
 # Skill Anatomy
 
@@ -13,6 +21,15 @@ name: {skill-name}
 description: "WHEN: {trigger condition}. {What the skill does in one sentence}."
 type: rigid | flexible | reference
 requires: [other-skill-name]
+version: 1.0.0
+preamble-tier: 2
+triggers:
+  - "natural phrase that should invoke this skill"
+  - "another trigger phrase"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
 ---
 ```
 
@@ -30,6 +47,56 @@ The `description` field is how the AI decides whether to invoke a skill. Optimiz
 | `Manages cache contracts` | `WHEN: Two or more services share a Redis cache and you need to negotiate TTL, invalidation, and key ownership` |
 | `Code review skill` | `WHEN: Implementation is complete and you need spec-compliance verification before merge` |
 | `Brain operations` | `WHEN: A decision needs to be recorded with provenance (who, when, why, evidence) in the brain` |
+
+### New Frontmatter Fields
+
+Four optional fields for all new skills. Existing skills do not need to be updated immediately — add them when a skill is touched.
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `version` | Required for new skills | semver string | Track breaking changes. Bump: patch = content edits, minor = new workflow steps, major = breaking workflow changes (requires migration). |
+| `preamble-tier` | Optional | integer 1–4 | Which shared preamble tier to inject. See Preamble Tier Guide below. Omit if the skill manages its own preamble entirely. |
+| `triggers` | Optional | string list | Natural-language phrases that strongly suggest this skill should be invoked. Informational in the current implementation — helps skill authors document intent. |
+| `allowed-tools` | Optional | string list | Tools this skill is permitted to use. Documents intent; not enforced at runtime currently. |
+
+### Preamble Tier Guide
+
+Preamble tiers are cumulative — each tier includes all tiers below it. The tier files live in `skills/_preamble/`.
+
+| Tier | Adds | Use for |
+|------|------|---------|
+| 1 | Writing style, tone, response length rules | Lightweight lookup/reference skills (glossaries, templates) |
+| 2 | + Confusion protocol, escalation rules, ask-don't-assume | Most utility and technique skills |
+| 3 | + Completeness principle, search-before-building, YAGNI, scope discipline | Implementation skills that write code or author specs |
+| 4 | + Session tracking, context health, continuous checkpoint mode, operational self-improvement | Orchestration and ship skills (conductor, qa-live-app, health, retro) |
+
+**Decision:** If unsure, use tier 2. It's the baseline for any skill that interacts with a user or makes decisions.
+
+### Migration Pattern
+
+When a skill introduces a breaking change (major version bump), create a `migrations/` subdirectory:
+
+```
+skills/
+  my-skill/
+    SKILL.md         (version: 2.0.0)
+    migrations/
+      v2.0.0.sh      (migration script from 1.x to 2.x)
+```
+
+Migration script format:
+```bash
+#!/usr/bin/env bash
+# Migration: my-skill v1.x → v2.0.0
+# Run this script to migrate brain files or config that this skill's change requires.
+# If no migration is needed, this file documents the breaking change for reference.
+
+echo "Migrating my-skill from v1.x to v2.0.0..."
+# ... migration steps ...
+echo "Done."
+```
+
+Migration scripts are not yet automated — they are run manually when upgrading. Document what changed and why.
 
 ## Skill Types
 

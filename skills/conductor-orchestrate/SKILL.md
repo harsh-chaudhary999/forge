@@ -3,6 +3,13 @@ name: conductor-orchestrate
 description: "WHEN: PRD is locked. You are the master state machine orchestrating the entire forge workflow. Routes the task through all phases, tracks state, manages escalations, and coordinates subagents."
 type: rigid
 requires: [intake-interrogate, product-context-load, brain-read, brain-write, forge-tdd, forge-eval-gate]
+version: 1.0.0
+preamble-tier: 4
+triggers: []
+allowed-tools:
+  - Bash
+  - Edit
+  - Write
 ---
 
 # Conductor Orchestrate — Master State Machine
@@ -1032,6 +1039,36 @@ conductor_state task_id=<id>
 1. **Post-PR Dreamer:** Triggered by PR merge hook. Scores every decision (inline, council, eval, self-heal).
 2. **Retrospective Scoring:** Dreamer compares actual performance to predicted.
 3. **Brain Learning:** Decisions logged, future conductors learn from past runs.
+
+## Continuous Checkpoint Mode
+
+After each phase completion, commit a WIP context snapshot so the pipeline state survives context compaction:
+
+```bash
+PHASE="<current phase marker, e.g. P2-COUNCIL>"
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+# Create a WIP commit with forge-context body
+git add -A 2>/dev/null
+git diff --cached --quiet || git commit -m "wip: forge-context [$PHASE]" --allow-empty-message 2>/dev/null || true
+```
+
+The commit message format is `wip: forge-context [<PHASE>]`. These WIP commits are squashed before PR using:
+
+```bash
+# Before raising PR: squash all WIP commits since branch point
+BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null)
+WIP_COUNT=$(git log --oneline "$BASE"..HEAD | grep -c "wip: forge-context" || echo 0)
+if [ "$WIP_COUNT" -gt 0 ]; then
+  echo "$WIP_COUNT WIP commits to squash before PR"
+  # Use /review-readiness to verify, then squash interactively
+fi
+```
+
+**When to checkpoint:** After each conductor.log write (`[P1.*]`, `[P2.*]`, `[P3-SPEC-FROZEN]`, `[P4.0-*]`, `[P4.1-DISPATCH]`, `[P4.4-EVAL-GREEN]`, `[P5.*]`).
+
+**Why:** If context compacts mid-orchestration, the next session runs `/context-restore` to load the checkpoint, reads the conductor.log for phase state, and resumes from the exact phase. Without WIP commits, partial work may be untracked.
 
 ## Checklist
 

@@ -2,6 +2,12 @@
 name: forge-verification
 description: "HARD-GATE: Run verification, see output, THEN claim success. Never \"should pass\", \"confident\", \"should work\"."
 type: rigid
+version: 1.0.0
+preamble-tier: 3
+triggers: []
+allowed-tools:
+  - Bash
+  - Read
 ---
 # Verification Before Completion
 

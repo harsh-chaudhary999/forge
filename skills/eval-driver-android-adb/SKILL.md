@@ -3,6 +3,12 @@ name: eval-driver-android-adb
 description: "WHEN: Eval scenario requires Android app interaction or assertion. Eval driver for Android via ADB + UIAutomator. Functions: connect(device_id), launch(package), tap(target), type(text), swipe(direction), assert_element(target), screenshot(), disconnect()."
 type: rigid
 requires: [eval-scenario-format]
+version: 1.0.0
+preamble-tier: 3
+triggers: []
+allowed-tools:
+  - Bash
+  - Read
 ---
 
 # eval-driver-android-adb Skill

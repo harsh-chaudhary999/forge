@@ -3,6 +3,11 @@ name: self-heal-locate-fault
 description: "WHEN: An eval scenario has failed. Parse eval output, trace the failure chain backwards to the root service, and collect logs and state as evidence."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers: []
+allowed-tools:
+  - Bash
 ---
 
 # Self-Heal: Locate Fault

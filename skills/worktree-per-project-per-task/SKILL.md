@@ -2,6 +2,12 @@
 name: worktree-per-project-per-task
 description: "WHEN: About to start dev-implementer work on a multi-project product task. Creates fresh git worktrees for isolation, environment setup, and safe cleanup after eval passes/fails."
 type: rigid
+version: 1.0.0
+preamble-tier: 2
+triggers: []
+allowed-tools:
+  - Bash
+  - Write
 ---
 
 # Worktree Per Project Per Task

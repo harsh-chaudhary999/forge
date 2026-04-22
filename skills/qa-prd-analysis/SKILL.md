@@ -3,6 +3,11 @@ name: qa-prd-analysis
 description: "WHEN: Before generating manual QA test cases or a formal test plan from a PRD, you need systematic requirement analysis, coverage mapping, and explicit clarifications — product-agnostic."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers: []
+allowed-tools:
+  - Write
 ---
 
 # QA PRD Analysis

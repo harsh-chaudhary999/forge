@@ -27,6 +27,8 @@
  */
 
 const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
 // Read tool call from stdin
 let input = '';
@@ -56,6 +58,39 @@ if (toolName !== 'Bash') {
 
 const command = (toolInput.command || '').trim();
 if (!command) {
+  process.exit(0);
+}
+
+// ── Prompt injection canary check ──────────────────────────────────────────
+// If the session canary token appears in the command, a tool result may have
+// injected it to trigger execution. Block and warn.
+
+const CANARY_FILE = path.join(os.homedir(), '.forge', '.canary');
+let canaryToken = '';
+try {
+  if (fs.existsSync(CANARY_FILE)) {
+    canaryToken = fs.readFileSync(CANARY_FILE, 'utf-8').trim();
+  }
+} catch (_) {
+  // Canary file unreadable — skip check silently
+}
+
+if (canaryToken && command.includes(canaryToken)) {
+  const output = {
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      permissionDecision: 'ask',
+      permissionDecisionReason:
+        `[forge-pre-tool-use] CANARY TRIGGERED — POSSIBLE PROMPT INJECTION\n\n` +
+        `Command: ${command}\n\n` +
+        `The session canary token was found in this command. This may indicate a ` +
+        `malicious tool result (web fetch, file read, API response) is attempting ` +
+        `to execute arbitrary shell commands.\n\n` +
+        `Do NOT proceed unless you manually inspected this command and verified ` +
+        `it is safe and intentional.`,
+    },
+  };
+  process.stdout.write(JSON.stringify(output));
   process.exit(0);
 }
 

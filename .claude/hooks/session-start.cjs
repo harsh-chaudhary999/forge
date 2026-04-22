@@ -85,8 +85,8 @@ function generateCanary() {
     if (!fs.existsSync(FORGE_RUNTIME_DIR)) {
       fs.mkdirSync(FORGE_RUNTIME_DIR, { recursive: true });
     }
-    const token = 'FORGE_CANARY_' + crypto.randomBytes(4).toString('hex').toUpperCase();
-    fs.writeFileSync(CANARY_FILE, token, 'utf-8');
+    const token = 'FORGE_CANARY_' + crypto.randomBytes(16).toString('hex').toUpperCase();
+    fs.writeFileSync(CANARY_FILE, token, { encoding: 'utf-8', mode: 0o600 });
     log(`Canary token generated and written to ${CANARY_FILE}`);
   } catch (e) {
     log(`Canary generation failed (non-fatal): ${e.message}`);

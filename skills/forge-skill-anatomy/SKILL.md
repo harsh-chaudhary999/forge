@@ -2,6 +2,14 @@
 name: forge-skill-anatomy
 description: "Template, rigor checklist, and CSO guidelines for creating new Forge skills. Reference when writing or reviewing any skill."
 type: reference
+version: 2.0.0
+preamble-tier: 1
+triggers:
+  - "writing a new skill"
+  - "reviewing a skill"
+  - "what sections does a skill need"
+allowed-tools:
+  - Read
 ---
 # Skill Anatomy
 

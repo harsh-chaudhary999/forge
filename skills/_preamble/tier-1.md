@@ -1,5 +1,5 @@
 <!-- Forge Shared Preamble — Tier 1: Writing Style -->
-<!-- Injected by session-start into every session. Do not edit skill files directly. -->
+<!-- Tier 1 is the base level; session-start injects tier-2 by default. Edit in skills/_preamble/, not in skill files directly. -->
 
 ## Response Style
 

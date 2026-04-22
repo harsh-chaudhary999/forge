@@ -56,7 +56,7 @@ Before writing a function, check whether one already exists:
 grep -r "function_name_candidate" . --include="*.ts" --include="*.js" --include="*.py" -l
 ```
 
-Three minutes of searching saves three hours of parallel implementations drifting apart.
+Three minutes of searching saves three hours of parallel implementations drifting apart. The second time you implement the same thing, the original still exists and you now have a maintenance problem.
 
 ## YAGNI (You Aren't Gonna Need It)
 
@@ -73,6 +73,15 @@ If you discover something that should be fixed but is outside the current task's
 1. Note it as a `spawn_task` (out-of-scope issue tracker), not a fix.
 2. Do NOT fix it in this PR.
 3. Do NOT mention it to the user unless it's a security vulnerability.
+
+## Context Health
+
+Long sessions accumulate context that makes reasoning less reliable. Signs of degraded context:
+- You repeat actions you already took
+- You ask for information already provided
+- Your responses become inconsistent with earlier decisions
+
+If you notice any of these: stop, summarize the session state in one paragraph, write it to `~/forge/brain/prds/<task-id>/context-health-<timestamp>.md`, and continue with that summary as your working memory anchor.
 
 ## Continuous Checkpoint Mode
 

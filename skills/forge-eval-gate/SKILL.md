@@ -147,6 +147,50 @@ For each YELLOW scenario:
   2. Document the failure in brain (decision ID: EVALFAIL-...)
   3. Escalate: BLOCKED (eval failing, can't fix after 3 retries)
 
+### Ship-Readiness Score
+
+After all scenarios complete, compute a 0-10 ship-readiness score:
+
+```bash
+python3 -c "
+total = <total_scenarios>
+passed = <passed_count>
+yellow = <yellow_count>
+failed = <failed_count>
+manual_skipped = <manual_skipped_count>
+
+# Weight: failed = -1.5pt, yellow = -0.5pt, manual_skipped = -0.25pt per scenario
+score = 10.0
+if total > 0:
+    score -= (failed / total) * 10 * 1.5
+    score -= (yellow / total) * 10 * 0.5
+    score -= (manual_skipped / total) * 10 * 0.25
+score = max(0.0, min(10.0, round(score, 1)))
+
+tier = 'GREEN' if score >= 8.0 else 'YELLOW' if score >= 5.0 else 'RED'
+print(f'Ship-readiness: {score}/10 ({tier})')
+print(f'  Passed: {passed} | Yellow: {yellow} | Failed: {failed} | Skipped: {manual_skipped}')
+if tier == 'RED':
+    print('  Action: Do not merge. Fix failing scenarios.')
+elif tier == 'YELLOW':
+    print('  Action: Investigate yellow scenarios before merging.')
+else:
+    print('  Action: Safe to proceed to PR.')
+"
+```
+
+**Score tiers:**
+- **8–10 (GREEN):** Safe to merge
+- **5–7.9 (YELLOW):** Investigate before merging
+- **0–4.9 (RED):** Do not merge
+
+Write the score to brain alongside the eval results:
+```bash
+# Append to existing eval result file:
+echo "ship_readiness_score: <score>" >> "$EVAL_RESULT_FILE"
+echo "ship_readiness_tier: <tier>" >> "$EVAL_RESULT_FILE"
+```
+
 ### Claim Eval Pass
 - **Input:** All scenarios PASS (3 consecutive runs if flaky history)
 - **Output statement:**

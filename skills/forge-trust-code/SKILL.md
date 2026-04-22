@@ -2,6 +2,14 @@
 name: forge-trust-code
 description: "WHEN: Spec review is required after implementation. HARD-GATE: Spec-reviewer reads actual code, doesn't trust implementer report. Verify every claim."
 type: rigid
+version: 1.0.0
+preamble-tier: 2
+triggers:
+  - "trust the spec reviewer"
+  - "proceed after spec review"
+  - "spec review approved"
+allowed-tools:
+  - Bash
 ---
 # Do Not Trust The Report
 

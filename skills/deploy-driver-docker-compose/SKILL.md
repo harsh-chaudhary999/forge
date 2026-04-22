@@ -3,6 +3,15 @@ name: deploy-driver-docker-compose
 description: "WHEN: Deployment target is Docker Compose. Provides up(compose_file), health_check(), and down() for multi-service orchestration."
 type: rigid
 requires: [brain-read, eval-driver-api-http]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "deploy with docker-compose"
+  - "docker-compose deployment"
+  - "spin up with compose"
+allowed-tools:
+  - Bash
+  - Write
 ---
 
 # Deploy Driver: Docker Compose

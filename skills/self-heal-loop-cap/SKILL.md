@@ -3,6 +3,14 @@ name: self-heal-loop-cap
 description: "Max 3 retries per failure. Loop: locate → triage → fix → verify. After 3 tries, escalate (BLOCKED). Prevents infinite loops."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "self-heal limit reached"
+  - "stop self-heal loop"
+  - "3 retries exceeded"
+allowed-tools:
+  - Bash
 ---
 
 # Self-Heal Loop Cap Skill

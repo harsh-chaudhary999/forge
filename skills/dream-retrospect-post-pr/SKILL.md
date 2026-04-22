@@ -3,6 +3,15 @@ name: dream-retrospect-post-pr
 description: "WHEN: All PRs merged and feature shipped. Dreamer scores decisions, extracts patterns, identifies opportunities, writes learnings to brain."
 type: flexible
 requires: [brain-read, brain-write]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "post-PR retrospective"
+  - "dream retrospect"
+  - "learnings after PR merge"
+allowed-tools:
+  - Bash
+  - Read
 ---
 
 # Dream Retrospect Post-PR

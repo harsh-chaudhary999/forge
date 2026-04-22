@@ -2,6 +2,15 @@
 name: forge-intake-gate
 description: "WHEN: A new PRD arrives for implementation. HARD-GATE: Every PRD goes through intake-interrogate; mandatory **lock fields** in prd-locked.md must be satisfied (confidence-first questioning allowed). Q9 design/UI lock mandatory when web, app, or user-visible UI is in scope. No skipping intake, no exceptions, no \"trivial\" PRDs."
 type: rigid
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "intake gate"
+  - "PRD received"
+  - "new PRD gate"
+  - "validate PRD"
+allowed-tools:
+  - Bash
 ---
 # Intake Gate (HARD-GATE)
 

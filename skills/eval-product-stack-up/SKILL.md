@@ -3,6 +3,17 @@ name: eval-product-stack-up
 description: "WHEN: Eval is about to run and the full product stack must be brought up first. Reads forge-product.md, starts services in dependency order, runs health checks, confirms stack is ready for eval scenarios."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 4
+triggers:
+  - "bring up the stack"
+  - "start eval stack"
+  - "spin up services for eval"
+allowed-tools:
+  - Bash
+  - Edit
+  - Read
+  - Write
 ---
 
 # Eval Product Stack Up

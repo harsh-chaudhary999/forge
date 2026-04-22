@@ -3,6 +3,15 @@ name: dream-resolve-inline
 description: "WHEN: eval reveals cross-service conflict — two services disagree on contract, data format, or behavior. Dreamer analyzes both sides and proposes resolution."
 type: rigid
 requires: [brain-read, brain-write]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "resolve a dream finding"
+  - "fix inline issue from eval"
+  - "address eval regression inline"
+allowed-tools:
+  - Bash
+  - Write
 ---
 
 # Dream Resolve Inline

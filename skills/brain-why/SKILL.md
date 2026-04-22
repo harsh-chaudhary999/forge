@@ -3,6 +3,15 @@ name: brain-why
 description: "WHEN: You need to trace the full provenance of a specific decision — who made it, when, why, and what alternatives were considered. Shows why, when, by whom, evidence, alternatives, outcome."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 2
+triggers:
+  - "why was this decided"
+  - "explain this decision"
+  - "trace decision rationale"
+allowed-tools:
+  - Bash
+  - Write
 ---
 
 # brain-why Skill

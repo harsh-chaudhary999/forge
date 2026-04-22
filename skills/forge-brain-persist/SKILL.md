@@ -2,6 +2,17 @@
 name: forge-brain-persist
 description: "WHEN: A decision needs to be recorded in the brain. HARD-GATE: Every decision auditable, traceable, retrievable. Brain is immutable record of truth."
 type: rigid
+version: 1.0.0
+preamble-tier: 2
+triggers:
+  - "persist brain decision"
+  - "commit brain to git"
+  - "push brain"
+allowed-tools:
+  - Bash
+  - Edit
+  - Read
+  - Write
 ---
 # Brain Persistence (Immutable Record)
 

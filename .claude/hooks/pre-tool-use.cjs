@@ -27,6 +27,8 @@
  */
 
 const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
 // Read tool call from stdin
 let input = '';
@@ -56,6 +58,39 @@ if (toolName !== 'Bash') {
 
 const command = (toolInput.command || '').trim();
 if (!command) {
+  process.exit(0);
+}
+
+// ── Prompt injection canary check ──────────────────────────────────────────
+// If the session canary token appears in the command, a tool result may have
+// injected it to trigger execution. Block and warn.
+
+const CANARY_FILE = path.join(os.homedir(), '.forge', '.canary');
+let canaryToken = '';
+try {
+  if (fs.existsSync(CANARY_FILE)) {
+    canaryToken = fs.readFileSync(CANARY_FILE, 'utf-8').trim();
+  }
+} catch (_) {
+  // Canary file unreadable — skip check silently
+}
+
+if (canaryToken && command.includes(canaryToken)) {
+  const output = {
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      permissionDecision: 'ask',
+      permissionDecisionReason:
+        `[forge-pre-tool-use] CANARY TRIGGERED — POSSIBLE PROMPT INJECTION\n\n` +
+        `Command: ${command}\n\n` +
+        `The session canary token was found in this command. This may indicate a ` +
+        `malicious tool result (web fetch, file read, API response) is attempting ` +
+        `to execute arbitrary shell commands.\n\n` +
+        `Do NOT proceed unless you manually inspected this command and verified ` +
+        `it is safe and intentional.`,
+    },
+  };
+  process.stdout.write(JSON.stringify(output));
   process.exit(0);
 }
 
@@ -126,6 +161,61 @@ for (const { pattern, reason } of BLOCKED_PATTERNS) {
     };
     process.stdout.write(JSON.stringify(output));
     process.exit(0);
+  }
+}
+
+// ── Skill-level allowed-tools check ───────────────────────────────────────
+// If ~/.forge/.active-skill is set, verify the current tool is in that skill's
+// allowed-tools frontmatter. Warns (asks) but does not hard-block (Approach A).
+
+const ACTIVE_SKILL_FILE = path.join(os.homedir(), '.forge', '.active-skill');
+let activeSkill = '';
+try {
+  if (fs.existsSync(ACTIVE_SKILL_FILE)) {
+    activeSkill = fs.readFileSync(ACTIVE_SKILL_FILE, 'utf-8').trim();
+  }
+} catch (_) {
+  // Unreadable — skip check
+}
+
+if (activeSkill) {
+  // Find the skill's SKILL.md relative to the repo root (via __dirname)
+  const repoRoot = path.resolve(__dirname, '..', '..');
+  const skillFile = path.join(repoRoot, 'skills', activeSkill, 'SKILL.md');
+  try {
+    if (fs.existsSync(skillFile)) {
+      const skillContent = fs.readFileSync(skillFile, 'utf-8');
+      const fmMatch = skillContent.match(/^---\n([\s\S]*?)\n---/);
+      if (fmMatch) {
+        const fm = fmMatch[1];
+        const toolsMatch = fm.match(/allowed-tools:\s*\n((?:\s+- \S+\n?)+)/);
+        if (toolsMatch) {
+          const allowedTools = toolsMatch[1]
+            .split('\n')
+            .map(l => l.replace(/^\s+- /, '').trim())
+            .filter(Boolean);
+          if (allowedTools.length > 0 && !allowedTools.includes(toolName)) {
+            const output = {
+              hookSpecificOutput: {
+                hookEventName: 'PreToolUse',
+                permissionDecision: 'ask',
+                permissionDecisionReason:
+                  `[forge-pre-tool-use] SKILL TOOL SCOPE WARNING\n\n` +
+                  `Active skill: ${activeSkill}\n` +
+                  `Attempted tool: ${toolName}\n` +
+                  `Allowed tools: ${allowedTools.join(', ')}\n\n` +
+                  `The skill '${activeSkill}' does not declare '${toolName}' in its allowed-tools list. ` +
+                  `Proceed only if this tool use is intentional and within the skill's scope.`,
+              },
+            };
+            process.stdout.write(JSON.stringify(output));
+            process.exit(0);
+          }
+        }
+      }
+    }
+  } catch (_) {
+    // Skill file unreadable — skip check silently
   }
 }
 

@@ -3,6 +3,16 @@ name: forge-self-test
 description: "WHEN: You need to validate the entire Forge pipeline works end-to-end on a real product. Run before declaring Forge production-ready or after major changes to skills/agents."
 type: rigid
 requires: [forge-intake-gate, forge-council-gate, forge-tdd, forge-eval-gate, forge-verification]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "test forge itself"
+  - "forge self-check"
+  - "validate forge setup"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
 ---
 
 # Forge Self-Test (End-to-End Validation)

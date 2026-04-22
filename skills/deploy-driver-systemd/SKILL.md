@@ -3,6 +3,16 @@ name: deploy-driver-systemd
 description: "WHEN: Deployment target is a Linux server managed by systemd. Functions: start(service_name), health_check(service_name), stop(service_name). Requires systemd unit files."
 type: rigid
 requires: [brain-read, eval-driver-api-http]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "deploy with systemd"
+  - "systemd service deploy"
+  - "register systemd service"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
 ---
 
 # Deploy Driver: Systemd Services

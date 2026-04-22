@@ -3,6 +3,16 @@ name: self-heal-systematic-debug
 description: "4-phase debugging workflow: investigate (logs, traces) → hypothesize (root cause) → fix (minimal) → verify (re-eval). Output: fixed code, commit."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "debug this failure"
+  - "systematic debug"
+  - "4-phase debug"
+  - "debug eval failure"
+allowed-tools:
+  - Bash
+  - Write
 ---
 
 # Self-Heal Systematic Debug
@@ -47,6 +57,15 @@ Systematic debugging framework that applies the scientific method to code failur
 
 ## 4-Phase Workflow
 
+**Before starting any debug work**, checkpoint your session so it can survive context compaction:
+
+```bash
+# Invoke /context-save with a title like: debug-<service>-<issue-slug>
+# Example: /context-save debug-auth-service-2fa-failure
+```
+
+Invoke `/context-save` before beginning any investigation. If context compacts mid-debug, run `/context-restore` in the next session to resume from the last checkpoint.
+
 ### Investigate
 **Goal:** Find the exact failure point and capture evidence.
 
@@ -70,6 +89,19 @@ Failed at: /app/src/routes/auth.ts:145
 Error: "ReferenceError: generateSecret is not defined"
 Stack: at enableTwoFactor (/app/src/routes/auth.ts:145)
 ```
+
+**After Investigate — persist evidence to brain:**
+
+```bash
+BRAIN_DIR="$(ls -d ~/forge/brain/prds/*/ 2>/dev/null | head -1)debug"
+mkdir -p "$BRAIN_DIR"
+TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
+# Write to: $BRAIN_DIR/${TIMESTAMP}-investigate.md
+# Sections: Error message, Stack trace, Failure point (service/file/line),
+#           Environment state, Last successful operation
+```
+
+Write this file now with all evidence collected in this phase. If context compacts before the fix is verified, the next session reads this file to know exactly where the debug loop is.
 
 ---
 
@@ -132,6 +164,19 @@ import { hash, verify, generateSecret } from './lib/crypto';
 // + reorganize imports alphabetically
 // + refactor function signatures
 ```
+
+**After each Fix attempt — persist attempt to brain:**
+
+```bash
+BRAIN_DIR="$(ls -d ~/forge/brain/prds/*/ 2>/dev/null | head -1)debug"
+mkdir -p "$BRAIN_DIR"
+TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
+# Write to: $BRAIN_DIR/${TIMESTAMP}-fix-attempt.md
+# Include: hypothesis tested, file+line changed, diff summary
+# After Verify: add result (PASS/FAIL) and new error if FAIL
+```
+
+Write this file before running Verify. Update it with the result after Verify completes. Increment attempt number across attempts (attempt-1, attempt-2, attempt-3).
 
 ---
 

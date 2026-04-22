@@ -3,6 +3,14 @@ name: eval-coordinate-multi-surface
 description: "WHEN: A multi-surface eval scenario needs to be executed across web, API, DB, cache, search, and event bus layers. Coordinate multi-driver eval scenarios. Chain web (CDP) → API (HTTP) → DB (MySQL) → cache (Redis) → search (ES) → events (Kafka). Report pass/fail with evidence."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "run multi-surface eval"
+  - "coordinate eval drivers"
+  - "run all eval drivers"
+allowed-tools:
+  - Bash
 ---
 
 # eval-coordinate-multi-surface

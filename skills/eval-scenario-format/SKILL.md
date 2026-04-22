@@ -3,6 +3,15 @@ name: eval-scenario-format
 description: "WHEN: Writing eval scenarios for a new PRD or feature. Defines the YAML format — driver action, target, expected result — for multi-surface eval execution."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "format eval scenario"
+  - "write eval YAML"
+  - "create eval scenario"
+allowed-tools:
+  - Bash
+  - Edit
 ---
 
 # Eval Scenario Format

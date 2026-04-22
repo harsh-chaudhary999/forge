@@ -3,6 +3,17 @@ name: brain-recall
 description: "WHEN: You are about to make a decision and need to check if prior art or past learnings exist. Recall decisions, patterns, and gotchas from the brain before proceeding."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 2
+triggers:
+  - "search brain"
+  - "find past decisions"
+  - "recall brain"
+  - "what did we decide about"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
 ---
 
 # Brain Recall Skill

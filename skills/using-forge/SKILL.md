@@ -2,6 +2,14 @@
 name: using-forge
 description: "Bootstrap skill — inlined by session-start hook for all Claude Code sessions"
 type: rigid
+version: 1.0.0
+preamble-tier: 4
+triggers:
+  - "how to use forge"
+  - "forge bootstrap"
+  - "start forge session"
+allowed-tools:
+  - Bash
 ---
 
 # Using Forge

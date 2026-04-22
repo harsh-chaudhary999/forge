@@ -2,6 +2,19 @@
 name: brain-write
 description: "WHEN: You need to record a decision, lock a spec, log an eval run, or document learnings in the brain."
 type: flexible
+version: 1.0.0
+preamble-tier: 2
+triggers:
+  - "record a decision"
+  - "write to brain"
+  - "log to brain"
+  - "lock a spec"
+  - "document in brain"
+allowed-tools:
+  - Bash
+  - Edit
+  - Read
+  - Write
 ---
 
 # Brain Write

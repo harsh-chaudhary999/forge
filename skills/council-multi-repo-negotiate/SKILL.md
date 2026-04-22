@@ -3,6 +3,15 @@ name: council-multi-repo-negotiate
 description: "WHEN: A locked PRD needs to be negotiated across all surfaces before implementation begins. Invokes all 4 surface reasoning skills, all 5 contract skills, resolves conflicts, outputs locked shared-dev-spec.md."
 type: rigid
 requires: [brain-read, reasoning-as-backend, reasoning-as-web-frontend, reasoning-as-app-frontend, reasoning-as-infra, contract-api-rest, contract-event-bus, contract-cache, contract-schema-db, contract-search]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "negotiate across repos"
+  - "multi-repo council"
+  - "cross-repo spec alignment"
+allowed-tools:
+  - Bash
+  - Write
 ---
 
 # Council Multi-Repo Negotiate

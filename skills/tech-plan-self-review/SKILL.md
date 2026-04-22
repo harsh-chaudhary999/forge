@@ -3,6 +3,16 @@ name: tech-plan-self-review
 description: "WHEN: A per-project tech plan has been written and needs verification before dispatch to dev-implementer. Check spec coverage, elaborative §1b–§1c (incl. API↔consumer map, unknown closure, review log, XALIGN), placeholders, code, commands."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "review tech plan"
+  - "self-review plan"
+  - "check plan before dispatch"
+allowed-tools:
+  - Bash
+  - Edit
+  - Read
 ---
 
 # Tech Plan Self-Review Skill

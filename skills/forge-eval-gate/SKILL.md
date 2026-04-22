@@ -2,6 +2,14 @@
 name: forge-eval-gate
 description: "WHEN: Implementation is complete and PRs are ready to merge. HARD-GATE: Nothing merges without eval passing. E2E product eval is the final gate."
 type: rigid
+version: 1.0.0
+preamble-tier: 4
+triggers:
+  - "eval gate"
+  - "nothing merges without eval"
+  - "check eval before merge"
+allowed-tools:
+  - Bash
 ---
 # Eval Gate (HARD-GATE)
 
@@ -52,7 +60,12 @@ If you notice any of these, STOP and do not proceed:
   - Use `/eval-translate-english` to convert spec requirements to YAML scenarios
   - Identify critical paths (auth, checkout, data integrity, scale)
   - Identify edge cases (timeouts, network failures, concurrent operations)
-- **Output:** Eval scenario file (YAML format)
+- **QA CSV Traceability Check** (if `qa/manual-test-cases.csv` exists):
+  - For each row with status `approved`, verify at least one eval YAML scenario references its journey ID
+  - Log coverage: `X/Y approved journeys covered by eval scenarios`
+  - Block if any approved journey has no corresponding eval scenario — do not proceed to stack-up until coverage is complete
+  - Write coverage report to brain: `~/forge/brain/prds/<task-id>/eval/qa-csv-coverage-<YYYYMMDD>.md`
+- **Output:** Eval scenario file (YAML format) with verified QA CSV coverage
 
 ### Bring Up Stack
 - **Input:** Eval scenarios
@@ -88,6 +101,22 @@ If you notice any of these, STOP and do not proceed:
   3. Verify each step produces expected output
 - **Output:** Eval results (PASS all scenarios, or FAIL on specific scenario + step)
 
+### YELLOW Verdict Triage
+
+**YELLOW means non-critical failures detected.** Do not treat YELLOW as GREEN.
+
+For each YELLOW scenario:
+
+1. **Identify** the scenario name and failing assertion from eval output
+2. **Classify** — run the scenario 3× in isolation:
+   - If 3/3 pass → flake. Document and proceed (step 3)
+   - If any of 3 fail → real regression. Treat as RED. Do not merge.
+3. **Document** each YELLOW decision in brain:
+   - Path: `~/forge/brain/prds/<task-id>/eval/yellow-triage-<YYYYMMDD>.md`
+   - Content: scenario name, classification (flake/regression), 3× run results, decision
+4. **YELLOW is only acceptable** when all 3× isolation runs pass. One failure in 3 = RED.
+5. After triaging all YELLOWs: all cleared → proceed to Claim Eval Pass. Any RED → enter Self-Heal Loop.
+
 ### Diagnose Failures
 **IF any scenario fails:**
 
@@ -120,6 +149,50 @@ If you notice any of these, STOP and do not proceed:
   1. If still failing: this is a real blocker
   2. Document the failure in brain (decision ID: EVALFAIL-...)
   3. Escalate: BLOCKED (eval failing, can't fix after 3 retries)
+
+### Ship-Readiness Score
+
+After all scenarios complete, compute a 0-10 ship-readiness score:
+
+```bash
+python3 -c "
+total = <total_scenarios>
+passed = <passed_count>
+yellow = <yellow_count>
+failed = <failed_count>
+manual_skipped = <manual_skipped_count>
+
+# Weight: failed = -1.5pt, yellow = -0.5pt, manual_skipped = -0.25pt per scenario
+score = 10.0
+if total > 0:
+    score -= (failed / total) * 10 * 1.5
+    score -= (yellow / total) * 10 * 0.5
+    score -= (manual_skipped / total) * 10 * 0.25
+score = max(0.0, min(10.0, round(score, 1)))
+
+tier = 'GREEN' if score >= 8.0 else 'YELLOW' if score >= 5.0 else 'RED'
+print(f'Ship-readiness: {score}/10 ({tier})')
+print(f'  Passed: {passed} | Yellow: {yellow} | Failed: {failed} | Skipped: {manual_skipped}')
+if tier == 'RED':
+    print('  Action: Do not merge. Fix failing scenarios.')
+elif tier == 'YELLOW':
+    print('  Action: Investigate yellow scenarios before merging.')
+else:
+    print('  Action: Safe to proceed to PR.')
+"
+```
+
+**Score tiers:**
+- **8–10 (GREEN):** Safe to merge
+- **5–7.9 (YELLOW):** Investigate before merging
+- **0–4.9 (RED):** Do not merge
+
+Write the score to brain alongside the eval results:
+```bash
+# Append to existing eval result file:
+echo "ship_readiness_score: <score>" >> "$EVAL_RESULT_FILE"
+echo "ship_readiness_tier: <tier>" >> "$EVAL_RESULT_FILE"
+```
 
 ### Claim Eval Pass
 - **Input:** All scenarios PASS (3 consecutive runs if flaky history)
@@ -302,6 +375,28 @@ Output: **EVAL PASS** (ready to merge) or **DONE_WITH_CONCERNS** (passes with wa
 5. Escalation: **BLOCKED** if a critical surface (API or DB) has zero coverage
 
 ---
+
+## Non-Interactive Ship Policy
+
+After eval passes and the ship-readiness score is GREEN (≥8.0), the conductor should auto-proceed through phase 5 without requiring human confirmation for these mechanical steps:
+
+| Step | Auto-proceed? | Condition |
+|------|--------------|-----------|
+| Create PR | ✓ Yes | Score ≥ 8.0, no open review findings |
+| Set PR description | ✓ Yes | Always |
+| Request reviewers | ✓ Yes | If reviewer list is in brain |
+| Merge PR | ✗ Human gate | Always requires human approval |
+| Deploy to staging | ✗ Human gate | Always requires human approval |
+
+**Only stop for:**
+- Merge conflicts (unresolvable without human judgment)
+- Test failures (can't proceed)
+- Review findings marked ASK tier or MUST-FIX
+- MAJOR or MINOR version bumps on shared contracts
+- Plan items with status NOT DONE
+- Ship-readiness score < 8.0
+
+**Everything else is auto.** Do not pause to ask "should I proceed?" for GREEN eval results. Pausing for non-judgment calls wastes human attention on mechanical steps.
 
 ## Checklist
 

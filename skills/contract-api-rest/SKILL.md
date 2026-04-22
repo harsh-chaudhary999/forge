@@ -3,6 +3,15 @@ name: contract-api-rest
 description: "WHEN: Council has identified REST API conflicts across surfaces and needs a locked contract. Negotiates versioning strategy, endpoint shape, error codes, auth, rate limits, idempotency, and deprecation across all consumer teams."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "design REST API"
+  - "define API contract"
+  - "REST contract"
+  - "API endpoints spec"
+allowed-tools:
+  - Bash
 ---
 
 # Contract-API-REST Skill

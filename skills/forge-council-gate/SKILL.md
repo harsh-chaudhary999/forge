@@ -2,6 +2,16 @@
 name: forge-council-gate
 description: "WHEN: A PRD has been locked by intake and needs Council negotiation. HARD-GATE: Every locked PRD goes through Council (4 surfaces + 5 contracts negotiated). No skipping."
 type: rigid
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "council gate"
+  - "spec is ready for build"
+  - "freeze spec gate"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
 ---
 # Council Gate (HARD-GATE)
 

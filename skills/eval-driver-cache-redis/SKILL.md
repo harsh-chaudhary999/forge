@@ -3,6 +3,14 @@ name: eval-driver-cache-redis
 description: "WHEN: Eval scenario requires cache state verification against Redis. Functions: connect(), execute(command), verify(key, assertion), teardown()."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "eval Redis cache"
+  - "run cache eval"
+  - "Redis eval driver"
+allowed-tools:
+  - Bash
 ---
 
 # Eval Driver: Redis Cache (RESP Protocol)

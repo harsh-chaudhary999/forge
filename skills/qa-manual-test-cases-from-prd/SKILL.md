@@ -3,6 +3,15 @@ name: qa-manual-test-cases-from-prd
 description: "WHEN: You need atomic manual QA test cases in CSV from a PRD plus optional existing suite and knowledge base, with estimation, reuse/deprecation tracking, review, and a final report — any product, any TMS."
 type: rigid
 requires: [qa-prd-analysis, brain-write]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "generate test cases"
+  - "QA test cases from PRD"
+  - "write manual tests"
+  - "create QA CSV"
+allowed-tools:
+  - Bash
 ---
 
 # Manual QA Test Cases from PRD (CSV)

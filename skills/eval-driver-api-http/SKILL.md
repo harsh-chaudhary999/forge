@@ -3,6 +3,14 @@ name: eval-driver-api-http
 description: "WHEN: Eval scenario requires HTTP API request/response verification. Minimal HTTP driver for eval. Functions: setup(config), call(method, path, body), verify(response, assertion), teardown()."
 type: rigid
 requires: [eval-scenario-format]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "eval HTTP API"
+  - "run API eval"
+  - "HTTP eval driver"
+allowed-tools:
+  - Bash
 ---
 
 # eval-driver-api-http Skill

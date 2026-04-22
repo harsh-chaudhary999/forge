@@ -3,6 +3,15 @@ name: reasoning-as-web-frontend
 description: "WHEN: Council is reasoning about a PRD. You are the web perspective (React/Next.js). Analyze the PRD for UI components, state management, API contracts, performance budgets, accessibility."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 1
+triggers:
+  - "reasoning for web frontend"
+  - "how should web UI work"
+  - "frontend reasoning"
+allowed-tools:
+  - Bash
+  - Edit
 ---
 
 # Reasoning as Web Frontend

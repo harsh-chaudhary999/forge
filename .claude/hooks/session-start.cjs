@@ -42,10 +42,16 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+const crypto = require('crypto');
 
 // Configuration
 const SKILL_FILE = path.join(__dirname, '..', 'skills', 'using-forge', 'SKILL.md');
 const STAGES_DIR = path.join(__dirname, '..', 'skills', 'using-forge', 'stages');
+const PREAMBLE_DIR = path.join(__dirname, '..', 'skills', '_preamble');
+const FORGE_RUNTIME_DIR = path.join(os.homedir(), '.forge');
+const CANARY_FILE = path.join(FORGE_RUNTIME_DIR, '.canary');
+const DEFAULT_PREAMBLE_TIER = 2;
 
 function log(message) {
   if (process.env.FORGE_HOOKS_DEBUG === '1') {
@@ -58,6 +64,33 @@ function die(message) {
   console.error(`\nSession cannot start without Forge bootstrap.`);
   console.error(`Fix: Check that .claude/skills/using-forge/SKILL.md exists.`);
   process.exit(1);
+}
+
+function loadPreamble(tier) {
+  const preambleFile = path.join(PREAMBLE_DIR, `tier-${tier}.md`);
+  if (!fs.existsSync(preambleFile)) {
+    log(`Preamble tier-${tier}.md not found — skipping preamble injection`);
+    return '';
+  }
+  try {
+    return fs.readFileSync(preambleFile, 'utf-8');
+  } catch (e) {
+    log(`Cannot read preamble tier-${tier}: ${e.message} — skipping`);
+    return '';
+  }
+}
+
+function generateCanary() {
+  try {
+    if (!fs.existsSync(FORGE_RUNTIME_DIR)) {
+      fs.mkdirSync(FORGE_RUNTIME_DIR, { recursive: true });
+    }
+    const token = 'FORGE_CANARY_' + crypto.randomBytes(16).toString('hex').toUpperCase();
+    fs.writeFileSync(CANARY_FILE, token, { encoding: 'utf-8', mode: 0o600 });
+    log(`Canary token generated and written to ${CANARY_FILE}`);
+  } catch (e) {
+    log(`Canary generation failed (non-fatal): ${e.message}`);
+  }
 }
 
 // ==================== Stage Detection ====================
@@ -205,13 +238,21 @@ try {
   stageLabel = 'full (fallback)';
 }
 
-// Wrap content in EXTREMELY_IMPORTANT marker
+// Generate session canary token for prompt injection detection
+generateCanary();
+
+// Prepend shared preamble to session context
+const preambleContent = loadPreamble(DEFAULT_PREAMBLE_TIER);
+const preamblePrefix = preambleContent
+  ? `${preambleContent}\n\n---\n\n`
+  : '';
+
 const stageNote = stageLabel !== 'full'
   ? `[Forge Session — Stage: ${stageLabel.toUpperCase()}]\n\n`
   : '';
 
 const wrappedContent = `<EXTREMELY_IMPORTANT>
-${stageNote}${contentToInject}
+${stageNote}${preamblePrefix}${contentToInject}
 </EXTREMELY_IMPORTANT>`;
 
 const output = {

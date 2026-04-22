@@ -3,6 +3,15 @@ name: deploy-driver-pm2-ssh
 description: "WHEN: Deployment target is a remote server managed via PM2 over SSH. Provides connect(ssh_config), start(project_path, script), health_check(port, endpoint), and stop(project_name)."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "deploy via PM2"
+  - "PM2 SSH deploy"
+  - "remote PM2 deployment"
+allowed-tools:
+  - Bash
+  - Write
 ---
 
 # Deploy Driver: PM2 over SSH

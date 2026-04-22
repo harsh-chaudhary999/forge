@@ -3,6 +3,16 @@ name: deploy-driver-local-process
 description: "WHEN: Deployment target is a local Node.js process. Provides start(project_path, script), health_check(port, endpoint), and stop(process_name)."
 type: rigid
 requires: [brain-read, eval-driver-api-http]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "deploy locally"
+  - "start local process"
+  - "run local deployment"
+allowed-tools:
+  - Bash
+  - Read
+  - Write
 ---
 
 # Deploy Driver for Local Process

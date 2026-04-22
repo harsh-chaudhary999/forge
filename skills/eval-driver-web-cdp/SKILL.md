@@ -3,6 +3,15 @@ name: eval-driver-web-cdp
 description: "WHEN: Eval scenario requires web UI interaction or assertion. Automates browser via Chrome DevTools Protocol. Functions: launch(), navigate(), interact(click/type/scroll), screenshot(), getDOM(), teardown()."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers:
+  - "eval web UI"
+  - "run browser eval"
+  - "CDP eval driver"
+  - "web UI eval"
+allowed-tools:
+  - Bash
 ---
 
 # Eval Driver: Web UI via Chrome DevTools Protocol (CDP)

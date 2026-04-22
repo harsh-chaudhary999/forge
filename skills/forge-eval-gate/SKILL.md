@@ -373,6 +373,28 @@ Output: **EVAL PASS** (ready to merge) or **DONE_WITH_CONCERNS** (passes with wa
 
 ---
 
+## Non-Interactive Ship Policy
+
+After eval passes and the ship-readiness score is GREEN (≥8.0), the conductor should auto-proceed through phase 5 without requiring human confirmation for these mechanical steps:
+
+| Step | Auto-proceed? | Condition |
+|------|--------------|-----------|
+| Create PR | ✓ Yes | Score ≥ 8.0, no open review findings |
+| Set PR description | ✓ Yes | Always |
+| Request reviewers | ✓ Yes | If reviewer list is in brain |
+| Merge PR | ✗ Human gate | Always requires human approval |
+| Deploy to staging | ✗ Human gate | Always requires human approval |
+
+**Only stop for:**
+- Merge conflicts (unresolvable without human judgment)
+- Test failures (can't proceed)
+- Review findings marked ASK tier or MUST-FIX
+- MAJOR or MINOR version bumps on shared contracts
+- Plan items with status NOT DONE
+- Ship-readiness score < 8.0
+
+**Everything else is auto.** Do not pause to ask "should I proceed?" for GREEN eval results. Pausing for non-judgment calls wastes human attention on mechanical steps.
+
 ## Checklist
 
 Before claiming eval gate passed:

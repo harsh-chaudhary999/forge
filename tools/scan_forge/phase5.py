@@ -334,7 +334,9 @@ def run_phase5(repos: list[Path], scan_tmp: Path, topology=None) -> None:
         encoding="utf-8",
     )
     print(f"  Event bus rows written to forge_scan_event_bus.tsv: {len(event_bus_rows)}")
-    log.log_stat(f"phase=5.4 event_bus_rows={len(event_bus_rows)} pub={sum(1 for r in event_bus_rows if '\tpub\t' in r)} sub={sum(1 for r in event_bus_rows if '\tsub\t' in r)}")
+    _pub = sum(1 for r in event_bus_rows if "\tpub\t" in r)
+    _sub = sum(1 for r in event_bus_rows if "\tsub\t" in r)
+    log.log_stat(f"phase=5.4 event_bus_rows={len(event_bus_rows)} pub={_pub} sub={_sub}")
 
     # 5.5 prep URLs (simplified: harvest from js_calls + broad /api patterns)
     print()

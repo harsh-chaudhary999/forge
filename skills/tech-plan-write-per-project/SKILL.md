@@ -1,6 +1,6 @@
 ---
 name: tech-plan-write-per-project
-description: "WHEN: Shared-dev-spec is frozen and per-project tech plans must be written before dev-implementer dispatch. Output: 1 plan per repo — elaborative preamble (data, reuse, design→UI for web/app, spec trace) plus bite-sized tasks (exact files, complete code, exact bash commands); brain-scan–grounded paths."
+description: "WHEN: Shared-dev-spec is frozen and per-project tech plans must be written before dev-implementer dispatch. Output: 1 plan per repo — elaborative preamble (data, reuse, design→UI, API↔consumer map, unknowns+deep discovery, §1c review/XALIGN) plus bite-sized tasks; scan-grounded; feedback loop before dispatch."
 type: rigid
 requires: [brain-read]
 ---
@@ -17,7 +17,8 @@ requires: [brain-read]
 | "I'll group related changes into one big task" | Tasks over 5 minutes need splitting. Big tasks hide complexity and make progress tracking impossible. |
 | "The bash commands are obvious" | "Obviously" wrong commands waste a self-heal loop iteration. Write the exact command including flags, paths, and environment variables. |
 | "I'll reference the spec instead of repeating details" | The implementer (dev-implementer subagent) works in an isolated worktree with only the plan. Self-contained tasks prevent NEEDS_CONTEXT status. |
-| "I'll discover file paths by exploring the repo" | Duplicates work the scan already did and burns tokens. Read `~/forge/brain/products/<slug>/codebase/` first; put paths from `index.md` / `modules/*.md` / `api-surface.md` into tasks, then open sources only when writing full file bodies. |
+| "I'll discover file paths by exploring the repo" | Duplicates work the scan already did and burns tokens. **Default:** read `~/forge/brain/products/<slug>/codebase/` first; put paths from `index.md` / `modules/*.md` / `api-surface.md` into tasks, then open sources when writing full file bodies. **Exception:** **Section 1b.6** lists an **UNKNOWN** — you **must** deepen discovery (targeted `rg`/glob, read hub files, route tables, OpenAPI, client wrappers, test names) until resolved or **BLOCKED** — do not ship “mystery meat” tasks. |
+| "Elaboration is optional — bite-sized tasks are enough" | Tasks without **§1b.5 API map**, **§1b.6 unknown closure**, and **§1c review rounds** hide integration risk. STOP. Elaboration is **mandatory** for E2E; micro-tasks execute the elaboration, they do not replace it. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -33,7 +34,7 @@ If you notice any of these, STOP and do not proceed:
 
 - **Task contains "add the endpoint" or other vague verbs without file paths** — Vague tasks produce vague implementations. STOP. Rewrite with exact file path, function name, and complete code.
 - **A task exceeds 5 minutes of execution** — Tasks over 5 minutes hide complexity and block progress tracking. STOP. Split into smaller tasks, each 2-5 minutes.
-- **Plan has no Section 1b (1b.1–1b.3; plus 1b.4 when this is a web/app plan)** — Micro-tasks without inventory hide schema, reuse, and design decisions. STOP. Add the preamble before Task 1.
+- **Plan has no Section 1b / 1c (1b.1–1b.6 per applicability; 1b.4 for web/app; 1b.5 when HTTP applies; 1c always)** — Micro-tasks without inventory hide schema, reuse, design, **API wiring**, unknowns, and review history. STOP. Add the full preamble before Task 1.
 - **Migration or DDL tasks exist but the data model delta table is empty or claims “none”** — Contradiction with locked DB contract. STOP. Align the table and tasks.
 - **Plan references the shared-dev-spec with "see spec" instead of repeating the details** — Dev-implementer works in isolation without spec access. STOP. Make every task fully self-contained with all needed details inline.
 - **Bash commands lack flags, paths, or environment variables** — Incomplete commands produce incorrect results or fail silently. STOP. Write the exact, complete command.
@@ -42,6 +43,10 @@ If you notice any of these, STOP and do not proceed:
 - **Test task is listed after implementation task** — TDD requires test first. STOP. Reorder: test task always precedes the implementation task it covers.
 - **Web or app tech plan skips Section 1b.4 or omits design anchors while intake locked Figma / `design_brain_paths` / Lovable repo** — Figma captured in Q9 is **not** decorative; it must drive the component/screen plan. STOP. Add the design→UI table and align tasks to nodes or brain paths.
 - **UI tasks cite neither a design anchor nor `design_waiver: prd_only` + scan reuse** — Implementers cannot verify pixels or reuse. STOP.
+- **HTTP-consuming web/app plan has no Section 1b.5 consumer map** — No way to verify which component calls which API. STOP.
+- **HTTP-serving backend plan has no Section 1b.5 rows for new/changed endpoints** — Consumers cannot be aligned. STOP.
+- **Section 1b.6 lists UNRESOLVED unknowns but Section 2 still has executable tasks depending on them** — Discovery incomplete. STOP. Resolve, escalate **BLOCKED**, or remove tasks until evidence exists.
+- **`Tech plan status: REVIEW_PASS` with no `tech-plan-self-review` round logged in §1c revision log** — Rubber-stamp. STOP.
 
 ## Overview
 
@@ -90,9 +95,11 @@ This skill converts a locked shared-dev-spec into bite-sized, executable technic
 
 ## Section 1b: Elaborative preamble (mandatory per tech-plan file)
 
-Bite-sized tasks exist so a **dev-implementer in isolation** can execute without guessing. They **do not** replace a short, explicit narrative of **what changes in the world** (data, reuse, design, traceability). **Every** `tech-plans/<repo>.md` MUST include **subsections 1b.1–1b.3** below **immediately after the plan title** and **before Task 1**. **Subsection 1b.4** is mandatory for **web** and **app** repo plans (see rules inside 1b.4); for other repos, write the one-line **not applicable** form.
+**Authoring order in the saved `tech-plans/<repo>.md` file:** (1) `#` title line, then **`Tech plan status: DRAFT`** (or `REVIEW_CHANGES` / `REVIEW_PASS` per **§Section 1c**); (2) this **Section 1b** (`### 1b.1` … `### 1b.6`); (3) **§Section 1c** body (revision log table + cross-repo notes); (4) **Section 2** tasks.
 
-Skipping them because “the tasks are obvious” or “only micro-steps matter” is **BLOCKED** — that is how schema drift, duplicate tables, wrong screens, and silent greenfield work slip through.
+Bite-sized tasks exist so a **dev-implementer in isolation** can execute without guessing. They **do not** replace a short, explicit narrative of **what changes in the world** (data, reuse, design, **HTTP wiring**, unknowns, review trail). **Subsection 1b.4** follows web/app rules; **1b.5** follows HTTP rules; **1b.6** is always required (may be a single “no unknowns” line). **§Section 1c** is always required. All of the above **before Section 2**.
+
+Skipping them because “the tasks are obvious” or “only micro-steps matter” is **BLOCKED** — that is how schema drift, duplicate tables, wrong screens, **wrong API wiring**, and silent greenfield work slip through.
 
 ### 1b.1 Data model delta (persistence)
 
@@ -143,6 +150,64 @@ Bullets mapping **shared-dev-spec** requirement headings, contract IDs, or accep
 - Do **not** write “see Figma” without **node id(s)** or **brain path** that appear in the **locked** PRD/spec — chat URLs are not a transport layer.
 - If **`design_waiver: prd_only`** is locked, the table still lists **screens/components** and maps them to **scan-backed** files or `NET_NEW`, with **one line** citing the waiver for pixel latitude.
 - **Every** UI implementation task in Section 2 should reference **`D<n>`** or explicitly say **waiver + PRD section** so reviewers can trace intake → plan → code.
+
+### 1b.5 API ↔ consumer map (HTTP / REST integration)
+
+**Purpose:** E2E delivery requires a **written** answer to: *which component (or service) calls which endpoint*, and *where the handler lives*. Do not assume the reader has opened the backend and frontend repos.
+
+**When N/A:** This repo has **no** HTTP server and **no** HTTP client changes for this task — one line: **`1b.5 not applicable — no HTTP API surface in this repo for this task.`**
+
+**When this repo implements or changes HTTP APIs** (backend, BFF, API gateway): build a table from the **locked** `shared-dev-spec` REST section (verbatim paths and methods — no invention):
+
+| Endpoint (METHOD `path`) | Handler (repo-relative path : symbol or class#method) | Auth / versioning / idempotency | Consumers — component path **or** `tech-plans/<other>.md` §1b.5 row id (e.g. `web: C3`) |
+
+**When this repo consumes HTTP APIs** (web, app, worker with outbound REST): build a table tying **UI or job code** to **contract**:
+
+| Consumer (path : component or hook) | When it runs (mount, click, job tick, …) | METHOD + `path` | Client module (path) | Success + error handling (status codes) |
+
+If the owning API plan lives in another repo file, **cross-reference** exact rows (same METHOD+path string) so **`tech-plan-self-review` cross-plan checks** can diff them.
+
+### 1b.6 Unknowns & deep discovery closure
+
+**Purpose:** Scans and specs leave **gaps**. **Elaborative** planning means **closing** gaps with repo evidence, not leaving them for implementers.
+
+1. Start a table (zero rows = fine only if you genuinely have **no** unknowns — then write **`No material unknowns — scan + spec sufficient for every Section 2 path.`**):
+
+| U# | Unknown | Why it matters if wrong |
+|----|---------|-------------------------|
+
+2. For **each** row, append columns (same table or continuation):
+
+| … | Deep discovery performed (tools: e.g. `rg`, `Read`, hub file) | Resolution (`RESOLVED: …` \| `BLOCKED: …`) |
+
+**Rules**
+
+- **RESOLVED** must cite **concrete evidence** (file paths, line ranges, grep pattern hit counts, test file name) — not “I checked.”  
+- **BLOCKED** must state the **exact** decision needed from a human or from **`/scan`** refresh — and **Section 2 must not** contain tasks that depend on that unknown until resolved.  
+- **Deep exploration is required** when scan/`api-surface.md` does not show registration, client wrapper, middleware chain, or feature flag gate: open those files in the product repo until the unknown is mapped or escalated.
+
+## Section 1c: Plan lifecycle, cross-repo alignment, and feedback
+
+Tech plans are **not one-shot** documents. They go through **review → revise → re-align** until integration is legible on paper.
+
+1. **Status line** — Placed immediately under the `#` title (see **Section 1b** authoring order). Values: **`DRAFT`** | **`REVIEW_CHANGES`** | **`REVIEW_PASS`**. Start at **`DRAFT`**. After **`tech-plan-self-review`**: all PASS → **`REVIEW_PASS`**; any CHANGES or BLOCKER → **`REVIEW_CHANGES`**, fix plans, set **`DRAFT`**, re-run review.
+
+2. **Revision log** (append one row per meaningful edit):
+
+   | Rev | When (ISO8601 approx) | Who | Trigger (e.g. self-review §1b.5 FAIL, XALIGN drift) | What changed |
+
+3. **Minimum feedback loop**
+
+   - Run **`tech-plan-self-review`** on this file **before** treating the plan as final for dispatch.  
+   - Record in the log: **`self-review round=<n> result=PASS|CHANGES|BLOCKED`** (short note).  
+   - Default **max 3** review rounds per repo per task; then **ESCALATE** with consolidated blockers.
+
+4. **Cross-repo alignment** (when this product task has **≥2** of `{API-owning repo, HTTP-consuming repo}`):
+
+   - After **all** sibling `tech-plans/*.md` are in **`DRAFT`** with **§1b.5** filled, perform one **cross-walk**: every consumer **METHOD+path** matches an owner row; version/prefix matches; auth assumptions consistent.  
+   - Append to **each** affected plan’s revision log: **`XALIGN PASS`** or **`XALIGN FAIL: <drift>`** and fix drift before setting **`REVIEW_PASS`**.
+
+5. **Conductor logging** (when orchestrated): emit **`[TECH-PLAN-REVIEW]`** and **`[TECH-PLAN-XALIGN]`** lines as specified in **`conductor-orchestrate`** State 4.
 
 ---
 
@@ -458,7 +523,7 @@ brain/prds/<task-id>/tech-plans/
 ```
 
 Each file:
-- **Section 1b** preamble is present (1b.1–1b.3; **1b.4** per web/app rules)
+- **Section 1b + 1c** preamble is present (1b.1–1b.6 per rules; **1c** status + revision log)
 - Task ordering respects dependencies
 - Every task is 2-5 min executable
 - Every code block is complete
@@ -471,7 +536,7 @@ Each file:
 
 A tech plan passes if:
 1. **Completeness**: No "...", no "TODO", no placeholders
-2. **Preamble**: Section 1b present; data model delta matches all DDL/migration tasks; reuse vs net-new (scan-grounded) and spec trace are explicit; **1b.4** satisfies web/app + design rules and UI tasks reference **`D<n>`** or waiver
+2. **Preamble**: Sections **1b + 1c** present; data model delta matches DDL tasks; reuse + spec trace; **1b.4** for web/app; **1b.5** when HTTP applies (consumer↔provider rows align across repos); **1b.6** has no silent UNRESOLVED; **1c** shows review rounds + XALIGN when multi-repo HTTP
 3. **Specificity**: Every file path is absolute, every command is exact
 4. **Testability**: Every task has a runnable test command and expected output
 5. **Ordering**: No task depends on later tasks (DAG)

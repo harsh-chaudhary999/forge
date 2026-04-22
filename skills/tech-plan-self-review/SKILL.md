@@ -1,6 +1,6 @@
 ---
 name: tech-plan-self-review
-description: "WHEN: A per-project tech plan has been written and needs verification before dispatch to dev-implementer. Check all requirements covered, no placeholders, complete code, exact commands."
+description: "WHEN: A per-project tech plan has been written and needs verification before dispatch to dev-implementer. Check spec coverage, elaborative §1b–§1c (incl. API↔consumer map, unknown closure, review log, XALIGN), placeholders, code, commands."
 type: rigid
 requires: [brain-read]
 ---
@@ -12,7 +12,7 @@ This skill verifies technical implementation plans against their corresponding s
 ## Iron Law
 
 ```
-EVERY TECH PLAN IS VERIFIED AGAINST THE FROZEN SHARED-DEV-SPEC LINE BY LINE BEFORE DISPATCH. A PLAN WITH A PLACEHOLDER OR TODO IS NOT A PLAN — IT IS UNFINISHED WORK. DISPATCH NOTHING THAT FAILS THIS REVIEW.
+EVERY TECH PLAN IS VERIFIED AGAINST THE FROZEN SHARED-DEV-SPEC LINE BY LINE BEFORE DISPATCH. A PLAN WITH A PLACEHOLDER OR TODO IS NOT A PLAN — IT IS UNFINISHED WORK. DISPATCH NOTHING THAT FAILS THIS REVIEW. A PLAN WITHOUT §1c REVIEW HISTORY OR WITH DRIFTING §1b.5 ROWS ACROSS REPOS IS NOT READY — RUN THE FEEDBACK LOOP UNTIL PASS OR ESCALATE.
 ```
 
 ## Anti-Pattern Preamble: Why Plans Get Rubber-Stamped
@@ -30,6 +30,7 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 | "The tests will catch any gaps" | Tests validate what's written in the plan. If the plan is wrong, the tests validate the wrong thing. Self-review catches spec-plan mismatches that tests cannot. |
 | "Type mismatches are minor, the compiler will catch them" | Type mismatches between plan tasks mean the integration will fail. Compiler catches single-file issues; self-review catches cross-task contract breaks. |
 | "I already reviewed this mentally" | Mental reviews have zero evidence trail. You cannot prove you checked every line. Run the checklist. Mark each item. Evidence beats confidence. |
+| "Self-review is one-and-done — I'll fix gaps in code" | **CHANGES REQUESTED** must produce **plan revisions** (§1c log + status). Coding without updating the plan invalidates TDD and eval traceability. |
 
 ## Red Flags — STOP and Re-Review
 
@@ -40,9 +41,13 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 - Commit message is generic ("update code", "fix stuff", "misc changes")
 - Performance requirement in spec has no corresponding benchmark in plan
 - Plan references an API endpoint not defined in shared-dev-spec contracts
-- **Missing Section 1b** (`tech-plan-write-per-project`): no data model delta table (or explicit “no persistence in this repo”), no reuse vs net-new bullets, no trace-to-spec bullets before Task 1; or **web/app plan missing 1b.4** (design→UI table / required N/A line)
+- **Missing §1b / §1c or wrong file order** (`tech-plan-write-per-project`): no `Tech plan status:` under title; missing **1b.1–1b.6** (per applicability), **1c** revision log, or **web/app** missing **1b.4** / **HTTP** missing **1b.5**
 - **Data model delta contradicts migration tasks** — Delta says “none” but tasks add DDL, or delta lists tables with no matching migration task
 - **Figma / `design_brain_paths` / Lovable locked in intake but 1b.4 empty or generic** — “See Figma” without node ids or brain paths, or no **`D<n>`** linkage from UI tasks
+- **Missing §1b.5** when the repo implements or consumes REST/HTTP for this task — No API↔component map
+- **§1b.6 unknowns UNRESOLVED** but Section 2 tasks depend on them
+- **Missing §1c** status banner, revision log, or **REVIEW_PASS** without a logged self-review round in the log
+- **Multi-repo HTTP drift:** consumer `METHOD+path` in this plan’s §1b.5 does not match sibling `tech-plans/*.md` owner rows (after XALIGN should have fixed — still FAIL → BLOCKED)
 
 **Any of these mean: BLOCKED. Fix before dispatch.**
 
@@ -77,13 +82,26 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 ### 1b. Data model delta, reuse narrative, design trace, preamble (`tech-plan-write-per-project` Section 1b)
 
 **Checklist:**
-- [ ] **Section 1b appears before Task 1** with subsections **1b.1–1b.3** always; **1b.4** present per **web/app** rules in that skill (or explicit **not applicable** one-liner for non-UI repos)
+- [ ] **File layout:** `Tech plan status:` line immediately under `#` title; **Section 1b** (`1b.1`–`1b.6` per applicability) and **§Section 1c** appear **before Task 1**
 - [ ] **Data model delta** is either a table with one row per CREATE/ALTER/DROP/index (or equivalent storage change), or an explicit one-line statement that this repo has **no** persistence/schema work — consistent with **shared-dev-spec** / DB contract
 - [ ] **Cross-repo DDL:** If migrations run elsewhere, the delta says so; this plan does not silently own another service’s tables
 - [ ] **Every migration/DDL task** in the plan has a matching row in the delta (or the repo correctly claims no persistence and has no such tasks)
 - [ ] **Reuse vs net-new** lists concrete repo-relative paths for extended or called code; where a **brain scan** exists for this product, reuse bullets **align** with `codebase/` modules — or the plan flags **`SCAN_MISSING_OR_STALE`**; net-new surfaces are explicit — no implied reuse without a path
 - [ ] **Trace to spec** maps requirements or contract headings to task numbers; combined with §1, no orphan requirements
 - [ ] **1b.4 (web/app):** When **`design_new_work: yes`** or implementable design is locked (Figma keys, `design_brain_paths`, Lovable repo), the **design→UI table** lists anchors → deliverable → scan path or `NET_NEW`; **UI tasks** reference **`D<n>`** or cite **`design_waiver: prd_only`** plus PRD anchor — not chat-only Figma URLs
+- [ ] **1b.5 (HTTP):** If this repo serves or consumes REST for the task, **API↔consumer** tables exist and **METHOD+path** strings match **shared-dev-spec** REST; **N/A** line only when truly no HTTP surface
+- [ ] **1b.6:** Unknown table present; every row **RESOLVED** with evidence or **BLOCKED** with escalation — **no** dependency tasks on unresolved unknowns
+- [ ] **1c:** `Tech plan status` + **revision log** present; latest log line records this review round and **PASS|CHANGES|BLOCKED**; if multi-repo HTTP, **XALIGN** noted **PASS** or open FAIL items are listed as blockers
+
+### 1d. Cross-plan HTTP consistency (run when ≥2 tech plans include §1b.5)
+
+**When to skip:** Only one repo in the product task touches HTTP — mark “N/A”.
+
+**Checklist:**
+- [ ] Load **all** `~/forge/brain/prds/<task-id>/tech-plans/*.md` that claim HTTP in §1b.5
+- [ ] **Consumer → owner:** Every `METHOD+path` in a **web/app** plan appears in the **API-owning** plan (same spelling, including prefix/version), or an explicit “external API” row cites a non-product host documented in spec
+- [ ] **Owner → consumer:** Every **new/changed** endpoint in the API plan is referenced by ≥1 consumer row **or** documented as “no consumer yet / batch only / public” with spec citation
+- [ ] **Drift = BLOCKER** until plans revised and XALIGN re-run (`XALIGN PASS` in logs)
 
 ### 2. Code Completeness
 
@@ -229,9 +247,11 @@ For each failed check, collect:
 - Severity: BLOCKER (blocks dispatch) or WARNING (minor fix needed)
 
 ### Step 4: Decision
-- **APPROVED:** All checks pass → Ready for dispatch to dev-implementers
-- **CHANGES REQUESTED:** Some warnings → Fix and resubmit
-- **BLOCKED:** Any blockers → Cannot dispatch until fixed
+- **APPROVED:** All checks pass → Ready for dispatch to dev-implementers **after** updating the plan file: set **`Tech plan status: REVIEW_PASS`**, append **revision log** row with `self-review round=<n> result=PASS` (and **`XALIGN PASS`** if multi-repo HTTP)
+- **CHANGES REQUESTED:** Some warnings → Set plan **`REVIEW_CHANGES`** / **`DRAFT`**, append revision log with **failed § references**, **edit the tech plan** (not only mental note), re-run this skill from Step 1 — **max 3 rounds** per repo then escalate
+- **BLOCKED:** Any blockers → Cannot dispatch until fixed; log **`result=BLOCKED`** in revision log and escalate with evidence
+
+**Feedback loop (mandatory):** **CHANGES** or **BLOCKED** must **never** skip straight to dev-implementer without a **new plan revision** (`Rev`++) and a **re-review**. Treat “approved in chat” without file updates as **invalid**.
 
 ## Common Patterns to Check
 
@@ -271,6 +291,7 @@ When submitting review results:
 
 ### Verification Summary
 - [✅/❌] Spec Coverage: All requirements covered
+- [✅/❌] §1b–§1c: Data/design/API map/unknowns/review log (+ XALIGN when applicable)
 - [✅/❌] Code Completeness: No placeholders
 - [✅/❌] No Placeholder Code: All implementations concrete
 - [✅/❌] Test & Commit: All tests runnable, commits clear

@@ -19,6 +19,7 @@ requires: [intake-interrogate, product-context-load, brain-read, brain-write, fo
 | "The conductor can adapt the order for this case" | The state machine order exists because each phase produces inputs the next phase requires. Skipping phases means missing inputs. |
 | "We shipped dispatch / partial implement — good enough for now" | **Without P4.4 eval there is no proof the product works.** Stopping after P4.1 or P4.3 is an orchestration failure, not a shortcut. Same for skipping **RED** tests before feature code. |
 | "Tests can be implied from the tech plan; no separate test pass" | Plans are prose until **failing tests exist** (`forge-tdd`). If no subagent run produced RED then GREEN, TDD was not executed. |
+| "Tech plans are done when the markdown is saved — skip self-review and XALIGN" | **State 4** now requires **`tech-plan-self-review` rounds** and **`[TECH-PLAN-XALIGN]`** when multi-repo HTTP. Skipping that is the same failure class as skipping eval — integration bugs ship on **assumed** API wiring. |
 | "`design_new_work: yes` but we can start UI code from the Confluence link" | Chat and wiki URLs are **not** the brain transport layer. Without **`[DESIGN-INGEST]`** evidence on disk, implementers invent pixels. Same failure class as skipping intake Q9 implementability. |
 | "Eval YAML after the feature — faster to code first" | **State 4b is before State 5.** Without `~/forge/brain/prds/<task-id>/eval/*.yaml` and **`[P4.0-EVAL-YAML]`**, there is nothing for **`eval-coordinate-multi-surface`** to run in P4.4 and no proof the journey was agreed. Coding first is an orchestration failure. |
 | "`WAIVE_EVAL_YAML` so we can ship" | **Not allowed** for normal delivery. Only **`ABORT_TASK`** (human, logged) ends the run without eval artifacts — that is **not** a shipped feature. |
@@ -274,21 +275,33 @@ Ensure **consensus** across all repos (no conflicting contracts).
 **ENTRY:** `contract-impact.md` exists (contracts locked across all repos).  
 **ACTION:** For each repo in the product:
   1. Invoke reasoning skill for the repo's role (backend, web, app, infra).
-  2. Write tech plan: file structure, API endpoints, DB migrations, tests, deployment.
+  2. Write **elaborative** tech plan per **`tech-plan-write-per-project`**: Section **1b** (data, reuse, trace, design→UI, **API↔consumer §1b.5**, **unknowns §1b.6**) + Section **1c** (status, revision log, review rounds, **XALIGN** when multi-repo HTTP) — then bite-sized tasks, tests, deployment. Plans must **not** be “tasks only”; include **which API in which component** for every HTTP consumer.
   3. Save to `~/forge/brain/prds/<task-id>/tech-plans/<repo-name>.md`.
+  4. **Self-review (feedback loop):** Run **`tech-plan-self-review`** per repo file. On **CHANGES** or **BLOCKED**, revise the markdown (append **§1c revision log** row, bump `Rev`), re-run until **PASS** or **3 rounds** exhausted — then **ESCALATE** with consolidated blockers. Log each round:
+     ```
+     [TECH-PLAN-REVIEW] task_id=<id> repo=<repo> round=<1|2|3> result=PASS|CHANGES|BLOCKED
+     ```
+  5. **Cross-plan alignment:** When **≥2** repos have **§1b.5** HTTP tables, cross-walk all `tech-plans/*.md` for matching **METHOD+path** and consumer references; fix drift. Log:
+     ```
+     [TECH-PLAN-XALIGN] task_id=<id> result=PASS|FAIL notes=<short>
+     ```
+     **FAIL** → return to step 4 (revision) until **PASS** or escalate.
+  6. Only after **all** `[TECH-PLAN-REVIEW] … PASS` and **`[TECH-PLAN-XALIGN] … PASS`** (or XALIGN `N/A` single-repo HTTP) may conductor treat tech plans as **final** for State 4b.
 
-**SUCCESS CONDITION:** Tech plans written for ALL repos in the product. Each plan is > 500 words, includes tests, deployment steps.  
-**FAILURE CONDITION:** Tech plan is too vague, missing tests, or has gaps.  
-**ESCALATION:** Developer agent re-writes the plan. If still fails, escalate to user.  
+**SUCCESS CONDITION:** Tech plans written for ALL repos; each plan **> 500 words** where applicable, includes **§1b–§1c**, tests, deployment; **self-review PASS** per repo; **XALIGN PASS** when multi-repo HTTP.  
+**FAILURE CONDITION:** Terse task-only plans; missing **§1b.5/1b.6/1c**; missing tests; self-review or XALIGN still failing after revision cap.  
+**ESCALATION:** Re-write plans with full elaboration; if still fails after 3 review rounds per repo, escalate to user with checklist evidence.  
 **LOGGING:**
 ```
 [TECH-PLAN] task_id=<id> repo=<repo> timestamp=<ISO8601> status=START
 [TECH-PLAN] task_id=<id> repo=<repo> words=<count> tests=<yes|no> deployment=<yes|no>
+[TECH-PLAN-REVIEW] task_id=<id> repo=<repo> round=<n> result=PASS|CHANGES|BLOCKED
+[TECH-PLAN-XALIGN] task_id=<id> result=PASS|FAIL|N/A notes=<short>
 [TECH-PLAN] task_id=<id> timestamp=<ISO8601> status=ALL_REPOS_PLANNED
 ```
 
 ### State 4b: Eval scenarios + RED tests (HARD-GATE before implementation)
-**ENTRY:** All tech plans written and `shared-dev-spec.md` locked.  
+**ENTRY:** All tech plans written, **`tech-plan-self-review` PASS** logged per repo, **`[TECH-PLAN-XALIGN]`** **PASS** or **N/A**, and `shared-dev-spec.md` locked.  
 **ACTION:**
   0. **Manual QA CSV (acceptance inventory — before eval YAML and before feature TDD):**
   - **Full pipeline entrypoint (`/forge` — `commands/forge.md`):** The user chose **end-to-end automation**, not a partial phase. **Always** complete **`qa-prd-analysis`** + **`qa-manual-test-cases-from-prd`** through **Step 7 approval** so **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** exists with **≥1** approved row. Log **`[P4.0-QA-CSV] task_id=<id> rows=<n> approved=yes`**. **Do not** log **`[P4.0-QA-CSV] skipped=not_required`**. If **`~/forge/brain/products/<slug>/product.md`** has **`forge_qa_csv_before_eval`** unset or **`false`**, **set it to `true`** when this step completes so **`verify_forge_task.py`** and later runs match **`/forge`** semantics.
@@ -429,7 +442,7 @@ Ensure **consensus** across all repos (no conflicting contracts).
 The Conductor manages the complete delivery cycle: dispatching dev work, reviewing code, running evals, and self-healing failures.
 
 #### Phase 4.0: Eval YAML + RED tests (same as State 4b)
-**ENTRY:** Tech plans + `shared-dev-spec.md` locked.  
+**ENTRY:** Tech plans + **`[TECH-PLAN-REVIEW]` PASS** per repo + **`[TECH-PLAN-XALIGN]`** PASS or N/A + `shared-dev-spec.md` locked.  
 **ACTION:** Same as **State 4b** above — **step 0 QA CSV when required** (**`forge_qa_csv_before_eval: true`** **or** full **`/forge`**), then **`eval/` with ≥1 YAML**, **`[P4.0-EVAL-YAML]`** logged, then **forge-tdd** RED logged per repo **before** Phase 4.1 feature work. **Phase 4.1 is invalid without `[P4.0-EVAL-YAML]`** (and invalid without **`[P4.0-QA-CSV]`** **`approved=yes`** when **`forge_qa_csv_before_eval: true`** **or** full **`/forge`**).
 
 #### Phase 4.0b: Design ingestion (same as State 4b-design)
@@ -812,7 +825,7 @@ After Phase 4 completes successfully, the Conductor coordinates the release: PRs
 | **Product not found** | Context load fails | Direct user to register product via forge-product.md |
 | **Circular repo deps** | Context load detects cycle | Escalate to user: "Product has circular deps" |
 | **Council conflict** | 2+ repos disagree on contract | Inline dreamer tries to resolve; if fails, escalate to user with conflict summary |
-| **Tech plan gaps** | Plan is < 500 words OR missing tests | Dev rewrites; if still fails, escalate |
+| **Tech plan gaps** | Plan is terse (missing **§1b.5/1b.6/1c**), < 500 words where depth required, missing tests, **`[TECH-PLAN-REVIEW]`** not PASS, or **`[TECH-PLAN-XALIGN]`** FAIL | Revise plans per **`tech-plan-self-review`** (max 3 rounds/repo); if still fails, escalate with checklist evidence |
 
 ### Phase 4-5 Escalation Matrix (Dev Implementer Through Ship)
 
@@ -962,6 +975,7 @@ conductor_state task_id=<id>
 
 ### Phase 1-3 (Intake Through Tech Plans)
 - [ ] Conductor invokes intake-interrogate, product-context-load, council-multi-repo-negotiate sequentially.
+- [ ] **State 4 tech plans:** Each `tech-plans/*.md` includes **§1b–§1c** (API↔consumer **§1b.5**, unknowns **§1b.6**, review + XALIGN); **`[TECH-PLAN-REVIEW] … PASS`** per repo; **`[TECH-PLAN-XALIGN] … PASS`** or **N/A** before State 4b.
 - [ ] State transitions logged to conductor.log.
 - [ ] Escalation paths clear and actionable.
 - [ ] All states (Intake through Tech Plans) reachable.

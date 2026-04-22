@@ -3,6 +3,12 @@ name: tech-plan-write-per-project
 description: "WHEN: Shared-dev-spec is frozen and per-project tech plans must be written before dev-implementer dispatch. Output: 1 plan per repo — Section 0 doubt log (unlimited Q&A until confident), elaborative §1b–§1c, then bite-sized tasks; no vendor-specific assumptions; scan-grounded; review/XALIGN before dispatch."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers: []
+allowed-tools:
+  - Bash
+  - Write
 ---
 
 # tech-plan-write-per-project

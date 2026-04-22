@@ -2,6 +2,11 @@
 name: forge-eval-gate
 description: "WHEN: Implementation is complete and PRs are ready to merge. HARD-GATE: Nothing merges without eval passing. E2E product eval is the final gate."
 type: rigid
+version: 1.0.0
+preamble-tier: 4
+triggers: []
+allowed-tools:
+  - Bash
 ---
 # Eval Gate (HARD-GATE)
 

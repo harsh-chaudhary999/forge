@@ -2,6 +2,11 @@
 name: forge-worktree-gate
 description: "WHEN: About to start any implementation task. HARD-GATE: Every task gets fresh worktree (D30). No shared state, no cross-contamination."
 type: rigid
+version: 1.0.0
+preamble-tier: 3
+triggers: []
+allowed-tools:
+  - Bash
 ---
 # Worktree Per Task (D30 HARD-GATE)
 

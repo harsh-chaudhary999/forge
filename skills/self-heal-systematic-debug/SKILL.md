@@ -3,6 +3,12 @@ name: self-heal-systematic-debug
 description: "4-phase debugging workflow: investigate (logs, traces) → hypothesize (root cause) → fix (minimal) → verify (re-eval). Output: fixed code, commit."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers: []
+allowed-tools:
+  - Bash
+  - Write
 ---
 
 # Self-Heal Systematic Debug

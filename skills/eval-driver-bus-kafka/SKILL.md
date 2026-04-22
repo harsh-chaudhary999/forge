@@ -3,6 +3,11 @@ name: eval-driver-bus-kafka
 description: "WHEN: Eval scenario requires Kafka message verification. Functions: connect(), produce(topic, message), consume(topic, assertion), verify(topic, schema), teardown()."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers: []
+allowed-tools:
+  - Bash
 ---
 
 # eval-driver-bus-kafka

@@ -2,6 +2,11 @@
 name: forge-subagent-anatomy
 description: "Template and rules for creating and dispatching subagents. Status state machine, dispatch patterns, isolation rules, review integration."
 type: reference
+version: 1.0.0
+preamble-tier: 1
+triggers: []
+allowed-tools:
+  - Write
 ---
 
 # Subagent Anatomy: Complete Authoring Guide

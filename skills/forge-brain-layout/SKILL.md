@@ -2,6 +2,12 @@
 name: forge-brain-layout
 description: "Brain directory structure, file naming conventions, and query patterns. Look up when writing to or reading from the brain."
 type: reference
+version: 1.0.0
+preamble-tier: 2
+triggers: []
+allowed-tools:
+  - Bash
+  - Write
 ---
 # Brain Layout
 

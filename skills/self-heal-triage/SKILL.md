@@ -3,6 +3,11 @@ name: self-heal-triage
 description: "WHEN: An eval scenario has failed and a fault has been located. Classify the failure type — flaky, bad test, real bug, or environment — with evidence and confidence score."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 3
+triggers: []
+allowed-tools:
+  - Bash
 ---
 
 # Self-Heal Triage Skill

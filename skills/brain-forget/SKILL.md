@@ -3,6 +3,12 @@ name: brain-forget
 description: "WHEN: A decision is being superseded, deprecated, or has aged out. Archive it without deletion — marks as warm→cold→archived with full audit trail."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 2
+triggers: []
+allowed-tools:
+  - Bash
+  - Write
 ---
 
 # brain-forget: Decision Archival System

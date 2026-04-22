@@ -3,6 +3,13 @@ name: product-context-load
 description: "WHEN: You have a locked PRD and need to validate the target product exists, load its topology, and list affected projects."
 type: rigid
 requires: [brain-read]
+version: 1.0.0
+preamble-tier: 2
+triggers: []
+allowed-tools:
+  - Bash
+  - Read
+  - Write
 ---
 
 # Product Context Load

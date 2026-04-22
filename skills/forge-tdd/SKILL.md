@@ -2,6 +2,12 @@
 name: forge-tdd
 description: "HARD-GATE: Iron law - write test first, watch fail, write minimal code, watch pass. No exceptions. Non-negotiable discipline enforcer."
 type: rigid
+version: 1.0.0
+preamble-tier: 3
+triggers: []
+allowed-tools:
+  - Bash
+  - Write
 ---
 
 # Test-Driven Development (Iron Law)

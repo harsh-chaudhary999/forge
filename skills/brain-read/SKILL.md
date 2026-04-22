@@ -2,6 +2,14 @@
 name: brain-read
 description: "WHEN: You need to look up product topology, project metadata, past decisions, or contract details from the brain."
 type: flexible
+version: 1.0.0
+preamble-tier: 2
+triggers: []
+allowed-tools:
+  - Bash
+  - Edit
+  - Read
+  - Write
 ---
 
 # Brain Read

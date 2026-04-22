@@ -2,6 +2,11 @@
 name: forge-letter-spirit
 description: "WHEN: A Forge rule or skill is being applied. HARD-GATE: Follow both letter AND spirit. No rationalizations, no shortcuts, no exceptions."
 type: rigid
+version: 1.0.0
+preamble-tier: 2
+triggers: []
+allowed-tools:
+  - Bash
 ---
 # Letter Equals Spirit (Foundational)
 

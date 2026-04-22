@@ -3,6 +3,13 @@ name: conductor-orchestrate
 description: "WHEN: PRD is locked. You are the master state machine orchestrating the entire forge workflow. Routes the task through all phases, tracks state, manages escalations, and coordinates subagents."
 type: rigid
 requires: [intake-interrogate, product-context-load, brain-read, brain-write, forge-tdd, forge-eval-gate]
+version: 1.0.0
+preamble-tier: 4
+triggers: []
+allowed-tools:
+  - Bash
+  - Edit
+  - Write
 ---
 
 # Conductor Orchestrate — Master State Machine

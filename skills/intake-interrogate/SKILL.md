@@ -1,6 +1,6 @@
 ---
 name: intake-interrogate
-description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Confidence-first: pre-fill from PRD + product.md; variable number of user turns — stop as soon as mandatory lock fields are concrete and doubts are cleared (no fixed question count; two answers can resolve many latent doubts). Q4 registry + Q9 design gates unchanged when they apply."
+description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Confidence-first: pre-fill from PRD + product.md; variable number of user turns — stop as soon as mandatory lock fields are concrete and doubts are cleared (no fixed question count; two answers can resolve many latent doubts). Q4 registry + Q9 design gates unchanged when they apply; **Q10 implementation closure** (VCS reference, authoritative delivery boundary, implementation stack) when the ambiguity gate in Q10 applies."
 type: rigid
 requires: [brain-write]
 ---
@@ -28,7 +28,7 @@ requires: [brain-write]
 ## Iron Law
 
 ```
-MANDATORY LOCK FIELDS IN prd-locked.md (TEMPLATE + Q4 REGISTRY LINES + Q9 WHEN UI SCOPE APPLIES) MUST BE CONCRETE BEFORE COUNCIL — NO TBD.
+MANDATORY LOCK FIELDS IN prd-locked.md (TEMPLATE + Q4 REGISTRY LINES + Q9 WHEN UI SCOPE APPLIES + **Q10 WHEN IMPLEMENTATION-CLOSURE GATE APPLIES**) MUST BE CONCRETE BEFORE COUNCIL — NO TBD.
 CONFIDENCE-FIRST: PRE-FILL HIGH-CONFIDENCE ANSWERS FROM PRD + product.md; ASK THE USER ONLY FOR LOW-CONFIDENCE GAPS, CONTRADICTIONS, AND HIGH-STAKES AMBIGUITY — NOT THE SAME OPEN QUESTIONS WHEN THE PRD ALREADY STATES THE ANSWER.
 THERE IS NO TARGET NUMBER OF USER TURNS: STOP WHEN MANDATORY FIELDS ARE CONCRETE AND HIGH-STAKES DOUBTS ARE CLEARED — EVEN IF THAT TOOK TWO MESSAGES; DO NOT PAD TO EIGHT OR ANY OTHER QUOTA.
 WHEN Q9 APPLIES (WEB / APP / USER-VISIBLE UI): THE USER MUST SEE THE VERBATIM “SINGLE DESIGN SOURCE OF TRUTH” QUESTION (BLOCKQUOTE IN Q9 BELOW) IN AN ASSISTANT MESSAGE IN THIS INTAKE — YOU MAY ADD PRE-FILLED CONTEXT AROUND IT, BUT YOU MAY NOT WRITE design_intake_anchor OR CLAIM INTAKE COMPLETE UNTIL THAT EXACT SENTENCE HAS BEEN SHOWN. “CONFIRM” MEANS: SHOW THE VERBATIM LINE, THEN ASK CONFIRM/CORRECT — NOT SILENT INFERENCE FROM THE PRD ALONE.
@@ -199,6 +199,30 @@ The numbering below is a **checklist of fields** that must appear in `prd-locked
 
 **You may not lock the PRD** while web/app are in scope and Q9 fields above are missing, **TBD**, or vague ("we'll see in implementation"). **`design_new_work: yes` without implementable design + without `design_waiver: prd_only` is a blocked lock.** **No Figma is fine** when the explicit choice is **engineering-only / PRD-only / waived** with the fields above.
 
+**Q10: Implementation closure — VCS reference, delivery boundary, stack (mandatory when gate applies)**
+
+**Purpose:** When several **equally plausible** implementations could satisfy the prose PRD, closure records **which** path is authoritative so council, tech plans, tests, and eval do not diverge.
+
+**When Q10 is mandatory (HARD-GATE):** Lock Q10 **before council** if **any** of:
+
+1. **Q4** lists **more than one** affected repo, **or**
+2. **Q9 applies** (web / app / user-visible UI), **or**
+3. The PRD allows **multiple channels or boundaries** (e.g. config vs service vs client; “reuse existing”, “toggle”, “rollout”, “dual path”, major/minor version split) **without** already naming the canonical one, **or**
+4. Naming, scope, or initiative wording suggests work might **already exist** on another branch, tag, or open change request in the listed repos.
+
+**Only skip Q10** when the change is **narrowly unambiguous** (single repo, single obvious integration point, behavior fully specified with no channel fork). Then record **`implementation_closure: not applicable`** plus **one line** why (e.g. “single-table migration; no alternate delivery path”).
+
+**Lock in `prd-locked.md` (concrete; no `TBD` when gate applies):**
+
+- **`implementation_reference`:** `branch:<ref>` **|** `tag:<ref>` **|** `pr:<url>` **|** `issue:<key>` **|** `none` — plus **one sentence**. Use `none` only with explicit acknowledgment that implementation proceeds **without** diffing prior VCS work (greenfield path).
+- **`delivery_mechanism`:** **Exactly one** authoritative **system boundary or channel** where acceptance behavior is enforced (e.g. “REST handlers in service S”, “batch worker + outbox”, “file-backed operator config”, “browser client bundle only”). Add a **second line** when parallel paths can coexist during rollout (compat window, feature flag scope, deprecation).
+- **`implementation_stack`:** For **each** repo role in Q4 that this task touches, a **short concrete** note: modules, frameworks, or reuse targets **or** `n/a (headless-only)` where no presentation layer exists. **Legacy alias:** some locks may still use **`ui_implementation_stack`** — same slot; new locks should prefer **`implementation_stack`**.
+
+**INSUFFICIENT to lock when Q10 applies:**
+
+- External doc / ticket link as the only narrative **without** an `implementation_reference` decision when item **(4)** could apply.
+- **`delivery_mechanism: TBD`**, **`implementation_stack: implementer’s choice`**, or **“decide in tech plan”** — delegates the fork to implementation time.
+
 ## Output
 
 Write all answers to `~/forge/brain/prds/<task-id>/prd-locked.md`:
@@ -343,7 +367,7 @@ Write all answers to `~/forge/brain/prds/<task-id>/prd-locked.md`:
 
 ## Commit
 
-After all **mandatory lock fields** are concrete (Q1–Q8 dimensions + **Q9 when web/app/UI in scope** — via pre-fill + confirm and/or doubt-driven questions), commit the prd-locked.md:
+After all **mandatory lock fields** are concrete (Q1–Q8 dimensions + **Q9 when web/app/UI in scope** + **Q10 when implementation-closure gate applies** — via pre-fill + confirm and/or doubt-driven questions), commit the prd-locked.md:
 
 ```bash
 git -C ~/forge/brain add prds/<task-id>/prd-locked.md
@@ -361,6 +385,7 @@ Before claiming intake complete:
 - [ ] **Q9 answered when web or app is in scope** — `design_new_work` + `design_assets` (or `design_ui_scope: not applicable` documented when Q9 skipped)
 - [ ] **If `design_new_work: yes`:** `design_brain_paths` **or** (`lovable_github_repo` + pinned ref) **or** (`figma_file_key` + `figma_root_node_ids`) **or** `design_waiver: prd_only` with owner + risk — not URL-only
 - [ ] **If Q9 was in scope:** `design_intake_anchor` line present **and** the **verbatim blockquote** design-source-of-truth question appears in **this** intake thread before lock
+- [ ] **Q10 when gate applies:** `implementation_reference`, `delivery_mechanism`, and **`implementation_stack`** (or legacy **`ui_implementation_stack`**) are concrete in `prd-locked.md`, **or** `implementation_closure: not applicable` with reason (see **Q10** section)
 - [ ] Each answer confirmed in the user's own words and written back for approval
 - [ ] Contradictions between answers detected and resolved before locking
 - [ ] prd-locked.md written to `~/forge/brain/prds/<task-id>/` and committed to brain

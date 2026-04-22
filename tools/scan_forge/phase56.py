@@ -400,7 +400,7 @@ def run_phase56(brain_parent: Path, scan_tmp: Path, topology=None) -> None:
         automap_lines = sorted(set(edges))
         # Split by provenance for the header description
         prov_set = {e.split("\t")[-1] for e in automap_lines}
-        out_md.write_text(
+        base_automap = (
             "# Cross-repo automap (phase56)\n\n"
             "_Heuristic join (grep routes + OpenAPI paths + call sites + topology + shared types + event bus) "
             "— verify against runtime behavior._\n\n"
@@ -409,10 +409,20 @@ def run_phase56(brain_parent: Path, scan_tmp: Path, topology=None) -> None:
             f"Provenance types present: {', '.join(sorted(prov_set))}\n\n"
             "```tsv\n"
             + "\n".join(automap_lines)
-            + "\n```\n",
-            encoding="utf-8",
-            errors="replace",
+            + "\n```\n"
         )
+    else:
+        base_automap = (
+            "# Cross-repo automap (phase56)\n\n"
+            "_No joined edges in this run._ Typical causes: empty `forge_scan_all_callsites.txt` "
+            "(phase 5.1 grep/AST found no HTTP-shaped calls), empty `forge_scan_api_routes.txt` "
+            "(phase 3.5 / OpenAPI), call paths that do not match any route line (dynamic URLs, "
+            "different `/api` prefix), or HTTP method mismatch between caller and route.\n\n"
+            "TSV columns: `caller_repo`, `caller_rel_path`, `route_repo`, `route_rel_path`, "
+            "`url_or_type_or_topic`, `provenance`.\n\n"
+            "```tsv\n```\n"
+        )
+    out_md.write_text(base_automap, encoding="utf-8", errors="replace")
 
     # 4e — Unresolved edge report
     unresolved_unique = sorted(set(f"{loc}\t{url}" for loc, url in unresolved))
@@ -426,7 +436,7 @@ def run_phase56(brain_parent: Path, scan_tmp: Path, topology=None) -> None:
             + ("\n... (truncated)" if len(unresolved_unique) > 200 else "")
             + "\n```\n"
         )
-        cur = out_md.read_text(encoding="utf-8", errors="replace") if out_md.is_file() else "# Cross-repo automap (phase56)\n"
+        cur = out_md.read_text(encoding="utf-8", errors="replace")
         out_md.write_text(cur.rstrip() + unresolved_section, encoding="utf-8", errors="replace")
 
     uniq: set[str] = set()

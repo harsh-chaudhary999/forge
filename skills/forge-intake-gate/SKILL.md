@@ -45,6 +45,7 @@ If you notice any of these, STOP and do not proceed:
 - **"This is a continuation of a previous PRD, we can skip intake"** — Continuation PRDs introduce new behavior, change existing contracts, or extend scope. Each one gets independent intake. STOP. Run intake for the new PRD.
 - **Rollback plan is "revert the commit"** — A one-line rollback plan is not a rollback plan. It doesn't address data migrations, cache invalidation, or external service state. STOP. Require a concrete rollback procedure before locking.
 - **Success criteria are behavioral descriptions instead of verifiable conditions** — "User should be able to see their orders" is not a success criterion — it cannot be objectively passed or failed. STOP. Require measurable, testable criteria.
+- **Q10 (implementation closure) applies but `prd-locked.md` lacks `implementation_reference`, `delivery_mechanism`, and `implementation_stack` (or legacy `ui_implementation_stack`)** — Multi-repo, ambiguous delivery channel, or plausible prior VCS work without a locked reference + authoritative boundary + stack (or explicit `implementation_closure: not applicable`) recreates the “two definitions of done” fork. STOP. Re-run **`intake-interrogate` Q10** until concrete.
 - **Intake is being run after tech plans have started** — Tech plans derive from locked PRDs. If intake runs after planning begins, the plans are built on unlocked sand. STOP. Invalidate plans and re-run intake first.
 
 ## Detailed Workflow

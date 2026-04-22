@@ -47,6 +47,14 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 
 ## Verification Checklist
 
+### 0. Implementation discovery & delivery locks (when `prd-locked.md` Q10 applies)
+
+**Checklist:**
+- [ ] **`implementation_reference`** from intake is echoed in the tech plan’s first page (branch / PR / explicit `none` + rationale) — not implied.
+- [ ] **`delivery_mechanism`** and **`implementation_stack`** (or legacy **`ui_implementation_stack`**) from `prd-locked.md` appear verbatim or by reference — tasks must not contradict the locked authoritative boundary or stack.
+- [ ] **Discovery evidence:** Plan states that **`git branch -a`** (or equivalent) was reviewed **or** links `discovery.md` / `context-loaded.md` git subsection from product-context-load — not “assumed greenfield.”
+- [ ] **RED tests (see `forge-tdd`):** First failing tests must assert **observable behavior** at the chosen boundary (API contract, persistence, job output, or UI), not only registry/enum membership, when the feature is user-visible or Q10 applied.
+
 ### 1. Spec Coverage
 
 **Checklist:**

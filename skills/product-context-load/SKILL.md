@@ -36,6 +36,7 @@ If you notice any of these, STOP and do not proceed:
 - **Product context is loaded after council has already started** — Council needs topology to identify affected surfaces. STOP. Always load product context before invoking any surface reasoning.
 - **Service start/stop commands in product.md are not verified** — Wrong startup commands make eval-product-stack-up fail. STOP. Verify commands are executable before surfacing to downstream phases.
 - **A project has neither `deploy_doc` nor (`start` and `health`)** — Stack-up has no runbook. STOP. Send the user back to `/workspace` Step 3b or `/scan` Step 1 to record deploy truth before council or eval that needs a live stack.
+- **Git discovery (step 7) skipped when Q10 applies or multi-repo ambiguity exists** — Implementers will optimize for brain-only artifacts and miss in-repo reference branches. STOP. Append branch listing for each in-scope repo before marking context load complete (see **`intake-interrogate` Q10** for when closure / discovery matter).
 
 Given a product slug (from the locked PRD), load and validate:
 
@@ -96,7 +97,20 @@ Given a product slug (from the locked PRD), load and validate:
 
    **Downstream routing (pass this forward in context):** Any phase that must name **concrete files** in product repos (council, tech-plan, eval YAML, design notes) should **take filenames and module boundaries from this scan output first** (`index.md`, `modules/*.md`, `api-surface.md`, hub lists in `SCAN.json`). Repo tree exploration is a **fallback** when scan is absent, stale, or a path is provably wrong after checking brain.
 
-7. **Output**
+7. **Git / branch discovery (feeds conductor State 2.5)**
+
+   For **each** repo path validated in step 3, record read-only git facts into `context-loaded.md` (or `discovery.md` if the orchestrator prefers a split file):
+
+   ```bash
+   cd <repo-path> && git rev-parse --show-toplevel && git status -sb && git rev-parse --short HEAD
+   git branch -a 2>/dev/null | head -80
+   ```
+
+   Optional: `git branch -a | grep -iE '<slug-from-PRD-or-feature-keywords>'` when **`implementation_reference`** in `prd-locked.md` is unknown or `none`.
+
+   **Purpose:** Surfaces existing topic / release / integration branches (including common naming patterns per team) so council and tech plans do not assume greenfield when a canonical implementation already exists. **Do not** checkout or merge — discovery only.
+
+8. **Output**
    Write to `~/forge/brain/prds/<task-id>/context-loaded.md`:
    ```markdown
    # Product Context Loaded
@@ -125,7 +139,7 @@ Given a product slug (from the locked PRD), load and validate:
    Validation: ✅ All repos exist, ✅ no circular deps, ✅ contracts coherent
    ```
 
-8. **Commit**
+9. **Commit**
    ```bash
    git -C ~/forge/brain add prds/<task-id>/context-loaded.md
    git -C ~/forge/brain commit -m "context: load product topology for <task-id>"

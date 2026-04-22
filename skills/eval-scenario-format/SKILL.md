@@ -50,6 +50,17 @@ requires: [brain-read]
 
 ---
 
+### Anti-Pattern 3b: Thin driver smoke without authoritative-boundary proof (when Q10 applies)
+
+**Why This Fails:** A minimal driver path (process launch, HTTP 200, single UI interaction) plus a screenshot does **not** prove the **`delivery_mechanism`** and **`implementation_stack`** locked in **`prd-locked.md` Q10** — the wrong integration path can still ship.
+
+**Enforcement (MUST):**
+1. MUST document **how** the scenario reaches the **same authoritative state** as acceptance (fixtures, test harness flags, seeded config, tenant/account, env vars, or documented preconditions).
+2. MUST include at least one **assertion** at that boundary (response body field, stored row, job output, config payload, UI hierarchy / selector — whichever matches the lock) — not launch-only or happy-path smoke alone.
+3. SHOULD cite **`manual-test-cases.csv` `Id`** in scenario `name` or `comments` when that CSV exists so P4.4 traces signed QA rows.
+
+---
+
 ### Anti-Pattern 4: "I'll use a hardcoded delay instead of a wait condition"
 
 **Why This Fails:** Hardcoded delays are wrong in both directions. Too short: the assertion fails on slow CI runners. Too long: the scenario takes 10x longer than necessary. Hardcoded delays mask timing bugs that become production incidents. `sleep(2000)` in a scenario means the developer did not understand when the system was ready.

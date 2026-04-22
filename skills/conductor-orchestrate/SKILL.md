@@ -24,6 +24,7 @@ requires: [intake-interrogate, product-context-load, brain-read, brain-write, fo
 | "`WAIVE_EVAL_YAML` so we can ship" | **Not allowed** for normal delivery. Only **`ABORT_TASK`** (human, logged) ends the run without eval artifacts — that is **not** a shipped feature. |
 | "`forge_qa_csv_before_eval: true` but we'll add the CSV after eval YAML" | Defeats the point: **RED** and **eval** must align to the **same** signed acceptance rows. CSV comes **first** when the flag is set. |
 | "`/forge` but we'll skip CSV because `product.md` never set the flag" | **`commands/forge.md` (`/forge`) = full pipeline:** State 4b **mandates** **`qa-prd-analysis`** + **`qa-manual-test-cases-from-prd`** and **`[P4.0-QA-CSV]`** before **`[P4.0-EVAL-YAML]`** — same as **`forge_qa_csv_before_eval: true`**. Persist **`forge_qa_csv_before_eval: true`** in **`product.md`** if it was missing or false. |
+| "Council can start without `[DISCOVERY]` — we'll grep branches during build" | **State 2.5** exists so **greenfield vs existing in-repo work** (topic branches, tags, open change requests) is resolved **before** contracts are negotiated. Skipping it repeats “two definitions of done.” STOP. Log **`[DISCOVERY]`** or an explicit skip per State 2.5 rules. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -230,8 +231,25 @@ The Conductor:
 [CONTEXT-LOAD] task_id=<id> timestamp=<ISO8601> status=COMPLETE output=context-loaded.md
 ```
 
+### State 2.5: Implementation discovery (before Council)
+**ENTRY:** `context-loaded.md` exists. **Always** emit a discovery audit line before Council (see SUCCESS); depth of git commands follows obligation below.
+
+**Obligation (full branch survey):** Run the ACTION in **each** Q4 repo when **any** of: **`intake-interrogate` Q10** is mandatory for this PRD **and** `implementation_closure` is **not** `not applicable`; **`implementation_reference`** is not `none`; PRD or Q4 naming suggests plausible prior in-repo work (product judgment).
+
+**Obligation (waived):** When `prd-locked.md` records **`implementation_closure: not applicable`** with reason — log **`[DISCOVERY] task_id=<id> obligation=waived reason=implementation_closure_not_applicable`** (optional: `git rev-parse HEAD` in primary repo only for audit).
+
+**ACTION (when obligation not waived):** In **each** repo path from `product.md` that is **in Q4 for this task**, run **read-only** git discovery and record evidence under `~/forge/brain/prds/<task-id>/discovery.md` (or append to `context-loaded.md`):
+
+1. `git rev-parse --show-toplevel` and `git status -sb` and `git rev-parse HEAD`
+2. `git branch -a` (or `git branch -a \| grep -iE '<tokens from PRD title>'`) — surface **existing** topic / release / integration branch names (including common `feat/*` / `feature/*` patterns where used) **before** council assumes greenfield.
+3. If **`implementation_reference`** names `branch:<name>` or `pr:`, run `git merge-base --is-ancestor` / `git log -1 <branch>` only as needed to confirm the ref exists (do not checkout unless human-approved).
+
+**SUCCESS CONDITION:** Log **`[DISCOVERY] task_id=<id> repos_checked=<n> implementation_reference=<branch|pr|none> branches_noted=<short summary>`** (or **`obligation=waived`** line above). If a likely canonical branch exists and PRD did not name it → **STOP** and reconcile with human (amend `implementation_reference` or document supersede) **before** Council locks shared assumptions.  
+**FAILURE CONDITION:** Council starts with **no** `[DISCOVERY]` line while **full obligation** applied (per **Obligation (full branch survey)**) and work was not waived.  
+**SKIP escalation (human STOP) when:** `implementation_reference: none` **and** greenfield rationale **and** discovery found **no** conflicting remote branches — still log **`[DISCOVERY] … matched=0`**; do **not** STOP.
+
 ### State 3: Council Negotiation
-**ENTRY:** `context-loaded.md` exists.  
+**ENTRY:** `context-loaded.md` exists; **State 2.5 complete** — a **`[DISCOVERY]`** line is logged (full survey or **`obligation=waived`** per State 2.5).  
 **ACTION:** Invoke `council-multi-repo-negotiate` skill. For each repo, reason about:
   - REST API contracts
   - Event/Kafka schemas

@@ -52,7 +52,12 @@ If you notice any of these, STOP and do not proceed:
   - Use `/eval-translate-english` to convert spec requirements to YAML scenarios
   - Identify critical paths (auth, checkout, data integrity, scale)
   - Identify edge cases (timeouts, network failures, concurrent operations)
-- **Output:** Eval scenario file (YAML format)
+- **QA CSV Traceability Check** (if `qa/manual-test-cases.csv` exists):
+  - For each row with status `approved`, verify at least one eval YAML scenario references its journey ID
+  - Log coverage: `X/Y approved journeys covered by eval scenarios`
+  - Block if any approved journey has no corresponding eval scenario — do not proceed to stack-up until coverage is complete
+  - Write coverage report to brain: `~/forge/brain/prds/<task-id>/eval/qa-csv-coverage-<YYYYMMDD>.md`
+- **Output:** Eval scenario file (YAML format) with verified QA CSV coverage
 
 ### Bring Up Stack
 - **Input:** Eval scenarios
@@ -87,6 +92,22 @@ If you notice any of these, STOP and do not proceed:
      - Step 7: User sees result (web driver verifies)
   3. Verify each step produces expected output
 - **Output:** Eval results (PASS all scenarios, or FAIL on specific scenario + step)
+
+### YELLOW Verdict Triage
+
+**YELLOW means non-critical failures detected.** Do not treat YELLOW as GREEN.
+
+For each YELLOW scenario:
+
+1. **Identify** the scenario name and failing assertion from eval output
+2. **Classify** — run the scenario 3× in isolation:
+   - If 3/3 pass → flake. Document and proceed (step 3)
+   - If any of 3 fail → real regression. Treat as RED. Do not merge.
+3. **Document** each YELLOW decision in brain:
+   - Path: `~/forge/brain/prds/<task-id>/eval/yellow-triage-<YYYYMMDD>.md`
+   - Content: scenario name, classification (flake/regression), 3× run results, decision
+4. **YELLOW is only acceptable** when all 3× isolation runs pass. One failure in 3 = RED.
+5. After triaging all YELLOWs: all cleared → proceed to Claim Eval Pass. Any RED → enter Self-Heal Loop.
 
 ### Diagnose Failures
 **IF any scenario fails:**

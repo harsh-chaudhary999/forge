@@ -65,6 +65,10 @@ This graph exists so **operators who do not know the repo** can still ship safel
 
 **Why This Fails:** Codebases change. A brain scan is a snapshot. Using stale scan data leads agents to reference deleted modules, outdated APIs, or patterns that were refactored out. Every scan must produce a new timestamped snapshot.
 
+### Anti-Pattern 6: "The scan command finished — I won't verify outputs"
+
+**Why This Fails:** Partial runs, wrong `--brain-codebase`, or aborted phase56 leave **`SCAN_SUMMARY.md` / `graph.json` / `modules/`** missing or empty while **`SCAN.json` looks fine**. Downstream consolidations never happened; the pipeline “escapes” silently. **MUST** run **`tools/verify_scan_outputs.py`** after each scan (see **Post-run integrity gate**).
+
 **Enforcement:**
 - MUST write `SCAN.json` with timestamp, commit SHA, and file count on every run
 - MUST include `last-scanned:` field in `index.md` header
@@ -129,7 +133,7 @@ codebase/
 
 **Requirements:** Python 3.9+, **GNU grep** and **cksum** on `PATH` (pattern inventory and stable method IDs). Optional: `pip install -r tools/scan_forge/requirements.txt` (adds **PyYAML**) for reliable YAML OpenAPI parsing and full `openapi-schema-digest` coverage.
 
-**Package layout:** `tools/scan_forge/` — `cli.run_scan` invokes `phase1` → `phase35` → `phase4` (writes `SCAN.json` via `scan_metadata`) per repo, then **`openapi_schema_digest.write_digest`** (writes `openapi-schema-digest.md`), then `phase5` → `phase56`, optional `phase57`, optional `cleanup`; optional `validate_roles` when `--product-md` is set. **Per-repo inventory** is written under **`<run_dir>/_role/<role>/`** (`scan_paths.role_scan_dir`) so phase1 outputs are not overwritten across repos; merged routes and phase5 artifacts stay at **`run_dir/`** root. **`run.json`** records **`phase_timings_ms`** and **`total_elapsed_ms`** for efficiency checks.
+**Package layout:** `tools/scan_forge/` — `cli.run_scan` invokes `phase1` → `phase35` → `phase4` (writes `SCAN.json` via `scan_metadata`) per repo, then **`openapi_schema_digest.write_digest`** (writes `openapi-schema-digest.md`), then `phase5` → `phase56`, then **`codebase_index.write_codebase_index_md`** (writes **`index.md`**), optional `phase57`, **`repo_docs_mirror`**, then **`verify_brain_codebase_with_retries`** (3 attempts, short delay) unless **`FORGE_SCAN_SKIP_VERIFY=1`**; then optional `cleanup`; optional `validate_roles` when `--product-md` is set. **Per-repo inventory** is written under **`<run_dir>/_role/<role>/`** (`scan_paths.role_scan_dir`) so phase1 outputs are not overwritten across repos; merged routes and phase5 artifacts stay at **`run_dir/`** root. **`run.json`** records **`phase_timings_ms`**, **`verify_scan_outputs`**, and **`total_elapsed_ms`**. If verify fails, **`status`** is **`verify_failed`**, **`run.json`** is still written, **`--cleanup` is skipped** (keeps `forge_scan_*.txt` for triage), and the CLI exits **non-zero**.
 
 **OpenAPI / Swagger (phase 3.5):** Each repo is scanned for spec files (`openapi.json`, `openapi.yaml`, `openapi.yml`, `swagger.json`, `*.openapi.json`, filenames containing `openapi` or `swagger` with json/yaml/yml — see `openapi_routes.discover_openapi_files`). Operations are **appended** to `forge_scan_api_routes.txt` after grep-based route lines. **Phase 56** matches frontend call paths to those operations using substring match **or** `{param}` template matching (so `/api/users/123` can match `/api/users/{id}`). Without PyYAML, YAML specs may be skipped or partially parsed; install from `tools/scan_forge/requirements.txt` when possible.
 
@@ -139,6 +143,7 @@ codebase/
 
 | File | Purpose |
 |------|---------|
+| `index.md` | **Auto-written** orientation: `last-scanned`, repo table, module map (first N wikilinks), pointers to `SCAN_SUMMARY.md` / `graph.json` — satisfies verify + gives agents a single entry note |
 | `SCAN_SUMMARY.md` | One-page orientation: freshness, per-role stats, links to automap / digest / graph, known limitations |
 | `graph.json` | Machine graph: `nodes` (module stems + paths) + `edges` (`cross_repo_http` with `url` + `provenance`) — **derived** from markdown + automap; markdown modules remain the human source of truth |
 | `.forge_scan_manifest.json` | Per-role `git` `HEAD` + `HEAD^{tree}` after each successful scan — for tooling and future incremental strategies |
@@ -152,6 +157,35 @@ codebase/
 **Known limitations (honest):** Grep-based call/route inventory misses dynamic URLs and some frameworks; OpenAPI discovery is heuristic; Obsidian resolves `[[modules/…]]` from the **vault root** (often open `codebase/` as vault or expect some wikilinks to need path adjustment); `graph.json` edges require current automap TSV columns (includes `route_rel_path`). Re-scan after major refactors.
 
 **Diagnostics:** Modules emit `FORGE_SCAN|<id>|<utc>|LEVEL|…` (see `tools/scan_forge/log.py`).
+
+### Post-run integrity gate (HARD-GATE — prevents “scan escaped”)
+
+**Problem:** The CLI can be interrupted, pointed at the wrong `--brain-codebase`, or leave a half-written tree. Downstream then treats **missing** `SCAN_SUMMARY.md` / `graph.json` / empty `modules/` as “no data” and silently **invents paths** — the same class of failure as skipping parity.
+
+**Built-in (Python CLI):** `scan_forge.cli.run_scan` ends with **`verify_brain_codebase_with_retries`** (default **3** attempts, **~0.35s** between attempts for local FS), after **`codebase_index.write_codebase_index_md`** (so **`index.md`** always exists on a full run). **`run.json`** includes **`verify_scan_outputs`** with exit code and messages. **Emergency bypass only:** set **`FORGE_SCAN_SKIP_VERIFY=1`** (documents intentional risk — never default in automation).
+
+**Agent / shell belt-and-suspenders:** After any **`forge_scan.py`** / **`python3 -m scan_forge`** that exits **0**, still run (or re-run until OK, max **3** tries with **1s** backoff):
+
+```bash
+python3 tools/verify_scan_outputs.py ~/forge/brain/products/<slug>/codebase
+```
+
+- **Exit 0:** Required consolidated artifacts exist (`SCAN.json`, `SCAN_SUMMARY.md`, `graph.json`, `.forge_scan_manifest.json`, `index.md`) and `modules/` is non-empty when the scan reports source files.
+- **Exit non-zero:** **Do not** claim `/scan` complete; **do not** proceed to council or tech-planning that depends on file-level brain paths until re-run passes. Log **`[SCAN-VERIFY] slug=<slug> status=FAIL`** with the script stdout. If the **CLI already exited non-zero** with **`verify_failed`**, treat that the same — **full re-scan** with a **fresh `--run-dir`**, correct **`--brain-codebase`**, then verify again.
+
+**If you hand-ran phases or patched brain files:** You **must** run **`verify_scan_outputs.py`** before claiming parity with a full scan.
+
+**Determinism / “irrational” behaviour (reduce surprises):**
+
+| Pitfall | Mitigation |
+|---------|------------|
+| **Reusing a stale `--run-dir`** after partial failure | Use a **fresh** run directory per attempt; with **`--cleanup`**, do not assume artifacts survived. |
+| **Single-repo `--repos`** when phase56 needs route owners | For FE↔BE linking, include **every route-defining repo** in one invocation (backend first). |
+| **Missing PyYAML** | YAML OpenAPI may be skipped → weaker api inventory; install `tools/scan_forge/requirements.txt` when possible. |
+| **`--brain-codebase` not the workspace `codebase/`** | Verify path matches **`~/forge/brain/products/<slug>/codebase`** exactly. |
+| **Skipping phase57** | Wikilink/orphan issues stay hidden — use **`--phase57-write-report`** after large `modules/` edits. |
+
+**Log (optional):** `[SCAN-VERIFY] slug=<slug> status=OK run_dir=<path>` for conductor / audit trails.
 
 ### CLI flags (common)
 

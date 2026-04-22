@@ -77,7 +77,9 @@ Given a product slug (from the locked PRD), load and validate:
    ls ~/forge/brain/products/<slug>/codebase/SCAN.json 2>/dev/null
    ```
 
-   If found, read and surface key scan data into context:
+   If found, **verify integrity first** (catches half-written scans / missing markdown consolidation). Run **`python3 tools/verify_scan_outputs.py …`** up to **3** times with **1s** pause between attempts (same check the CLI runs after `forge_scan`; retries cover slow disks). If **all attempts fail**, write to `context-loaded.md`: **`SCAN_INCOMPLETE: re-run /scan <slug>`** and treat the scan as **not usable** for file-level tech planning until fixed — do not silently fall back to ad-hoc repo walks without stating the gap.
+
+   If verification passes, read and surface key scan data into context:
    ```bash
    cat ~/forge/brain/products/<slug>/codebase/SCAN.json
    cat ~/forge/brain/products/<slug>/codebase/index.md
@@ -240,5 +242,5 @@ Before advancing to council:
 - [ ] Circular dependencies checked — topological sort passes without cycles
 - [ ] All contracts loaded — api-rest, schema-mysql, cache, event, search as applicable
 - [ ] Incompatible version constraints identified and escalated if found
-- [ ] Codebase scan checked — either loaded (with staleness warning if >7 days) or absence flagged in context-loaded.md
+- [ ] Codebase scan checked — either **`verify_scan_outputs.py` PASS** + loaded (with staleness warning if >7 days), **`SCAN_INCOMPLETE`** noted if verify fails, or absence flagged in context-loaded.md
 - [ ] context-loaded.md written and committed to `~/forge/brain/prds/<task-id>/`

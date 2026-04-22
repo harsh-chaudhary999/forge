@@ -223,7 +223,7 @@ The Conductor:
 ### State 2: Load Product Context
 **ENTRY:** `prd-locked.md` exists.  
 **ACTION:** Invoke `product-context-load` skill. Validate product slug, load repos, contracts, dependencies.  
-**SUCCESS CONDITION:** `context-loaded.md` exists with all repos validated, no circular deps.  
+**SUCCESS CONDITION:** `context-loaded.md` exists with all repos validated, no circular deps. When **`SCAN.json`** exists under **`codebase/`**, **`context-loaded.md`** must reflect **`verify_scan_outputs.py` PASS** (or **`SCAN_INCOMPLETE`** after 3 verify attempts) — never proceed to council treating a half-written scan as authoritative.  
 **FAILURE CONDITION:** Product repo not found OR circular dependencies detected.  
 **ESCALATION:** Product must be registered via `forge-product.md` first. User must add product to brain.  
 **LOGGING:**

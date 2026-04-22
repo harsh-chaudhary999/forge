@@ -49,6 +49,7 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 - **Missing §1c** status banner, revision log, or **REVIEW_PASS** without a logged self-review round in the log
 - **Multi-repo HTTP drift:** consumer `METHOD+path` in this plan’s §1b.5 does not match sibling `tech-plans/*.md` owner rows (after XALIGN should have fixed — still FAIL → BLOCKED)
 - **`tech-plans/HUMAN_SIGNOFF.md` missing** after agent **PASS** + **XALIGN** — Human feedback / go-ahead phase skipped; pipeline must not advance to State 4b. STOP. Create signoff per **`docs/tech-plan-human-signoff.template.md`** (or **`waived`** with reason).
+- **`SCAN_INCOMPLETE` / verify failure ignored:** `SCAN.json` exists but **`python3 tools/verify_scan_outputs.py …/codebase`** did not exit **0** (after retries per **`tech-plan-write-per-project`**) and the plan still cites brain paths as ground truth — STOP. Re-run **`/scan`** or mark paths **`OUT_OF_MANIFEST`** with evidence.
 
 **Any of these mean: BLOCKED. Fix before dispatch.**
 

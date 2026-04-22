@@ -71,6 +71,8 @@ fi
 
 **Never block council** — the scan gate is advisory. Flag staleness, provide the data you have, proceed.
 
+**When `SCAN.json` exists:** Run **`python3 tools/verify_scan_outputs.py ~/forge/brain/products/<slug>/codebase`** (up to **3** attempts, **1s** apart). If it **still fails**, warn loudly: consolidated markdown/JSON did not land — **re-run `/scan`** before relying on `modules/*.md` for council file paths. Proceeding without refresh is allowed only if the human acknowledges **explicit risk** in writing (e.g. `context-loaded.md`).
+
 ---
 
 ### Gather Inputs (Pre-Council)

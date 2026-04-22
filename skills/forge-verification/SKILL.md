@@ -29,6 +29,10 @@ type: rigid
 RUN THE VERIFICATION COMMAND AND OBSERVE THE OUTPUT BEFORE CLAIMING SUCCESS. CONFIDENCE IS NOT EVIDENCE — OBSERVED OUTPUT IS EVIDENCE.
 ```
 
+## Cross-cutting: brain codebase scans
+
+When work depends on **`~/forge/brain/products/<slug>/codebase/`** (council, tech plans, eval paths): if `SCAN.json` exists, run **`python3 tools/verify_scan_outputs.py <codebase-dir>`** and require **exit 0** (retry up to **3×** with **1s** delay before claiming the scan is load-bearing). The **`forge_scan.py`** CLI already verifies after each run unless **`FORGE_SCAN_SKIP_VERIFY=1`**. Treat verify failure like missing tests — **no success claims** until the brain tree is whole or the gap is explicitly waived in writing.
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:

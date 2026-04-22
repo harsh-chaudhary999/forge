@@ -107,6 +107,21 @@ Run the scan-codebase skill for each project role. Process roles in this order:
 
 ---
 
+### Step 3b — Verify consolidated outputs (HARD-GATE)
+
+**Built-in:** `python3 tools/forge_scan.py` / `python3 -m scan_forge` already runs **`verify_brain_codebase`** with **3 retries** after writing **`index.md`** (unless `FORGE_SCAN_SKIP_VERIFY=1`). Inspect **`run.json`** in the printed **`run_dir`**: expect **`"status": "ok"`** and **`verify_scan_outputs.exit_code": 0`**. If **`status": "verify_failed"`**, the CLI exited **non-zero** — **do not** announce completion; triage `run_dir` (cleanup was skipped so `forge_scan_*.txt` remain).
+
+**Agent belt-and-suspenders (max 3 shell attempts, 1s sleep between):** Until `verify_scan_outputs.py` exits **0**:
+
+```bash
+python3 tools/verify_scan_outputs.py ~/forge/brain/products/<slug>/codebase
+```
+
+- **If this fails after 3 tries:** Do **not** print “scan complete.” Full re-scan: **fresh `--run-dir`**, correct **`--brain-codebase`**, **`backend` first** in `--repos`, install scan deps if needed, then Step 3b again. Log `[SCAN-VERIFY] status=FAIL` with the last script stdout.
+- **If OK:** Log `[SCAN-VERIFY] status=OK` and continue to Step 4.
+
+---
+
 ### Step 4 — Show results
 
 After scan completes:

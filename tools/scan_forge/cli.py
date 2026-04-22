@@ -49,6 +49,7 @@ def run_scan(
 ) -> dict:
     from . import (
         cleanup,
+        codebase_index,
         openapi_schema_digest,
         phase1,
         phase35,
@@ -63,6 +64,7 @@ def run_scan(
         scan_summary,
         topology_reader,
         validate_roles,
+        verify_brain_codebase,
     )
 
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -121,6 +123,10 @@ def run_scan(
     scan_manifest.write_manifest(brain, repos)
     timings["scan_manifest"] = int((time.perf_counter() - t0) * 1000)
 
+    t0 = time.perf_counter()
+    codebase_index.write_codebase_index_md(brain, repos)
+    timings["codebase_index"] = int((time.perf_counter() - t0) * 1000)
+
     if not skip_phase57:
         t0 = time.perf_counter()
         phase57.run_phase57(brain, write_report=phase57_write_report)
@@ -137,12 +143,42 @@ def run_scan(
         "total_bytes": rd.get("total_bytes", 0),
     }
 
+    skip_verify = os.environ.get("FORGE_SCAN_SKIP_VERIFY", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    if not skip_verify:
+        t0 = time.perf_counter()
+        v_code, v_msgs = verify_brain_codebase.verify_brain_codebase_with_retries(brain)
+        timings["verify_scan_outputs_ms"] = int((time.perf_counter() - t0) * 1000)
+        meta["verify_scan_outputs"] = {
+            "exit_code": v_code,
+            "messages": v_msgs,
+            "retries": 3,
+        }
+        if v_code != 0:
+            meta["status"] = "verify_failed"
+            meta["finished_at"] = datetime.now(timezone.utc).isoformat()
+            meta["total_elapsed_ms"] = int((time.perf_counter() - wall0) * 1000)
+            (run_dir / "run.json").write_text(
+                json.dumps(meta, indent=2) + "\n",
+                encoding="utf-8",
+            )
+            return meta
+
     if do_cleanup:
         cleanup.run_cleanup(run_dir)
 
     meta["status"] = "ok"
     meta["finished_at"] = datetime.now(timezone.utc).isoformat()
     meta["total_elapsed_ms"] = int((time.perf_counter() - wall0) * 1000)
+    if skip_verify:
+        meta["verify_scan_outputs"] = {
+            "exit_code": None,
+            "skipped": True,
+            "reason": "FORGE_SCAN_SKIP_VERIFY",
+        }
     (run_dir / "run.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
     return meta
 
@@ -218,6 +254,17 @@ def main(argv: list[str] | None = None) -> None:
         raise
 
     status = str(meta.get("status", "ok"))
+    if status == "verify_failed":
+        detail = meta.get("verify_scan_outputs") or {}
+        print(json.dumps(detail, indent=2), file=sys.stderr)
+        msgs = detail.get("messages") or []
+        if isinstance(msgs, list):
+            print("\n".join(str(m) for m in msgs), file=sys.stderr)
+        raise SystemExit(
+            "Post-scan integrity verify failed (brain tree incomplete). "
+            "Fix paths or re-run; see messages above. "
+            "Emergency only: FORGE_SCAN_SKIP_VERIFY=1",
+        )
     if args.keep_run_dir:
         print(json.dumps({"run_dir": str(run_dir), "status": status}, indent=2))
     else:

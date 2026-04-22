@@ -171,6 +171,7 @@ def main() -> int:
         assert isinstance(g.get("nodes"), list)
         assert (brain / "SCAN_SUMMARY.md").is_file()
         assert (brain / ".forge_scan_manifest.json").is_file()
+        assert (brain / "index.md").is_file(), "cli must write codebase index before verify"
 
         # Page wikilinks (role-prefixed by the scan)
         index_page = brain / "pages" / f"{_ROLE_UI}-index-html.md"

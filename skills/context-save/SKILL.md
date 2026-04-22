@@ -82,10 +82,10 @@ echo "Branch: $BRANCH | Commit: $COMMIT | Modified: $MODIFIED files"
 
 **Step 3 — Build title and filename:**
 
-If user provided `<title>`, use it. Otherwise use `$BRANCH`.
+If the user provided a `<title>` argument, set `USER_TITLE` to it. If invoked as bare `/context-save`, leave `USER_TITLE` unset. Then run:
 
 ```bash
-RAW_TITLE="<user-provided title or $BRANCH>"
+RAW_TITLE="${USER_TITLE:-$BRANCH}"
 CLEAN_TITLE=$(echo "$RAW_TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | cut -c1-40)
 SUFFIX=$(openssl rand -hex 2)
 FILENAME="${FILETIMESTAMP}-${CLEAN_TITLE}-${SUFFIX}.md"

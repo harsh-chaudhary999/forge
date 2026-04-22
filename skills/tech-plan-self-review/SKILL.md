@@ -40,6 +40,9 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 - Commit message is generic ("update code", "fix stuff", "misc changes")
 - Performance requirement in spec has no corresponding benchmark in plan
 - Plan references an API endpoint not defined in shared-dev-spec contracts
+- **Missing Section 1b** (`tech-plan-write-per-project`): no data model delta table (or explicit “no persistence in this repo”), no reuse vs net-new bullets, no trace-to-spec bullets before Task 1; or **web/app plan missing 1b.4** (design→UI table / required N/A line)
+- **Data model delta contradicts migration tasks** — Delta says “none” but tasks add DDL, or delta lists tables with no matching migration task
+- **Figma / `design_brain_paths` / Lovable locked in intake but 1b.4 empty or generic** — “See Figma” without node ids or brain paths, or no **`D<n>`** linkage from UI tasks
 
 **Any of these mean: BLOCKED. Fix before dispatch.**
 
@@ -70,6 +73,17 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 - [ ] **Priority ordering respected**
   - If shared-dev-spec lists priorities (P0/P1/P2 or similar), tasks follow same order
   - Critical path tasks listed before optional-to-nice-to-have tasks
+
+### 1b. Data model delta, reuse narrative, design trace, preamble (`tech-plan-write-per-project` Section 1b)
+
+**Checklist:**
+- [ ] **Section 1b appears before Task 1** with subsections **1b.1–1b.3** always; **1b.4** present per **web/app** rules in that skill (or explicit **not applicable** one-liner for non-UI repos)
+- [ ] **Data model delta** is either a table with one row per CREATE/ALTER/DROP/index (or equivalent storage change), or an explicit one-line statement that this repo has **no** persistence/schema work — consistent with **shared-dev-spec** / DB contract
+- [ ] **Cross-repo DDL:** If migrations run elsewhere, the delta says so; this plan does not silently own another service’s tables
+- [ ] **Every migration/DDL task** in the plan has a matching row in the delta (or the repo correctly claims no persistence and has no such tasks)
+- [ ] **Reuse vs net-new** lists concrete repo-relative paths for extended or called code; where a **brain scan** exists for this product, reuse bullets **align** with `codebase/` modules — or the plan flags **`SCAN_MISSING_OR_STALE`**; net-new surfaces are explicit — no implied reuse without a path
+- [ ] **Trace to spec** maps requirements or contract headings to task numbers; combined with §1, no orphan requirements
+- [ ] **1b.4 (web/app):** When **`design_new_work: yes`** or implementable design is locked (Figma keys, `design_brain_paths`, Lovable repo), the **design→UI table** lists anchors → deliverable → scan path or `NET_NEW`; **UI tasks** reference **`D<n>`** or cite **`design_waiver: prd_only`** plus PRD anchor — not chat-only Figma URLs
 
 ### 2. Code Completeness
 

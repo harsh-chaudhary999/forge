@@ -1,6 +1,6 @@
 ---
 name: tech-plan-write-per-project
-description: "WHEN: Shared-dev-spec is frozen and per-project tech plans must be written before dev-implementer dispatch. Output: 1 plan per repo with bite-sized tasks (exact files, complete code, exact bash commands)."
+description: "WHEN: Shared-dev-spec is frozen and per-project tech plans must be written before dev-implementer dispatch. Output: 1 plan per repo — elaborative preamble (data, reuse, design→UI for web/app, spec trace) plus bite-sized tasks (exact files, complete code, exact bash commands); brain-scan–grounded paths."
 type: rigid
 requires: [brain-read]
 ---
@@ -33,17 +33,25 @@ If you notice any of these, STOP and do not proceed:
 
 - **Task contains "add the endpoint" or other vague verbs without file paths** — Vague tasks produce vague implementations. STOP. Rewrite with exact file path, function name, and complete code.
 - **A task exceeds 5 minutes of execution** — Tasks over 5 minutes hide complexity and block progress tracking. STOP. Split into smaller tasks, each 2-5 minutes.
+- **Plan has no Section 1b (1b.1–1b.3; plus 1b.4 when this is a web/app plan)** — Micro-tasks without inventory hide schema, reuse, and design decisions. STOP. Add the preamble before Task 1.
+- **Migration or DDL tasks exist but the data model delta table is empty or claims “none”** — Contradiction with locked DB contract. STOP. Align the table and tasks.
 - **Plan references the shared-dev-spec with "see spec" instead of repeating the details** — Dev-implementer works in isolation without spec access. STOP. Make every task fully self-contained with all needed details inline.
 - **Bash commands lack flags, paths, or environment variables** — Incomplete commands produce incorrect results or fail silently. STOP. Write the exact, complete command.
 - **Tech plan is written before shared-dev-spec is frozen** — Plans written against an unlocked spec will drift. STOP. Confirm spec-freeze before writing any tech plan.
 - **Multiple repos share a single tech plan** — One plan per repo. Cross-repo plans create cross-task dependencies that block independent dispatch. STOP. Write one plan per repo.
 - **Test task is listed after implementation task** — TDD requires test first. STOP. Reorder: test task always precedes the implementation task it covers.
+- **Web or app tech plan skips Section 1b.4 or omits design anchors while intake locked Figma / `design_brain_paths` / Lovable repo** — Figma captured in Q9 is **not** decorative; it must drive the component/screen plan. STOP. Add the design→UI table and align tasks to nodes or brain paths.
+- **UI tasks cite neither a design anchor nor `design_waiver: prd_only` + scan reuse** — Implementers cannot verify pixels or reuse. STOP.
 
 ## Overview
 
 This skill converts a locked shared-dev-spec into bite-sized, executable technical implementation plans per project. Each task is 2-5 minutes of execution with exact file paths, complete code (no placeholders), and exact bash commands.
 
+**Primary audience:** A human or agent who **does not** already know the product repos. The plan must stand alone: **brain scan** supplies *where things live today*; **locked intake design** (`prd-locked.md` and the **Design source (from intake)** section in **shared-dev-spec**) supplies *what net-new UI should match* (Figma nodes, `design_brain_paths`, Lovable GitHub tree, or an explicit waiver). **Taking Figma in intake but omitting it from the tech plan** is the same class of failure as skipping migrations — implementers will invent components and ship visual bugs.
+
 **Order of operations for paths:** Before naming files in tasks, load **`~/forge/brain/products/<slug>/codebase/`** (at least `index.md`, `SCAN.json`, and the `modules/*.md` files that match the spec’s surfaces). Derive **exact repo-relative paths** from that brain material, then read the product repo only to pull current file contents for “complete code” blocks. If scan is missing or >7 days old, note it and align with `product-context-load` / user on **`/scan <slug>`** before finalizing paths.
+
+**Order of operations for UI:** When this repo is **web** or **app**, read **Design source (from intake)** in the locked spec **and** any **`~/forge/brain/prds/<task-id>/design/`** ingest notes (`MCP_INGEST.md`, `README.md`, …). Complete **Section 1b.4** before writing UI tasks so every screen/component change is tied to **design anchors** and/or **scan-backed** reuse paths — not to memory of a Figma URL from chat.
 
 ---
 
@@ -77,6 +85,64 @@ This skill converts a locked shared-dev-spec into bite-sized, executable technic
 - Structured list of per-project tasks (raw)
 - Dependency graph (which project depends on which)
 - Identified contracts (API, schema, events)
+
+---
+
+## Section 1b: Elaborative preamble (mandatory per tech-plan file)
+
+Bite-sized tasks exist so a **dev-implementer in isolation** can execute without guessing. They **do not** replace a short, explicit narrative of **what changes in the world** (data, reuse, design, traceability). **Every** `tech-plans/<repo>.md` MUST include **subsections 1b.1–1b.3** below **immediately after the plan title** and **before Task 1**. **Subsection 1b.4** is mandatory for **web** and **app** repo plans (see rules inside 1b.4); for other repos, write the one-line **not applicable** form.
+
+Skipping them because “the tasks are obvious” or “only micro-steps matter” is **BLOCKED** — that is how schema drift, duplicate tables, wrong screens, and silent greenfield work slip through.
+
+### 1b.1 Data model delta (persistence)
+
+Ground this in the **locked shared-dev-spec** and any **`db-contract` / `contract-schema-db`** material — do not invent tables here that the spec did not lock.
+
+| Table / collection / index | Change type | Rationale (one line) | Rollback or backward-compat note |
+|-----------------------------|---------------|----------------------|----------------------------------|
+| *(row per CREATE, ALTER, DROP, new index, or materialized view)* | CREATE \| ALTER \| DROP \| INDEX | *why* | *e.g. nullable-first, dual-write, irreversible — link to contract if long* |
+
+- If this repo has **no** persistence ownership for this task (e.g. pure UI repo), state exactly: **`No database or durable storage schema changes in this repo.`**
+- If persistence lives in another repo, say **which repo owns DDL** and keep this table empty with that cross-reference — do not imply this repo runs migrations it does not own.
+
+Every later **migration / DDL task** in this file MUST correspond to a row above (same table + change type). Orphans either way are a planning defect.
+
+### 1b.2 Implementation reuse vs net-new
+
+Summarize so **reuse is not taken for granted** from task ordering alone. **Prefer evidence from `~/forge/brain/products/<slug>/codebase/`** (`index.md`, `modules/*.md`, `api-surface.md`): reuse bullets should cite paths that **appear in the scan** when the repo was scanned. If the scan is missing or stale, state **`SCAN_MISSING_OR_STALE`** and trigger **`/scan <slug>`** (or equivalent) before claiming paths.
+
+- **Reuse (extend, call, wrap, configure):** bullets with **repo-relative paths** and symbol/module names (existing services, models, components, shared validators).
+- **Net-new:** bullets — new files, new tables, new public routes/events — also with paths or names.
+- **Unknown / scan gap:** if brain scan or spec does not prove a reuse target, say **`DISCOVERY_REQUIRED`** or **`HUMAN_CONFIRM`** — do not silently pick a module.
+
+### 1b.3 Trace to locked spec
+
+Bullets mapping **shared-dev-spec** requirement headings, contract IDs, or acceptance criteria **to task numbers** in this file (e.g. “Requirement **FR-3 auth** → Tasks 1–4”). If a requirement has no task, **STOP** — fix coverage before dispatch.
+
+### 1b.4 Design source → UI / component plan (web & app repos)
+
+**Purpose:** Intake may lock **`figma_file_key` + `figma_root_node_ids`**, **`design_brain_paths`**, **`lovable_github_repo`**, or **`design_waiver: prd_only`**. Council may copy that into **Design source (from intake)** in `shared-dev-spec.md`. None of that helps E2E delivery if the **tech plan** never maps design to **concrete components, routes, or files**. This subsection is the handoff from **design transport** to **implementation tasks**.
+
+**When to fill the table vs one-line N/A**
+
+| Situation | Required content |
+|-----------|-------------------|
+| This file is for a **backend**, **worker**, **shared-schema**, or other **non-UI** repo | One line: **`1b.4 not applicable — not a web/app repo.`** |
+| **`design_ui_scope: not applicable`** in lock (no user-visible UI for this slice) | One line: **`1b.4 not applicable — no user-visible UI in this repo for this task.`** |
+| **`design_new_work: yes`** OR implementable design paths/keys exist (Figma, `design_brain_paths`, Lovable repo) | **Full table** (below) + ensure **each UI task** later references a **row id** (e.g. `D1`) in its title or header |
+| **`design_new_work: no`** but UI still changes | Table or bullet list: **which existing components** (from **scan**) are extended; if any **new** file is unavoidable, say why PRD/engineering-only still requires it |
+
+**Design → implementation mapping table** (add rows until every net-new or changed screen in scope is covered):
+
+| Id | Design anchor (Figma node id / frame name / path under `.../design/` / Lovable route) | UI deliverable (screen, component, layout region) | Existing code (path from **brain scan**) **or** `NET_NEW` | parity / notes |
+|----|----------------------------------------------------------------------------------------|---------------------------------------------------|-------------------------------------------------------------|----------------|
+| D1 | *(e.g. `123:456` or `design/wireframes/checkout.png`)* | *(e.g. Checkout summary card)* | *(e.g. `src/features/cart/Summary.tsx` or `NET_NEW`)* | *(states, tokens, a11y)* |
+
+**Rules**
+
+- Do **not** write “see Figma” without **node id(s)** or **brain path** that appear in the **locked** PRD/spec — chat URLs are not a transport layer.
+- If **`design_waiver: prd_only`** is locked, the table still lists **screens/components** and maps them to **scan-backed** files or `NET_NEW`, with **one line** citing the waiver for pixel latitude.
+- **Every** UI implementation task in Section 2 should reference **`D<n>`** or explicitly say **waiver + PRD section** so reviewers can trace intake → plan → code.
 
 ---
 
@@ -392,6 +458,7 @@ brain/prds/<task-id>/tech-plans/
 ```
 
 Each file:
+- **Section 1b** preamble is present (1b.1–1b.3; **1b.4** per web/app rules)
 - Task ordering respects dependencies
 - Every task is 2-5 min executable
 - Every code block is complete
@@ -404,10 +471,11 @@ Each file:
 
 A tech plan passes if:
 1. **Completeness**: No "...", no "TODO", no placeholders
-2. **Specificity**: Every file path is absolute, every command is exact
-3. **Testability**: Every task has a runnable test command and expected output
-4. **Ordering**: No task depends on later tasks (DAG)
-5. **Atomicity**: Each task is independent-executable (dev can run task N without running 1-N-1, given task setup is complete)
+2. **Preamble**: Section 1b present; data model delta matches all DDL/migration tasks; reuse vs net-new (scan-grounded) and spec trace are explicit; **1b.4** satisfies web/app + design rules and UI tasks reference **`D<n>`** or waiver
+3. **Specificity**: Every file path is absolute, every command is exact
+4. **Testability**: Every task has a runnable test command and expected output
+5. **Ordering**: No task depends on later tasks (DAG)
+6. **Atomicity**: Each task is independent-executable (dev can run task N without running 1-N-1, given task setup is complete)
 
 ---
 

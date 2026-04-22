@@ -251,6 +251,8 @@ Create the master `~/forge/brain/prds/<task-id>/shared-dev-spec.md`:
 
 **Council must add one line of implementable contract for net-new UI:** e.g. “Implementation spacing/typography/component states for [feature] must match Figma nodes `<ids>` or files under `design/` listed above.”
 
+**Downstream:** `web.md` / `app.md` (council) should name **screens and major components** implied by the PRD + design anchors so **`tech-plan-write-per-project` Section 1b.4** can map each anchor → file or `NET_NEW` without guesswork. Figma in intake is wasted if council leaves only prose and tech planning never tables nodes → components.
+
 Surface reasoning (web, app) and tech plans **must** treat this block as authoritative for “is there new visual work?” and “where are the pixels?” — not inferred from hallway chat. **Wiki-only URLs without brain paths or figma key+nodes are not sufficient** when `design_new_work: yes` — return to intake before treating council output as complete.
 
 ---

@@ -10,6 +10,10 @@ requires: [brain-write]
 Map an existing repository into the Forge brain as an interconnected Obsidian knowledge graph.
 Produces `~/forge/brain/products/<slug>/codebase/` — readable by humans, queryable by agents.
 
+### Downstream handoff (E2E, novice-friendly)
+
+This graph exists so **operators who do not know the repo** can still ship safely. **`tech-plan-write-per-project`** must cite **`codebase/`** paths when planning **reuse**; **intake-locked design** (Figma nodes, exports under `~/forge/brain/prds/<task-id>/design/`, Lovable GitHub sync) answers **what** net-new UI should look like — the tech plan’s **Section 1b.4** connects design anchors to components. Scan + design together prevent “Figma was in intake but planning ignored it” and reduce integration bugs. Prefer a **fresh `/scan <slug>`** before major tech planning if **`SCAN.json`** is stale.
+
 ---
 
 ## Anti-Pattern Preamble

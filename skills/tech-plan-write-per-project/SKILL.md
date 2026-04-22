@@ -1,6 +1,6 @@
 ---
 name: tech-plan-write-per-project
-description: "WHEN: Shared-dev-spec is frozen and per-project tech plans must be written before dev-implementer dispatch. Output: 1 plan per repo — elaborative preamble (data, reuse, design→UI, API↔consumer map, unknowns+deep discovery, §1c review/XALIGN) plus bite-sized tasks; scan-grounded; feedback loop before dispatch."
+description: "WHEN: Shared-dev-spec is frozen and per-project tech plans must be written before dev-implementer dispatch. Output: 1 plan per repo — Section 0 doubt log (unlimited Q&A until confident), elaborative §1b–§1c, then bite-sized tasks; no vendor-specific assumptions; scan-grounded; review/XALIGN before dispatch."
 type: rigid
 requires: [brain-read]
 ---
@@ -19,6 +19,8 @@ requires: [brain-read]
 | "I'll reference the spec instead of repeating details" | The implementer (dev-implementer subagent) works in an isolated worktree with only the plan. Self-contained tasks prevent NEEDS_CONTEXT status. |
 | "I'll discover file paths by exploring the repo" | Duplicates work the scan already did and burns tokens. **Default:** read `~/forge/brain/products/<slug>/codebase/` first; put paths from `index.md` / `modules/*.md` / `api-surface.md` into tasks, then open sources when writing full file bodies. **Exception:** **Section 1b.6** lists an **UNKNOWN** — you **must** deepen discovery (targeted `rg`/glob, read hub files, route tables, OpenAPI, client wrappers, test names) until resolved or **BLOCKED** — do not ship “mystery meat” tasks. |
 | "Elaboration is optional — bite-sized tasks are enough" | Tasks without **§1b.5 API map**, **§1b.6 unknown closure**, and **§1c review rounds** hide integration risk. STOP. Elaboration is **mandatory** for E2E; micro-tasks execute the elaboration, they do not replace it. |
+| "I've hit my question quota — ship the plan with lingering doubts" | **There is no maximum question count** during planning. Doubt left unasked becomes a gap in Section 2. STOP. Ask until **confidence is high** (see **Section 0**), then write the elaborative plan. |
+| "Concise plan = professional" | **Professional** here means **complete**: the plan is the **only** input to sub-tasks. Concision that omits wiring, edge cases, or evidence is negligence. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -28,13 +30,17 @@ requires: [brain-read]
 EVERY TASK IN A TECH PLAN IS SELF-CONTAINED, COMPLETE, AND EXECUTABLE IN ISOLATION. NO PLACEHOLDERS. NO PSEUDOCODE. NO "SEE SPEC" REFERENCES. THE PLAN IS THE ONLY THING THE DEV-IMPLEMENTER READS.
 ```
 
+**Normative claims (companion rule):** Every **interface** claim in a task (path, field name, status code, topic name, column) must be **copied from** the **frozen** `shared-dev-spec.md` or the task-local inlined excerpt of **`contracts/*`** — **not invented** in the tech plan. If `shared-dev-spec` was thinner than reality, **fix the spec** (change request / re-council) — do not “paper over” in tasks. **Program / rollout / sequencing** lives in **`~/forge/brain/prds/<task-id>/delivery-plan.md`** (non-frozen); tech plans may **reference** it by heading but **must not** rely on it for interface truth.
+
+**Optional PM traceability (inside each `tech-plans/<repo>.md`):** You may group Section 2 tasks under IDs like **`REVERIF-<AREA>-<nn>`** with columns **Est / Deps / Acceptance / Spec refs** (link to `shared-dev-spec` § or `contracts/` heading). This does **not** replace one-file-per-repo or self-contained task bodies.
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:
 
 - **Task contains "add the endpoint" or other vague verbs without file paths** — Vague tasks produce vague implementations. STOP. Rewrite with exact file path, function name, and complete code.
 - **A task exceeds 5 minutes of execution** — Tasks over 5 minutes hide complexity and block progress tracking. STOP. Split into smaller tasks, each 2-5 minutes.
-- **Plan has no Section 1b / 1c (1b.1–1b.6 per applicability; 1b.4 for web/app; 1b.5 when HTTP applies; 1c always)** — Micro-tasks without inventory hide schema, reuse, design, **API wiring**, unknowns, and review history. STOP. Add the full preamble before Task 1.
+- **Plan has no Section 0 / 1b / 1c** — Missing **doubt log**, **§1b.1–1b.6** (per applicability), or **§1c**. Micro-tasks without inventory and without cleared doubts hide gaps. STOP. Add **Section 0** then the full preamble before Task 1.
 - **Migration or DDL tasks exist but the data model delta table is empty or claims “none”** — Contradiction with locked DB contract. STOP. Align the table and tasks.
 - **Plan references the shared-dev-spec with "see spec" instead of repeating the details** — Dev-implementer works in isolation without spec access. STOP. Make every task fully self-contained with all needed details inline.
 - **Bash commands lack flags, paths, or environment variables** — Incomplete commands produce incorrect results or fail silently. STOP. Write the exact, complete command.
@@ -47,6 +53,8 @@ If you notice any of these, STOP and do not proceed:
 - **HTTP-serving backend plan has no Section 1b.5 rows for new/changed endpoints** — Consumers cannot be aligned. STOP.
 - **Section 1b.6 lists UNRESOLVED unknowns but Section 2 still has executable tasks depending on them** — Discovery incomplete. STOP. Resolve, escalate **BLOCKED**, or remove tasks until evidence exists.
 - **`Tech plan status: REVIEW_PASS` with no `tech-plan-self-review` round logged in §1c revision log** — Rubber-stamp. STOP.
+- **State 4b or implementation started without `tech-plans/HUMAN_SIGNOFF.md` + `[TECH-PLAN-HUMAN]`** — Human feedback phase skipped. STOP.
+- **Section 0 doubt log has open items** (unanswered questions, `UNCONFIRMED` rows) but Section 2 tasks are already written — Planning was short-circuited. STOP. Resolve or **BLOCK** before tasks.
 
 ## Overview
 
@@ -57,6 +65,35 @@ This skill converts a locked shared-dev-spec into bite-sized, executable technic
 **Order of operations for paths:** Before naming files in tasks, load **`~/forge/brain/products/<slug>/codebase/`** (at least `index.md`, `SCAN.json`, and the `modules/*.md` files that match the spec’s surfaces). Derive **exact repo-relative paths** from that brain material, then read the product repo only to pull current file contents for “complete code” blocks. If scan is missing or >7 days old, note it and align with `product-context-load` / user on **`/scan <slug>`** before finalizing paths.
 
 **Order of operations for UI:** When this repo is **web** or **app**, read **Design source (from intake)** in the locked spec **and** any **`~/forge/brain/prds/<task-id>/design/`** ingest notes (`MCP_INGEST.md`, `README.md`, …). Complete **Section 1b.4** before writing UI tasks so every screen/component change is tied to **design anchors** and/or **scan-backed** reuse paths — not to memory of a Figma URL from chat.
+
+**Elaboration bar:** The plan should be **as elaborative as practical** — it is what **defines** Section 2 sub-tasks. If a fact would change a task boundary, it belongs in **§1b** or the task body, not in a planner’s head.
+
+---
+
+## Section 0: Planning doubt clearance (before §1b and Section 2)
+
+**Purpose:** Sub-tasks inherit every gap you skip while “planning.” This section **forces** questions until doubt is low — **no artificial cap** on how many you ask.
+
+### 0.1 Rules
+
+1. **Ask freely:** Raise **every** ambiguity (ownership, edge case, failure mode, idempotency, auth, rollout, test data, environment flag, naming, which repo owns what). Prefer **over-asking** to under-asking. There is **no** “max questions per task” in Forge.
+2. **Answer channels:** Product owner, tech lead, **`delivery-plan.md`**, **`parity/`** material, brain scan, another repo’s plan draft, or **explicit `BLOCKED`** with who must answer — all valid. Chat history alone is **not** durable; **write outcomes** into this plan or `~/forge/brain/prds/<task-id>/planning-doubts.md` (optional file) and **summarize** in **§1b.6** when they affect code paths.
+3. **Start the elaborative plan only when:** You would stake implementation on it — i.e. no remaining **high-impact** unknowns without an owner, or they are recorded as **BLOCKED** / **WAIVER** with risk.
+4. **Trace questions to coverage:** Each resolved doubt should visibly affect **§1b** tables or a specific Section 2 task — or be explicitly **out of scope** with spec citation.
+
+### 0.2 Artifact (required in each `tech-plans/<repo>.md` or linked file)
+
+Include **before** `## Section 1b`:
+
+```markdown
+## Section 0: Planning doubt log
+| Q# | Question | Answer / resolution | Confidence (H/M/L) | Affects (§1b.x / Task ids) |
+|----|----------|---------------------|--------------------|----------------------------|
+| Q1 | …        | …                   | H                  | 1b.5, Task 3–5             |
+```
+
+- Add rows until **high-impact** doubts are **H** or **M** with an owner, or **BLOCKED** / **WAIVER**.
+- If zero open questions: one row stating **`No material doubts — ready to elaborate.`**
 
 ---
 
@@ -95,9 +132,9 @@ This skill converts a locked shared-dev-spec into bite-sized, executable technic
 
 ## Section 1b: Elaborative preamble (mandatory per tech-plan file)
 
-**Authoring order in the saved `tech-plans/<repo>.md` file:** (1) `#` title line, then **`Tech plan status: DRAFT`** (or `REVIEW_CHANGES` / `REVIEW_PASS` per **§Section 1c**); (2) this **Section 1b** (`### 1b.1` … `### 1b.6`); (3) **§Section 1c** body (revision log table + cross-repo notes); (4) **Section 2** tasks.
+**Authoring order in the saved `tech-plans/<repo>.md` file:** (1) `#` title line, then **`Tech plan status: DRAFT`** (or `REVIEW_CHANGES` / `REVIEW_PASS` per **§Section 1c**); (2) **`## Section 0: Planning doubt log`** (see **Section 0** of this skill); (3) this **Section 1b** (`### 1b.1` … `### 1b.6`); (4) **§Section 1c** body (revision log table + cross-repo notes); (5) **Section 2** tasks.
 
-Bite-sized tasks exist so a **dev-implementer in isolation** can execute without guessing. They **do not** replace a short, explicit narrative of **what changes in the world** (data, reuse, design, **HTTP wiring**, unknowns, review trail). **Subsection 1b.4** follows web/app rules; **1b.5** follows HTTP rules; **1b.6** is always required (may be a single “no unknowns” line). **§Section 1c** is always required. All of the above **before Section 2**.
+Bite-sized tasks exist so a **dev-implementer in isolation** can execute without guessing. They **do not** replace **§Section 0** (cleared doubts), nor a short, explicit narrative of **what changes in the world** (data, reuse, design, **HTTP wiring**, unknowns, review trail). **Subsection 1b.4** follows web/app rules; **1b.5** follows HTTP rules; **1b.6** is always required (may be a single “no unknowns” line). **§Section 1c** is always required. All of the above **before Section 2**.
 
 Skipping them because “the tasks are obvious” or “only micro-steps matter” is **BLOCKED** — that is how schema drift, duplicate tables, wrong screens, **wrong API wiring**, and silent greenfield work slip through.
 
@@ -208,6 +245,15 @@ Tech plans are **not one-shot** documents. They go through **review → revise �
    - Append to **each** affected plan’s revision log: **`XALIGN PASS`** or **`XALIGN FAIL: <drift>`** and fix drift before setting **`REVIEW_PASS`**.
 
 5. **Conductor logging** (when orchestrated): emit **`[TECH-PLAN-REVIEW]`** and **`[TECH-PLAN-XALIGN]`** lines as specified in **`conductor-orchestrate`** State 4.
+
+6. **Human go-ahead (pipeline phase — after agent loops, before State 4b)**  
+   Automated **`tech-plan-self-review` PASS** + **`XALIGN` PASS** are **not** the same as stakeholder acceptance. **Before** eval YAML / RED (State 4b), a **human** must record one of:
+   - **`~/forge/brain/prds/<task-id>/tech-plans/HUMAN_SIGNOFF.md`** from **`docs/tech-plan-human-signoff.template.md`** with **`status: approved`** (or **`changes_requested`** → revise plans → re-run steps 3–5 → new signoff), **or**
+   - **`status: waived`** with actor + reason (solo / unattended policy only).  
+   Append the same decision as a **revision-log row** in each affected `tech-plans/<repo>.md` for traceability.  
+   **Conductor** logs **`[TECH-PLAN-HUMAN] task_id=<id> status=APPROVED|CHANGES_REQUESTED|WAIVED`**. **No State 4b** until **`APPROVED`** or documented **`WAIVED`**.
+
+**Interconnection (no gaps):** `intake` → `parity` (spec-freeze Step 0) → **frozen** `shared-dev-spec` → **Section 0** doubt log → **§1b** (data, reuse, design, API map, unknowns) → **§1c** (agent review + XALIGN) → **`HUMAN_SIGNOFF.md`** → **State 4b** (QA CSV / eval YAML / RED) → implementation. Skipping a box forwards **hidden** gaps backward into cheaper phases — forbidden.
 
 ---
 
@@ -523,6 +569,7 @@ brain/prds/<task-id>/tech-plans/
 ```
 
 Each file:
+- **Section 0** doubt log present; no **high-impact** `L` confidence rows without **BLOCKED** / **WAIVER** / follow-up owner
 - **Section 1b + 1c** preamble is present (1b.1–1b.6 per rules; **1c** status + revision log)
 - Task ordering respects dependencies
 - Every task is 2-5 min executable
@@ -536,7 +583,7 @@ Each file:
 
 A tech plan passes if:
 1. **Completeness**: No "...", no "TODO", no placeholders
-2. **Preamble**: Sections **1b + 1c** present; data model delta matches DDL tasks; reuse + spec trace; **1b.4** for web/app; **1b.5** when HTTP applies (consumer↔provider rows align across repos); **1b.6** has no silent UNRESOLVED; **1c** shows review rounds + XALIGN when multi-repo HTTP
+2. **Preamble**: **Section 0** cleared for planning; Sections **1b + 1c** present; data model delta matches DDL tasks; reuse + spec trace; **1b.4** for web/app; **1b.5** when HTTP applies (consumer↔provider rows align across repos); **1b.6** has no silent UNRESOLVED; **1c** shows review rounds + XALIGN when multi-repo HTTP
 3. **Specificity**: Every file path is absolute, every command is exact
 4. **Testability**: Every task has a runnable test command and expected output
 5. **Ordering**: No task depends on later tasks (DAG)

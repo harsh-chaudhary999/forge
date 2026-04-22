@@ -38,6 +38,26 @@ If you notice any of these, STOP and do not proceed:
 
 This skill teaches teams to safely negotiate and implement MySQL database schema changes using contracts. It covers safe migration patterns, backward compatibility strategies, indexing best practices, constraint handling, and comprehensive rollback procedures.
 
+---
+
+## Minimum depth for each NEW or materially changed table
+
+**Purpose:** Match the rigor of a full implementation plan: every table row in the locked contract should answer “what ships in MVP.”
+
+For **each** new or materially changed table, include in the locked DB contract / `shared-dev-spec`:
+
+| Column group | Requirement |
+|--------------|-------------|
+| **Core columns** | Names, types, nullability, PK/FK |
+| **Audit / lineage** | `created_at`, `updated_at`, actor/user ref — **or** explicit **`DEFERRED`** row with risk + owner |
+| **Indexes** | For every **WHERE** / **JOIN** in new queries — or **`DEFERRED`** with reason |
+| **Backfill / rollout** | Nullable-first + backfill job, or dual-write window — reference migration task class |
+| **Vendor / third-party / verifier logs** (when PRD implies) | Store hash vs raw secret, retention, encryption boundary — **or** **`DEFERRED out of MVP`** row |
+
+Silent omission = **not locked**. Use **`DEFERRED`** + risk when intentionally slimming MVP.
+
+---
+
 ## 1. Safe Migrations
 
 Safe migrations are schema changes that can be deployed without downtime and with minimal risk of data loss or integrity issues.

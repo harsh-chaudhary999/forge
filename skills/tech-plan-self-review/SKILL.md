@@ -12,7 +12,7 @@ This skill verifies technical implementation plans against their corresponding s
 ## Iron Law
 
 ```
-EVERY TECH PLAN IS VERIFIED AGAINST THE FROZEN SHARED-DEV-SPEC LINE BY LINE BEFORE DISPATCH. A PLAN WITH A PLACEHOLDER OR TODO IS NOT A PLAN — IT IS UNFINISHED WORK. DISPATCH NOTHING THAT FAILS THIS REVIEW. A PLAN WITHOUT §1c REVIEW HISTORY OR WITH DRIFTING §1b.5 ROWS ACROSS REPOS IS NOT READY — RUN THE FEEDBACK LOOP UNTIL PASS OR ESCALATE.
+EVERY TECH PLAN IS VERIFIED AGAINST THE FROZEN SHARED-DEV-SPEC LINE BY LINE BEFORE DISPATCH. A PLAN WITH A PLACEHOLDER OR TODO IS NOT A PLAN — IT IS UNFINISHED WORK. DISPATCH NOTHING THAT FAILS THIS REVIEW. A PLAN WITHOUT §1c REVIEW HISTORY OR WITH DRIFTING §1b.5 ROWS ACROSS REPOS IS NOT READY — RUN THE FEEDBACK LOOP UNTIL PASS OR ESCALATE. AGENT PASS ALONE IS NOT ENOUGH: HUMAN_SIGNOFF (APPROVED OR DOCUMENTED WAIVED) MUST EXIST BEFORE STATE 4B.
 ```
 
 ## Anti-Pattern Preamble: Why Plans Get Rubber-Stamped
@@ -41,13 +41,14 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 - Commit message is generic ("update code", "fix stuff", "misc changes")
 - Performance requirement in spec has no corresponding benchmark in plan
 - Plan references an API endpoint not defined in shared-dev-spec contracts
-- **Missing §1b / §1c or wrong file order** (`tech-plan-write-per-project`): no `Tech plan status:` under title; missing **1b.1–1b.6** (per applicability), **1c** revision log, or **web/app** missing **1b.4** / **HTTP** missing **1b.5**
+- **Missing §0 / §1b / §1c or wrong file order** (`tech-plan-write-per-project`): no **Section 0** doubt log; no `Tech plan status:` under title; missing **1b.1–1b.6** (per applicability), **1c** revision log, or **web/app** missing **1b.4** / **HTTP** missing **1b.5**
 - **Data model delta contradicts migration tasks** — Delta says “none” but tasks add DDL, or delta lists tables with no matching migration task
 - **Figma / `design_brain_paths` / Lovable locked in intake but 1b.4 empty or generic** — “See Figma” without node ids or brain paths, or no **`D<n>`** linkage from UI tasks
 - **Missing §1b.5** when the repo implements or consumes REST/HTTP for this task — No API↔component map
 - **§1b.6 unknowns UNRESOLVED** but Section 2 tasks depend on them
 - **Missing §1c** status banner, revision log, or **REVIEW_PASS** without a logged self-review round in the log
 - **Multi-repo HTTP drift:** consumer `METHOD+path` in this plan’s §1b.5 does not match sibling `tech-plans/*.md` owner rows (after XALIGN should have fixed — still FAIL → BLOCKED)
+- **`tech-plans/HUMAN_SIGNOFF.md` missing** after agent **PASS** + **XALIGN** — Human feedback / go-ahead phase skipped; pipeline must not advance to State 4b. STOP. Create signoff per **`docs/tech-plan-human-signoff.template.md`** (or **`waived`** with reason).
 
 **Any of these mean: BLOCKED. Fix before dispatch.**
 
@@ -55,7 +56,21 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 
 ## Verification Checklist
 
-### 0. Implementation discovery & delivery locks (when `prd-locked.md` Q10 applies)
+### 0a. Planning doubt log (`tech-plan-write-per-project` Section 0)
+
+**Checklist:**
+- [ ] **`## Section 0: Planning doubt log`** exists **before** §1b with table **Q# / Question / Answer / Confidence / Affects**
+- [ ] **No artificial silence:** multiple substantive questions when the feature is complex — or one explicit row **`No material doubts`** when truly trivial
+- [ ] **No high-impact `L` (low) confidence** without **BLOCKED**, **WAIVER**, or named owner + next step
+- [ ] Answers tie to **§1b** rows and/or **Section 2** task ids — orphan answers are cleaned up
+
+### 0. Parity & delivery context (task brain)
+
+**Checklist:**
+- [ ] **`~/forge/brain/prds/<task-id>/parity/`** satisfies **`spec-freeze`** Step 0 (**`external-plan.md`** OR completed **`checklist.md`** OR **`waiver.md`**) — not missing when the task is “serious” multi-repo delivery
+- [ ] If **`delivery-plan.md`** exists: tech plan **§1b.3** or tasks reference rollout / flag / pyramid items **only** as pointers — **interfaces** still match frozen spec
+
+### 0b. Implementation discovery & delivery locks (when `prd-locked.md` Q10 applies)
 
 **Checklist:**
 - [ ] **`implementation_reference`** from intake is echoed in the tech plan’s first page (branch / PR / explicit `none` + rationale) — not implied.
@@ -82,7 +97,7 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 ### 1b. Data model delta, reuse narrative, design trace, preamble (`tech-plan-write-per-project` Section 1b)
 
 **Checklist:**
-- [ ] **File layout:** `Tech plan status:` line immediately under `#` title; **Section 1b** (`1b.1`–`1b.6` per applicability) and **§Section 1c** appear **before Task 1**
+- [ ] **File layout:** `Tech plan status:` line immediately under `#` title; **Section 0** doubt log; **Section 1b** (`1b.1`–`1b.6` per applicability) and **§Section 1c** appear **before Task 1**
 - [ ] **Data model delta** is either a table with one row per CREATE/ALTER/DROP/index (or equivalent storage change), or an explicit one-line statement that this repo has **no** persistence/schema work — consistent with **shared-dev-spec** / DB contract
 - [ ] **Cross-repo DDL:** If migrations run elsewhere, the delta says so; this plan does not silently own another service’s tables
 - [ ] **Every migration/DDL task** in the plan has a matching row in the delta (or the repo correctly claims no persistence and has no such tasks)
@@ -102,6 +117,15 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 - [ ] **Consumer → owner:** Every `METHOD+path` in a **web/app** plan appears in the **API-owning** plan (same spelling, including prefix/version), or an explicit “external API” row cites a non-product host documented in spec
 - [ ] **Owner → consumer:** Every **new/changed** endpoint in the API plan is referenced by ≥1 consumer row **or** documented as “no consumer yet / batch only / public” with spec citation
 - [ ] **Drift = BLOCKER** until plans revised and XALIGN re-run (`XALIGN PASS` in logs)
+
+### 1e. Human tech-plan signoff (task-level — once per `task-id`)
+
+**When to skip:** Never for full conductor **`State 4b`** entry — file must exist with **`approved`** or **`waived`**.
+
+**Checklist:**
+- [ ] **`~/forge/brain/prds/<task-id>/tech-plans/HUMAN_SIGNOFF.md`** present; frontmatter **`status`** is **`approved`** or **`waived`**
+- [ ] **`repos_acknowledged`** covers all repo plans for this task (or waiver explains)
+- [ ] **`[TECH-PLAN-HUMAN]`** log line can be emitted without contradicting the file
 
 ### 2. Code Completeness
 
@@ -246,12 +270,26 @@ For each failed check, collect:
 - What should be there instead
 - Severity: BLOCKER (blocks dispatch) or WARNING (minor fix needed)
 
-### Step 4: Decision
-- **APPROVED:** All checks pass → Ready for dispatch to dev-implementers **after** updating the plan file: set **`Tech plan status: REVIEW_PASS`**, append **revision log** row with `self-review round=<n> result=PASS` (and **`XALIGN PASS`** if multi-repo HTTP)
-- **CHANGES REQUESTED:** Some warnings → Set plan **`REVIEW_CHANGES`** / **`DRAFT`**, append revision log with **failed § references**, **edit the tech plan** (not only mental note), re-run this skill from Step 1 — **max 3 rounds** per repo then escalate
-- **BLOCKED:** Any blockers → Cannot dispatch until fixed; log **`result=BLOCKED`** in revision log and escalate with evidence
+### Step 4: Decision (agent self-review)
+
+- **APPROVED (agent):** All checklist sections pass → Update this plan file: **`Tech plan status: REVIEW_PASS`**, append **revision log** row with `self-review round=<n> result=PASS` (and **`XALIGN PASS`** if multi-repo HTTP). **This alone does not clear the Forge pipeline** — **Step 5 (human gate)** is still required before **State 4b** (eval / RED).
+- **CHANGES REQUESTED:** Some warnings → Set plan **`REVIEW_CHANGES`** / **`DRAFT`**, append revision log with **failed § references**, **edit the tech plan** (not only mental note), re-run this skill from Step 1 — **max 3 rounds** per repo then escalate.
+- **BLOCKED:** Any blockers → Cannot dispatch until fixed; log **`result=BLOCKED`** in revision log and escalate with evidence.
 
 **Feedback loop (mandatory):** **CHANGES** or **BLOCKED** must **never** skip straight to dev-implementer without a **new plan revision** (`Rev`++) and a **re-review**. Treat “approved in chat” without file updates as **invalid**.
+
+### Step 5: Human tech-plan gate (orchestration handoff)
+
+**Checklist:**
+- [ ] **`~/forge/brain/prds/<task-id>/tech-plans/HUMAN_SIGNOFF.md`** exists and matches **`docs/tech-plan-human-signoff.template.md`**
+- [ ] **`status`** is **`approved`** or **`waived`** (with reason) — not left blank
+- [ ] **`repos_acknowledged`** lists every `tech-plans/<repo>.md` stem for this task (or signoff explains omission)
+- [ ] If **`changes_requested`**: plans were edited after this file’s prior version — do not treat pipeline as clear until a **new** signoff shows **`approved`** or **`waived`**
+- [ ] Conductor logs **`[TECH-PLAN-HUMAN]`** consistent with the file
+
+### Step 6: Final pipeline readiness (per repo + task)
+
+- **APPROVED (full):** **Step 4** = **APPROVED (agent)** for this repo’s plan **and** **Step 5** satisfied at **task** level (**`HUMAN_SIGNOFF.md`** applies once per task, not per repo file) → Conductor may proceed to **State 4b** for this task once **all** repos + human gate + logs align per **`conductor-orchestrate`**.
 
 ## Common Patterns to Check
 
@@ -287,11 +325,13 @@ When submitting review results:
 ```
 ## Tech Plan Self-Review: [Project Name] - [Task Name]
 
-### Status: ✅ APPROVED / ⚠️ CHANGES REQUESTED / ❌ BLOCKED
+### Status: ✅ APPROVED (agent) / ⚠️ CHANGES REQUESTED / ❌ BLOCKED  
+### Human gate: ⏳ PENDING / ✅ APPROVED or WAIVED (see `tech-plans/HUMAN_SIGNOFF.md`)
 
 ### Verification Summary
 - [✅/❌] Spec Coverage: All requirements covered
-- [✅/❌] §1b–§1c: Data/design/API map/unknowns/review log (+ XALIGN when applicable)
+- [✅/❌] §0–§1c: Doubt log + data/design/API map/unknowns/review log (+ XALIGN when applicable)
+- [✅/❌] §1e Human signoff file + log (`HUMAN_SIGNOFF.md`, `[TECH-PLAN-HUMAN]`)
 - [✅/❌] Code Completeness: No placeholders
 - [✅/❌] No Placeholder Code: All implementations concrete
 - [✅/❌] Test & Commit: All tests runnable, commits clear
@@ -303,7 +343,7 @@ When submitting review results:
 3. [Task Z] Missing test command
 
 ### Recommendations
-- (if APPROVED) Ready for dispatch
+- (if **APPROVED (agent)**) Update plans + logs; obtain **`tech-plans/HUMAN_SIGNOFF.md`** then **`[TECH-PLAN-HUMAN]`** — only then State 4b / dispatch
 - (if CHANGES REQUESTED) Fix issues above and resubmit
 - (if BLOCKED) Cannot proceed until blockers resolved
 

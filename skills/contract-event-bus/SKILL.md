@@ -40,6 +40,21 @@ If you notice any of these, STOP and do not proceed:
 - **Consumer group naming is left unspecified** — Unnamed consumer groups default to arbitrary names, causing rebalancing and offset loss. STOP. Assign stable, service-namespaced consumer group IDs.
 - **Schema evolution policy is absent** — Field additions without compatibility rules break existing consumers. STOP. Specify forward/backward/full compatibility policy before any schema is shipped.
 
+## Minimum depth before the event contract is LOCK
+
+**Purpose:** Avoid hand-wavy “we use Kafka” specs. Before locking, the contract **must** document:
+
+1. **Topology:** Exchange type (or “none / broker default”), **topic and/or queue names**, **routing keys** — **or** explicit pattern: **single topic + message discriminator field** (name + allowed values).
+2. **Payload:** Formal schema reference (Avro / Protobuf / JSON Schema id) — not prose-only.
+3. **Idempotency:** Consumer idempotency key (field name + where stored / TTL) **or** proof that duplicates are harmless — stated per consumer group.
+4. **Ordering:** Per-partition / per-key / best-effort-none — pick one and justify.
+5. **DLQ:** Destination topic/queue + when messages land there + alert expectation.
+6. **State authority (one explicit sentence):** e.g. “**Only** service `orders-api` commits order state to MySQL; consumers **must not** write those tables — they call `POST /internal/orders/...` or emit `order.requested` for retry.” Or: “Consumer X **may** update projection table `…` because …” Ambiguity here is a production incident.
+
+If any row is unknown, use **`WAIVER: … until <ticket/ref>`** — not silence.
+
+---
+
 ## When to Use
 
 - **Negotiating async integration between services** — Different teams need to exchange events (payments, user lifecycle, notifications)

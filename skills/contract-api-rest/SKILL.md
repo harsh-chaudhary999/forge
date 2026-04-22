@@ -46,6 +46,22 @@ This skill teaches teams to negotiate REST API contracts **before** implementing
 
 ---
 
+## Minimum depth before the REST contract is LOCK
+
+**Purpose:** Prevent “table of paths only” specs that miss what a competing implementation plan would include. **Forge normative surface** is still `shared-dev-spec.md` + contract files — this section raises the **minimum bar** before council locks.
+
+For **each surface-relevant** new or materially changed endpoint, the locked contract (in `shared-dev-spec` and/or `contracts/api-rest.md`) **must** include:
+
+1. **METHOD + full path** + **auth** (mechanism + scopes or roles, or `public` with explicit rate limit).
+2. **Versioning:** URL prefix (`/v1/...`) **or** header strategy — **one line** tying the rule to the **actual mount** in code (repo-relative **`path:line`** from brain scan or product repo, e.g. `src/server/app.js:42`).
+3. **Request JSON example** and **response JSON example** (success) — real keys and types, not `{}`.
+4. **At least one error example** using the **agreed error envelope** (HTTP status + body shape + machine-readable `code` if applicable).
+5. **Idempotency** for mutating verbs: header name or body field + expected server behaviour on replay.
+
+If an endpoint is intentionally deferred, add a row **`DEFERRED out of MVP`** with **owner + risk** — not an empty cell.
+
+---
+
 ## 1. API Versioning Strategy
 
 ### Understanding Versioning Needs

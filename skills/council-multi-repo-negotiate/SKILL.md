@@ -39,6 +39,10 @@ If you notice any of these, STOP and do not proceed:
 - **Web or app is in scope but intake design fields never reach `shared-dev-spec.md`** — Subagents and parallel surface skills only see what is written down. If `design_new_work` / `design_assets` from `prd-locked.md` are not copied into the spec, autonomous reasoning invents UI from prose alone. STOP. Paste the intake **Design / UI** block verbatim under `## Design source (from intake)` before surface work is treated as complete.
 - **`design_new_work: yes` but `shared-dev-spec.md` lacks implementable design** — Missing **`design_brain_paths`** and missing **`lovable_github_repo`** (+ pinned ref) and missing **`figma_file_key` + `figma_root_node_ids`**, with no **`design_waiver: prd_only`**, means council cannot lock pixels. STOP. Re-open intake or add materialized `design/` artifacts before treating negotiation as complete.
 - **Only 1-2 surfaces are "affected" so the rest are skipped** — Surfaces that appear unaffected often discover hidden dependencies. STOP. All surfaces must reason, even if briefly.
+- **External parity gate skipped** — No `~/forge/brain/prds/<task-id>/parity/external-plan.md`, no completed `parity/checklist.md` (from **`docs/parity-checklist-template.md`**), and no `parity/waiver.md` with `parity_waiver: true` before **`spec-freeze`**. STOP. Materialize parity or record waiver (see **`spec-freeze`** Step 0).
+- **PRD implies gated / variant UI or post-condition behaviour (e.g. after deadline), web in scope, but spec lacks a locked surface matrix** — No enum / flag / route allow-list describing which UI exists in which state. STOP. Add contract text or **`WAIVER: …`** + owner + ticket until intake supplies it.
+- **PRD names a third-party verifier / identity or document provider, but spec lacks retention + secret handling** — No rows for token lifetime, hash vs raw storage, encryption boundary, audit. STOP. Lock in **`shared-dev-spec`** or **`contract-*`** or **`WAIVER`** — not silence.
+- **PRD puts message broker on critical path, but spec lacks choreography** — Unclear what advances the next stage (sync HTTP vs which consumer), idempotency, DLQ. STOP. Lock in **`contract-event-bus`** or **`WAIVER`** — not silence.
 
 Master orchestration skill that brings together all 4 surface reasoning skills and all 5 contract skills to negotiate conflicts and lock the shared-dev-spec.
 
@@ -554,9 +558,11 @@ This marks the spec as immutable in the brain.
 - [ ] Escalate unresolved conflicts to `/inline-dreamer`
 - [ ] Document decision trail for all conflicts
 - [ ] Consolidate shared-dev-spec.md with all sections (including **Design source (from intake)** when web or app is in scope)
+- [ ] **Parity:** Create `parity/` with **`external-plan.md`** OR completed **`checklist.md`** (from **`docs/parity-checklist-template.md`**) OR **`waiver.md`** — before **`spec-freeze`**
+- [ ] **Optional:** Write **`delivery-plan.md`** (rollout, flags, pyramid targets, open questions) — non-frozen; links spec headings only
 - [ ] Validate spec completeness
 - [ ] Use `/brain-write` to lock spec
-- [ ] Report: DONE, spec locked, ready for tech-planning
+- [ ] Report: DONE, spec locked, parity satisfied — ready for **`spec-freeze`** then tech-planning
 
 ---
 

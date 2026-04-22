@@ -28,8 +28,29 @@ NO SPEC CHANGES AFTER FREEZE WITHOUT FULL COUNCIL RE-NEGOTIATION. A SMALL TWEAK 
 | "The spec was wrong, we're fixing it, not changing it" | Wrong specs get fixed through the change request process. Self-diagnosed "fixes" are unreviewed changes wearing a trustworthy label. |
 | "We're behind schedule, we can't afford to re-negotiate" | Re-negotiation takes hours. Shipping against a broken spec takes weeks of rework. Schedule pressure is the worst reason to skip process. |
 | "Everyone informally agrees this change is fine" | Informal agreement is not council consensus. Informal agreement is the absence of structured dissent. Run the process. |
+| "Council + PRD are enough — we don't need parity/ external plan in the brain" | The org’s **detailed** plan (RFC, wiki, design doc) is where edge cases live. If it never lands in **`parity/`**, Forge locks a **thin** spec and gates still “pass.” STOP. **`spec-freeze` Step 0** requires **`external-plan.md`**, completed **`checklist.md`**, or an explicit **`parity_waiver`**. |
 
 ## Freeze Protocol
+
+### Step 0: External parity (HARD-GATE — before Step 1 completes)
+
+**Problem:** Council can lock against **PRD + surface reasoning** while the org’s **richer plan** (RFC, wiki export, long-form design doc) never entered the brain — then `shared-dev-spec` is thinner than the best internal artifact and execution drifts.
+
+**HARD-GATE:** Do not call this freeze **complete** (and do not treat the spec as ready for **`tech-plan-write-per-project`**) until **one** of the following exists under `~/forge/brain/prds/<task-id>/parity/`:
+
+| Artifact | Meaning |
+|----------|---------|
+| **`parity/external-plan.md`** | Verbatim paste, export, or structured summary of the **authoritative detailed plan** (wiki → Markdown, RFC, PDF text, document export). Dated + source locator optional. |
+| **`parity/checklist.md`** | Copy of **`docs/parity-checklist-template.md`** with every row marked **`DONE`** \| **`N/A` + reason** \| **`WAIVER: …` + owner + ref** — no blank cells. |
+| **`parity/waiver.md`** | `parity_waiver: true` + **owner** + **one-line reason** (e.g. `greenfield, no external plan`; `spike only, contracts provisional until RFC-123`). |
+
+**Precedence (when both exist):** `shared-dev-spec.md` (once frozen) is **normative for interfaces**. `parity/external-plan.md` is **alignment evidence**. If they **disagree**, the frozen spec wins until a **change request** / re-council updates it — do not “secretly” follow the external doc.
+
+**Optional program artifact (not frozen, not implementer-isolated):** `~/forge/brain/prds/<task-id>/delivery-plan.md` — rollout, canary, test-pyramid targets, RACI-lite, rough sequencing. May reference spec by **heading**; may change until GA. Does **not** replace contracts.
+
+**Automation (recommended):** Run `python3 tools/check_frozen_spec.py brain/prds/<task-id>/shared-dev-spec.md` before committing the freeze; CI may enforce the same.
+
+---
 
 ### Step 1: Validate Council Sign-Off
 
@@ -37,6 +58,7 @@ NO SPEC CHANGES AFTER FREEZE WITHOUT FULL COUNCIL RE-NEGOTIATION. A SMALL TWEAK 
 
 - **Input:** Shared-dev-spec from `forge-council-gate` (SPECLOCK decision)
 - **Check:**
+  - **Step 0 parity satisfied** (`parity/external-plan.md` **or** completed `parity/checklist.md` **or** `parity/waiver.md` with `parity_waiver: true`)
   - All 4 surfaces attended council and proposed (backend, web, app, infra)
   - All 5 contracts negotiated and locked (API, events, cache, DB, search)
   - No unresolved conflicts (all consensus or escalated with dreamer decision)

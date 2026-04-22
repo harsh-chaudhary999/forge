@@ -74,6 +74,7 @@ fi
 ---
 
 ### Gather Inputs (Pre-Council)
+- **Parity (before `spec-freeze`):** Ensure the task folder will receive **`~/forge/brain/prds/<task-id>/parity/`** with **`external-plan.md`** OR completed **`checklist.md`** (copy **`docs/parity-checklist-template.md`**) OR **`waiver.md`** (`parity_waiver: true` + owner + reason). Council + contracts must not be treated as “done” if the only artifact is a thin `shared-dev-spec` that never absorbed the org’s detailed plan — see **`spec-freeze`** Step 0.
 - **Input:** Locked PRD (from intake-gate)
 - **Action:** Prepare council materials
   - Summarize PRD in 1 page (problem, surfaces, acceptance criteria)

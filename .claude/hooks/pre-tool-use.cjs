@@ -164,5 +164,60 @@ for (const { pattern, reason } of BLOCKED_PATTERNS) {
   }
 }
 
+// ── Skill-level allowed-tools check ───────────────────────────────────────
+// If ~/.forge/.active-skill is set, verify the current tool is in that skill's
+// allowed-tools frontmatter. Warns (asks) but does not hard-block (Approach A).
+
+const ACTIVE_SKILL_FILE = path.join(os.homedir(), '.forge', '.active-skill');
+let activeSkill = '';
+try {
+  if (fs.existsSync(ACTIVE_SKILL_FILE)) {
+    activeSkill = fs.readFileSync(ACTIVE_SKILL_FILE, 'utf-8').trim();
+  }
+} catch (_) {
+  // Unreadable — skip check
+}
+
+if (activeSkill) {
+  // Find the skill's SKILL.md relative to the repo root (via __dirname)
+  const repoRoot = path.resolve(__dirname, '..', '..');
+  const skillFile = path.join(repoRoot, 'skills', activeSkill, 'SKILL.md');
+  try {
+    if (fs.existsSync(skillFile)) {
+      const skillContent = fs.readFileSync(skillFile, 'utf-8');
+      const fmMatch = skillContent.match(/^---\n([\s\S]*?)\n---/);
+      if (fmMatch) {
+        const fm = fmMatch[1];
+        const toolsMatch = fm.match(/allowed-tools:\s*\n((?:\s+- \S+\n?)+)/);
+        if (toolsMatch) {
+          const allowedTools = toolsMatch[1]
+            .split('\n')
+            .map(l => l.replace(/^\s+- /, '').trim())
+            .filter(Boolean);
+          if (allowedTools.length > 0 && !allowedTools.includes(toolName)) {
+            const output = {
+              hookSpecificOutput: {
+                hookEventName: 'PreToolUse',
+                permissionDecision: 'ask',
+                permissionDecisionReason:
+                  `[forge-pre-tool-use] SKILL TOOL SCOPE WARNING\n\n` +
+                  `Active skill: ${activeSkill}\n` +
+                  `Attempted tool: ${toolName}\n` +
+                  `Allowed tools: ${allowedTools.join(', ')}\n\n` +
+                  `The skill '${activeSkill}' does not declare '${toolName}' in its allowed-tools list. ` +
+                  `Proceed only if this tool use is intentional and within the skill's scope.`,
+              },
+            };
+            process.stdout.write(JSON.stringify(output));
+            process.exit(0);
+          }
+        }
+      }
+    }
+  } catch (_) {
+    // Skill file unreadable — skip check silently
+  }
+}
+
 // Allow all other commands
 process.exit(0);

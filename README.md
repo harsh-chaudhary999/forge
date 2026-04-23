@@ -98,7 +98,7 @@ Omit flags to refresh **every** host `install.sh` auto-detects; or pass **`--pla
 
 Restart each app (or start a new agent session) after a meaningful skill or hook change. Per-host notes: **[`docs/platforms/`](docs/platforms/)**.
 
-**Version today:** `package.json` and **`.*-plugin/plugin.json`** carry **`1.0.0`** — bump these when you want installers and manifests to reflect a new drop; tags + Release notes help watchers.
+**Version today:** `package.json` and **`.*-plugin/plugin.json`** carry **`1.0.0`** — bump these when you want installers and manifests to reflect a new drop; tags + Release notes help watchers. **Tags are not created automatically** on push; maintainers bump versions in a PR, then may run the optional **`Tag release`** GitHub Action (see **`docs/contributing.md` → Releases**) to push `vX.Y.Z`.
 
 ---
 

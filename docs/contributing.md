@@ -18,11 +18,16 @@ Use this instead of hardcoding a number in docs or runbooks.
 
 ## Releases (so users can “know” there was an update)
 
-Forge does not notify installs by itself. If you maintain a fork or upstream:
+Forge does not notify installs by itself. **Nothing tags or bumps versions automatically** on push — that is intentional until you wire your own policy.
 
-1. **Bump** `package.json` `version` and the `version` field in **`.claude-plugin/plugin.json`**, **`.cursor-plugin/plugin.json`**, **`.codex-plugin/plugin.json`** when you cut a meaningful drop (install.sh reads `package.json` for Cursor marketplace metadata).
+If you maintain a fork or upstream:
+
+1. **Bump** `package.json` `version` and the `version` field in **`.claude-plugin/plugin.json`**, **`.cursor-plugin/plugin.json`**, **`.codex-plugin/plugin.json`** when you cut a meaningful drop (`install.sh` reads `package.json` for some install metadata).
 2. **Tag** in git (e.g. `v1.0.1`) and publish a **GitHub Release** with short notes — users watching **Releases** get an email/feed.
-3. Point heavy consumers at a **pinned SHA** or tag in internal docs if you need reproducibility over “latest `main`”.
+3. **Optional automation:** In GitHub, run **[`.github/workflows/release-tag.yml`](../.github/workflows/release-tag.yml)** (**Actions → Tag release → Run workflow**) after merging the version-bump PR. It only **creates and pushes** the tag you type (semver `vX.Y.Z`); it does **not** edit `package.json`.
+4. For **fully automatic** “tag every merge to `main`”, add your own workflow (not shipped here) — teams disagree on semver rules and changelog sources.
+
+Point heavy consumers at a **pinned SHA** or tag in internal docs if you need reproducibility over “latest `main`”.
 
 ## Git history
 

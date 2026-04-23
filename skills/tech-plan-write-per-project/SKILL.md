@@ -1,6 +1,6 @@
 ---
 name: tech-plan-write-per-project
-description: "WHEN: Shared-dev-spec is frozen and per-project tech plans must be written before dev-implementer dispatch. Output: 1 plan per repo — Section 0 doubt log (unlimited Q&A until confident), elaborative §1b–§1c, then bite-sized tasks; no vendor-specific assumptions; scan-grounded; review/XALIGN before dispatch."
+description: "WHEN: Shared-dev-spec is frozen and per-project tech plans must be written before dev-implementer dispatch. Output: 1 plan per repo — Section 0 doubt log (unlimited Q&A until confident), §1b.0 PRD↔scan coverage matrix, maximal-detail §1b (schemas, HTTP payloads, search, events/cache) + §1c, then bite-sized tasks; every PRD case and acceptance path traced; scan-grounded evidence paths; no vendor-specific assumptions; review/XALIGN before dispatch."
 type: rigid
 requires: [brain-read]
 version: 1.0.0
@@ -27,9 +27,12 @@ allowed-tools:
 | "The bash commands are obvious" | "Obviously" wrong commands waste a self-heal loop iteration. Write the exact command including flags, paths, and environment variables. |
 | "I'll reference the spec instead of repeating details" | The implementer (dev-implementer subagent) works in an isolated worktree with only the plan. Self-contained tasks prevent NEEDS_CONTEXT status. |
 | "I'll discover file paths by exploring the repo" | Duplicates work the scan already did and burns tokens. **Default:** read `~/forge/brain/products/<slug>/codebase/` first; put paths from `index.md` / `modules/*.md` / `api-surface.md` into tasks, then open sources when writing full file bodies. **Exception:** **Section 1b.6** lists an **UNKNOWN** — you **must** deepen discovery (targeted `rg`/glob, read hub files, route tables, OpenAPI, client wrappers, test names) until resolved or **BLOCKED** — do not ship “mystery meat” tasks. |
-| "Elaboration is optional — bite-sized tasks are enough" | Tasks without **§1b.5 API map**, **§1b.6 unknown closure**, and **§1c review rounds** hide integration risk. STOP. Elaboration is **mandatory** for E2E; micro-tasks execute the elaboration, they do not replace it. |
+| "Elaboration is optional — bite-sized tasks are enough" | Tasks without **§1b.0**, **§1b.5 API map**, **§1b.1 / 1b.1a** when DB or search applies, **§1b.6 unknown closure**, and **§1c review rounds** hide integration risk. STOP. Elaboration is **mandatory** for E2E; micro-tasks execute the elaboration, they do not replace it. |
 | "I've hit my question quota — ship the plan with lingering doubts" | **There is no maximum question count** during planning. Doubt left unasked becomes a gap in Section 2. STOP. Ask until **confidence is high** (see **Section 0**), then write the elaborative plan. |
 | "Concise plan = professional" | **Professional** here means **complete**: the plan is the **only** input to sub-tasks. Concision that omits wiring, edge cases, or evidence is negligence. |
+| "I'll cover PRD cases implicitly in tasks" | **Every** success criterion, edge case, and non-functional requirement from **`prd-locked.md`** + **`shared-dev-spec.md`** must appear in **§1b.0** and map to §1b subsections or Section 2 tasks. Implicit coverage is invisible to review and ships gaps. |
+| "Schema / payload details can wait for implementation" | **Forbidden.** §**1b.1** / **1b.5** / **1b.1a** must carry **concrete** DDL fragments, field lists, or **verbatim** locked-contract excerpts — never `TBD`, "same as before", or "engineer decides columns." |
+| "Scan is optional if I know the repo" | The brain **`codebase/`** is the default authority for *where* code lives. Skipping **`index.md`**, relevant **`modules/*.md`**, **`api-surface.md`**, and route/OpenAPI stubs before writing tasks is **BLOCKED** unless **`SCAN_INCOMPLETE`** / **`BLOCKED`** is explicitly recorded with owner. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -49,7 +52,7 @@ If you notice any of these, STOP and do not proceed:
 
 - **Task contains "add the endpoint" or other vague verbs without file paths** — Vague tasks produce vague implementations. STOP. Rewrite with exact file path, function name, and complete code.
 - **A task exceeds 5 minutes of execution** — Tasks over 5 minutes hide complexity and block progress tracking. STOP. Split into smaller tasks, each 2-5 minutes.
-- **Plan has no Section 0 / 1b / 1c** — Missing **doubt log**, **§1b.1–1b.6** (per applicability), or **§1c**. Micro-tasks without inventory and without cleared doubts hide gaps. STOP. Add **Section 0** then the full preamble before Task 1.
+- **Plan has no Section 0 / 1b / 1c** — Missing **doubt log**, **§1b.0 PRD coverage matrix**, **§1b.1–1b.6** (plus **§1b.1a** when search applies), or **§1c**. Micro-tasks without inventory and without cleared doubts hide gaps. STOP. Add **Section 0** (incl. **§0.2** rounds) then **§1b.0** and the full preamble before Task 1.
 - **Migration or DDL tasks exist but the data model delta table is empty or claims “none”** — Contradiction with locked DB contract. STOP. Align the table and tasks.
 - **Plan references the shared-dev-spec with "see spec" instead of repeating the details** — Dev-implementer works in isolation without spec access. STOP. Make every task fully self-contained with all needed details inline.
 - **Bash commands lack flags, paths, or environment variables** — Incomplete commands produce incorrect results or fail silently. STOP. Write the exact, complete command.
@@ -64,6 +67,9 @@ If you notice any of these, STOP and do not proceed:
 - **`Tech plan status: REVIEW_PASS` with no `tech-plan-self-review` round logged in §1c revision log** — Rubber-stamp. STOP.
 - **State 4b or implementation started without `tech-plans/HUMAN_SIGNOFF.md` + `[TECH-PLAN-HUMAN]`** — Human feedback phase skipped. STOP.
 - **Section 0 doubt log has open items** (unanswered questions, `UNCONFIRMED` rows) but Section 2 tasks are already written — Planning was short-circuited. STOP. Resolve or **BLOCK** before tasks.
+- **Section 2 tasks exist before §1b.5 (HTTP), §1b.1 (DB), or §1b.1a (search) are aligned with the user** — “Plan first, contracts later” pattern. STOP. Follow **§0.2 Interactive contract rounds**; trim or move tasks until rounds are satisfied.
+- **§1b.0 missing, empty, or has PRD/spec rows without Section 2 task ids** — A requirement or acceptance path is untracked. STOP. Add rows or tasks until **bidirectional** coverage (no orphan rows, no orphan tasks for in-scope work).
+- **§1b.1 / §1b.5 / §1b.1a use vague schema language** (no columns, no field names, no types, no error shapes) where the spec already decided them — Implementers will invent. STOP. Inline DDL / JSON / verbatim contract text.
 
 ## Overview
 
@@ -75,7 +81,7 @@ This skill converts a locked shared-dev-spec into bite-sized, executable technic
 
 **Order of operations for UI:** When this repo is **web** or **app**, read **Design source (from intake)** in the locked spec **and** any **`~/forge/brain/prds/<task-id>/design/`** ingest notes (`MCP_INGEST.md`, `README.md`, …). Complete **Section 1b.4** before writing UI tasks so every screen/component change is tied to **design anchors** and/or **scan-backed** reuse paths — not to memory of a Figma URL from chat.
 
-**Elaboration bar:** The plan should be **as elaborative as practical** — it is what **defines** Section 2 sub-tasks. If a fact would change a task boundary, it belongs in **§1b** or the task body, not in a planner’s head.
+**Elaboration bar (default = maximal):** Tech plans are **exhaustive by default**, not minimal. **Every** PRD success path, edge case, failure mode, and non-functional requirement (latency, security, audit, rollback) that touches this repo must be **visible** in **§1b.0** + §1b tables + Section 2 — if it is only in the planner’s head, the plan is **incomplete**. Prefer **over-specifying** (field names, types, indexes, status codes, idempotency keys) within the **frozen** contracts over leaving "reasonable defaults" to the implementer. If the frozen spec is silent on a detail, record **§1b.6** unknown or **Section 0** question — do not silently invent.
 
 ---
 
@@ -90,7 +96,22 @@ This skill converts a locked shared-dev-spec into bite-sized, executable technic
 3. **Start the elaborative plan only when:** You would stake implementation on it — i.e. no remaining **high-impact** unknowns without an owner, or they are recorded as **BLOCKED** / **WAIVER** with risk.
 4. **Trace questions to coverage:** Each resolved doubt should visibly affect **§1b** tables or a specific Section 2 task — or be explicitly **out of scope** with spec citation.
 
-### 0.2 Artifact (required in each `tech-plans/<repo>.md` or linked file)
+### 0.2 Interactive contract rounds (MUST — live session behavior)
+
+**Forbidden:** Dump a **full Section 2** task list first, then add “follow-up questions” for MySQL, Elasticsearch, or API mapping in an appendix. That inverts risk: implementers see tasks without locked contracts.
+
+**Required cadence with the human:** Work in **rounds** — each round ends with **explicit questions** and a **pause for answers** before the next contract surface is finalized in §**1b** and Section 0.
+
+| Round | Cover (when in scope for this PRD) | Before proceeding |
+|-------|-----------------------------------|-------------------|
+| **A — HTTP / REST** | Paths, methods, bodies, errors, versioning, idempotency (from locked REST material) | §**1b.5** draft rows exist and user has confirmed or you logged **BLOCKED** |
+| **B — Relational DB** | Tables/columns/indexes, migration/nullable strategy (**contract-schema-db**) | §**1b.0** rows for persistence + §**1b.1** delta + **fenced SQL / verbatim** schema per **§1b.1** rules; user confirms or **BLOCKED** |
+| **C — Search** | Index/alias, mapping & analyzer changes, reindex / dual-write (**contract-search**) | §**1b.0** rows for search + §**1b.1a** + **fenced JSON / verbatim** mapping per **§1b.1a** rules; user confirms or **BLOCKED**; or one-line N/A with spec citation |
+| **D — Cache / events** | Key patterns, TTL, topics, ordering, idempotency (**contract-cache** / **contract-event-bus**) | Subsections or N/A lines explicit in §1b + Section 0 |
+
+**Chat style:** Prefer **short messages** with **numbered questions** over one megabyte plan. After answers, **write** Section 0 + §1b (including **§1b.0** synced to the latest PRD/spec rows) into `tech-plans/<repo>.md`; only then add/expand **Section 2** tasks so they inherit the locked shapes.
+
+### 0.3 Artifact (required in each `tech-plans/<repo>.md` or linked file)
 
 Include **before** `## Section 1b`:
 
@@ -109,7 +130,8 @@ Include **before** `## Section 1b`:
 ## Section 1: Parse shared-dev-spec
 
 ### Input
-- Locked spec location: `/home/lordvoldemort/Videos/forge/brain/prds/<task-id>/spec.md`
+- Locked spec location: `~/forge/brain/prds/<task-id>/shared-dev-spec.md` (or the task’s frozen spec path from `brain-read`)
+- **`prd-locked.md`** at `~/forge/brain/prds/<task-id>/prd-locked.md` — success criteria, scope, design/Q10, and acceptance language (must be reflected in **§1b.0**)
 - Status: LOCKED (spec is immutable at this stage)
 
 ### Process
@@ -141,11 +163,28 @@ Include **before** `## Section 1b`:
 
 ## Section 1b: Elaborative preamble (mandatory per tech-plan file)
 
-**Authoring order in the saved `tech-plans/<repo>.md` file:** (1) `#` title line, then **`Tech plan status: DRAFT`** (or `REVIEW_CHANGES` / `REVIEW_PASS` per **§Section 1c**); (2) **`## Section 0: Planning doubt log`** (see **Section 0** of this skill); (3) this **Section 1b** (`### 1b.1` … `### 1b.6`); (4) **§Section 1c** body (revision log table + cross-repo notes); (5) **Section 2** tasks.
+**Authoring order in the saved `tech-plans/<repo>.md` file:** (1) `#` title line, then **`Tech plan status: DRAFT`** (or `REVIEW_CHANGES` / `REVIEW_PASS` per **§Section 1c**); (2) **`## Section 0: Planning doubt log`** (see **Section 0**, including **§0.2** interactive rounds); (3) this **Section 1b** starting with **`### 1b.0`**, then **`### 1b.1`**, **`### 1b.1a`** when search applies, `### 1b.2` … `### 1b.6`); (4) **§Section 1c** body (revision log table + cross-repo notes); (5) **Section 2** tasks.
 
-Bite-sized tasks exist so a **dev-implementer in isolation** can execute without guessing. They **do not** replace **§Section 0** (cleared doubts), nor a short, explicit narrative of **what changes in the world** (data, reuse, design, **HTTP wiring**, unknowns, review trail). **Subsection 1b.4** follows web/app rules; **1b.5** follows HTTP rules; **1b.6** is always required (may be a single “no unknowns” line). **§Section 1c** is always required. All of the above **before Section 2**.
+Bite-sized tasks exist so a **dev-implementer in isolation** can execute without guessing. They **do not** replace **§Section 0** (cleared doubts + **§0.2** user rounds), nor a short, explicit narrative of **what changes in the world** (data, **search indices**, reuse, design, **HTTP wiring**, unknowns, review trail). **Subsection 1b.4** follows web/app rules; **1b.5** follows HTTP rules; **1b.1a** follows search when applicable; **1b.6** is always required (may be a single “no unknowns” line). **§Section 1c** is always required. All of the above **before Section 2**.
 
 Skipping them because “the tasks are obvious” or “only micro-steps matter” is **BLOCKED** — that is how schema drift, duplicate tables, wrong screens, **wrong API wiring**, and silent greenfield work slip through.
+
+### 1b.0 PRD & acceptance coverage matrix (mandatory — no missed cases)
+
+**Purpose:** Prove **every** in-scope requirement, success criterion, edge case, and non-functional constraint from **`prd-locked.md`** and **`shared-dev-spec.md`** is either implemented in this repo’s Section 2 or explicitly **out of scope** with a citation. **Scan** proves *where* work lands.
+
+**Build this table before `### 1b.1`** (add rows until nothing material is missing):
+
+| PRD / spec ref (id or §) | Requirement or acceptance (one line) | Brain scan evidence (`codebase/...` path or `SCAN.json` note) | Owner §1b subsection(s) | Section 2 task id(s) or `N/A (other repo)` |
+|-------------------------|----------------------------------------|---------------------------------------------------------------|-------------------------|---------------------------------------------|
+| e.g. `prd Q5`, `spec FR-2` | e.g. "User can revoke session" | e.g. `modules/web-auth-svc.md` → `src/auth/Revoke.ts` | 1b.2, 1b.5 | T12–T18 |
+
+**Rules (MUST):**
+
+1. **Bidirectional:** No row without **§1b** + **tasks** (or `N/A` + sibling repo file). No Section 2 task that does not tie back to a **row** or an explicit **tech-debt / chore** exception with human approval in §0.
+2. **Edge & negative paths:** Include error handling, empty states, permission denied, rollback, idempotency retries — wherever the PRD or spec calls them out — as their own rows or explicit bullets under a single row’s "Requirement" cell.
+3. **Non-functionals:** Performance budgets, SLOs, PII redaction, audit logging, feature flags — each gets a row or a **WAIVER** row pointing to **`prd-locked.md`** / spec text.
+4. **Scan discipline:** For each row, the **evidence** column must cite **actual** `codebase/` paths (or `UNKNOWN` → **§1b.6** until resolved). Guessing paths without scan is **BLOCKED**.
 
 ### 1b.1 Data model delta (persistence)
 
@@ -159,6 +198,22 @@ Ground this in the **locked shared-dev-spec** and any **`db-contract` / `contrac
 - If persistence lives in another repo, say **which repo owns DDL** and keep this table empty with that cross-reference — do not imply this repo runs migrations it does not own.
 
 Every later **migration / DDL task** in this file MUST correspond to a row above (same table + change type). Orphans either way are a planning defect.
+
+**Schema detail (MUST — not optional):** For each **CREATE** or **ALTER** row, include **either** (a) the **full** proposed DDL in a **fenced SQL code block** immediately under the table (or per-row sub-blocks), **or** (b) a **verbatim** paste from the locked **`contract-schema-db`** / shared-dev-spec excerpt with **heading + file path**. List **columns with types**, **nullability**, **defaults**, **indexes**, and **FK constraints** that implementers will apply. **Forbidden:** "Add columns as needed", "migration per ORM", or deferring shape to Section 2 without DDL here.
+
+### 1b.1a Search index delta (Elasticsearch / OpenSearch / etc.)
+
+**When N/A:** One line: **`1b.1a not applicable — no search index ownership or contract-search surface in this repo for this task.`** (cite spec § if ambiguous.)
+
+**When the locked spec includes search / `contract-search`:** Mirror the contract — do not invent fields in the plan that the spec did not lock.
+
+| Index or alias | Mapping / analyzer / field change | Reindex, dual-write, or refresh policy | Rollback / compat |
+|----------------|-----------------------------------|----------------------------------------|---------------------|
+| *(row per index touched)* | *e.g. new `keyword` subfield, custom analyzer* | *e.g. reindex job id, blue/green* | *e.g. read old alias until drain* |
+
+Every later **index / mapping / ingest task** in Section 2 MUST correspond to a row above.
+
+**Mapping detail (MUST — not optional):** For each index row, include **either** (a) the **full** proposed mapping fragment (field names, types, `analyzer` / `normalizer` / `keyword` subfields, `copy_to`, `dynamic` policy) in a **fenced JSON code block** immediately under the table (or per-row), **or** (b) a **verbatim** paste from the locked **`contract-search`** / shared-dev-spec with **heading + file path**. **Forbidden:** "mapping per team norm", "see Kibana", or deferring field shapes to Section 2 without JSON here.
 
 ### 1b.2 Implementation reuse vs net-new
 
@@ -212,6 +267,8 @@ Bullets mapping **shared-dev-spec** requirement headings, contract IDs, or accep
 | Consumer (path : component or hook) | When it runs (mount, click, job tick, …) | METHOD + `path` | Client module (path) | Success + error handling (status codes) |
 
 If the owning API plan lives in another repo file, **cross-reference** exact rows (same METHOD+path string) so **`tech-plan-self-review` cross-plan checks** can diff them.
+
+**Request / response / error shape (MUST):** For **each** new or materially changed `METHOD+path` in the §1b.5 tables, add **one** of: (a) fenced **`json`** for **request body**, **success (2xx) body**, and **at least one error** (4xx/5xx) with stable `code` / `message` fields as locked in the REST contract; or (b) **verbatim** contract/OpenAPI excerpt with source. Include **pagination**, **filters**, and **headers** (auth, idempotency, trace) when the spec defines them. **Forbidden:** "Body per OpenAPI" without inlined shape, or "errors TBD".
 
 ### 1b.6 Unknowns & deep discovery closure
 
@@ -550,7 +607,7 @@ feat: add POST /users endpoint with validation
 ## Usage
 
 ### When Called
-1. `brain-read` has provided locked spec from `/home/lordvoldemort/Videos/forge/brain/prds/<task-id>/spec.md`
+1. `brain-read` has provided locked spec from `~/forge/brain/prds/<task-id>/shared-dev-spec.md`
 2. Phase 2.10 (shared-dev-spec) is complete and immutable
 
 ### How to Use
@@ -559,7 +616,7 @@ feat: add POST /users endpoint with validation
 skill tech-plan-write-per-project <task-id>
 
 # Or manually:
-cd /home/lordvoldemort/Videos/forge
+cd ~/forge
 # 1. Read the spec
 # 2. Break into bite-sized tasks
 # 3. Order by dependency
@@ -579,7 +636,7 @@ brain/prds/<task-id>/tech-plans/
 
 Each file:
 - **Section 0** doubt log present; no **high-impact** `L` confidence rows without **BLOCKED** / **WAIVER** / follow-up owner
-- **Section 1b + 1c** preamble is present (1b.1–1b.6 per rules; **1c** status + revision log)
+- **Section 1b + 1c** preamble is present (1b.1, **1b.1a** if search, 1b.2–1b.6 per rules; **1c** status + revision log)
 - Task ordering respects dependencies
 - Every task is 2-5 min executable
 - Every code block is complete

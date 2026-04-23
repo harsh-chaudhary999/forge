@@ -343,7 +343,7 @@ Users will find rationalizations to skip your skill. Without explicit anti-patte
 - But without cross-references, skills become orphaned
 - New users don't know "this skill connects to 3 others"
 - Skills can't be combined in workflows (because connections aren't documented)
-- You have 80 skills but users only use 5 because the other 75 are hidden
+- You have many skills but users only use a handful because the rest are hidden
 - Adoption compounds (if skill A references skill B, users discover B)
 
 **Enforcement:**

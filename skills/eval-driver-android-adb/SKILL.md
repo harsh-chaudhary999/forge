@@ -32,6 +32,10 @@ The eval-driver-android-adb skill enables:
 - Screen capture for verification
 - Graceful teardown and disconnect
 
+## Optional: Appium MCP (host choice)
+
+When an **Appium MCP** server (or similar mobile MCP) is available on the host, the operator may prefer it over **ADB + UIAutomator** for Android eval steps. **Ask explicitly**: use this skill’s **ADB driver** end-to-end, or **delegate Android UI actions to Appium MCP** (document MCP tool names, session/device assumptions, and evidence paths). Either path is valid for **product eval**; pick **one** per task so **`eval-coordinate-multi-surface`** and CI stay aligned.
+
 ## Anti-Pattern Blockers
 
 **DO NOT proceed with these rationalizations:**

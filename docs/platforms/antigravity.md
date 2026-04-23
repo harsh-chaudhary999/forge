@@ -9,12 +9,12 @@
 **Auto:** Antigravity auto-discovers skills from `.agent/skills/` at workspace scope.
 
 ```bash
-git clone https://github.com/harsh-chaudhary999/forge ~/forge
+git clone https://github.com/<YOUR_GITHUB_ORG_OR_USERNAME>/forge ~/forge
 # Open ~/forge in Antigravity
 ```
 
 No install script needed. Antigravity reads:
-- `.agent/skills/` — All 80 Forge skills (symlinked from `skills/`)
+- `.agent/skills/` — Full Forge skill catalog (symlinked from `skills/`; count: `bash scripts/count-skills.sh`)
 - `AGENTS.md` — Project-level agent instructions
 - `GEMINI.md` — Antigravity-specific context (takes precedence over AGENTS.md)
 
@@ -34,7 +34,7 @@ Open the Forge directory in Antigravity. Skills should be listed in the agent's 
 
 | Feature | Status |
 |---|---|
-| Skills (80) | Full native support via `.agent/skills/` |
+| Skills (full tree) | Full native support via `.agent/skills/` |
 | AGENTS.md | Auto-loaded as project context |
 | GEMINI.md | Auto-loaded (takes precedence) |
 | MCP integration | Compatible with Forge's tool-based approach |

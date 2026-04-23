@@ -10,7 +10,7 @@
 **Auto:** The session-start hook detects Copilot CLI via the `COPILOT_CLI` environment variable.
 
 ```bash
-git clone https://github.com/harsh-chaudhary999/forge ~/forge
+git clone https://github.com/<YOUR_GITHUB_ORG_OR_USERNAME>/forge ~/forge
 ```
 
 **Fallback:**
@@ -26,7 +26,7 @@ Start a Copilot CLI session in the Forge directory. The `using-forge` bootstrap 
 
 | Feature | Status |
 |---|---|
-| Skills (80) | Available via skill invocation |
+| Skills (full tree) | Available via skill invocation |
 | Session bootstrap | Auto via hook detection |
 | Tool mapping | `references/copilot-tools.md` |
 

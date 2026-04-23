@@ -154,7 +154,7 @@ Read the relevant sections from the discovered standards files. Extract rules as
 
 | ID | Rule | Applies To |
 |---|---|---|
-| D5 | No third-party agent frameworks — no LangChain, Playwright, Puppeteer | All skills, agents, hooks |
+| D5 | No **LangChain-style agent frameworks** in **Forge plugin code** (skills, first-party tools). **Playwright / Puppeteer / CDP / Appium / XCTest / MCP** on the **host for product eval** are out of scope for D5 enforcement — confirm with the operator; do not treat “mentions Playwright” in eval docs as a P0 violation. |
 | D13 | No runtime dependency on any external plugin at runtime | install.sh, hooks, skills |
 | D15 | Skills are TDD'd — developed via pressure scenarios against seed product | New skills |
 | D24 | HARD-GATE tag required on every non-skippable step | Rigid skills |
@@ -196,7 +196,7 @@ For each potential violation found:
 
 **HIGH confidence (≥ 0.80) — surface as finding:**
 - Violation is unambiguous from the code alone
-- Rule explicitly prohibits the pattern (e.g., `import LangChain` violates D5)
+- Rule explicitly prohibits the pattern (e.g., `import langchain` in **Forge plugin** Python violates D5)
 - File type is confirmed in scope
 - Line number is exact
 
@@ -234,10 +234,10 @@ Action: <what must be changed>
 
 ```
 [P0] D5 — skills/my-new-skill/SKILL.md:14
-Rule: "No third-party agent frameworks. No LangChain, Playwright, Puppeteer." (CLAUDE.md)
-Violation: `import { AgentExecutor } from 'langchain/agents'`
+Rule: "No LangChain-style agent frameworks in Forge plugin code." (CLAUDE.md)
+Violation: `from langchain.agents import AgentExecutor` (bundled skill-side Python)
 Confidence: HIGH
-Action: Remove LangChain import. Use native Claude Code tool calls instead.
+Action: Remove LangChain from Forge-shipped code paths; use native tool orchestration or document host-only eval deps outside the plugin tree.
 ```
 
 ```

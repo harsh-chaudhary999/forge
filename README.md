@@ -2,7 +2,7 @@
 
 > Plug-and-play multi-repo product orchestration for AI-assisted delivery. Takes a PRD and drives it through locked scope, negotiated contracts, tech plans, TDD implementation, multi-surface eval, review, and coordinated PRs — with a **git-backed brain** as the system of record.
 
-Forge ships a feature across **multiple repos** without embedding a runtime framework in your product code: **skills** (markdown + YAML), **subagents**, **hooks**, and **commands** encode process. **80 skills**, **4 subagents**, **17 slash commands**. Works with **Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Copilot CLI, OpenCode, JetBrains AI** (see [Platform Setup](#platform-setup)).
+Forge ships a feature across **multiple repos** without embedding a runtime framework in your product code: **skills** (markdown + YAML), **subagents**, **hooks**, and **commands** encode process. **Full skill catalog** under `skills/` (count: `bash scripts/count-skills.sh`), **4 subagents**, **17 slash commands**. Works with **Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Copilot CLI, OpenCode, JetBrains AI** (see [Platform Setup](#platform-setup)).
 
 **`/forge`** (`commands/forge.md`) is the **full end-to-end** entrypoint: same phases as **`conductor-orchestrate`**, including **mandatory** State 4b **manual QA CSV** (`qa-prd-analysis` → `qa-manual-test-cases-from-prd` → approved `qa/manual-test-cases.csv` → `[P4.0-QA-CSV]`) **before** `[P4.0-EVAL-YAML]`, then eval YAML, TDD RED, design ingest when applicable, dispatch, reviews, **P4.4 eval**, self-heal, PR set, dream/brain. Other slash commands are **partial slices** — see [Commands reference](#commands-reference) and [Orchestration model](#orchestration-model-automation-vs-approvals).
 
@@ -38,9 +38,11 @@ Forge ships a feature across **multiple repos** without embedding a runtime fram
 ### 1. Clone
 
 ```bash
-git clone https://github.com/harsh-chaudhary999/forge ~/forge
+git clone https://github.com/<YOUR_GITHUB_ORG_OR_USERNAME>/forge ~/forge
 cd ~/forge
 ```
+
+Use your fork or upstream; see **[Forks and remotes](docs/contributing.md#forks-and-remotes)**.
 
 ### 2. Install
 
@@ -64,7 +66,7 @@ Forge injects context on session start. Verify:
 /forge-status
 ```
 
-You should see **using-forge** and the skill catalog (**80 skills** when installed from this repo).
+You should see **using-forge** and the full skill catalog (verify count with `bash scripts/count-skills.sh` from `~/forge`).
 
 ---
 
@@ -73,7 +75,7 @@ You should see **using-forge** and the skill catalog (**80 skills** when install
 | Forge **is** | Forge **is not** |
 |---|---|
 | A **process plugin**: rules, gates, and workflows your agent is expected to follow | A replacement for your language/framework or CI provider |
-| **Markdown skills** + optional **Python** (`tools/scan_forge/`) for codebase inventory | LangChain, Playwright, or Puppeteer in your product (explicitly out of scope for plugin code) |
+| **Markdown skills** + optional **Python** (`tools/scan_forge/`) for codebase inventory | **LangChain-style agent frameworks** in **Forge’s own plugin code** (D5). **Product eval** may use **CDP, Playwright, Puppeteer, Appium, XCTest, or MCP** on the host — **ask the operator** which stack (e.g. **browser MCP** vs local CDP; **Appium MCP** vs ADB / XCTest for mobile). |
 | A **brain** (`~/forge/brain/`) for PRDs, specs, scans, QA CSV, eval YAML, and decisions | **IDE enforcement is procedural** — pair with optional **[machine verification](#machine-verification-optional-ci)** (`tools/verify_forge_task.py` + CI) so bad ordering or missing `eval/` fails the build, not just the chat |
 | **Parallel subagents** (e.g. four council surfaces, per-repo **`dev-implementer`**) for independent work | **Not a background daemon** — phases do not auto-advance when files appear on disk; the **agent** must invoke the next skill/phase (or you say “continue”). **`/forge`** documents full sequencing; it does not replace host session limits or human gates where skills require approval |
 
@@ -329,7 +331,7 @@ The **only** file drivers and the conductor read is **`~/forge/brain/products/<s
 
 ## Example: shipping a feature with Forge
 
-Example narrative: **Item favorites with cross-surface sync** (see **[`docs/examples/sample-prd.md`](docs/examples/sample-prd.md)** for shape).
+Example narrative: **Item favorites with cross-surface sync** (see **[`docs/examples/sample-prd.md`](docs/examples/sample-prd.md)** for shape). **Eval YAML smoke examples:** **[`docs/examples/`](docs/examples/)** (`eval-api-http-smoke.yaml`, `eval-web-cdp-smoke.yaml`).
 
 ### 1. PRD
 
@@ -422,7 +424,7 @@ Each file under **`commands/`** has YAML **`name:`** + **`description:`**, optio
 
 ```
 forge/
-├── skills/                 # 80 SKILL.md trees (YAML frontmatter)
+├── skills/                 # Full SKILL.md catalog (count: scripts/count-skills.sh)
 │   ├── using-forge/        # Bootstrap (session hook injects)
 │   ├── conductor-orchestrate/
 │   ├── intake-interrogate/
@@ -531,7 +533,7 @@ Full reference: **[`docs/forge-task-verification.md`](docs/forge-task-verificati
 ### Skills not discovered
 
 ```bash
-ls ~/forge/skills/*/SKILL.md | wc -l    # expect 80 from this repository
+bash ~/forge/scripts/count-skills.sh    # skill count for this checkout
 ```
 
 Check YAML frontmatter on any skill that fails to load.

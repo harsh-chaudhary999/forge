@@ -31,7 +31,7 @@ requires: [other-skill-name]
 
 ## Key Constraints
 
-- D5: No third-party agent frameworks. No LangChain, Playwright, Puppeteer.
+- **D5 (agent frameworks vs eval hosts):** Do **not** ship **LangChain** (or similar agent orchestration frameworks) **inside Forge plugin code** (skills, bundled hooks, first-party tools) as a runtime dependency. **Playwright, Puppeteer, raw CDP clients, Appium, XCTest, or browser/device automation invoked via MCP** are **not** banned for **your product’s eval** on the **operator’s machine or CI**: they run **outside** Forge’s shipped plugin code. **Before choosing a web or mobile driver implementation**, ask the human **how they want to proceed** (e.g. existing **MCP** for browser/Appium vs local **CDP** / **ADB** / **XCTest** scripts). Document the choice in the task brain if it affects reproducibility.
 - D13: No runtime dependency on any external plugin at runtime.
 - D15: Skills are TDD'd — developed via pressure scenarios against seed product.
 - D24: HARD-GATE tags on every non-skippable step.
@@ -41,7 +41,7 @@ requires: [other-skill-name]
 
 | Thing | Location |
 |---|---|
-| Skills (80) | `skills/` |
+| Skills (full catalog) | `skills/` — count: `bash scripts/count-skills.sh` from repo root |
 | Agents (4) | `agents/` |
 | Commands (17) | `commands/` |
 | Plugin hooks | `hooks/` |

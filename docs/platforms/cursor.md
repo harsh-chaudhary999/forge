@@ -10,7 +10,7 @@
 **Auto (recommended):** Forge is detected as a plugin via `.cursor-plugin/plugin.json`. Clone the repo and restart Cursor.
 
 ```bash
-git clone https://github.com/harsh-chaudhary999/forge ~/forge
+git clone https://github.com/<YOUR_GITHUB_ORG_OR_USERNAME>/forge ~/forge
 ```
 
 **Fallback:**
@@ -26,7 +26,7 @@ Open Cursor in the Forge directory. The `.cursorrules` file provides project-lev
 
 | Feature | Status |
 |---|---|
-| Skills (80) | Full support |
+| Skills (full `skills/` tree) | Full support — count: `bash scripts/count-skills.sh` from Forge root |
 | Agents (4) | Full support |
 | Hooks | SessionStart via `hooks-cursor.json` |
 | Commands (17) | All slash commands available |

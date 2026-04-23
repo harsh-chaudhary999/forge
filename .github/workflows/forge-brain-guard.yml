@@ -4,6 +4,7 @@
 #
 # Required repo/organization variable: FORGE_TASK_ID (e.g. add-2fa).
 # Optional: FORGE_STRICT_TDD = true to enforce [P4.0-TDD-RED] before P4.1 in the log.
+# Optional: FORGE_TOOLS_REPO = owner/repo (Forge checkout for verify_forge_task.py). Defaults to harsh-chaudhary999/forge if unset.
 
 name: Forge brain guard
 
@@ -26,7 +27,7 @@ jobs:
       - name: Checkout Forge (verify script only)
         uses: actions/checkout@v4
         with:
-          repository: harsh-chaudhary999/forge
+          repository: ${{ vars.FORGE_TOOLS_REPO || 'harsh-chaudhary999/forge' }}
           path: forge
           sparse-checkout: |
             tools/verify_forge_task.py

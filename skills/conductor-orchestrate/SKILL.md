@@ -404,7 +404,7 @@ Ensure **consensus** across all repos (no conflicting contracts).
 **ACTION:** Run eval drivers for each surface defined in the product:
   - **HTTP/API:** `eval-driver-api-http` — Make HTTP requests, validate responses.
   - **Database:** `eval-driver-db-mysql` — Run queries, validate data.
-  - **Web:** `eval-driver-web-cdp` — Puppeteer/Playwright checks.
+  - **Web:** `eval-driver-web-cdp` — CDP-shaped UI checks; **ask the operator** whether the host uses raw CDP, **Playwright/Puppeteer**, or a **browser MCP** for execution.
   - **App:** `eval-driver-android-adb` — ADB checks.
   - **Cache:** `eval-driver-cache-redis` — Redis operations.
   - **Search:** `eval-driver-search-elasticsearch` — Elasticsearch queries.

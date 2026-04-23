@@ -160,7 +160,7 @@ codebase/
 
 **Cross-repo provenance (phase56):** Injected module bullets and `cross-repo-automap.md` TSV use tags: **`OPENAPI`** (route line from OpenAPI append), **`GREP_SUBSTRING`** / **`GREP_TEMPLATE`** (grep route inventory; template = `{param}` match), **`MANUAL_ALIAS`** (rows from `route-aliases.tsv`). These label **how the join was made**, not runtime correctness.
 
-**MCP:** Not part of the default pipeline. Full scans are driven by **`/scan`** and **`python3 tools/forge_scan.py`** (or `PYTHONPATH=tools python3 -m scan_forge`) plus workspace init. A separate read-only MCP could wrap `graph.json` later; it is optional, not required for parity with other graph tools.
+**MCP:** Not part of the default pipeline. Full scans are driven by **`/scan`** and **`python3 tools/forge_scan.py`** (or `PYTHONPATH=tools python3 -m scan_forge`) plus workspace init. For ad-hoc queries without loading all markdown, use **`python3 tools/forge_graph_query.py --graph <path-to-graph.json> summary|neighbors|search`** (stdlib CLI on the same `graph.json` this scan writes).
 
 **Token policy:** The scanner does **not** impose artificial context/token budgets on outputs — summaries and graphs include available signal; agents and skills choose what to read.
 

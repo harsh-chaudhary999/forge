@@ -9,7 +9,7 @@
 **Auto:** Codex reads `AGENTS.md` at session start automatically.
 
 ```bash
-git clone https://github.com/harsh-chaudhary999/forge ~/forge
+git clone https://github.com/<YOUR_GITHUB_ORG_OR_USERNAME>/forge ~/forge
 cd ~/forge
 codex  # Start Codex in the Forge directory
 ```

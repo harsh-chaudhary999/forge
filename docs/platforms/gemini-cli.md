@@ -9,7 +9,7 @@
 **Auto:** Gemini CLI auto-discovers extensions from `gemini-extension.json` in the project root.
 
 ```bash
-git clone https://github.com/harsh-chaudhary999/forge ~/forge
+git clone https://github.com/<YOUR_GITHUB_ORG_OR_USERNAME>/forge ~/forge
 cd ~/forge
 gemini  # Start Gemini CLI in the Forge directory
 ```
@@ -24,7 +24,7 @@ Start Gemini CLI in the Forge directory. The extension loads `GEMINI.md` which p
 
 | Feature | Status |
 |---|---|
-| Skills (80) | Available via Gemini's tool system |
+| Skills (full tree) | Available via Gemini's tool system |
 | GEMINI.md context | Auto-loaded as project context |
 | AGENTS.md context | Auto-loaded (Gemini reads both) |
 

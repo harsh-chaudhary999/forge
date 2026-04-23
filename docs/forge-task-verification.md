@@ -47,14 +47,14 @@ Your **brain** is usually its **own git repo**. Point CI at:
 1. A checkout of the **brain** (workspace root = brain root, with `prds/`, `products/`).
 2. A checkout of **Forge** (or a pinned copy of `verify_forge_task.py`).
 
-Example (brain repo workflow): see [`.github/workflows/forge-brain-guard.yml`](../.github/workflows/forge-brain-guard.yml). Set repository variables **`FORGE_TASK_ID`** (and optionally **`FORGE_REPO`** URL + sparse checkout if you do not vendor the script).
+Example (brain repo workflow): see [`.github/workflows/forge-brain-guard.yml`](../.github/workflows/forge-brain-guard.yml). Set repository variables **`FORGE_TASK_ID`** and, if your Forge fork is not the default, **`FORGE_TOOLS_REPO`** (`owner/repo` for the sparse checkout of `tools/verify_forge_task.py`). If **`FORGE_TOOLS_REPO`** is unset, the template defaults to **`harsh-chaudhary999/forge`**.
 
 Minimal inline job:
 
 ```yaml
 - uses: actions/checkout@v4
   with:
-    repository: harsh-chaudhary999/forge
+    repository: ${{ vars.FORGE_TOOLS_REPO || 'harsh-chaudhary999/forge' }}
     path: forge
     sparse-checkout: |
       tools/verify_forge_task.py

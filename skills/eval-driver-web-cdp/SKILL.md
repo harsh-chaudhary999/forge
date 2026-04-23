@@ -45,6 +45,16 @@ If you notice any of these, STOP and do not proceed:
 - **Assertion is based on `getDOM()` returning non-empty rather than specific content** — A non-empty DOM matches any rendered page, including error pages. STOP. Every assertion must verify specific text, element state, or attribute value — not merely presence.
 - **Browser viewport size is not set before scenarios with responsive layout** — Default headless viewport may not match the breakpoint the UI targets, causing elements to be hidden or rearranged. STOP. Set explicit viewport dimensions at `launch()` time to match the spec's target device class.
 
+## Host implementation choice (CDP, Playwright, Puppeteer, MCP)
+
+**MUST ask the human** how web UI eval should run **before** treating any stack as decided:
+
+1. **Raw CDP** — WebSocket client / `chrome-remote-interface` / minimal driver (matches the API shape in this skill).
+2. **Playwright or Puppeteer** — running on the **operator’s machine or CI** against the **product** browser (allowed for **product eval**; D5 still forbids **LangChain-style** orchestration **inside Forge’s shipped plugin code**).
+3. **Browser MCP** — IDE or host exposes MCP tools (navigate, snapshot, click). When available, the operator may prefer MCP over a custom CDP script. **Confirm** tool names, auth, timeouts, and what artifacts **`eval-judge`** needs.
+
+If **both** MCP and a local CDP path exist, **do not assume** — **ask which to use** and record the choice (e.g. in `brain/prds/<task-id>/` notes) so runs are reproducible.
+
 ## Overview
 
 This skill enables eval scripts to drive web UI automation through CDP, supporting:

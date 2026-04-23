@@ -50,3 +50,7 @@ requires: [other-skill-name]
 | `README.md` | Full architecture and setup guide |
 | `brain/` | Decision memory (git-backed) |
 | `seed-product/` | Synthetic test product |
+
+## Repo constraints (Codex)
+
+**`CLAUDE.md`** is authoritative for **D5** (no LangChain-style frameworks in **Forge plugin code**; **host eval** may use CDP, Playwright, Puppeteer, Appium, XCTest, or **MCP** — **ask the user** which path), **D13**, and execution rules (no `/tmp` scripts, etc.).

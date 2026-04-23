@@ -4,6 +4,7 @@
 #
 # Required repo/organization variable: FORGE_TASK_ID (e.g. add-2fa).
 # Optional: FORGE_STRICT_TDD = true to enforce [P4.0-TDD-RED] before P4.1 in the log.
+# Optional: FORGE_STRICT_TECH_PLANS = true to add --strict-tech-plans (needs tools/verify_tech_plans.py in sparse checkout).
 # Optional: FORGE_TOOLS_REPO = owner/repo (Forge checkout for verify_forge_task.py). Defaults to harsh-chaudhary999/forge if unset.
 
 name: Forge brain guard
@@ -31,6 +32,7 @@ jobs:
           path: forge
           sparse-checkout: |
             tools/verify_forge_task.py
+            tools/verify_tech_plans.py
           sparse-checkout-cone-mode: false
 
       - uses: actions/setup-python@v5
@@ -47,7 +49,8 @@ jobs:
             exit 1
           fi
           EXTRA=""
-          if [ "${FORGE_STRICT_TDD:-}" = "true" ]; then EXTRA="--strict-tdd"; fi
+          if [ "${FORGE_STRICT_TDD:-}" = "true" ]; then EXTRA="${EXTRA} --strict-tdd"; fi
+          if [ "${FORGE_STRICT_TECH_PLANS:-}" = "true" ]; then EXTRA="${EXTRA} --strict-tech-plans"; fi
           python3 forge/tools/verify_forge_task.py \
             --brain "${GITHUB_WORKSPACE}" \
             --task-id "${FORGE_TASK_ID}" \

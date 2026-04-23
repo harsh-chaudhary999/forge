@@ -311,6 +311,7 @@ Ensure **consensus** across all repos (no conflicting contracts).
      ```
      **FAIL** → return to step 4 (revision) until **PASS** or escalate.
   6. Only after **all** `[TECH-PLAN-REVIEW] … PASS` and **`[TECH-PLAN-XALIGN] … PASS`** (or XALIGN `N/A` single-repo HTTP) may conductor proceed to the **human tech-plan gate** (step 7) — not yet State 4b.
+  6b. **Machine structure (slip rail):** Run **`python3 tools/verify_tech_plans.py --task-id <id> --brain <brain>`** from the Forge checkout; require **exit 0** before step 7. Fails on missing canonical **1b** headings, **`### 1b.2a` before** wire maps, or **`REVIEW_PASS`** without **`<!-- FORGE-GATE:SECTION-0C-INVENTORY:v1 -->`** / **`<!-- FORGE-GATE:CODE-RECROSS:v1 -->`** (see **`tech-plan-write-per-project` Section 1c** + **`tech-plan-self-review` Section 0c**). **`verify_forge_task.py --strict-tech-plans`** bundles the same tech-plan checks but also requires **`eval/*.yaml`** — better for CI **after** eval files exist.
   7. **Human tech-plan gate (feedback + go-ahead):** Ensure **`~/forge/brain/prds/<task-id>/tech-plans/HUMAN_SIGNOFF.md`** exists per **`docs/tech-plan-human-signoff.template.md`** with **`status: approved`** **or** **`waived`** (reason + actor required). If **`changes_requested`**, merge feedback into plans, return to **step 4** (self-review loop) until agent PASS + XALIGN + **new** human signoff. Log:
      ```
      [TECH-PLAN-HUMAN] task_id=<id> status=APPROVED|WAIVED|CHANGES_REQUESTED actor=<who>

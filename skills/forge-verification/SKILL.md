@@ -42,6 +42,8 @@ RUN THE VERIFICATION COMMAND AND OBSERVE THE OUTPUT BEFORE CLAIMING SUCCESS. CON
 
 When work depends on **`~/forge/brain/products/<slug>/codebase/`** (council, tech plans, eval paths): if `SCAN.json` exists, run **`python3 tools/verify_scan_outputs.py <codebase-dir>`** and require **exit 0** (retry up to **3×** with **1s** delay before claiming the scan is load-bearing). The **`forge_scan.py`** CLI already verifies after each run unless **`FORGE_SCAN_SKIP_VERIFY=1`**. Treat verify failure like missing tests — **no success claims** until the brain tree is whole or the gap is explicitly waived in writing.
 
+When a **`task-id`** has **`~/forge/brain/prds/<task-id>/tech-plans/*.md`** and you are about to claim **plans are merge-ready** or **`REVIEW_PASS`**: run **`python3 tools/verify_forge_task.py --task-id <id> --brain ~/forge/brain --strict-tech-plans`** (or **`python3 tools/verify_tech_plans.py`** alone) and require **exit 0** — see **`docs/forge-task-verification.md`**. This catches missing **Section 0c** anchors and misplaced **`### 1b.2a`**; it does **not** replace reading **`prd-locked.md`**, but it blocks the common “chat-only self-review” slip.
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:

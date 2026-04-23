@@ -40,6 +40,7 @@ allowed-tools:
 | "I'll put the whole ‘interactive’ dialogue in Section 0 and ship" | **Wrong split.** The **human answers in chat**; Section 0 only **summarizes decisions** (short **Question** topic + **`USER:`** / **`TL:`** / verbatim-spec **Answer**). Nobody should answer planning questions **inside** the markdown file or paste walls of chat back into it — that defeats the point of an LLM-assisted **interactive** session. Rows with **`Frozen spec:`** + **H** for judgment without **`USER:`** are still **SPEC_ROLEPLAY**. |
 | "I'll make the human review the plan file like a form" | **BLOCKED UX.** Rounds are **in chat**; the file is for **implementers** (outcomes + Section 1b + tasks). Do not require humans to “fill in” the plan as the primary Q&A surface. |
 | "I'll wait for the user to say explore deeper / touchpoints / full plan" | **BLOCKED.** **`### 1b.2a`**, **Section 1b.6** deep discovery, and **maximal Section 1b** elaboration are **default** — run **`Read` / `rg` / glob** on the **product repo** + brain **`codebase/`** until evidence exists or **`BLOCKED`**. **Do not** ask “should I continue exploring?” **Judgment** (ownership, product tradeoff, waiver) pauses **only** for **Section 0.1** chat rounds — not for mechanical discovery. |
+| "`REVIEW_PASS` without pasting FORGE-GATE markers" | **BLOCKED** for any pipeline that runs **`verify_forge_task.py --strict-tech-plans`**. Self-review inventory + recross must sit **in Section 1c** with the two **`<!-- FORGE-GATE:… -->`** lines — see **Section 1c** item **2b**. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -87,6 +88,7 @@ If you notice any of these, STOP and do not proceed:
 - **Section 1b.1 / Section 1b.5 / Section 1b.1a use vague language** (no field names, types, keys, partitions, TTLs, or error shapes) **where that subsection applies** and the spec already decided them — Implementers will invent. STOP. Inline **store-native** schema / index-definition / **API wire examples** (JSON, XML, GraphQL snippets, …) or verbatim contract text. **Not a red flag:** Prescribed **one-line N/A** when this repo does not own that surface.
 - **Missing product intent trace** — **Section 1b.0** rows lack **Why (rationale)**; or **Section 1b.3** bullets lack **`Why:`** clause; or **Section 1b.4** / **Section 1b.5** / **`#### 1b.5b`** tables omit **PRD / rationale** where the skill prescribes them; or any **Section 2** task omits **`Traces to:`** or **`Rationale:`** — STOP. Add intent lines until every change is tied to **`prd-locked.md`** / spec / contract obligation.
 - **`### 1b.2a` missing, shallow, or misplaced** — No touchpoint inventory; table rows with **empty Evidence** / **no repo paths** for **Y** categories; **Exploration notes** missing or generic (“looked at repo”); or **`### 1b.2a`** appears **before** **Section 1b.5** / **`#### 1b.5b`** (cannot cite concrete ops/topics) — STOP. Run **full exploration mode** per **`### 1b.2a`**.
+- **`### 1b.2b` missing when gate applies** — Elaborative work (multi-file net-new, **≥3** integrations, or multiple **PARTIAL** touchpoints) but no **first-session reconnaissance** (git block, **≥5** minimum reads, **≥2** discovery commands) — STOP. Brain scan alone is not a work order.
 
 ## Overview
 
@@ -194,11 +196,11 @@ Include **before** `## Section 1b`:
 
 ## Section 1b: Elaborative preamble (mandatory per tech-plan file)
 
-**Authoring order in the saved `tech-plans/<repo>.md` file:** (1) `#` title line, then **`Tech plan status: DRAFT`** (or `REVIEW_CHANGES` / `REVIEW_PASS` per **Section 1c**); (2) **`## Section 0: Planning doubt log`** (outcome table after **chat** rounds; see **Section 0**, including **Section 0.2** interactive rounds **for applicable surfaces only**); (3) this **Section 1b** starting with **`### 1b.0`**, then **`### 1b.0b`**, then **`### 1b.1`** and **`### 1b.1a`** each as **either** the delta table **or** the skill’s **one-line N/A**, then **`### 1b.2`** (reuse vs net-new), **`### 1b.3`** (spec trace bullets), **`### 1b.4`** as applicable, **`### 1b.5`** (synchronous API **or** one-line N/A), **`#### 1b.5b`** (brokers + cache **or** one-line N/A) when **round A / D** or contracts apply, then **`### 1b.2a` touchpoint & boundary inventory** (**full exploration mode** — after wire maps so evidence cites real paths/operations), then **`### 1b.6`**); (4) **Section 1c** body (revision log table + cross-repo notes); (5) **Section 2** tasks.
+**Authoring order in the saved `tech-plans/<repo>.md` file:** (1) `#` title line, then **`Tech plan status: DRAFT`** (or `REVIEW_CHANGES` / `REVIEW_PASS` per **Section 1c**); (2) **`## Section 0: Planning doubt log`** (outcome table after **chat** rounds; see **Section 0**, including **Section 0.2** interactive rounds **for applicable surfaces only**); (3) this **Section 1b** starting with **`### 1b.0`**, then **`### 1b.0b`**, then **`### 1b.1`** and **`### 1b.1a`** each as **either** the delta table **or** the skill’s **one-line N/A**, then **`### 1b.2`** (reuse vs net-new), **`### 1b.2b`** (first-session reconnaissance **or** one-line N/A per gate), **`### 1b.3`** (spec trace bullets), **`### 1b.4`** as applicable, **`### 1b.5`** (synchronous API **or** one-line N/A), **`#### 1b.5b`** (brokers + cache **or** one-line N/A) when **round A / D** or contracts apply, then **`### 1b.2a` touchpoint & boundary inventory** (**full exploration mode** — after wire maps so evidence cites real paths/operations), then **`### 1b.6`**); (4) **Section 1c** body (revision log table + cross-repo notes); (5) **Section 2** tasks.
 
 **Surface applicability (generic — no stack bias):** Before deep-diving persistence, search, **synchronous APIs**, or **message brokers**, decide **what this repo actually owns** for this task using **`shared-dev-spec.md`** (affected projects / ownership), **`prd-locked.md`**, and **`~/forge/brain/products/<slug>/codebase/`** (e.g. SQL migrations, ORM models, **Mongo** migrations/validators, **ClickHouse** `.sql` / `ALTER`, **Kafka**/AMQP client usage, ingest workers, `api-surface.md`, GraphQL schema folders, WSDL paths, client modules). **Maximal detail** applies **per applicable surface** — not “always one RDBMS + one Lucene-derived search + REST-only.” **Complete** means: every in-scope case is in **Section 1b.0**, and every Section 1b subsection is either **fully elaborated** (tables + fenced blocks in the **contract’s** language — SQL, JSON, YAML, XML, **SOAP**, SDL, `.proto`, …) **or** an **explicit one-line `N/A` + spec citation** (and optional **`N/A (other repo: tech-plans/<file>.md)`** pointer). **Forbidden:** (a) leaving Section 1b.1 / **1b.1a** / **1b.5** / **`#### 1b.5b`** blank without the prescribed N/A line; (b) **inventing** persistence schema, search definitions, **operations**, or **destinations** for a **frontend-only** (or otherwise non-owning) repo; (c) **discovery loops** (hunting migrations or index templates for engines **this repo does not use**) when the frozen spec + topology already show **no ownership** here — record N/A and move on.
 
-Bite-sized tasks exist so a **dev-implementer in isolation** can execute without guessing. They **do not** replace **Section 0** (cleared doubts + **Section 0.2** user rounds **where applicable**), nor **`### 1b.2a` touchpoint & boundary inventory** (**full exploration** — every integration surface enumerated with **evidence**, not vibes), nor a short, explicit narrative of **what changes in the world** for **this repo** (data, **search indices**, reuse, design, **synchronous API wiring** (REST/GraphQL/SOAP/gRPC/…), **broker destinations & payloads**, **cache**, unknowns, review trail — **omit** subsections that are N/A, do not pad them). **Subsection 1b.4** follows web/app rules; **1b.5** follows the **locked API style** when this repo serves or consumes that surface; **`#### 1b.5b`** follows **contract-event-bus** / **contract-cache** when this repo touches those surfaces; **1b.1a** follows search when this repo owns index/mapping work; **1b.6** is always required (may be a single “no unknowns” line). **Section 1c** is always required. All of the above **before Section 2**.
+Bite-sized tasks exist so a **dev-implementer in isolation** can execute without guessing. They **do not** replace **Section 0** (cleared doubts + **Section 0.2** user rounds **where applicable**), nor **`### 1b.2b`** (ordered **git + minimum reads + discovery commands** when elaboration gate applies), nor **`### 1b.2a` touchpoint & boundary inventory** (**full exploration** — every integration surface enumerated with **evidence**, not vibes), nor a short, explicit narrative of **what changes in the world** for **this repo** (data, **search indices**, reuse, design, **synchronous API wiring** (REST/GraphQL/SOAP/gRPC/…), **broker destinations & payloads**, **cache**, unknowns, review trail — **omit** subsections that are N/A, do not pad them). **Subsection 1b.4** follows web/app rules; **1b.5** follows the **locked API style** when this repo serves or consumes that surface; **`#### 1b.5b`** follows **contract-event-bus** / **contract-cache** when this repo touches those surfaces; **1b.1a** follows search when this repo owns index/mapping work; **1b.6** is always required (may be a single “no unknowns” line). **Section 1c** is always required. All of the above **before Section 2**.
 
 Skipping them because “the tasks are obvious” or “only micro-steps matter” is **BLOCKED** — that is how schema drift, duplicate persistence shapes, wrong screens, **wrong API wiring**, and silent greenfield work slip through.
 
@@ -290,6 +292,18 @@ Summarize so **reuse is not taken for granted** from task ordering alone. **Pref
 - **Reuse (extend, call, wrap, configure):** bullets with **repo-relative paths** and symbol/module names (existing services, models, components, shared validators).
 - **Net-new:** bullets — new files, new tables, new public routes/events — also with paths or names.
 - **Unknown / scan gap:** if brain scan or spec does not prove a reuse target, say **`DISCOVERY_REQUIRED`** or **`HUMAN_CONFIRM`** — do not silently pick a module.
+
+### 1b.2b First-session reconnaissance (MUST when elaboration applies)
+
+**Why this exists:** `scan-codebase` + `codebase/index.md` / `modules/*.md` answer *where things probably live*. They do **not** replace an implementer’s **first hour** in the product repo — the failure mode you feel as “scan/review don’t work” is often **only brain stubs, no ordered assignment**. This block is the **handoff from navigation → execution**.
+
+**HARD-GATE — fill when **any** of:** net-new **≥2** files or packages in this repo for the task; **≥3** distinct integration touchpoints (HTTP, DB, bus, cron, third party); or **`### 1b.2a`** marks **PARTIAL** for **≥2** categories. **One-line N/A** only when the repo change is trivial (single-file, single-call-site) **and** Section 1b.6 has no **UNKNOWN** for those paths.
+
+1. **Branch / tree sanity** — Copy-paste block: `git fetch` + `git branch -a` (or equivalent) scoped to branches that might collide with this work; `git log -1 --oneline` on the branch the plan assumes. Use **real** remote/default names from **`discovery.md`** / **`context-loaded.md`** / product convention — not placeholders.
+2. **Minimum read list** — **≥5** **repo-relative** paths the implementer must **Read** before editing (utilities, models, **one complete** route/controller block showing `validateSchema` + auth pattern, controller index). For each path: **one clause** what to extract (e.g. “every exported symbol you will call”, “middleware order”). **Forbidden:** only `[[wikilinks]]` to brain `codebase/` with no product-repo path.
+3. **Discovery commands** — **≥2** copy-paste **`rg` / `grep`** (or `fd`) lines that **locate extension points** (e.g. banner system, layout shell, existing `Modal` import). Must run from repo root shown in the block.
+
+**Self-review:** If this subsection is missing when the gate applies, or paths are generic (`controllers/foo.js` without naming the real hub), → **CHANGES** — same bar as shallow **`### 1b.2a`**.
 
 ### 1b.3 Trace to locked spec
 
@@ -440,6 +454,18 @@ Tech plans are **not one-shot** documents. They go through **review → revise �
 2. **Revision log** (append one row per meaningful edit):
 
    | Rev | When (ISO8601 approx) | Who | Trigger (e.g. self-review Section 1b.5 FAIL, XALIGN drift) | What changed |
+
+2b. **FORGE machine gates (HARD-GATE when `Tech plan status: REVIEW_PASS`)** — **`tech-plan-self-review` Section 0c** must be **materialized in this file** so CI can detect rubber-stamps (`tools/verify_tech_plans.py` / **`verify_forge_task.py --strict-tech-plans`**). **Omit on `DRAFT` / `REVIEW_CHANGES`.** Before flipping to **`REVIEW_PASS`**, append to **Section 1c** (above or below the revision log table, but **inside Section 1c**):
+
+   - On its **own line**, immediately **above** the Section 0c requirement inventory table:
+
+     `<!-- FORGE-GATE:SECTION-0C-INVENTORY:v1 -->`
+
+   - On its **own line**, immediately **above** the code recross-check evidence (paths + tools used, one bullet or row per checked path / sample rule from **`tech-plan-self-review` Section 0c** step 4):
+
+     `<!-- FORGE-GATE:CODE-RECROSS:v1 -->`
+
+   **Why:** Skills are prose; agents optimize for “sounds done.” Anchors force **inventory + recross** to exist in the same artifact the implementer reads — the failure mode you get without them is chat-only PASS.
 
 3. **Minimum feedback loop**
 
@@ -794,7 +820,7 @@ brain/prds/<task-id>/tech-plans/
 
 Each file:
 - **Section 0** doubt log present (outcome rows per **Section 0.3**); no **high-impact** `L` confidence rows without **BLOCKED** / **WAIVER** / follow-up owner
-- **Section 1b + 1c** preamble is present (**1b.0** with **Why** column, **`1b.0b`**, **1b.1** + **1b.1a** each as delta **or** prescribed one-line N/A, **1b.2**, **1b.3** with **`Why:`** per bullet, **1b.4**/**1b.5**/**`#### 1b.5b`** with **PRD / rationale** columns where applicable, **`### 1b.2a`** touchpoint table + **Exploration notes** after wire maps, **1b.6** per rules; **1c** status + revision log)
+- **Section 1b + 1c** preamble is present (**1b.0** with **Why** column, **`1b.0b`**, **1b.1** + **1b.1a** each as delta **or** prescribed one-line N/A, **1b.2**, **`1b.2b`** **or** N/A per gate, **1b.3** with **`Why:`** per bullet, **1b.4**/**1b.5**/**`#### 1b.5b`** with **PRD / rationale** columns where applicable, **`### 1b.2a`** touchpoint table + **Exploration notes** after wire maps, **1b.6** per rules; **1c** status + revision log)
 - **Section 2** every task has **`Traces to:`** + **`Rationale:`** immediately under the task title
 - Task ordering respects dependencies
 - Every task is 2-5 min executable

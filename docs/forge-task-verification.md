@@ -14,6 +14,7 @@ Forge’s **skills** and **agents** enforce Phase 4 ordering **procedurally**. T
 | **Log order** | If `conductor.log` exists: first `[P4.1-DISPATCH]` must not appear before `[P4.0-EVAL-YAML]`; with QA flag, `[P4.0-QA-CSV]` … `approved=yes` must precede `[P4.0-EVAL-YAML]` |
 | **Net-new design** | If `prd-locked.md` indicates **design_new_work: yes** and no `design_waiver` … `prd_only`: requires files under `design/` and/or `[DESIGN-INGEST]` before first `[P4.1-DISPATCH]` when a log exists; if the log is missing, **design/** must be non-empty |
 | **`--strict-tdd`** | `[P4.0-TDD-RED]` must appear before the first `[P4.1-DISPATCH]` |
+| **`--strict-tech-plans`** | When `prds/<task-id>/tech-plans/*.md` exist (excluding `HUMAN_SIGNOFF.md` / `README.md`): each plan must include canonical headings (`### 1b.0`, `### 1b.0b`, `### 1b.2`, `### 1b.2a`, `### 1b.6`), **`### 1b.2a` after** `### 1b.5` / `#### 1b.5b`, a **`Section 1c`** marker, and — if **`Tech plan status: REVIEW_PASS`** — the literals **`<!-- FORGE-GATE:SECTION-0C-INVENTORY:v1 -->`** and **`<!-- FORGE-GATE:CODE-RECROSS:v1 -->`** (see **`skills/tech-plan-self-review/SKILL.md`** Section 0c and **`skills/tech-plan-write-per-project/SKILL.md`** Section 1c). Implemented by [`tools/verify_tech_plans.py`](../tools/verify_tech_plans.py). |
 
 If **`conductor.log`** is absent, **log ordering** checks are skipped by default (warning only). Use **`--require-log`** to fail when the log is missing.
 
@@ -58,6 +59,7 @@ Minimal inline job:
     path: forge
     sparse-checkout: |
       tools/verify_forge_task.py
+      tools/verify_tech_plans.py
     sparse-checkout-cone-mode: false
 - run: python3 forge/tools/verify_forge_task.py --brain "${{ github.workspace }}" --task-id "${{ vars.FORGE_TASK_ID }}" --require-log
 ```
@@ -69,3 +71,4 @@ Adjust **`--brain`** if the brain content is in a subdirectory.
 - Does **not** prove scenarios are **green** or that **stack-up** works — only that **gates and files** expected by Forge’s own rules are present and ordered in the log.
 - Does **not** stop a misbehaving LLM in the IDE; it stops **bad commits** and **broken merge candidates** when wired into CI or hooks.
 - Does **not** validate adjacency/cohort artifacts — see **`docs/adjacency-and-cohorts.md`**; optional: grep **`conductor.log`** for **`[ADJACENCY-SCAN]`**. Tool: **`tools/forge_adjacency_scan.py`** (**`tools/README.md`**).
+- **`--strict-tech-plans`** checks **structure + anchors**, not whether inventory rows are *correct* — humans still judge content; the tool blocks the common slip of **REVIEW_PASS** with no file-backed Section 0c / recross.

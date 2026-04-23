@@ -1,6 +1,6 @@
 ---
 name: tech-plan-self-review
-description: "WHEN: A per-project tech plan has been written and needs verification before dispatch to dev-implementer. **First** inventory **every** material requirement from **`prd-locked.md`**, **`shared-dev-spec.md`**, and any other **task-bound development sources**; **then** verify §1b.0 ↔ Section 2 ↔ spec; **then** recross-check cited **`codebase/`** paths against the product repo; **then** fix gaps **in the plan** (new rows/tasks) or **CHANGES**; finally elaborative §1b–§1c, placeholders, code, commands, XALIGN."
+description: "WHEN: A per-project tech plan has been written and needs verification before dispatch to dev-implementer. **First** inventory **every** material requirement from **`prd-locked.md`**, **`shared-dev-spec.md`**, and any other **task-bound development sources**; **then** verify §1b.0 ↔ Section 2 ↔ spec; **then** validate **`### 1b.2a`** touchpoint exploration (evidence + **Exploration notes**); **then** recross-check cited **`codebase/`** paths against the product repo; **then** fix gaps **in the plan** (new rows/tasks) or **CHANGES**; finally elaborative §1b–§1c, placeholders, code, commands, XALIGN."
 type: rigid
 requires: [brain-read]
 version: 1.0.0
@@ -58,8 +58,12 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 - **Section 0 “questionnaire in the file”** — **Question** cells are multi-paragraph dumps or full Q&A pasted from chat into the repo instead of **one-line topic labels** + compact **Answer** outcomes (**`tech-plan-write-per-project` §0.1** rule 3 / **§0.3**) — **BLOCKED**
 - **§1b.0 orphan rows or orphan Section 2 tasks** — PRD/spec case not mapped to tasks, or tasks not tied to **§1b.0** / spec (implicit coverage)
 - **Requirement inventory not performed or not recorded** — Reviewer did not enumerate obligations from **`prd-locked.md`** + **`shared-dev-spec.md`** (+ other task sources) before judging PASS — **CHANGES** (run **§0c** process below) or **BLOCKED**
+- **PRD bullet drift (spot-check)** — Count of **material** bullets / numbered items under **`prd-locked.md`** success criteria, acceptance, NFRs, and edge-case language **materially exceeds** §**0c** inventory rows + **§1b.0** rows (e.g. ≥2 orphan PRD bullets with no inventory line and no **WAIVER**) — **CHANGES** or **BLOCKED** until each bullet maps or is waived with citation
+- **`### 1b.0b` missing, placeholder, or inconsistent** — No **implementation at-a-glance** subsection; or a row marked **✓** in the surface table has **no** matching elaboration in §**1b.1** / §**1b.1a** / §**1b.5** / **`#### 1b.5b`**; or cross-repo dependency table contradicts **XALIGN** / sibling plans — **CHANGES**
 - **PRD / acceptance / NFR gap** — A **material** line from **`prd-locked.md`** (success criteria, acceptance tests, NFRs, edge cases) or from the frozen spec has **no** matching **§1b.0** row **and** no **WAIVER** with citation — plan is incomplete until rows + tasks added or source amended via council
 - **Scan ↔ code drift** — **§1b.0** cites a `codebase/` path that does not exist in the product repo, points at the wrong module for the stated behavior, or contradicts current registration/routes after recross-check — **CHANGES** (fix matrix + tasks) or escalate **`/scan`**
+- **Product intent / PRD rationale missing (`tech-plan-write-per-project`)** — §**1b.0** **Why (rationale)** column empty, copies the requirement cell, or is only “per PRD”; **§1b.3** bullets lack a **`Why:`** clause; **§1b.4** / §**1b.5** / **`#### 1b.5b`** / §**1b.1a** tables omit **PRD / rationale** (or equivalent) columns where the write skill prescribes them; any **Section 2** task omits **`Traces to:`** or **`Rationale:`**, or **Rationale** only restates the task title — **CHANGES**
+- **Touchpoint exploration missing or shallow (`### 1b.2a`)** — Subsection absent; appears **before** §**1b.5** / **`#### 1b.5b`**; **Y**/**PARTIAL** rows with **empty Evidence** or no repo paths/`rg` notes; **Exploration notes** missing or fewer than **3** bullets when the write skill’s **minimum bar** applies; bulk **N** without per-category justification — **CHANGES** or **BLOCKED**
 - **Thin schema or API / message wire shapes (in-scope surfaces)** — §**1b.1** / §**1b.1a** / §**1b.5** / **`#### 1b.5b`** lack required persistence schema, search index definitions, **REST/GraphQL/SOAP/gRPC** examples, or **broker payloads** **where this repo owns that work** and the frozen contract already defines them
 - **False applicability** — Invented persistence, search, **API operations**, or **broker destinations**, in a repo that should be **N/A** for those surfaces, or **blank** §1b.1 / **1b.1a** / **1b.5** / **`#### 1b.5b`** without the skill’s **explicit N/A** line
 - **Data model delta contradicts migration tasks** — Delta says “none” but tasks add DDL, or delta lists tables with no matching migration task
@@ -89,18 +93,22 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 
 **MUST produce (in review output or inline in the plan on CHANGES):**
 
-1. **Requirement inventory table** — One row per **material** obligation: source id (e.g. `prd Q7`, `spec FR-3`, `acceptance A2`), short text, **§1b.0 row id or “MISSING”**, **Section 2 task id(s) or “MISSING”**, **evidence path** (`codebase/...` from plan or `NONE`), **PASS / GAP**.
+1. **Requirement inventory table** — One row per **material** obligation: source id (e.g. `prd Q7`, `spec FR-3`, `acceptance A2`, **`prd` success-criterion bullet text**), short text, **§1b.0 row id or “MISSING”**, **Section 2 task id(s) or “MISSING”**, **evidence path** (`codebase/...` from plan or `NONE`), **PASS / GAP**. **Do not** collapse multiple distinct PRD acceptance bullets into one vague inventory row — each testable obligation deserves its own row or an explicit **WAIVER**.
 2. **Bidirectional check** — Every **§1b.0** row must tie to ≥1 inventory line (or be explained as chore/tech-debt with §0 approval). Every Section 2 task must tie to ≥1 **§1b.0** row or inventory line — **no orphan tasks**.
-3. **Code recross-check** — For each **§1b.0** evidence cell that cites `~/forge/brain/products/<slug>/codebase/` (or repo-relative path in tasks), verify against the **actual product repository**: file exists, symbol/route matches the plan’s claim (use **`Read`**, **`rg`**, or tests as appropriate). **Small plan:** check **every** cited path. **Large plan:** check **every** P0/P1 path + **random sample** of P2+ with min **5** paths or **20%** of rows (whichever is larger). Mismatch → **CHANGES** (update matrix + tasks) or **`SCAN_MISSING_OR_STALE`** + `/scan` recommendation.
-4. **Close gaps in the plan (not only in review prose)** — For each **GAP** row: **edit** `tech-plans/<repo>.md` — add **§1b.0** matrix row(s), extend §1b tables if needed, and add/reorder **Section 2** tasks with scan-backed paths and contract shapes per **`tech-plan-write-per-project`**. If the **source** is wrong or incomplete, **BLOCKED** — council / spec amendment, do not invent requirements in the plan.
-5. **§1c revision log** — When you applied fixes, append a row: requirement trace + code recheck, files touched, `GAP→CLOSED` summary.
+3. **`### 1b.0b` cross-check** — **`tech-plan-write-per-project` §1b.0b** must exist. For **every** surface row marked **✓**, confirm the cited § (**1b.1**, **1b.1a**, **1b.5**, **`#### 1b.5b`**, **1b.4**) contains **concrete** elaboration (not “see contract” only). **N/A** rows must name sibling **`tech-plans/*.md`** or spec §. The **cross-repo dependency** table must align with **XALIGN** (if present) — contradictions → **CHANGES** or **BLOCKED**.
+3b. **`### 1b.2a` touchpoint pass** — Exists **after** §**1b.5** / **`#### 1b.5b`**. Spot-check **≥5** table rows (or all rows if fewer): **Y**/**PARTIAL** must have **Evidence** with real paths + tool notes; **Exploration notes** must contain **integration surprises**, not filler. Mismatch → **CHANGES**.
+4. **Code recross-check** — For each **§1b.0** evidence cell that cites `~/forge/brain/products/<slug>/codebase/` (or repo-relative path in tasks), verify against the **actual product repository**: file exists, symbol/route matches the plan’s claim (use **`Read`**, **`rg`**, or tests as appropriate). **Small plan:** check **every** cited path. **Large plan:** check **every** P0/P1 path + **random sample** of P2+ with min **5** paths or **20%** of rows (whichever is larger). Mismatch → **CHANGES** (update matrix + tasks) or **`SCAN_MISSING_OR_STALE`** + `/scan` recommendation.
+5. **Close gaps in the plan (not only in review prose)** — For each **GAP** row: **edit** `tech-plans/<repo>.md` — add **§1b.0** matrix row(s), extend §1b tables if needed, and add/reorder **Section 2** tasks with scan-backed paths and contract shapes per **`tech-plan-write-per-project`**. If the **source** is wrong or incomplete, **BLOCKED** — council / spec amendment, do not invent requirements in the plan.
+6. **§1c revision log** — When you applied fixes, append a row: requirement trace + code recheck, files touched, `GAP→CLOSED` summary.
 
 **Checklist:**
-- [ ] **`prd-locked.md`** read end-to-end; **acceptance / NFR / edge** bullets appear in inventory or explicit **WAIVER**
+- [ ] **`prd-locked.md`** read end-to-end; **success criteria / acceptance / NFR / edge** bullets each appear as their own inventory line (or explicit **WAIVER** with citation) — **no silent merge** of multiple PRD tests into one hand-wavy row
 - [ ] **`shared-dev-spec.md`** read for this repo’s scope; contract sections reconciled with **§1b.5** / **`#### 1b.5b`** / **1b.1** / **1b.1a**
 - [ ] **Inventory table** completed; **zero GAP** rows remain before declaring checklist **PASS** for this section (unless **BLOCKED** with owner)
 - [ ] **Code recross-check** executed with evidence (paths checked, tool notes); drift corrected in-plan or escalated
 - [ ] **Gaps fixed** in the markdown plan (not “will add later” in chat only)
+- [ ] **`### 1b.0b` implementation at-a-glance** present; ✓ rows match elaborated §**1b.1** / **1b.1a** / **1b.5** / **`#### 1b.5b`** / **1b.4**; cross-repo table matches **XALIGN** / sibling plans
+- [ ] **`### 1b.2a` touchpoint inventory** present **after** §**1b.5** / **`#### 1b.5b`**; **Exploration notes** exercised; **Y**/**PARTIAL** rows have evidence (spot-check per **§0c** step **3b**)
 
 ### 0a. Planning doubt log (`tech-plan-write-per-project` Section 0)
 
@@ -145,17 +153,20 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 ### 1b. Data model delta, reuse narrative, design trace, preamble (`tech-plan-write-per-project` Section 1b)
 
 **Checklist:**
-- [ ] **File layout:** `Tech plan status:` line immediately under `#` title; **Section 0** doubt log (**§0.2** when applicable; judgment rows must follow **§0.1** rule 3 — **`USER:`** / role prefix or **M** + **`SPEC_INFERENCE`**); **Section 1b** (**`1b.0` PRD↔scan matrix** with bidirectional task ids, then **`1b.1` and `1b.1a`** each as table **or** skill-prescribed one-line N/A, then `1b.2`–`1b.5`, **`#### 1b.5b`** or its N/A when events/cache in scope, `1b.6`) and **§Section 1c** appear **before Task 1**
-- [ ] **§1b.0 completeness:** Every material **PRD / spec** requirement for this repo has a matrix row with **brain path evidence** and **Section 2** task ids (or explicit `N/A` + sibling repo); edge/negative/NFR rows exist or are **waived** with citation
+- [ ] **File layout:** `Tech plan status:` line immediately under `#` title; **Section 0** doubt log (**§0.2** when applicable; judgment rows must follow **§0.1** rule 3 — **`USER:`** / role prefix or **M** + **`SPEC_INFERENCE`**); **Section 1b** (**`1b.0` PRD↔scan matrix** with **Why (rationale)** column + bidirectional task ids, **`### 1b.0b`**, then **`1b.1` and `1b.1a`** each as table **or** skill-prescribed one-line N/A, then **`1b.2`**, **`1b.3`**, **`1b.4`–`1b.5`**, **`#### 1b.5b`** or its N/A when events/cache in scope, **`### 1b.2a`** touchpoint inventory **after** wire maps, then **`1b.6`**) and **§Section 1c** appear **before Task 1**
+- [ ] **§1b.0 completeness:** Every material **PRD / spec** requirement for this repo has a matrix row with **brain path evidence**, **non-empty Why (rationale)** (not a copy-paste of the requirement cell), and **Section 2** task ids (or explicit `N/A` + sibling repo); edge/negative/NFR rows exist or are **waived** with citation
+- [ ] **§1b.3 trace bullets:** Each bullet includes **`Why:`** per **`tech-plan-write-per-project`**
+- [ ] **`### 1b.0b`:** Surface ownership table + cross-repo deps + **3–8 sentence** implementation summary present; **no ✓** without matching detail in the cited §; **N/A** rows cite owner plan or spec
 - [ ] **Schema & payload depth (where applicable):** If §**1b.1** has persistence delta rows, **store-native** schema (SQL / JSON / YAML / XML / DSL per **contract-schema-db**) is inlined or verbatim-contract; if §**1b.1** is the prescribed **one-line N/A**, no fabricated persistence shapes. Same for §**1b.1a** (index definition in contract format vs N/A). If §**1b.5** applies, **fenced** wire examples in the **locked format** (JSON, XML, SDL, `.proto`, …) for each **changed operation** — no `TBD` where the contract is already concrete; if §**1b.5** is **one-line N/A**, no forced API tables
 - [ ] **Data model delta** is either a table with one row per CREATE/ALTER/DROP/index (or equivalent storage change), or an explicit one-line statement that this repo has **no** persistence/schema work — consistent with **shared-dev-spec** / DB contract
 - [ ] **Cross-repo DDL:** If migrations run elsewhere, the delta says so; this plan does not silently own another service’s tables
 - [ ] **Every migration/DDL task** in the plan has a matching row in the delta (or the repo correctly claims no persistence and has no such tasks)
 - [ ] **Reuse vs net-new** lists concrete repo-relative paths for extended or called code; where a **brain scan** exists for this product, reuse bullets **align** with `codebase/` modules — or the plan flags **`SCAN_MISSING_OR_STALE`**; net-new surfaces are explicit — no implied reuse without a path
 - [ ] **Trace to spec** maps requirements or contract headings to task numbers; combined with §1, no orphan requirements
-- [ ] **1b.4 (web/app):** When **`design_new_work: yes`** or implementable design is locked (Figma keys, `design_brain_paths`, Lovable repo), the **design→UI table** lists anchors → deliverable → scan path or `NET_NEW`; **UI tasks** reference **`D<n>`** or cite **`design_waiver: prd_only`** plus PRD anchor — not chat-only Figma URLs
-- [ ] **1b.5 (synchronous API):** If this repo serves or consumes a **locked** REST / GraphQL / SOAP / gRPC / … surface, **API↔consumer** tables exist for **that style** and **operation keys** match **`shared-dev-spec`** / contract artifacts; **N/A** line only when truly no synchronous API surface
-- [ ] **`#### 1b.5b` (brokers/cache):** If **`contract-event-bus`** or **`contract-cache`** (or spec) assigns destinations to this repo, **tables + fenced** payload (JSON / XML / … per lock) or verbatim contract exist; **N/A** only with citation — not prose-only destination names
+- [ ] **1b.4 (web/app):** When **`design_new_work: yes`** or implementable design is locked (Figma keys, `design_brain_paths`, Lovable repo), the **design→UI table** lists anchors → deliverable → scan path or `NET_NEW` **and** the **PRD § / rationale** column is filled per write skill; **UI tasks** reference **`D<n>`** or cite **`design_waiver: prd_only`** plus PRD anchor — not chat-only Figma URLs
+- [ ] **1b.5 (synchronous API):** If this repo serves or consumes a **locked** REST / GraphQL / SOAP / gRPC / … surface, **API↔consumer** tables exist for **that style**, include **PRD / rationale** (or equivalent) column per write skill, and **operation keys** match **`shared-dev-spec`** / contract artifacts; **N/A** line only when truly no synchronous API surface
+- [ ] **`#### 1b.5b` (brokers/cache):** If **`contract-event-bus`** or **`contract-cache`** (or spec) assigns destinations to this repo, **tables + fenced** payload (JSON / XML / … per lock) or verbatim contract exist, **and** **PRD / rationale** column is filled per write skill; **N/A** only with citation — not prose-only destination names
+- [ ] **`### 1b.2a` (touchpoints):** Full exploration table + **Exploration notes** per **`tech-plan-write-per-project`**; placement **after** §**1b.5** / **`#### 1b.5b`**; **Y**/**PARTIAL** rows have non-empty **Evidence**; notes surface real integration surprises (not generic filler)
 - [ ] **1b.6:** Unknown table present; every row **RESOLVED** with evidence or **BLOCKED** with escalation — **no** dependency tasks on unresolved unknowns
 - [ ] **1c:** `Tech plan status` + **revision log** present; latest log line records this review round and **PASS|CHANGES|BLOCKED**; if multi-repo **API or split message producer/consumer** plans exist, **XALIGN** noted **PASS** or open FAIL items are listed as blockers
 
@@ -178,6 +189,13 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 - [ ] **`~/forge/brain/prds/<task-id>/tech-plans/HUMAN_SIGNOFF.md`** present; frontmatter **`status`** is **`approved`** or **`waived`**
 - [ ] **`repos_acknowledged`** covers all repo plans for this task (or waiver explains)
 - [ ] **`[TECH-PLAN-HUMAN]`** log line can be emitted without contradicting the file
+
+### 1f. Section 2 traceability & rationale (`tech-plan-write-per-project`)
+
+**Checklist:**
+- [ ] **Every** `## Task …` block begins with **`Traces to:`** (bullets naming `prd-locked.md` / `shared-dev-spec.md` / `contracts/*` ids) **and** **`Rationale:`** (1–4 sentences: why; which PRD obligation; prod/review failure if skipped)
+- [ ] **Rationale** is not empty and does **not** only paraphrase the task title
+- [ ] **`Traces to:`** ids are consistent with **§1b.0** rows and **§0c** inventory (spot-check ≥3 tasks)
 
 ### 2. Code Completeness
 
@@ -381,9 +399,10 @@ When submitting review results:
 ### Human gate: ⏳ PENDING / ✅ APPROVED or WAIVED (see `tech-plans/HUMAN_SIGNOFF.md`)
 
 ### Verification Summary
-- [✅/❌] §0c: PRD + spec inventory, bidirectional §1b.0 ↔ tasks, code recross-check, gaps closed in-plan
+- [✅/❌] §0c: PRD + spec inventory (per-bullet, not hand-waved), **`### 1b.0b`** cross-check, bidirectional §1b.0 ↔ tasks, code recross-check, gaps closed in-plan
 - [✅/❌] Spec & PRD coverage (§1): No orphan requirements vs sources
-- [✅/❌] §0a–§1c: **§0** outcome doubt log + §1b (data/design/API map) + unknowns + review log (+ XALIGN when applicable)
+- [✅/❌] §0a–§1c: **§0** outcome doubt log + §1b (**Why**, **PRD / rationale**, **`### 1b.2a` touchpoints**) + unknowns + review log (+ XALIGN when applicable)
+- [✅/❌] §1f: Section 2 **Traces to** + **Rationale** on every task
 - [✅/❌] §1e Human signoff file + log (`HUMAN_SIGNOFF.md`, `[TECH-PLAN-HUMAN]`)
 - [✅/❌] Code Completeness: No placeholders
 - [✅/❌] No Placeholder Code: All implementations concrete

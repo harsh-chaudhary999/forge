@@ -11,6 +11,8 @@ This requires a **locked shared dev spec** from council. If **`shared-dev-spec.m
 
 **Maximal detail (MUST), applicability-first:** Every **PRD** and **shared-dev-spec** case that touches **this** repo must land in **§1b.0** with **scan paths** and **task ids** (or **`N/A (other repo: …)`**). Where this repo owns persistence, search, **synchronous APIs**, or **message/cache** contracts, schemas and wire examples must be **concrete** in the **contract’s** language (no `TBD` when the contract is already locked). Default to **over-specification inside frozen contracts for applicable surfaces only** — not “always one SQL database + one Lucene-style index + REST-only.”
 
+**Touchpoints & boundaries (MUST):** After §**1b.5** and **`#### 1b.5b`**, complete **`### 1b.2a`** in each plan — **full exploration mode**: enumerate integration surfaces (HTTP, auth, jobs, buses, third parties, flags, observability, …) with **repo evidence** (`rg` / `Read`) and **Exploration notes**, per **`tech-plan-write-per-project`**. Shallow or missing **`### 1b.2a`** fails **`tech-plan-self-review`**.
+
 Each plan: bite-sized tasks (exact files, complete code where the skill requires it, exact commands), aligned to **`shared-dev-spec.md`**. Follow **`spec-freeze`** if the conductor phase is post-freeze.
 
 <HARD-GATE>

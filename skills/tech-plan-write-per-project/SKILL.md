@@ -1,6 +1,6 @@
 ---
 name: tech-plan-write-per-project
-description: "WHEN: Shared-dev-spec is frozen and per-project tech plans must be written before dev-implementer dispatch. Output: 1 plan per repo — Section 0 doubt log (unlimited Q&A until confident), §1b.0 PRD↔scan coverage matrix, §1b elaborated per surface applicability (maximal persistence schema + search index definitions + HTTP where this repo owns that surface; one-line N/A + spec citation where it does not — no false persistence/search/backend scavenger loops) + §1c, then bite-sized tasks; every PRD case traced; scan-grounded paths; store-agnostic (relational, document, columnar, search — whatever the frozen contract names); review/XALIGN before dispatch."
+description: "WHEN: Shared-dev-spec is frozen and per-project tech plans must be written before dev-implementer dispatch. Output: 1 plan per repo — Section 0 as a **brief outcome log after live chat** (not a questionnaire in markdown; chat-first — no doubt rows until human has replied in session), §1b.0 PRD↔scan coverage matrix, §1b elaborated per surface applicability (maximal persistence schema + search index definitions + **locked API surface** (REST / GraphQL / SOAP / other RPC) + **message/cache** where this repo owns that surface; one-line N/A + spec citation where it does not — no false persistence/search/backend scavenger loops) + §1c, then bite-sized tasks; every PRD case traced; scan-grounded paths; store- and **broker-agnostic** (Kafka, RabbitMQ, ActiveMQ, … per contract); review/XALIGN before dispatch."
 type: rigid
 requires: [brain-read]
 version: 1.0.0
@@ -27,13 +27,15 @@ allowed-tools:
 | "The bash commands are obvious" | "Obviously" wrong commands waste a self-heal loop iteration. Write the exact command including flags, paths, and environment variables. |
 | "I'll reference the spec instead of repeating details" | The implementer (dev-implementer subagent) works in an isolated worktree with only the plan. Self-contained tasks prevent NEEDS_CONTEXT status. |
 | "I'll discover file paths by exploring the repo" | Duplicates work the scan already did and burns tokens. **Default:** read `~/forge/brain/products/<slug>/codebase/` first; put paths from `index.md` / `modules/*.md` / `api-surface.md` into tasks, then open sources when writing full file bodies. **Exception:** **Section 1b.6** lists an **UNKNOWN** — you **must** deepen discovery (targeted `rg`/glob, read hub files, route tables, OpenAPI, client wrappers, test names) until resolved or **BLOCKED** — do not ship “mystery meat” tasks. |
-| "Elaboration is optional — bite-sized tasks are enough" | Tasks without **§1b.0**, **§1b.5 API map**, **§1b.1 / 1b.1a** when **persistence or search** applies, **§1b.6 unknown closure**, and **§1c review rounds** hide integration risk. STOP. Elaboration is **mandatory** for E2E; micro-tasks execute the elaboration, they do not replace it. |
+| "Elaboration is optional — bite-sized tasks are enough" | Tasks without **§1b.0**, **§1b.5** (**synchronous API** — REST / GraphQL / SOAP / … per lock) + **`#### 1b.5b`** when **events/cache** apply, **§1b.1 / 1b.1a** when **persistence or search** applies, **§1b.6 unknown closure**, and **§1c review rounds** hide integration risk. STOP. Elaboration is **mandatory** for E2E; micro-tasks execute the elaboration, they do not replace it. |
 | "I've hit my question quota — ship the plan with lingering doubts" | **There is no maximum question count** during planning. Doubt left unasked becomes a gap in Section 2. STOP. Ask until **confidence is high** (see **Section 0**), then write the elaborative plan. |
 | "Concise plan = professional" | **Professional** here means **complete**: the plan is the **only** input to sub-tasks. Concision that omits wiring, edge cases, or evidence is negligence. |
 | "I'll cover PRD cases implicitly in tasks" | **Every** success criterion, edge case, and non-functional requirement from **`prd-locked.md`** + **`shared-dev-spec.md`** must appear in **§1b.0** and map to §1b subsections or Section 2 tasks. Implicit coverage is invisible to review and ships gaps. |
-| "Schema / payload details can wait for implementation" | **Forbidden** when that subsection **applies** to this repo. §**1b.1** / **1b.5** / **1b.1a** must carry **concrete** persistence shapes (SQL DDL, Mongo validators/index specs, ClickHouse `CREATE`/mutation, … per contract), search/index definitions, or HTTP bodies — or **verbatim** locked-contract excerpts — never `TBD` where the contract already decided them. **Corollary:** If this repo **does not** own persistence, search, or serving that endpoint, a **one-line `N/A` + spec citation** (and sibling repo if needed) **is** the required elaboration — not empty tables and not invented schema. |
+| "Schema / payload details can wait for implementation" | **Forbidden** when that subsection **applies** to this repo. §**1b.1** / **1b.5** / **1b.1a** must carry **concrete** persistence shapes (SQL DDL, Mongo validators/index specs, ClickHouse `CREATE`/mutation, … per contract), search/index definitions, or **API request/response/error** shapes (JSON, XML for SOAP, GraphQL operation + variables schema, … per lock) — or **verbatim** locked-contract excerpts — never `TBD` where the contract already decided them. **Corollary:** If this repo **does not** own persistence, search, or **that** API surface, a **one-line `N/A` + spec citation** (and sibling repo if needed) **is** the required elaboration — not empty tables and not invented schema. |
 | "Every good plan has migrations and index mappings" | **Stack bias.** Many tasks are **UI-only**, **docs-only**, **config-only**, or **consumer-only**. Forcing relational-DDL + Elasticsearch-style sections when the product uses **Mongo**, **ClickHouse**, **BigQuery**, **Typesense**, etc. — or **none** in this repo — drives fake work or endless discovery. **Derive applicability** from the frozen spec + this repo’s role; elaborate **maximally** only on surfaces **in play**, in the **contract’s** schema language. |
 | "Scan is optional if I know the repo" | The brain **`codebase/`** is the default authority for *where* code lives. Skipping **`index.md`**, relevant **`modules/*.md`**, **`api-surface.md`**, and route/OpenAPI stubs before writing tasks is **BLOCKED** unless **`SCAN_INCOMPLETE`** / **`BLOCKED`** is explicitly recorded with owner. |
+| "I'll put the whole ‘interactive’ dialogue in Section 0 and ship" | **Wrong split.** The **human answers in chat**; Section 0 only **summarizes decisions** (short **Question** topic + **`USER:`** / **`TL:`** / verbatim-spec **Answer**). Nobody should answer planning questions **inside** the markdown file or paste walls of chat back into it — that defeats the point of an LLM-assisted **interactive** session. Rows with **`Frozen spec:`** + **H** for judgment without **`USER:`** are still **SPEC_ROLEPLAY**. |
+| "I'll make the human review the plan file like a form" | **BLOCKED UX.** Rounds are **in chat**; the file is for **implementers** (outcomes + §1b + tasks). Do not require humans to “fill in” the plan as the primary Q&A surface. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -53,7 +55,7 @@ If you notice any of these, STOP and do not proceed:
 
 - **Task contains "add the endpoint" or other vague verbs without file paths** — Vague tasks produce vague implementations. STOP. Rewrite with exact file path, function name, and complete code.
 - **A task exceeds 5 minutes of execution** — Tasks over 5 minutes hide complexity and block progress tracking. STOP. Split into smaller tasks, each 2-5 minutes.
-- **Plan has no Section 0 / 1b / 1c** — Missing **doubt log**, **§1b.0 PRD coverage matrix**, **§1b.1–1b.6** (each with either **delta content** or the skill’s **explicit one-line N/A** where not applicable), or **§1c**. Micro-tasks without inventory and without cleared doubts hide gaps. STOP. Add **Section 0** (incl. **§0.2** rounds **that apply**) then **§1b.0** and the full preamble before Task 1.
+- **Plan has no Section 0 / 1b / 1c** — Missing **doubt log** table (outcome rows), **§1b.0 PRD coverage matrix**, **§1b.1–1b.6** (each with either **delta content** or the skill’s **explicit one-line N/A** where not applicable), **`#### 1b.5b`** when **round D** applies (or its one-line N/A), or **§1c**. Micro-tasks without inventory and without cleared doubts hide gaps. STOP. Add **Section 0** (incl. **§0.2** rounds **that apply**) then **§1b.0** and the full preamble before Task 1.
 - **Migration or schema-change tasks exist but the data model delta table is empty or claims “none”** — Contradiction with locked **contract-schema-db** / persistence contract. STOP. Align the table and tasks.
 - **Plan references the shared-dev-spec with "see spec" instead of repeating the details** — Dev-implementer works in isolation without spec access. STOP. Make every task fully self-contained with all needed details inline.
 - **Bash commands lack flags, paths, or environment variables** — Incomplete commands produce incorrect results or fail silently. STOP. Write the exact, complete command.
@@ -62,15 +64,17 @@ If you notice any of these, STOP and do not proceed:
 - **Test task is listed after implementation task** — TDD requires test first. STOP. Reorder: test task always precedes the implementation task it covers.
 - **Web or app tech plan skips Section 1b.4 or omits design anchors while intake locked Figma / `design_brain_paths` / Lovable repo** — Figma captured in Q9 is **not** decorative; it must drive the component/screen plan. STOP. Add the design→UI table and align tasks to nodes or brain paths.
 - **UI tasks cite neither a design anchor nor `design_waiver: prd_only` + scan reuse** — Implementers cannot verify pixels or reuse. STOP.
-- **HTTP-consuming web/app plan has no Section 1b.5 consumer map** — No way to verify which component calls which API. STOP.
-- **HTTP-serving backend plan has no Section 1b.5 rows for new/changed endpoints** — Consumers cannot be aligned. STOP.
+- **API-consuming plan has no Section 1b.5 consumer map** — No way to verify which component calls which **operation** (REST `METHOD+path`, GraphQL operation, SOAP action, …). STOP.
+- **API-serving backend plan has no Section 1b.5 owner rows** for new/changed **operations** — Consumers cannot be aligned. STOP.
 - **Section 1b.6 lists UNRESOLVED unknowns but Section 2 still has executable tasks depending on them** — Discovery incomplete. STOP. Resolve, escalate **BLOCKED**, or remove tasks until evidence exists.
 - **`Tech plan status: REVIEW_PASS` with no `tech-plan-self-review` round logged in §1c revision log** — Rubber-stamp. STOP.
 - **State 4b or implementation started without `tech-plans/HUMAN_SIGNOFF.md` + `[TECH-PLAN-HUMAN]`** — Human feedback phase skipped. STOP.
 - **Section 0 doubt log has open items** (unanswered questions, `UNCONFIRMED` rows) but Section 2 tasks are already written — Planning was short-circuited. STOP. Resolve or **BLOCK** before tasks.
-- **Section 2 tasks exist before applicable §0.2 work is done** — For every surface **in play** for this repo (HTTP serve/consume, persistence, search, cache/events per spec), either **§0.2** alignment with the user **or** logged **BLOCKED** / **N/A + citation** is recorded **before** tasks. **Skip** §0.2 rounds that do not apply (e.g. no **B** when §1b.1 is N/A). STOP if tasks assume contracts you never confirmed. **Also STOP:** Phantom backend work — §1b.1 / **1b.1a** filled with speculative persistence or search definitions when the frozen spec assigns those to **another repo** or explicitly excludes them here.
+- **Section 0 “fake interactive”** — Rows resolve **ownership / schedule / who publishes** with only **`Frozen spec:`** paraphrase and **Confidence H** but **no** **`USER:`** / **`PO:`** / **`TL:`** prefix and **no** verbatim single-paragraph quote (**§0.1** rule 3). That is **SPEC_ROLEPLAY**, not cleared doubt. STOP. Re-ask in chat or downgrade to **M** + **`SPEC_INFERENCE`**.
+- **Async contracts missing** — Locked spec or **`contract-event-bus`** names **topics / queues / exchanges / JMS destinations / partitions** this repo **produces or consumes**, but **`#### 1b.5b`** is absent, **N/A without citation**, or **prose-only** (no fenced payload in the **contract’s format** — JSON, XML, Protobuf text, … — or verbatim contract). STOP. **§1b.5** synchronous **N/A** does not remove the obligation to document messages/cache when in scope.
+- **Section 2 tasks exist before applicable §0.2 work is done** — For every surface **in play** for this repo (**synchronous API** serve/consume, persistence, search, cache/events per spec), either **§0.2** alignment with the user **or** logged **BLOCKED** / **N/A + citation** is recorded **before** tasks. **Skip** §0.2 rounds that do not apply (e.g. no **B** when §1b.1 is N/A). STOP if tasks assume contracts you never confirmed. **Also STOP:** Phantom backend work — §1b.1 / **1b.1a** filled with speculative persistence or search definitions when the frozen spec assigns those to **another repo** or explicitly excludes them here.
 - **§1b.0 missing, empty, or has PRD/spec rows without Section 2 task ids** — A requirement or acceptance path is untracked. STOP. Add rows or tasks until **bidirectional** coverage (no orphan rows, no orphan tasks for in-scope work).
-- **§1b.1 / §1b.5 / §1b.1a use vague language** (no field names, types, keys, partitions, TTLs, or error shapes) **where that subsection applies** and the spec already decided them — Implementers will invent. STOP. Inline **store-native** schema / index-definition / HTTP bodies or verbatim contract text. **Not a red flag:** Prescribed **one-line N/A** when this repo does not own that surface.
+- **§1b.1 / §1b.5 / §1b.1a use vague language** (no field names, types, keys, partitions, TTLs, or error shapes) **where that subsection applies** and the spec already decided them — Implementers will invent. STOP. Inline **store-native** schema / index-definition / **API wire examples** (JSON, XML, GraphQL snippets, …) or verbatim contract text. **Not a red flag:** Prescribed **one-line N/A** when this repo does not own that surface.
 
 ## Overview
 
@@ -94,8 +98,9 @@ This skill converts a locked shared-dev-spec into bite-sized, executable technic
 
 1. **Ask freely:** Raise **every** ambiguity (ownership, edge case, failure mode, idempotency, auth, rollout, test data, environment flag, naming, which repo owns what). Prefer **over-asking** to under-asking. There is **no** “max questions per task” in Forge.
 2. **Answer channels:** Product owner, tech lead, **`delivery-plan.md`**, **`parity/`** material, brain scan, another repo’s plan draft, or **explicit `BLOCKED`** with who must answer — all valid. Chat history alone is **not** durable; **write outcomes** into this plan or `~/forge/brain/prds/<task-id>/planning-doubts.md` (optional file) and **summarize** in **§1b.6** when they affect code paths.
-3. **Start the elaborative plan only when:** You would stake implementation on it — i.e. no remaining **high-impact** unknowns without an owner, or they are recorded as **BLOCKED** / **WAIVER** with risk.
-4. **Trace questions to coverage:** Each resolved doubt should visibly affect **§1b** tables or a specific Section 2 task — or be explicitly **out of scope** with spec citation.
+3. **Interactive session in chat; Section 0 = outcomes only (MUST):** **Do not** use the markdown plan as the primary place to **pose** planning questions or to collect human answers. **Ask in chat** (short, numbered), **wait** for replies (or explicit in-chat delegate / waiver from **`PO:`** / **`TL:`**). **Then** append rows to Section 0 that record **what was decided** — not a transcript of the whole thread. **Hard ordering:** Do **not** add **Section 0** rows with **answers** until the corresponding topic has been **resolved in this chat session**. Do **not** add rows whose **Answer** pretends a human spoke when only the spec was read (see **Red flags** — **Section 0 “fake interactive”** / **SPEC_ROLEPLAY**). **Question** column: **one short line** naming the topic (e.g. “Who owns cron vs MQ for schedule?”) — **not** multi-paragraph copy-paste from chat or from the file as a fake “questionnaire.” **Answer** column: **`USER:`** / **`PO:`** / **`TL:`** + one-line outcome, **or** verbatim spec quote + path for non-judgment facts, **`BLOCKED`**, or **`WAIVER`**. **Confidence H** on judgment rows requires **`USER:`** / role prefix **or** verbatim spec — else **M** + **`SPEC_INFERENCE`**. **Forbidden:** Asking the human to “answer in the plan file” or requiring **verbatim paste of chat into the repo** — the value of the LLM is **running the interactive round in the session**; the file is the **durable decision record** for implementers.
+4. **Start the elaborative plan only when:** You would stake implementation on it — i.e. no remaining **high-impact** unknowns without an owner, or they are recorded as **BLOCKED** / **WAIVER** with risk.
+5. **Trace questions to coverage:** Each resolved doubt should visibly affect **§1b** tables or a specific Section 2 task — or be explicitly **out of scope** with spec citation.
 
 ### 0.2 Interactive contract rounds (MUST — live session behavior)
 
@@ -103,16 +108,16 @@ This skill converts a locked shared-dev-spec into bite-sized, executable technic
 
 **Required cadence with the human:** Work in **rounds** — each round ends with **explicit questions** and a **pause for answers** before the next contract surface is finalized in §**1b** and Section 0.
 
-**Skip rounds that do not apply to this repo:** If §**1b.1** will be the one-line **no persistence** N/A, **do not** run round **B** as a “find migrations / collections / CH migrations” scavenger hunt — write the N/A ground (spec § / affected projects) and proceed. Same for **C** when §**1b.1a** is N/A, and **A** when §**1b.5** is fully N/A (no HTTP server or client work). When **A** is partial (e.g. **consumer-only**), run **A** only for **client** contract alignment (paths, errors, pagination) — not for persistence another repo owns.
+**Skip rounds that do not apply to this repo:** If §**1b.1** will be the one-line **no persistence** N/A, **do not** run round **B** as a “find migrations / collections / CH migrations” scavenger hunt — write the N/A ground (spec § / affected projects) and proceed. Same for **C** when §**1b.1a** is N/A, and **A** when §**1b.5** is fully N/A (**no** synchronous API server or client work for REST/GraphQL/SOAP/etc.). When **A** is partial (e.g. **consumer-only**), run **A** only for **client** contract alignment — not for persistence another repo owns.
 
 | Round | When to run | Cover | Before proceeding |
 |-------|-------------|-------|-------------------|
-| **A — HTTP / REST** | This repo **serves** or **consumes** HTTP for this task | Paths, methods, bodies, errors, versioning, idempotency (from locked REST material) | §**1b.5** draft rows (or consumer map) + shapes where contract applies; user confirms or **BLOCKED**. If **no** HTTP surface: **skip** — §**1b.5** one-line N/A only. |
+| **A — Synchronous API surface** | This repo **serves** or **consumes** a **locked** synchronous API for this task (**REST** over HTTP, **GraphQL**, **SOAP** / WSDL, **gRPC**, … — whatever **`shared-dev-spec`** + **`contract-api-*`** name) | **REST:** paths, methods, bodies, errors; **GraphQL:** operations, variables, errors; **SOAP:** operations, SOAPAction / QName, XML envelope samples or XSD refs; auth, versioning, idempotency | §**1b.5** draft owner + consumer rows + **fenced** payloads in the **contract’s wire format**; user confirms or **BLOCKED**. If **no** synchronous API surface: **skip** — §**1b.5** one-line N/A only. |
 | **B — Persistence / durable store** | This repo **owns schema or migration work** for this task (any engine: relational SQL, **MongoDB**, **ClickHouse**, Dynamo, Redis persistence, … per **contract-schema-db**) | Collections/tables/partitions, indexes, TTL, nullability / sharding / backfill strategy as locked | §**1b.0** rows for persistence + §**1b.1** delta + **verbatim** or **fenced** schema in the **contract’s native language** per **§1b.1** rules; user confirms or **BLOCKED**. If **not** owning persistence: **skip** — §**1b.1** one-line N/A + sibling repo if applicable. |
 | **C — Search / ranked retrieval** | This repo **owns** index, mapping, or ingest for this task (Elasticsearch, OpenSearch, Solr, Typesense, Meilisearch, vector DB index, … per **contract-search**) | Index or collection name, field definitions, analyzers / embedders, reindex or dual-write | §**1b.0** rows for search + §**1b.1a** + **fenced** definition (often JSON; use XML/YAML if that is what the contract locks) **or verbatim** contract per **§1b.1a** rules; user confirms or **BLOCKED**. If **not** in scope: **skip** — §**1b.1a** one-line N/A with spec citation. |
-| **D — Cache / events** | Contracts or spec assign cache/event work **to this repo** | Key patterns, TTL, topics, ordering, idempotency (**contract-cache** / **contract-event-bus**) | Subsections or N/A lines explicit in §1b + Section 0; **skip** if N/A with citation. |
+| **D — Cache / events** | Contracts or spec assign cache/event work **to this repo** | Key patterns, TTL, **destinations** (Kafka topic, RabbitMQ queue+exchange+routing key, JMS queue, …), ordering, idempotency, **payload keys** (**contract-cache** / **contract-event-bus**) | **`#### 1b.5b`** (below) filled with tables + **fenced** payload (JSON / XML / …) or verbatim contract per rules **or** one-line N/A with citation; Section 0 ties open questions here; **skip** round **D** only when both contracts are out of scope for this repo. |
 
-**Chat style:** Prefer **short messages** with **numbered questions** over one megabyte plan. After answers, **write** Section 0 + §1b (including **§1b.0** synced to the latest PRD/spec rows) into `tech-plans/<repo>.md`; only then add/expand **Section 2** tasks so they inherit the locked shapes.
+**Chat style:** Prefer **short messages** with **numbered questions** **in chat** over one megabyte plan. After **chat** resolutions, **write** Section 0 as **compact outcome rows** + §1b (including **§1b.0** synced to the latest PRD/spec rows) into `tech-plans/<repo>.md`; only then add/expand **Section 2** tasks so they inherit the locked shapes.
 
 ### 0.3 Artifact (required in each `tech-plans/<repo>.md` or linked file)
 
@@ -120,13 +125,18 @@ Include **before** `## Section 1b`:
 
 ```markdown
 ## Section 0: Planning doubt log
-| Q# | Question | Answer / resolution | Confidence (H/M/L) | Affects (§1b.x / Task ids) |
-|----|----------|---------------------|--------------------|----------------------------|
-| Q1 | …        | …                   | H                  | 1b.5, Task 3–5             |
+
+<!-- Optional one line: Planning rounds completed in chat (date) — rows below are outcomes for implementers, not the live Q&A transcript. -->
+
+| Q# | Question (short topic — what was decided about) | Answer / resolution | Confidence (H/M/L) | Affects (§1b.x / Task ids) |
+|----|---------------------------------------------------|----------------------|--------------------|----------------------------|
+| Q1 | e.g. Schedule ownership (cron vs MQ)            | USER: …              | H                  | 1b.5b, T1–T4               |
 ```
 
+- **Question** cells: **one line** topic labels — **not** full multi-part questionnaires (those stay **in chat**).
 - Add rows until **high-impact** doubts are **H** or **M** with an owner, or **BLOCKED** / **WAIVER**.
-- If zero open questions: one row stating **`No material doubts — ready to elaborate.`**
+- If zero open questions: one row stating **`No material doubts — ready to elaborate.`** (after confirming in chat per **§0.1** rule 3).
+- **Reviewers:** If judgment-heavy **Answer** cells lack **`USER:`** / role / verbatim-spec discipline (**§0.1**), fail self-review. **Do not** require users or agents to paste entire chat logs into the repo.
 
 ---
 
@@ -166,11 +176,11 @@ Include **before** `## Section 1b`:
 
 ## Section 1b: Elaborative preamble (mandatory per tech-plan file)
 
-**Authoring order in the saved `tech-plans/<repo>.md` file:** (1) `#` title line, then **`Tech plan status: DRAFT`** (or `REVIEW_CHANGES` / `REVIEW_PASS` per **§Section 1c**); (2) **`## Section 0: Planning doubt log`** (see **Section 0**, including **§0.2** interactive rounds **for applicable surfaces only**); (3) this **Section 1b** starting with **`### 1b.0`**, then **`### 1b.1`** and **`### 1b.1a`** each as **either** the delta table **or** the skill’s **one-line N/A**, then `### 1b.2` … `### 1b.6`); (4) **§Section 1c** body (revision log table + cross-repo notes); (5) **Section 2** tasks.
+**Authoring order in the saved `tech-plans/<repo>.md` file:** (1) `#` title line, then **`Tech plan status: DRAFT`** (or `REVIEW_CHANGES` / `REVIEW_PASS` per **§Section 1c**); (2) **`## Section 0: Planning doubt log`** (outcome table after **chat** rounds; see **Section 0**, including **§0.2** interactive rounds **for applicable surfaces only**); (3) this **Section 1b** starting with **`### 1b.0`**, then **`### 1b.1`** and **`### 1b.1a`** each as **either** the delta table **or** the skill’s **one-line N/A**, then `### 1b.2` … `### 1b.4` as applicable, **`### 1b.5`** (synchronous API — REST/GraphQL/SOAP/gRPC/… **or** one-line N/A) **and** **`#### 1b.5b`** (brokers + cache **or** one-line N/A) when **round A / D** or contracts apply, then `### 1b.6`); (4) **§Section 1c** body (revision log table + cross-repo notes); (5) **Section 2** tasks.
 
-**Surface applicability (generic — no stack bias):** Before deep-diving persistence, search, or server HTTP, decide **what this repo actually owns** for this task using **`shared-dev-spec.md`** (affected projects / ownership), **`prd-locked.md`**, and **`~/forge/brain/products/<slug>/codebase/`** (e.g. SQL migrations, ORM models, **Mongo** migrations/validators, **ClickHouse** `.sql` / `ALTER`, ingest workers, `api-surface.md`, client modules). **Maximal detail** applies **per applicable surface** — not “always one RDBMS + one Lucene-derived search.” **Complete** means: every in-scope case is in **§1b.0**, and every §1b subsection is either **fully elaborated** (tables + fenced blocks in the **contract’s** language — SQL, JSON, YAML, XML, DSL — plus HTTP payloads where required) **or** an **explicit one-line `N/A` + spec citation** (and optional **`N/A (other repo: tech-plans/<file>.md)`** pointer). **Forbidden:** (a) leaving §1b.1 / **1b.1a** / **1b.5** blank without the prescribed N/A line; (b) **inventing** persistence schema, search definitions, or new routes for a **frontend-only** (or otherwise non-owning) repo; (c) **discovery loops** (hunting migrations or index templates for engines **this repo does not use**) when the frozen spec + topology already show **no ownership** here — record N/A and move on.
+**Surface applicability (generic — no stack bias):** Before deep-diving persistence, search, **synchronous APIs**, or **message brokers**, decide **what this repo actually owns** for this task using **`shared-dev-spec.md`** (affected projects / ownership), **`prd-locked.md`**, and **`~/forge/brain/products/<slug>/codebase/`** (e.g. SQL migrations, ORM models, **Mongo** migrations/validators, **ClickHouse** `.sql` / `ALTER`, **Kafka**/AMQP client usage, ingest workers, `api-surface.md`, GraphQL schema folders, WSDL paths, client modules). **Maximal detail** applies **per applicable surface** — not “always one RDBMS + one Lucene-derived search + REST-only.” **Complete** means: every in-scope case is in **§1b.0**, and every §1b subsection is either **fully elaborated** (tables + fenced blocks in the **contract’s** language — SQL, JSON, YAML, XML, **SOAP**, SDL, `.proto`, …) **or** an **explicit one-line `N/A` + spec citation** (and optional **`N/A (other repo: tech-plans/<file>.md)`** pointer). **Forbidden:** (a) leaving §1b.1 / **1b.1a** / **1b.5** / **`#### 1b.5b`** blank without the prescribed N/A line; (b) **inventing** persistence schema, search definitions, **operations**, or **destinations** for a **frontend-only** (or otherwise non-owning) repo; (c) **discovery loops** (hunting migrations or index templates for engines **this repo does not use**) when the frozen spec + topology already show **no ownership** here — record N/A and move on.
 
-Bite-sized tasks exist so a **dev-implementer in isolation** can execute without guessing. They **do not** replace **§Section 0** (cleared doubts + **§0.2** user rounds **where applicable**), nor a short, explicit narrative of **what changes in the world** for **this repo** (data, **search indices**, reuse, design, **HTTP wiring**, unknowns, review trail — **omit** subsections that are N/A, do not pad them). **Subsection 1b.4** follows web/app rules; **1b.5** follows HTTP rules when this repo serves or consumes HTTP; **1b.1a** follows search when this repo owns index/mapping work; **1b.6** is always required (may be a single “no unknowns” line). **§Section 1c** is always required. All of the above **before Section 2**.
+Bite-sized tasks exist so a **dev-implementer in isolation** can execute without guessing. They **do not** replace **§Section 0** (cleared doubts + **§0.2** user rounds **where applicable**), nor a short, explicit narrative of **what changes in the world** for **this repo** (data, **search indices**, reuse, design, **synchronous API wiring** (REST/GraphQL/SOAP/gRPC/…), **broker destinations & payloads**, **cache**, unknowns, review trail — **omit** subsections that are N/A, do not pad them). **Subsection 1b.4** follows web/app rules; **1b.5** follows the **locked API style** when this repo serves or consumes that surface; **`#### 1b.5b`** follows **contract-event-bus** / **contract-cache** when this repo touches those surfaces; **1b.1a** follows search when this repo owns index/mapping work; **1b.6** is always required (may be a single “no unknowns” line). **§Section 1c** is always required. All of the above **before Section 2**.
 
 Skipping them because “the tasks are obvious” or “only micro-steps matter” is **BLOCKED** — that is how schema drift, duplicate persistence shapes, wrong screens, **wrong API wiring**, and silent greenfield work slip through.
 
@@ -260,23 +270,51 @@ Bullets mapping **shared-dev-spec** requirement headings, contract IDs, or accep
 - If **`design_waiver: prd_only`** is locked, the table still lists **screens/components** and maps them to **scan-backed** files or `NET_NEW`, with **one line** citing the waiver for pixel latitude.
 - **Every** UI implementation task in Section 2 should reference **`D<n>`** or explicitly say **waiver + PRD section** so reviewers can trace intake → plan → code.
 
-### 1b.5 API ↔ consumer map (HTTP / REST integration)
+### 1b.5 API ↔ consumer map (synchronous contracts — REST, GraphQL, SOAP, gRPC, …)
 
-**Purpose:** E2E delivery requires a **written** answer to: *which component (or service) calls which endpoint*, and *where the handler lives*. Do not assume the reader has opened the backend and frontend repos.
+**Purpose:** E2E delivery requires a **written** answer to: *which component calls which **operation***, and *where the handler / resolver / service implementation lives* — using the **same style the frozen contract uses** (not “everything is REST”).
 
-**When N/A:** This repo has **no** HTTP server and **no** HTTP client changes for this task — one line: **`1b.5 not applicable — no HTTP API surface in this repo for this task.`**
+**When N/A:** This repo has **no** synchronous API **server** and **no** synchronous API **client** changes for this task — one line: **`1b.5 not applicable — no synchronous API surface (REST/GraphQL/SOAP/gRPC/…) in this repo for this task.`** (cite spec § if needed.)
 
-**When this repo implements or changes HTTP APIs** (backend, BFF, API gateway): build a table from the **locked** `shared-dev-spec` REST section (verbatim paths and methods — no invention):
+**Contract styles (fill the tables that apply; omit styles the spec marks N/A):**
 
-| Endpoint (METHOD `path`) | Handler (repo-relative path : symbol or class#method) | Auth / versioning / idempotency | Consumers — component path **or** `tech-plans/<other>.md` §1b.5 row id (e.g. `web: C3`) |
+**REST (HTTP + JSON/XML as locked):** When the repo **implements or changes** REST handlers:
 
-**When this repo consumes HTTP APIs** (web, app, worker with outbound REST): build a table tying **UI or job code** to **contract**:
+| Endpoint (METHOD `path`) | Handler (repo-relative path : symbol or class#method) | Auth / versioning / idempotency | Consumers — component path **or** `tech-plans/<other>.md` §1b.5 row id |
 
-| Consumer (path : component or hook) | When it runs (mount, click, job tick, …) | METHOD + `path` | Client module (path) | Success + error handling (status codes) |
+When the repo **consumes** REST only (or add consumer rows in addition to the owner table above):
 
-If the owning API plan lives in another repo file, **cross-reference** exact rows (same METHOD+path string) so **`tech-plan-self-review` cross-plan checks** can diff them.
+| Consumer (path : component or hook) | When it runs | METHOD + `path` | Client module (path) | Success + error handling (status / body shape) |
 
-**Request / response / error shape (MUST):** For **each** new or materially changed `METHOD+path` in the §1b.5 tables, add **one** of: (a) fenced **`json`** for **request body**, **success (2xx) body**, and **at least one error** (4xx/5xx) with stable `code` / `message` fields as locked in the REST contract; or (b) **verbatim** contract/OpenAPI excerpt with source. Include **pagination**, **filters**, and **headers** (auth, idempotency, trace) when the spec defines them. **Forbidden:** "Body per OpenAPI" without inlined shape, or "errors TBD".
+**GraphQL:** When the repo **serves or consumes** GraphQL per lock:
+
+| Operation (`query` / `mutation` / `subscription` + name) | Schema entry point or document id | Server handler or client call site (path : symbol) | Variables shape | Auth / errors (`errors[]` / `extensions`) |
+
+**SOAP / XML-RPC:** When the repo **serves or consumes** SOAP per lock:
+
+| Service / port / binding (WSDL ref) | Operation (QName or SOAPAction) | Handler or client (path : symbol) | Request XML sample or XSD element ref | Response XML sample or fault shape |
+
+**gRPC / protobuf:** When locked:
+
+| Package.`Service`/`Method` | `.proto` ref | Server impl / client stub (path) | Request / response message fields (or verbatim `.proto` excerpt) |
+
+**Cross-reference:** If the owning plan is in another repo, cite **`tech-plans/<other>.md` §1b.5** + **stable operation key** (`METHOD+path`, GraphQL operation name, SOAP QName, gRPC `FullMethodName`) so **`tech-plan-self-review` §1d** can diff them.
+
+**Wire shapes (MUST):** For **each** new or materially changed **operation** in the tables above, add **fenced** examples in the **contract’s format**: **`json`** for typical REST/GraphQL variables and payloads, **`xml`** for SOAP bodies/faults, **`protobuf`** / **`text proto`** blocks if that is how the contract is written — **or** a **verbatim** OpenAPI / GraphQL SDL / WSDL / `.proto` excerpt with file path. Include **errors**, **pagination**, **headers**, or **metadata** when the spec defines them. **Forbidden:** "See WSDL / SDL / OpenAPI" without inlined shape, or `TBD` where the contract already decided.
+
+#### 1b.5b Message brokers, topics, queues, and cache (`contract-event-bus` / `contract-cache`)
+
+**Purpose:** Services integrate through **Kafka**, **RabbitMQ**, **ActiveMQ** / **JMS**, **Azure Service Bus**, **NATS**, **SQS**, etc. — not only HTTP. **§1b.5** synchronous **N/A** does **not** excuse missing **`#### 1b.5b`** when this repo **publishes, consumes, or invalidates** messages or cache entries named in the lock.
+
+**When N/A:** One line: **`1b.5b not applicable — no cache key or message-bus ownership in this repo for this task.`** (cite spec § / contract IDs.)
+
+**When applicable:** Mirror **`contract-event-bus`** / **`contract-cache`** (or locked spec sections) — do not invent topic names or payload shapes.
+
+| Kind | Destination id (**Kafka** topic[+partition strategy]; **RabbitMQ** exchange+queue+routing key; **ActiveMQ**/JMS queue/topic; **SQS** ARN/url; cache key pattern — **verbatim from contract**) | Producer (path : symbol) **or** `EXTERNAL` | Consumer or invalidator (path : symbol) **or** `NONE` | Ordering / TTL / idempotency / retry |
+|------|--------------------------------------------------------|-------------------------------------------|------------------------------------------------------|--------------------------------------|
+| *(row per changed contract item)* | *verbatim from contract* | … | … | *per lock* |
+
+**Payload & key shape (MUST):** For **each** new or materially changed **message** row, add a **fenced** block in the **broker’s on-wire format** as locked — commonly **`json`** (Kafka JSON, Rabbit JSON payloads), often **`xml`** (JMS/SOAP-wrapped bodies, legacy XML), or **hex / text proto** if binary contracts are documented that way — or **verbatim** paste from **`contract-event-bus`**. For **cache** rows, include **value shape** or **invalidation rule** as locked. **Forbidden:** Prose-only (“listens on queue X”) **without** inlined payload or verbatim contract when the contract defines it. If the **PRD/spec never locked** payloads, **BLOCKED** or **`SPEC_INFERENCE`** in Section 0 — do not silently invent in tasks.
 
 ### 1b.6 Unknowns & deep discovery closure
 
@@ -313,9 +351,10 @@ Tech plans are **not one-shot** documents. They go through **review → revise �
    - Record in the log: **`self-review round=<n> result=PASS|CHANGES|BLOCKED`** (short note).  
    - Default **max 3** review rounds per repo per task; then **ESCALATE** with consolidated blockers.
 
-4. **Cross-repo alignment** (when this product task has **≥2** of `{API-owning repo, HTTP-consuming repo}`):
+4. **Cross-repo alignment** (when this product task has **≥2** repos touching the **same synchronous API** or **≥2** repos with **split producer/consumer** message plans):
 
-   - After **all** sibling `tech-plans/*.md` are in **`DRAFT`** with **§1b.5** filled, perform one **cross-walk**: every consumer **METHOD+path** matches an owner row; version/prefix matches; auth assumptions consistent.  
+   - After **all** sibling `tech-plans/*.md` are in **`DRAFT`** with **§1b.5** filled (for the API styles in play), perform one **cross-walk** using the **contract’s stable keys**: e.g. consumer **METHOD+path** ↔ owner **METHOD+path**; **GraphQL** operation name ↔ server registration; **SOAP** QName / SOAPAction ↔ server operation; **gRPC** `FullMethodName` ↔ `.proto` method. Version/prefix/auth/metadata must match the lock.  
+   - For **messages**, verify **destination strings** (topic, queue, exchange+routing key, …) and **payload version** fields match across producer and consumer plans (or cite explicit **compat matrix** in spec).  
    - Append to **each** affected plan’s revision log: **`XALIGN PASS`** or **`XALIGN FAIL: <drift>`** and fix drift before setting **`REVIEW_PASS`**.
 
 5. **Conductor logging** (when orchestrated): emit **`[TECH-PLAN-REVIEW]`** and **`[TECH-PLAN-XALIGN]`** lines as specified in **`conductor-orchestrate`** State 4.
@@ -643,7 +682,7 @@ brain/prds/<task-id>/tech-plans/
 ```
 
 Each file:
-- **Section 0** doubt log present; no **high-impact** `L` confidence rows without **BLOCKED** / **WAIVER** / follow-up owner
+- **Section 0** doubt log present (outcome rows per **§0.3**); no **high-impact** `L` confidence rows without **BLOCKED** / **WAIVER** / follow-up owner
 - **Section 1b + 1c** preamble is present (**1b.0**, **1b.1** + **1b.1a** each as delta **or** prescribed one-line N/A, 1b.2–1b.6 per rules; **1c** status + revision log)
 - Task ordering respects dependencies
 - Every task is 2-5 min executable
@@ -657,7 +696,7 @@ Each file:
 
 A tech plan passes if:
 1. **Completeness**: No "...", no "TODO", no placeholders
-2. **Preamble**: **Section 0** cleared for planning; Sections **1b + 1c** present; **§1b.0** matrix complete; **1b.1** rows match persistence **schema-change** tasks **or** N/A with no phantom migrations; reuse + spec trace; **1b.4** for web/app; **1b.5** when HTTP applies **or** explicit N/A (consumer↔provider rows align across repos when both sides touch HTTP); **1b.6** has no silent UNRESOLVED; **1c** shows review rounds + XALIGN when multi-repo HTTP
+2. **Preamble**: **Section 0** cleared for planning; Sections **1b + 1c** present; **§1b.0** matrix complete; **1b.1** rows match persistence **schema-change** tasks **or** N/A with no phantom migrations; reuse + spec trace; **1b.4** for web/app; **1b.5** when a **synchronous API** applies **or** explicit N/A (consumer↔owner **operation keys** align across repos per §1c); **`#### 1b.5b`** when brokers/cache apply **or** explicit N/A; **1b.6** has no silent UNRESOLVED; **1c** shows review rounds + **XALIGN** when multi-repo **API or message** surfaces split across plans
 3. **Specificity**: Every file path is absolute, every command is exact
 4. **Testability**: Every task has a runnable test command and expected output
 5. **Ordering**: No task depends on later tasks (DAG)

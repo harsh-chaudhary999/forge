@@ -317,7 +317,7 @@ Ensure **consensus** across all repos (no conflicting contracts).
      ```
      **Only** after **`APPROVED`** or **`WAIVED`** may conductor enter **State 4b**.
 
-**SUCCESS CONDITION:** Tech plans written for ALL repos; each plan **> 500 words** where applicable, includes **§0, §1b–§1c**, tests, deployment; **self-review PASS** per repo; **XALIGN PASS** when multi-repo HTTP; **`tech-plans/HUMAN_SIGNOFF.md`** + **`[TECH-PLAN-HUMAN]`** (`APPROVED` or `WAIVED`) logged — then pipeline may enter **State 4b**.  
+**SUCCESS CONDITION:** Tech plans written for ALL repos; each plan **> 500 words minimum** where applicable (plans may be **much longer** when **`tech-plan-write-per-project` §0.0** maximal §1b applies — length is not capped), includes **§0, §1b–§1c**, tests, deployment; **self-review PASS** per repo; **XALIGN PASS** when multi-repo HTTP; **`tech-plans/HUMAN_SIGNOFF.md`** + **`[TECH-PLAN-HUMAN]`** (`APPROVED` or `WAIVED`) logged — then pipeline may enter **State 4b**.  
 **FAILURE CONDITION:** Terse task-only plans; missing **§0 / §1b.5/1b.6/1c**; missing tests; self-review or XALIGN still failing after revision cap; human gate missing.  
 **ESCALATION:** Re-write plans with full elaboration; if still fails after 3 review rounds per repo, escalate to user with checklist evidence.  
 **LOGGING:**
@@ -855,7 +855,7 @@ After Phase 4 completes successfully, the Conductor coordinates the release: PRs
 | **Product not found** | Context load fails | Direct user to register product via forge-product.md |
 | **Circular repo deps** | Context load detects cycle | Escalate to user: "Product has circular deps" |
 | **Council conflict** | 2+ repos disagree on contract | Inline dreamer tries to resolve; if fails, escalate to user with conflict summary |
-| **Tech plan gaps** | Plan is terse (missing **§1b.5/1b.6/1c**), < 500 words where depth required, missing tests, **`[TECH-PLAN-REVIEW]`** not PASS, or **`[TECH-PLAN-XALIGN]`** FAIL | Revise plans per **`tech-plan-self-review`** (max 3 rounds/repo); if still fails, escalate with checklist evidence |
+| **Tech plan gaps** | Plan is terse (missing **§1b.5/1b.6/1c**), **< 500 words** where depth required, missing tests, **`[TECH-PLAN-REVIEW]`** not PASS, or **`[TECH-PLAN-XALIGN]`** FAIL — **not** “> 5000 words” when §1b is legitimately deep | Revise plans per **`tech-plan-self-review`** (max 3 rounds/repo); if still fails, escalate with checklist evidence |
 
 ### Phase 4-5 Escalation Matrix (Dev Implementer Through Ship)
 

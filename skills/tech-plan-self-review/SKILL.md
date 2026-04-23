@@ -42,6 +42,7 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 | "I already reviewed this mentally" | Mental reviews have zero evidence trail. You cannot prove you checked every line. Run the checklist. Mark each item. Evidence beats confidence. |
 | "Self-review is one-and-done — I'll fix gaps in code" | **CHANGES REQUESTED** must produce **plan revisions** (§1c log + status). Coding without updating the plan invalidates TDD and eval traceability. |
 | "Self-review only re-reads the tech plan markdown" | **BLOCKED process.** Review **starts** from **`prd-locked.md`** + **`shared-dev-spec.md`** + any other locked task sources, builds a **requirement checklist**, and only **then** compares the plan. Missing requirements must produce **new §1b.0 rows + Section 2 tasks** (or explicit **WAIVER**), not a silent PASS. |
+| "§1b / Section 2 is too long — ask for a shorter plan" | **Wrong bar.** Length is **not** a defect when **`tech-plan-write-per-project` §0.0** applies — only **gaps**, **placeholders**, or **missing evidence** are. Prefer **more** §1b detail when surfaces are in scope. |
 | "The matrix looked full — I skipped spot-checking paths" | **§1b.0** evidence paths can be wrong or stale. Self-review **must** recross-check a **sample** of cited `codebase/` → repo paths (and **all** paths for small plans) with **`Read` / `rg`** on the product repo — failures → **CHANGES** or **`SCAN_MISSING_OR_STALE`**. |
 
 ## Red Flags — STOP and Re-Review

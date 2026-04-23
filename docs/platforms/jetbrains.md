@@ -31,7 +31,7 @@ JetBrains does **not** load a live Forge plugin tree from `~/forge`; it uses **`
 cd ~/forge && git pull && bash scripts/install.sh --platform jetbrains
 ```
 
-Then **re-copy** `templates/junie-guidelines.md` into each repo’s `.junie/guidelines.md` (or your internal equivalent). **How to hear about Forge releases** is the same as other hosts — **[README §4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
+Then **re-copy** `templates/junie-guidelines.md` into each repo’s `.junie/guidelines.md` (or your internal equivalent). **How to hear about Forge releases** is the same as other hosts — **[README Section 4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
 
 ## Available Features
 

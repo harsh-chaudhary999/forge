@@ -35,7 +35,7 @@ See **[`session-modes-forge.md`](session-modes-forge.md)** for Plan vs Agent map
 
 ## Forge install on your machine
 
-Lovable is not a Forge host. Still **refresh your `~/forge` clone** the same way as other editors (**`git pull`** + **`install.sh`** for Cursor / Claude Code / etc.) so skills you invoke from the IDE stay current — **[README §4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
+Lovable is not a Forge host. Still **refresh your `~/forge` clone** the same way as other editors (**`git pull`** + **`install.sh`** for Cursor / Claude Code / etc.) so skills you invoke from the IDE stay current — **[README Section 4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
 
 ## Related skills
 

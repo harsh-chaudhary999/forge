@@ -271,7 +271,7 @@ The Conductor:
 **ENTRY:** State 2.5 satisfied — **`[DISCOVERY]`** logged.  
 **ACTION:** From the **forge plugin repo root**, run **`python3 tools/forge_adjacency_scan.py ~/forge/brain/prds/<task-id> <repo1> <repo2> …`** (each **Q4** repo path; **`--patterns`** optional). Triage output per **`docs/adjacency-and-cohorts.md`** (artifact paths + **`docs/templates/adjacency-cohort-and-signals.template.md`**).
 
-**SUCCESS / FAILURE / HUMAN-REQUIRED + example log lines:** **`docs/adjacency-and-cohorts.md`** § *Conductor (State 2.6)* — normative; do not fork prose in this skill.
+**SUCCESS / FAILURE / HUMAN-REQUIRED + example log lines:** **`docs/adjacency-and-cohorts.md`**, *Conductor (State 2.6)* — normative; do not fork prose in this skill.
 
 ### State 3: Council Negotiation
 **ENTRY:** `context-loaded.md` exists; **State 2.5 complete** — a **`[DISCOVERY]`** line is logged (full survey or **`obligation=waived`** per State 2.5); **`[ADJACENCY-SCAN]`** logged per State 2.6 (**COMPLETE** or documented **SKIPPED**).  
@@ -299,13 +299,13 @@ Ensure **consensus** across all repos (no conflicting contracts).
 **ENTRY:** `contract-impact.md` exists (contracts locked across all repos).  
 **ACTION:** For each repo in the product:
   1. Invoke reasoning skill for the repo's role (backend, web, app, infra).
-  2. Write **elaborative** tech plan per **`tech-plan-write-per-project`**: Section **0** (unlimited doubt-clearing **Q&A log** until confident), Section **1b** (data, reuse, trace, design→UI, **API↔consumer §1b.5**, **unknowns §1b.6**) + Section **1c** (status, revision log, review rounds, **XALIGN** when multi-repo HTTP) — then bite-sized tasks, tests, deployment. Plans must **not** be “tasks only”; include **which API in which component** for every HTTP consumer.
+  2. Write **elaborative** tech plan per **`tech-plan-write-per-project`**: Section **0** (unlimited doubt-clearing **Q&A log** until confident), Section **1b** (data, reuse, trace, design→UI, **API↔consumer Section 1b.5**, **unknowns Section 1b.6**) + Section **1c** (status, revision log, review rounds, **XALIGN** when multi-repo HTTP) — then bite-sized tasks, tests, deployment. Plans must **not** be “tasks only”; include **which API in which component** for every HTTP consumer.
   3. Save to `~/forge/brain/prds/<task-id>/tech-plans/<repo-name>.md`.
-  4. **Self-review (feedback loop):** Run **`tech-plan-self-review`** per repo file. On **CHANGES** or **BLOCKED**, revise the markdown (append **§1c revision log** row, bump `Rev`), re-run until **PASS** or **3 rounds** exhausted — then **ESCALATE** with consolidated blockers. Log each round:
+  4. **Self-review (feedback loop):** Run **`tech-plan-self-review`** per repo file. On **CHANGES** or **BLOCKED**, revise the markdown (append **Section 1c revision log** row, bump `Rev`), re-run until **PASS** or **3 rounds** exhausted — then **ESCALATE** with consolidated blockers. Log each round:
      ```
      [TECH-PLAN-REVIEW] task_id=<id> repo=<repo> round=<1|2|3> result=PASS|CHANGES|BLOCKED
      ```
-  5. **Cross-plan alignment:** When **≥2** repos have **§1b.5** HTTP tables, cross-walk all `tech-plans/*.md` for matching **METHOD+path** and consumer references; fix drift. Log:
+  5. **Cross-plan alignment:** When **≥2** repos have **Section 1b.5** HTTP tables, cross-walk all `tech-plans/*.md` for matching **METHOD+path** and consumer references; fix drift. Log:
      ```
      [TECH-PLAN-XALIGN] task_id=<id> result=PASS|FAIL notes=<short>
      ```
@@ -317,8 +317,8 @@ Ensure **consensus** across all repos (no conflicting contracts).
      ```
      **Only** after **`APPROVED`** or **`WAIVED`** may conductor enter **State 4b**.
 
-**SUCCESS CONDITION:** Tech plans written for ALL repos; each plan **> 500 words minimum** where applicable (plans may be **much longer** when **`tech-plan-write-per-project` §0.0** maximal §1b applies — length is not capped), includes **§0, §1b–§1c**, tests, deployment; **self-review PASS** per repo; **XALIGN PASS** when multi-repo HTTP; **`tech-plans/HUMAN_SIGNOFF.md`** + **`[TECH-PLAN-HUMAN]`** (`APPROVED` or `WAIVED`) logged — then pipeline may enter **State 4b**.  
-**FAILURE CONDITION:** Terse task-only plans; missing **§0 / §1b.5/1b.6/1c**; missing tests; self-review or XALIGN still failing after revision cap; human gate missing.  
+**SUCCESS CONDITION:** Tech plans written for ALL repos; each plan **> 500 words minimum** where applicable (plans may be **much longer** when **`tech-plan-write-per-project` Section 0.0** maximal Section 1b applies — length is not capped), includes **Section 0, Section 1b–Section 1c**, tests, deployment; **self-review PASS** per repo; **XALIGN PASS** when multi-repo HTTP; **`tech-plans/HUMAN_SIGNOFF.md`** + **`[TECH-PLAN-HUMAN]`** (`APPROVED` or `WAIVED`) logged — then pipeline may enter **State 4b**.  
+**FAILURE CONDITION:** Terse task-only plans; missing **Section 0 / Section 1b.5/1b.6/1c**; missing tests; self-review or XALIGN still failing after revision cap; human gate missing.  
 **ESCALATION:** Re-write plans with full elaboration; if still fails after 3 review rounds per repo, escalate to user with checklist evidence.  
 **LOGGING:**
 ```
@@ -855,7 +855,7 @@ After Phase 4 completes successfully, the Conductor coordinates the release: PRs
 | **Product not found** | Context load fails | Direct user to register product via forge-product.md |
 | **Circular repo deps** | Context load detects cycle | Escalate to user: "Product has circular deps" |
 | **Council conflict** | 2+ repos disagree on contract | Inline dreamer tries to resolve; if fails, escalate to user with conflict summary |
-| **Tech plan gaps** | Plan is terse (missing **§1b.5/1b.6/1c**), **< 500 words** where depth required, missing tests, **`[TECH-PLAN-REVIEW]`** not PASS, or **`[TECH-PLAN-XALIGN]`** FAIL — **not** “> 5000 words” when §1b is legitimately deep | Revise plans per **`tech-plan-self-review`** (max 3 rounds/repo); if still fails, escalate with checklist evidence |
+| **Tech plan gaps** | Plan is terse (missing **Section 1b.5/1b.6/1c**), **< 500 words** where depth required, missing tests, **`[TECH-PLAN-REVIEW]`** not PASS, or **`[TECH-PLAN-XALIGN]`** FAIL — **not** “> 5000 words” when Section 1b is legitimately deep | Revise plans per **`tech-plan-self-review`** (max 3 rounds/repo); if still fails, escalate with checklist evidence |
 
 ### Phase 4-5 Escalation Matrix (Dev Implementer Through Ship)
 
@@ -1006,7 +1006,7 @@ conductor_state task_id=<id>
 ### Phase 1-3 (Intake Through Tech Plans)
 - [ ] **`spec-freeze` Step 0 parity** satisfied (`parity/` or waiver) before treating `shared-dev-spec` as final for tech planning; optional **`delivery-plan.md`** for program shape.
 - [ ] Conductor invokes intake-interrogate, product-context-load, council-multi-repo-negotiate sequentially.
-- [ ] **State 4 tech plans:** Each `tech-plans/*.md` includes **§0, §1b–§1c** (API↔consumer **§1b.5**, unknowns **§1b.6**, review + XALIGN); **`[TECH-PLAN-REVIEW] … PASS`** per repo; **`[TECH-PLAN-XALIGN] … PASS`** or **N/A**; **`tech-plans/HUMAN_SIGNOFF.md`** + **`[TECH-PLAN-HUMAN]`** before State 4b.
+- [ ] **State 4 tech plans:** Each `tech-plans/*.md` includes **Section 0, Section 1b–Section 1c** (API↔consumer **Section 1b.5**, unknowns **Section 1b.6**, review + XALIGN); **`[TECH-PLAN-REVIEW] … PASS`** per repo; **`[TECH-PLAN-XALIGN] … PASS`** or **N/A**; **`tech-plans/HUMAN_SIGNOFF.md`** + **`[TECH-PLAN-HUMAN]`** before State 4b.
 - [ ] State transitions logged to conductor.log.
 - [ ] Escalation paths clear and actionable.
 - [ ] All states (Intake through Tech Plans) reachable.

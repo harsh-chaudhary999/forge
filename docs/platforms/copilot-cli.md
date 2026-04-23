@@ -24,7 +24,7 @@ Start a Copilot CLI session in the Forge directory. The `using-forge` bootstrap 
 
 ## Keeping Forge updated
 
-**Discovery:** **[README §4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
+**Discovery:** **[README Section 4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
 
 **Apply:** `cd ~/forge && git pull && bash scripts/install.sh --platform copilot-cli` — then start a **new** Copilot CLI session so hooks and context pick up skill changes.
 

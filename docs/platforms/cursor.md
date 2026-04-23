@@ -30,7 +30,7 @@ After **`git pull`** in your Forge clone, re-run:
 cd ~/forge && git pull && bash scripts/install.sh --platform cursor
 ```
 
-Restart **Cursor** when skills or hooks change. **Discovery** of new Forge versions (Watch, Releases, etc.) is editor-agnostic — see **[README §4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
+Restart **Cursor** when skills or hooks change. **Discovery** of new Forge versions (Watch, Releases, etc.) is editor-agnostic — see **[README Section 4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
 
 ## Available Features
 

@@ -32,7 +32,7 @@ Open the Forge directory in Antigravity. Skills should be listed in the agent's 
 
 ## Keeping Forge updated
 
-**Discovery:** same as all hosts — **[README §4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
+**Discovery:** same as all hosts — **[README Section 4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
 
 **Apply:**
 

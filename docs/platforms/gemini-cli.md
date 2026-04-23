@@ -22,7 +22,7 @@ Start Gemini CLI in the Forge directory. The extension loads `GEMINI.md` which p
 
 ## Keeping Forge updated
 
-**Discovery** of new Forge commits is the same for every host — **[README §4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)** (GitHub Watch / Releases, team comms).
+**Discovery** of new Forge commits is the same for every host — **[README Section 4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)** (GitHub Watch / Releases, team comms).
 
 **Apply updates:**
 

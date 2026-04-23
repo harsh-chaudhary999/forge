@@ -46,8 +46,8 @@ Council (State 3) must not start **without** that line. Silent omission is a fai
 
 ## Council and tech plans
 
-- **Council** must not close cohort-dependent work on **`SPEC_INFERENCE`** alone for segmentation policy — see **`council-multi-repo-negotiate`** red flags (brief); detail lives in the template § A.
-- **`tech-plan-write-per-project` §0.1 rule 6** — Section 0 cohort rows need **`USER:`** / **`PO:`** / **`TL:`** or verbatim spec; **`REVIEW_PASS`** forbidden otherwise.
+- **Council** must not close cohort-dependent work on **`SPEC_INFERENCE`** alone for segmentation policy — see **`council-multi-repo-negotiate`** red flags (brief); detail lives in the template Section A.
+- **`tech-plan-write-per-project` Section 0.1 rule 6** — Section 0 cohort rows need **`USER:`** / **`PO:`** / **`TL:`** or verbatim spec; **`REVIEW_PASS`** forbidden otherwise.
 - **`tech-plan-self-review`** — inventory + binary checks reference this doc for artifact paths.
 - **`verify_forge_task.py`** does **not** enforce these gates; optional brain CI may grep for **`[ADJACENCY-SCAN]`**.
 

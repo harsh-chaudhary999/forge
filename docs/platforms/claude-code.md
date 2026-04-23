@@ -33,7 +33,7 @@ There is **no** in-app auto-update for Forge. When your **`~/forge`** clone has 
 cd ~/forge && git pull && bash scripts/install.sh --platform claude-code
 ```
 
-Start a **new Claude Code session** after skills or hooks change. **How to notice upstream changes** (GitHub Watch, Releases, team comms) is the same for every editor — see **[README §4 — Keeping Forge updated](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
+Start a **new Claude Code session** after skills or hooks change. **How to notice upstream changes** (GitHub Watch, Releases, team comms) is the same for every editor — see **[README Section 4 — Keeping Forge updated](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
 
 ## Available Features
 

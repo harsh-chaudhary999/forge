@@ -45,7 +45,7 @@ Copy each **Part** into the named file, or keep one working doc and split at loc
 
 ### B.1 Registry
 
-| PRD § / line id | Signal type | Anchor | Owner repo | Verified by |
+| PRD section / line id | Signal type | Anchor | Owner repo | Verified by |
 |-----------------|-------------|--------|------------|-------------|
 | | | | | |
 

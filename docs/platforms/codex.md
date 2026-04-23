@@ -22,7 +22,7 @@ Start a Codex session in the Forge directory. The `AGENTS.md` content should be 
 
 ## Keeping Forge updated
 
-**Discovery:** **[README §4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
+**Discovery:** **[README Section 4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
 
 **Context-only mode** (open `~/forge` in Codex): **`git pull`** the clone; new sessions load updated `AGENTS.md` / `skills/`.
 

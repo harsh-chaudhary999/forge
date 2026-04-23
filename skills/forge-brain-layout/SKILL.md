@@ -37,7 +37,7 @@ Before any vector or FTS index ships, prefer **YAML frontmatter** on new decisio
 │       ├── prd-locked.md
 │       ├── shared-dev-spec.md
 │       ├── parity/                        # HARD-GATE before spec-freeze (see spec-freeze Step 0): external-plan.md OR completed checklist.md OR waiver.md
-│       ├── planning-doubts.md             # Optional overflow for long Q&A during tech planning (summary still belongs in each tech-plans/*.md §Section 0)
+│       ├── planning-doubts.md             # Optional overflow for long Q&A during tech planning (summary still belongs in each tech-plans/*.md Section 0)
 │       ├── delivery-plan.md               # Optional: program / rollout meta — NOT frozen for implementer isolation; may evolve until GA
 │       ├── design/                        # REQUIRED for net-new UI: exports, MCP_INGEST.md, README (see intake Q9 + conductor P4.0b)
 │       ├── qa/                            # Optional: PRD_ANALYSIS.md, manual-test-cases.csv, TEST_SUITE_REPORT.md (see qa-prd-analysis, qa-manual-test-cases-from-prd)

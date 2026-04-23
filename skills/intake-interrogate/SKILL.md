@@ -75,7 +75,7 @@ If you notice any of these, STOP and do not proceed:
 
 4. **One doubt cluster per turn:** Do not interleave unrelated open topics. Finish **Q4-class** topology doubts before opening **Q9-class** design doubts unless legally blocked.
 
-5. **Hard gates unchanged:** **`repo_registry_confidence`**, **`repo_naming_mismatch_notes`**, **`product_md_update_required`** must be present when repos are listed. **Q9** implementability rules apply unchanged when web/app/user-visible UI is in scope. **“Confirm” path:** PRD may already imply the answer — you **still** paste the **verbatim blockquote** question, then e.g. “From your PRD §X we infer [summary] — **confirm** or correct.” **Never** skip showing the blockquote to “save a turn.”
+5. **Hard gates unchanged:** **`repo_registry_confidence`**, **`repo_naming_mismatch_notes`**, **`product_md_update_required`** must be present when repos are listed. **Q9** implementability rules apply unchanged when web/app/user-visible UI is in scope. **“Confirm” path:** PRD may already imply the answer — you **still** paste the **verbatim blockquote** question, then e.g. “From your PRD sectionX we infer [summary] — **confirm** or correct.” **Never** skip showing the blockquote to “save a turn.”
 
 6. **Lock to brain:** Write `prd-locked.md` only when **no mandatory field is TBD**.
 
@@ -89,7 +89,7 @@ If you notice any of these, STOP and do not proceed:
 
 ## Lock dimensions (Q1–Q9 reference — elicit in doubt order, not ritual order)
 
-**Naming note:** **Q1–Q9** are **internal labels** for **which sections** must appear in `prd-locked.md` — *not* “you owe the user nine chat turns” and *not* “exactly eight plus design.” They exist so skills and reviewers can point at **specific lock dimensions**. The only “limit” is **document completeness**; conversation length is **unbounded above and below** (see **Confidence-first** §7).
+**Naming note:** **Q1–Q9** are **internal labels** for **which sections** must appear in `prd-locked.md` — *not* “you owe the user nine chat turns” and *not* “exactly eight plus design.” They exist so skills and reviewers can point at **specific lock dimensions**. The only “limit” is **document completeness**; conversation length is **unbounded above and below** (see **Confidence-first** Section 7).
 
 The numbering below is a **checklist of fields** that must appear in `prd-locked.md` before council — **not** a promise to ask the user exactly eight (or any fixed number of) questions. **Order of conversation follows doubt severity**, not Q1→Q9 sequence, except where a later field depends on an earlier one (e.g. resolve **product** before **Q4** repos).
 

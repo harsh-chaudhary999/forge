@@ -53,7 +53,8 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 - Plan references an API endpoint not defined in shared-dev-spec contracts
 - **Missing §0 / §1b / §1c or wrong file order** (`tech-plan-write-per-project`): no **Section 0** doubt log (incl. **§0.2** interactive rounds when contracts are in play); no `Tech plan status:` under title; missing **§1b.0 PRD coverage matrix**, **1b.1–1b.6** plus **1b.1a** when search applies, **1c** revision log, or **web/app** missing **1b.4** / **HTTP** missing **1b.5**
 - **§1b.0 orphan rows or orphan Section 2 tasks** — PRD/spec case not mapped to tasks, or tasks not tied to **§1b.0** / spec (implicit coverage)
-- **Thin schema or HTTP payloads** — §**1b.1** / §**1b.5** lack required DDL or JSON/verbatim shapes where the frozen contract already defines them
+- **Thin schema or HTTP payloads (in-scope surfaces)** — §**1b.1** / §**1b.1a** / §**1b.5** lack required persistence schema, search index definitions, or HTTP shapes **where this repo owns that work** and the frozen contract already defines them
+- **False applicability** — Invented persistence or search work, or server routes, in a repo that should be **N/A** for those surfaces, or **blank** §1b.1 / **1b.1a** / **1b.5** without the skill’s **explicit N/A** line
 - **Data model delta contradicts migration tasks** — Delta says “none” but tasks add DDL, or delta lists tables with no matching migration task
 - **Figma / `design_brain_paths` / Lovable locked in intake but 1b.4 empty or generic** — “See Figma” without node ids or brain paths, or no **`D<n>`** linkage from UI tasks
 - **Missing §1b.5** when the repo implements or consumes REST/HTTP for this task — No API↔component map
@@ -110,9 +111,9 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 ### 1b. Data model delta, reuse narrative, design trace, preamble (`tech-plan-write-per-project` Section 1b)
 
 **Checklist:**
-- [ ] **File layout:** `Tech plan status:` line immediately under `#` title; **Section 0** doubt log (**§0.2** when applicable); **Section 1b** (**`1b.0` PRD↔scan matrix** with bidirectional task ids, then `1b.1`, **1b.1a** if search, `1b.2`–`1b.6` per applicability) and **§Section 1c** appear **before Task 1**
+- [ ] **File layout:** `Tech plan status:` line immediately under `#` title; **Section 0** doubt log (**§0.2** when applicable); **Section 1b** (**`1b.0` PRD↔scan matrix** with bidirectional task ids, then **`1b.1` and `1b.1a`** each as table **or** skill-prescribed one-line N/A, then `1b.2`–`1b.6` per applicability) and **§Section 1c** appear **before Task 1**
 - [ ] **§1b.0 completeness:** Every material **PRD / spec** requirement for this repo has a matrix row with **brain path evidence** and **Section 2** task ids (or explicit `N/A` + sibling repo); edge/negative/NFR rows exist or are **waived** with citation
-- [ ] **Schema & payload depth:** §**1b.1** DDL is inlined or verbatim-contract; §**1b.1a** (if applicable) includes **fenced JSON** mapping fragments or verbatim-contract; §**1b.5** includes **JSON** (or verbatim) for request/success/error for each changed endpoint — no `TBD` shapes when the contract is already concrete
+- [ ] **Schema & payload depth (where applicable):** If §**1b.1** has persistence delta rows, **store-native** schema (SQL / JSON / YAML / XML / DSL per **contract-schema-db**) is inlined or verbatim-contract; if §**1b.1** is the prescribed **one-line N/A**, no fabricated persistence shapes. Same for §**1b.1a** (index definition in contract format vs N/A). If §**1b.5** applies, **JSON** (or verbatim) for each **changed** `METHOD+path` (or consumer map + unchanged contract cited explicitly) — no `TBD` where the contract is already concrete; if §**1b.5** is **one-line N/A**, no forced API tables
 - [ ] **Data model delta** is either a table with one row per CREATE/ALTER/DROP/index (or equivalent storage change), or an explicit one-line statement that this repo has **no** persistence/schema work — consistent with **shared-dev-spec** / DB contract
 - [ ] **Cross-repo DDL:** If migrations run elsewhere, the delta says so; this plan does not silently own another service’s tables
 - [ ] **Every migration/DDL task** in the plan has a matching row in the delta (or the repo correctly claims no persistence and has no such tasks)

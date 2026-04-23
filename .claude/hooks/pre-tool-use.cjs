@@ -24,6 +24,9 @@
  * Output: JSON to stdout (allow = exit 0 with no output; ask = permissionDecision)
  *
  * Cross-platform: works on Linux, macOS, Windows (via run-hook.cmd → bash → node)
+ *
+ * FORGE_DISABLE_CANARY=1 — skip canary-in-command check (and match session-start:
+ * no canary file expected). Use only on trusted local machines; default is secure.
  */
 
 const fs = require('fs');
@@ -65,14 +68,20 @@ if (!command) {
 // If the session canary token appears in the command, a tool result may have
 // injected it to trigger execution. Block and warn.
 
+const canaryDisabled =
+  process.env.FORGE_DISABLE_CANARY &&
+  String(process.env.FORGE_DISABLE_CANARY).trim() === '1';
+
 const CANARY_FILE = path.join(os.homedir(), '.forge', '.canary');
 let canaryToken = '';
-try {
-  if (fs.existsSync(CANARY_FILE)) {
-    canaryToken = fs.readFileSync(CANARY_FILE, 'utf-8').trim();
+if (!canaryDisabled) {
+  try {
+    if (fs.existsSync(CANARY_FILE)) {
+      canaryToken = fs.readFileSync(CANARY_FILE, 'utf-8').trim();
+    }
+  } catch (_) {
+    // Canary file unreadable — skip check silently
   }
-} catch (_) {
-  // Canary file unreadable — skip check silently
 }
 
 if (canaryToken && command.includes(canaryToken)) {

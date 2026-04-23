@@ -16,22 +16,34 @@
  * Fallback: if stage detection fails for any reason, falls back to the full
  * using-forge/SKILL.md — existing behavior is preserved unconditionally.
  *
- * Stage detection map (from conductor.log last marker):
- *   No log / [P1.*]         → intake
- *   [P2.*] / [P3.*]         → council (before spec freeze)
- *   [P3-SPEC-FROZEN] / [P3.5*] / [P4.0-*] → build
- *   [P4.1-DISPATCH] (no GREEN) → build (ongoing)
- *   [P4.4-EVAL-GREEN] / [P4.4-*] → eval → pr transition
- *   [P5.*]                  → pr
+ * Conductor log selection:
+ *   - If FORGE_TASK_ID or FORGE_PRD_TASK_ID is set and brain/prds/<id>/conductor.log
+ *     exists → use that file (recommended when multiple tasks exist).
+ *   - Else → use the most recently modified per-task conductor.log under prds/ (mtime
+ *     heuristic; can pick the wrong task if another log was touched recently — set FORGE_TASK_ID).
  *
- * Why this matters (Superpowers principle):
- * Every session must start with full Forge awareness. Without this inline,
- * you'll drift into unsafe patterns (skipping gates, rationalizing shortcuts).
- * This hook is the perimeter defense. It fires FIRST, before any other work.
+ * Stage detection (LAST phase marker in the chosen log wins):
+ *   Parse all tokens matching [P…] in document order; use the LAST one only.
+ *   Map:
+ *     [P5…]                    → pr
+ *     [P4.4-EVAL-GREEN]        → pr (eval done; PR / merge phase)
+ *     other [P4.4-…]           → eval (eval in flight or RED, etc.)
+ *     [P4.1-DISPATCH]          → eval (per stages/eval.md)
+ *     [P4.0-…]                 → build (State 4b prep)
+ *     [P3-SPEC-FROZEN], [P3.5…] → build
+ *     other [P3…], [P2…]       → council
+ *     [P1…]                    → intake
+ *   No recognizable marker     → intake
  *
- * Cannot be skipped (this is a HARD-GATE):
- * - Rationalization: "I already know Forge, skip the boot"
- *   Truth: You drift. Pattern matching fails on new scenarios. Boot every time.
+ * Environment:
+ *   FORGE_BRAIN_PATH          — brain root override
+ *   FORGE_TASK_ID / FORGE_PRD_TASK_ID — task-scoped conductor.log
+ *   FORGE_PREAMBLE_TIER       — 1–4 (default 2); missing tier file skips preamble slice
+ *   FORGE_HOOKS_DEBUG=1       — stderr traces (selection + stage)
+ *   FORGE_DISABLE_CANARY=1    — skip writing ~/.forge/.canary (pre-tool-use skips check too)
+ *
+ * Why this matters:
+ * Every session must start with Forge awareness. This hook fires FIRST.
  *
  * Usage:
  *   This runs automatically via Claude Code session hook
@@ -44,6 +56,8 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
+
+const { detectStageFromLogContent } = require(path.join(__dirname, 'forge-stage-detect.cjs'));
 
 // Configuration
 const SKILL_FILE = path.join(__dirname, '..', 'skills', 'using-forge', 'SKILL.md');
@@ -66,6 +80,16 @@ function die(message) {
   process.exit(1);
 }
 
+function resolvePreambleTier() {
+  const raw = process.env.FORGE_PREAMBLE_TIER;
+  if (raw === undefined || String(raw).trim() === '') {
+    return DEFAULT_PREAMBLE_TIER;
+  }
+  const n = parseInt(String(raw).trim(), 10);
+  if (Number.isNaN(n)) return DEFAULT_PREAMBLE_TIER;
+  return Math.min(4, Math.max(1, n));
+}
+
 function loadPreamble(tier) {
   const preambleFile = path.join(PREAMBLE_DIR, `tier-${tier}.md`);
   if (!fs.existsSync(preambleFile)) {
@@ -81,6 +105,11 @@ function loadPreamble(tier) {
 }
 
 function generateCanary() {
+  const v = process.env.FORGE_DISABLE_CANARY;
+  if (v && String(v).trim().toLowerCase() === '1') {
+    log('FORGE_DISABLE_CANARY=1 — skipping canary generation');
+    return;
+  }
   try {
     if (!fs.existsSync(FORGE_RUNTIME_DIR)) {
       fs.mkdirSync(FORGE_RUNTIME_DIR, { recursive: true });
@@ -96,8 +125,7 @@ function generateCanary() {
 // ==================== Stage Detection ====================
 
 /**
- * Finds the most recently modified conductor.log across all PRD task dirs
- * in the given brain directory.
+ * Most recently modified conductor.log under brain/prds (each task subdir).
  */
 function findMostRecentConductorLog(brainPath) {
   const prdsDir = path.join(brainPath, 'prds');
@@ -129,29 +157,26 @@ function findMostRecentConductorLog(brainPath) {
 }
 
 /**
- * Maps conductor.log content to a pipeline stage name.
- * Returns: 'intake' | 'council' | 'build' | 'eval' | 'pr' | null
+ * Resolves conductor.log: FORGE_TASK_ID / FORGE_PRD_TASK_ID first, else mtime.
  */
-function detectStage(logContent) {
-  const lines = logContent.split('\n').filter(l => l.trim().length > 0);
-
-  const has = (pattern) => lines.some(l => pattern.test(l));
-
-  if (has(/\[P5[.-]/)) return 'pr';
-  if (has(/\[P4\.4-EVAL-GREEN\]/) || has(/\[P4\.4-/)) return 'pr';
-  // P4.1-DISPATCH with no GREEN = still in build/eval
-  if (has(/\[P4\.1-DISPATCH\]/)) return 'eval';
-  // State 4b gates (P4.0-*) = build phase
-  if (has(/\[P4\.0-/)) return 'build';
-  // P3-SPEC-FROZEN or P3.5 = build (spec just frozen, starting implementation)
-  if (has(/\[P3-SPEC-FROZEN\]/) || has(/\[P3\.5/)) return 'build';
-  // P3.* (council ongoing) or P2.* = council
-  if (has(/\[P3[.-]/) || has(/\[P2[.-]/)) return 'council';
-  // P1.* = intake
-  if (has(/\[P1[.-]/)) return 'intake';
-
-  // Log exists but no recognized markers — default to intake
-  return 'intake';
+function resolveConductorLogPath(brainPath) {
+  const taskIdRaw = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
+  if (taskIdRaw) {
+    const taskId = String(taskIdRaw).trim();
+    const scoped = path.join(brainPath, 'prds', taskId, 'conductor.log');
+    if (fs.existsSync(scoped)) {
+      log(`conductor.log selection: task-scoped (FORGE_TASK_ID) → ${scoped}`);
+      return scoped;
+    }
+    log(
+      `FORGE_TASK_ID/FORGE_PRD_TASK_ID=${taskId} but missing ${scoped} — falling back to mtime heuristic`,
+    );
+  }
+  const fallback = findMostRecentConductorLog(brainPath);
+  if (fallback) {
+    log(`conductor.log selection: mtime fallback → ${fallback}`);
+  }
+  return fallback;
 }
 
 /**
@@ -167,7 +192,7 @@ function tryDetectStage() {
   for (const brainPath of brainCandidates) {
     if (!fs.existsSync(brainPath)) continue;
 
-    const logPath = findMostRecentConductorLog(brainPath);
+    const logPath = resolveConductorLogPath(brainPath);
     if (!logPath) {
       log(`Brain found at ${brainPath} but no conductor.log — defaulting to intake`);
       return 'intake';
@@ -175,7 +200,7 @@ function tryDetectStage() {
 
     try {
       const logContent = fs.readFileSync(logPath, 'utf-8');
-      const stage = detectStage(logContent);
+      const stage = detectStageFromLogContent(logContent);
       log(`conductor.log: ${logPath} → stage: ${stage}`);
       return stage;
     } catch (e) {
@@ -242,7 +267,8 @@ try {
 generateCanary();
 
 // Prepend shared preamble to session context
-const preambleContent = loadPreamble(DEFAULT_PREAMBLE_TIER);
+const preambleTier = resolvePreambleTier();
+const preambleContent = loadPreamble(preambleTier);
 const preamblePrefix = preambleContent
   ? `${preambleContent}\n\n---\n\n`
   : '';

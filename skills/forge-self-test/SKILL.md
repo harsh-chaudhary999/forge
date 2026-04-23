@@ -227,7 +227,7 @@ Before running self-test, verify all prerequisites:
 - [ ] No stale processes running (`ps aux | grep -E 'node|python|java' | grep -v grep`)
 
 **Forge Skills & Services:**
-- [ ] All 63 skills available in `skills/` (or verify subset for partial test)
+- [ ] Every directory under `skills/` has a `SKILL.md` (full catalog; or verify subset for partial test)
 - [ ] All deployment drivers available (`deploy-driver-*` skills)
 - [ ] All eval drivers available (`eval-driver-*` skills)
 - [ ] All contract negotiators available (`contract-*` skills)

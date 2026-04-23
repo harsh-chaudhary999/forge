@@ -2,7 +2,7 @@
 
 > Plug-and-play multi-repo product orchestration for AI-assisted delivery. Takes a PRD and drives it through locked scope, negotiated contracts, tech plans, TDD implementation, multi-surface eval, review, and coordinated PRs — with a **git-backed brain** as the system of record.
 
-Forge ships a feature across **multiple repos** without embedding a runtime framework in your product code: **skills** (markdown + YAML), **subagents**, **hooks**, and **commands** encode process. **68 skills**, **4 subagents**, **17 slash commands**. Works with **Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Copilot CLI, OpenCode, JetBrains AI** (see [Platform Setup](#platform-setup)).
+Forge ships a feature across **multiple repos** without embedding a runtime framework in your product code: **skills** (markdown + YAML), **subagents**, **hooks**, and **commands** encode process. **80 skills**, **4 subagents**, **17 slash commands**. Works with **Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Copilot CLI, OpenCode, JetBrains AI** (see [Platform Setup](#platform-setup)).
 
 **`/forge`** (`commands/forge.md`) is the **full end-to-end** entrypoint: same phases as **`conductor-orchestrate`**, including **mandatory** State 4b **manual QA CSV** (`qa-prd-analysis` → `qa-manual-test-cases-from-prd` → approved `qa/manual-test-cases.csv` → `[P4.0-QA-CSV]`) **before** `[P4.0-EVAL-YAML]`, then eval YAML, TDD RED, design ingest when applicable, dispatch, reviews, **P4.4 eval**, self-heal, PR set, dream/brain. Other slash commands are **partial slices** — see [Commands reference](#commands-reference) and [Orchestration model](#orchestration-model-automation-vs-approvals).
 
@@ -64,7 +64,7 @@ Forge injects context on session start. Verify:
 /forge-status
 ```
 
-You should see **using-forge** and the skill catalog (**68 skills** when installed from this repo).
+You should see **using-forge** and the skill catalog (**80 skills** when installed from this repo).
 
 ---
 
@@ -422,7 +422,7 @@ Each file under **`commands/`** has YAML **`name:`** + **`description:`**, optio
 
 ```
 forge/
-├── skills/                 # 68 SKILL.md trees (YAML frontmatter)
+├── skills/                 # 80 SKILL.md trees (YAML frontmatter)
 │   ├── using-forge/        # Bootstrap (session hook injects)
 │   ├── conductor-orchestrate/
 │   ├── intake-interrogate/
@@ -435,11 +435,15 @@ forge/
 │   └── …
 ├── agents/                 # 4 subagent definitions (*.md)
 ├── commands/               # 17 slash-command docs (*.md)
-├── hooks/                  # Hook scripts + IDE-specific hook JSON
+├── hooks/                  # Hook scripts + IDE-specific hook JSON (repo root)
+├── .claude/hooks/          # Claude Code: session-start, pre-tool-use, forge-stage-detect.cjs + test
 ├── tools/                  # scan_forge + verify_forge_task.py — see tools/README.md
 ├── docs/
 │   ├── platforms/          # Cursor, Claude Code, …
+│   ├── contributing.md     # Git + hooks contributor notes
+│   ├── adjunct-skills.md   # Optional skills vs conductor canonical path
 │   └── examples/
+├── scripts/                  # install.sh, verify-forge-plugin-install.sh
 ├── templates/              # e.g. JetBrains junie-guidelines (no bundled forge-product; product = brain product.md)
 ├── .claude-plugin/
 ├── .cursor-plugin/         # Cursor manifest (plugin.json)
@@ -459,6 +463,11 @@ forge/
 | **reference** | Lookup / layout / glossary |
 
 Rigid skills typically include: **Anti-Pattern Preamble**, **Iron Law**, **Red Flags — STOP**, **Workflow**, **Edge cases**, **Checklist**.
+
+### Contributing and adjunct skills
+
+- **[`docs/contributing.md`](docs/contributing.md)** — Git discipline on `main`, hook / stage-detect testing, skill conventions.
+- **[`docs/adjunct-skills.md`](docs/adjunct-skills.md)** — Optional skills outside the default **`conductor-orchestrate`** path.
 
 ---
 
@@ -522,7 +531,7 @@ Full reference: **[`docs/forge-task-verification.md`](docs/forge-task-verificati
 ### Skills not discovered
 
 ```bash
-ls ~/forge/skills/*/SKILL.md | wc -l    # expect 68 from this repository
+ls ~/forge/skills/*/SKILL.md | wc -l    # expect 80 from this repository
 ```
 
 Check YAML frontmatter on any skill that fails to load.

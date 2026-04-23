@@ -29,7 +29,7 @@ Start a new Claude Code session. You should see Forge context injected (the `usi
 
 | Feature | Status |
 |---|---|
-| Skills (68) | Full support via Skill tool |
+| Skills (80) | Full support via Skill tool |
 | Agents (4) | Full support via Agent tool |
 | Hooks | SessionStart injects `using-forge` bootstrap |
 | Commands (17) | All slash commands available |
@@ -40,7 +40,7 @@ Start a new Claude Code session. You should see Forge context injected (the `usi
 
 1. **Session Start:** The `hooks/session-start` script runs on every session start, clear, or compact event
 2. **Context Injection:** The `using-forge` skill content is injected as `additionalContext` via `hookSpecificOutput`
-3. **Skill Loading:** All 68 skills in `skills/` are available via the `Skill` tool
+3. **Skill Loading:** All 80 skills in `skills/` are available via the `Skill` tool
 4. **Agent Dispatch:** 4 subagents are available via the `Agent` tool with isolation via worktrees
 
 ## Forge phase session styles

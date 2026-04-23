@@ -26,7 +26,7 @@ Start a Copilot CLI session in the Forge directory. The `using-forge` bootstrap 
 
 | Feature | Status |
 |---|---|
-| Skills (68) | Available via skill invocation |
+| Skills (80) | Available via skill invocation |
 | Session bootstrap | Auto via hook detection |
 | Tool mapping | `references/copilot-tools.md` |
 

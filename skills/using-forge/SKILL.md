@@ -34,6 +34,18 @@ Council and subagents **do not** share your live chat. They only see **what is w
 
 **Session style (all hosts):** Forge cannot toggle your editor’s **planning vs execution** mode (or permissions) programmatically. Convention: **planning-style** for intake, council, and tech-plan **review**; **execution-style** for build, eval, heal. Instruct the user to switch style or permissions when the Forge phase changes — see **`docs/platforms/session-modes-forge.md`** (each platform doc links the same rules to local UI names).
 
+**Claude Code `session-start` hook (stage + preamble):** Optional env vars (export in shell or IDE env before launching Claude):
+
+| Variable | Purpose |
+|----------|---------|
+| **`FORGE_TASK_ID`** or **`FORGE_PRD_TASK_ID`** | Use **`~/forge/brain/prds/<id>/conductor.log`** for stage detection. **Recommended** when multiple tasks exist; otherwise the hook picks the **newest mtime** among `prds/*/conductor.log`, which can be the wrong task. |
+| **`FORGE_BRAIN_PATH`** | Brain root if not **`~/forge/brain`**. |
+| **`FORGE_PREAMBLE_TIER`** | `1`–`4`: which **`skills/_preamble/tier-N.md`** is prepended (default **`2`**). |
+| **`FORGE_HOOKS_DEBUG=1`** | Log conductor.log path + resolved stage to stderr (hook diagnostics). |
+| **`FORGE_DISABLE_CANARY=1`** | Skip writing **`~/.forge/.canary`** and skip canary-in-command checks in **`pre-tool-use`** (trusted local only). |
+
+Stage resolution uses the **last** `[P…]` marker in the chosen log; implementation: **`.claude/hooks/forge-stage-detect.cjs`**. Run **`node .claude/hooks/test-forge-stage-detect.cjs`** (from repo root) to verify mapping after edits.
+
 ## Anti-Pattern Enforcement (HARD-GATE)
 
 ### Anti-Pattern 1: "This is a simple question, I don't need a skill"

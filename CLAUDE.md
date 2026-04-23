@@ -41,9 +41,9 @@ requires: [other-skill-name]
 
 | Thing | Location |
 |---|---|
-| Skills (68) | `skills/` |
+| Skills (80) | `skills/` |
 | Agents (4) | `agents/` |
-| Commands (15) | `commands/` |
+| Commands (17) | `commands/` |
 | Plugin hooks | `hooks/` |
 | Git hooks | `.claude/hooks/` |
 | Brain (decisions) | `brain/` |

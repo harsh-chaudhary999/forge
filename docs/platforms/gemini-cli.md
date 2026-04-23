@@ -24,7 +24,7 @@ Start Gemini CLI in the Forge directory. The extension loads `GEMINI.md` which p
 
 | Feature | Status |
 |---|---|
-| Skills (68) | Available via Gemini's tool system |
+| Skills (80) | Available via Gemini's tool system |
 | GEMINI.md context | Auto-loaded as project context |
 | AGENTS.md context | Auto-loaded (Gemini reads both) |
 

@@ -25,7 +25,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [javascript-typescript, python]
+        include:
+          # No npm build / bundler — autobuild extracts nothing and finalize fails with exit 32.
+          # https://gh.io/troubleshooting-code-scanning/no-source-code-seen-during-build
+          - language: javascript-typescript
+            build-mode: none
+          - language: python
+            build-mode: none
 
     steps:
       - uses: actions/checkout@v4
@@ -33,9 +39,11 @@ jobs:
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
           config-file: ./.github/codeql/codeql-config.yml
 
-      - uses: github/codeql-action/autobuild@v3
+      - if: matrix.build-mode != 'none'
+        uses: github/codeql-action/autobuild@v3
 
       - uses: github/codeql-action/analyze@v3
         with:

@@ -1,0 +1,32 @@
+name: forge-hooks
+
+on:
+  push:
+    paths:
+      - ".claude/hooks/session-start.cjs"
+      - ".claude/hooks/pre-tool-use.cjs"
+      - ".claude/hooks/forge-stage-detect.cjs"
+      - ".claude/hooks/test-forge-stage-detect.cjs"
+      - ".github/workflows/forge-hooks.yml"
+  pull_request:
+    paths:
+      - ".claude/hooks/session-start.cjs"
+      - ".claude/hooks/pre-tool-use.cjs"
+      - ".claude/hooks/forge-stage-detect.cjs"
+      - ".claude/hooks/test-forge-stage-detect.cjs"
+      - ".github/workflows/forge-hooks.yml"
+
+jobs:
+  stage-detect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage marker unit tests
+        run: node .claude/hooks/test-forge-stage-detect.cjs
+
+      - name: Load session-start hook (syntax)
+        run: node --check .claude/hooks/session-start.cjs
+
+      - name: Load pre-tool-use hook (syntax)
+        run: node --check .claude/hooks/pre-tool-use.cjs

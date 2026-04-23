@@ -30,6 +30,15 @@ Open the Forge directory in Antigravity. Skills should be listed in the agent's 
 - "Use the forge-intake-gate skill to start intake"
 - "What skills are available from Forge?"
 
+## Keeping Forge updated
+
+**Discovery:** same as all hosts — **[README §4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
+
+**Apply:**
+
+- If you work **inside the `~/forge` clone** (`.agent/skills/` symlinks in-repo): **`cd ~/forge && git pull`** then restart Antigravity / start a new session.
+- If you used **`install.sh --platform antigravity`** (skills under **`~/.gemini/antigravity/skills/forge/`**): run **`cd ~/forge && git pull && bash scripts/install.sh --platform antigravity`** so symlinks refresh.
+
 ## Available Features
 
 | Feature | Status |

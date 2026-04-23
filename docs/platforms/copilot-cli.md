@@ -22,6 +22,12 @@ cd ~/forge && bash scripts/install.sh --platform copilot-cli
 
 Start a Copilot CLI session in the Forge directory. The `using-forge` bootstrap should be injected as context.
 
+## Keeping Forge updated
+
+**Discovery:** **[README §4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
+
+**Apply:** `cd ~/forge && git pull && bash scripts/install.sh --platform copilot-cli` — then start a **new** Copilot CLI session so hooks and context pick up skill changes.
+
 ## Available Features
 
 | Feature | Status |

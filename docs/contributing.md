@@ -16,6 +16,14 @@ bash scripts/count-skills.sh
 
 Use this instead of hardcoding a number in docs or runbooks.
 
+## Releases (so users can “know” there was an update)
+
+Forge does not notify installs by itself. If you maintain a fork or upstream:
+
+1. **Bump** `package.json` `version` and the `version` field in **`.claude-plugin/plugin.json`**, **`.cursor-plugin/plugin.json`**, **`.codex-plugin/plugin.json`** when you cut a meaningful drop (install.sh reads `package.json` for Cursor marketplace metadata).
+2. **Tag** in git (e.g. `v1.0.1`) and publish a **GitHub Release** with short notes — users watching **Releases** get an email/feed.
+3. Point heavy consumers at a **pinned SHA** or tag in internal docs if you need reproducibility over “latest `main`”.
+
 ## Git history
 
 - **Avoid squashing unrelated work into a single commit on `main`.** Large squashes make **`git bisect`**, code review, and revert archaeology painful.

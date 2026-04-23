@@ -25,6 +25,16 @@ Start a new Claude Code session. You should see Forge context injected (the `usi
 /forge-status
 ```
 
+## Keeping Forge updated
+
+There is **no** in-app auto-update for Forge. When your **`~/forge`** clone has new commits, refresh this host:
+
+```bash
+cd ~/forge && git pull && bash scripts/install.sh --platform claude-code
+```
+
+Start a **new Claude Code session** after skills or hooks change. **How to notice upstream changes** (GitHub Watch, Releases, team comms) is the same for every editor — see **[README §4 — Keeping Forge updated](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
+
 ## Available Features
 
 | Feature | Status |

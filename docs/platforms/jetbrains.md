@@ -23,6 +23,16 @@ cd ~/forge && bash scripts/install.sh --platform jetbrains
 
 Open the project in your JetBrains IDE. The AI assistant should follow Forge guidelines when working in the project. Ask it about Forge rules to verify.
 
+## Keeping Forge updated
+
+JetBrains does **not** load a live Forge plugin tree from `~/forge`; it uses **`.junie/guidelines.md`** copied into each project. When Forge’s template or your org’s fork moves forward:
+
+```bash
+cd ~/forge && git pull && bash scripts/install.sh --platform jetbrains
+```
+
+Then **re-copy** `templates/junie-guidelines.md` into each repo’s `.junie/guidelines.md` (or your internal equivalent). **How to hear about Forge releases** is the same as other hosts — **[README §4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
+
 ## Available Features
 
 | Feature | Status |

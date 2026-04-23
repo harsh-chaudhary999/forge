@@ -10,7 +10,7 @@ Forge ships a feature across **multiple repos** without embedding a runtime fram
 
 ## Table of contents
 
-- [Quick start](#quick-start)
+- [Quick start](#quick-start) (includes [keeping Forge updated](#4-keeping-forge-updated-how-you-hear-about-changes))
 - [What Forge is (and is not)](#what-forge-is-and-is-not)
 - [How Forge works](#how-forge-works)
 - [Delivery gates (Phase 4)](#delivery-gates-phase-4)
@@ -67,6 +67,38 @@ Forge injects context on session start. Verify:
 ```
 
 You should see **using-forge** and the full skill catalog (verify count with `bash scripts/count-skills.sh` from `~/forge`).
+
+### 4. Keeping Forge updated (how you hear about changes)
+
+Forge is **just files in your clone** (`~/forge` by default). There is **no built-in auto-update or push notification** to your IDE.
+
+**How users typically learn about updates:**
+
+| Channel | What to do |
+|--------|------------|
+| **GitHub** | **Watch** the repo (**Custom → Releases** or **All activity**). If maintainers publish **[GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)** with notes, that is the clearest signal. |
+| **Manual check** | Periodically: `cd ~/forge && git fetch && git log HEAD..origin/master --oneline` (or your default branch), then decide to merge or pull. |
+| **Team / org** | Internal Slack, newsletter, or “pin this Forge SHA for this quarter” in your runbooks. |
+
+**Apply an update** (same machine, existing install):
+
+```bash
+cd ~/forge && git pull && bash scripts/install.sh
+```
+
+Omit flags to refresh **every** host `install.sh` auto-detects; or pass **`--platform`** once per editor you actually use. Supported names: **`cursor`**, **`claude-code`**, **`opencode`**, **`antigravity`**, **`codex`**, **`gemini-cli`**, **`jetbrains`**, **`copilot-cli`** (see `bash scripts/install.sh --help`).
+
+**After `git pull`, host-specific refresh:**
+
+| Host | Extra step (when applicable) |
+|------|--------------------------------|
+| **Gemini CLI** | `gemini extensions update forge` (or re-run `gemini extensions link ~/forge`) so the CLI sees new files. |
+| **Codex** | Re-run `codex plugin install forge` if you rely on Codex’s cached plugin copy (see `install.sh` output). |
+| **JetBrains** | Re-run `install.sh --platform jetbrains` or re-copy `templates/junie-guidelines.md` into projects that vendor the template. |
+
+Restart each app (or start a new agent session) after a meaningful skill or hook change. Per-host notes: **[`docs/platforms/`](docs/platforms/)**.
+
+**Version today:** `package.json` and **`.*-plugin/plugin.json`** carry **`1.0.0`** — bump these when you want installers and manifests to reflect a new drop; tags + Release notes help watchers.
 
 ---
 

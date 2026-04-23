@@ -74,6 +74,8 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 - **Multi-repo API drift:** consumer **operation keys** in this plan’s §1b.5 (e.g. `METHOD+path`, GraphQL operation name, SOAP QName, gRPC full method) do not match sibling `tech-plans/*.md` owner rows (after XALIGN should have fixed — still FAIL → BLOCKED)
 - **`tech-plans/HUMAN_SIGNOFF.md` missing** after agent **PASS** + **XALIGN** — Human feedback / go-ahead phase skipped; pipeline must not advance to State 4b. STOP. Create signoff per **`docs/tech-plan-human-signoff.template.md`** (or **`waived`** with reason).
 - **`SCAN_INCOMPLETE` / verify failure ignored:** `SCAN.json` exists but **`python3 tools/verify_scan_outputs.py …/codebase`** did not exit **0** (after retries per **`tech-plan-write-per-project`**) and the plan still cites brain paths as ground truth — STOP. Re-run **`/scan`** or mark paths **`OUT_OF_MANIFEST`** with evidence.
+- **Cohort / segmentation via `SPEC_INFERENCE` in Section 0** — Product-visible segment, eligibility, or batch-exclusion decisions recorded with **`SPEC_INFERENCE`** and/or **Confidence H** without **`USER:`** / **`PO:`** / **`TL:`** / verbatim spec — **forbidden for `REVIEW_PASS`** per **`tech-plan-write-per-project` §0.1** rule 6. **CHANGES** until **`touchpoints/COHORT-AND-ADJACENCY.md`** exists with human-backed rows or **`WAIVER`**.
+- **Missing adjacency / signal artifacts when PRD implies them** — Task lacks **`touchpoints/COHORT-AND-ADJACENCY.md`** or **`touchpoints/PRD-SIGNAL-REGISTRY.md`** (or documented waivers) while **`prd-locked.md`** **`pipeline_adjacency_notes`** or PRD text implies multi-pipeline or trust-line persistence — **CHANGES** or **BLOCKED** until council outputs or waivers land in brain.
 
 **Any of these mean: BLOCKED. Fix before dispatch.**
 
@@ -120,12 +122,23 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 - [ ] **No artificial silence:** multiple substantive questions when the feature is complex — or one explicit row **`No material doubts`** when truly trivial
 - [ ] **No high-impact `L` (low) confidence** without **BLOCKED**, **WAIVER**, or named owner + next step
 - [ ] Answers tie to **§1b** rows and/or **Section 2** task ids — orphan answers are cleaned up
+- [ ] **Binary — adjacency pack:** Per **`docs/adjacency-and-cohorts.md`**: no Section 0 **`SPEC_INFERENCE`**-only **cohort** rows when segmentation applies; **`touchpoints/COHORT-AND-ADJACENCY.md`** + **`PRD-SIGNAL-REGISTRY.md`** (or waivers) when required; **`discovery-adjacency.md`** or logged **`[ADJACENCY-SCAN] … SKIPPED`**; scan hits reflected in **`### 1b.2a`** or waived. Tables: **`docs/templates/adjacency-cohort-and-signals.template.md`**.
 
 ### 0. Parity & delivery context (task brain)
 
 **Checklist:**
 - [ ] **`~/forge/brain/prds/<task-id>/parity/`** satisfies **`spec-freeze`** Step 0 (**`external-plan.md`** OR completed **`checklist.md`** OR **`waiver.md`**) — not missing when the task is “serious” multi-repo delivery
+- [ ] If **`parity/risk-register.md`** exists: rows consistent with **§1b.2a** and Section 2 — or **N/A** with reason (template § C in **`docs/templates/adjacency-cohort-and-signals.template.md`**)
 - [ ] If **`delivery-plan.md`** exists: tech plan **§1b.3** or tasks reference rollout / flag / pyramid items **only** as pointers — **interfaces** still match frozen spec
+
+### 0d. Implementation readiness (artifacts — separate from human signoff)
+
+**Purpose:** Agent-verifiable gates before **`REVIEW_PASS`** or conductor **State 4b** prep — does **not** replace **`HUMAN_SIGNOFF.md`**.
+
+**Checklist (task-level paths under `~/forge/brain/prds/<task-id>/`):**
+- [ ] **`prd-locked.md`** present; authoritative PRD body in brain (**`prd-source-confluence.md`**, wiki export, or equivalent per **`forge-intake-gate`**) **or** documented **`prd_body_waiver`** with owner + risk
+- [ ] **`context-loaded.md`** present (from **`product-context-load`**)
+- [ ] **`[DISCOVERY]`** + **`[ADJACENCY-SCAN]`** logged (or documented skip) per **`docs/adjacency-and-cohorts.md`**; cohort/signal touchpoints when required — same doc + §0a **Binary — adjacency pack**
 
 ### 0b. Implementation discovery & delivery locks (when `prd-locked.md` Q10 applies)
 

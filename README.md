@@ -471,11 +471,12 @@ forge/
 ├── commands/               # 17 slash-command docs (*.md)
 ├── hooks/                  # Hook scripts + IDE-specific hook JSON (repo root)
 ├── .claude/hooks/          # Claude Code: session-start, pre-tool-use, forge-stage-detect.cjs + test
-├── tools/                  # scan_forge + verify_forge_task.py — see tools/README.md
+├── tools/                  # scan_forge, verify_forge_task.py, forge_adjacency_scan.py — see tools/README.md
 ├── docs/
 │   ├── platforms/          # Cursor, Claude Code, …
 │   ├── contributing.md     # Git + hooks contributor notes
 │   ├── adjunct-skills.md   # Optional skills vs conductor canonical path
+│   ├── adjacency-and-cohorts.md  # Pre-Council adjacency + cohort + PRD signals (single spine)
 │   └── examples/
 ├── scripts/                  # install.sh, verify-forge-plugin-install.sh
 ├── templates/              # e.g. JetBrains junie-guidelines (no bundled forge-product; product = brain product.md)

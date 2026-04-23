@@ -261,8 +261,20 @@ The Conductor:
 **FAILURE CONDITION:** Council starts with **no** `[DISCOVERY]` line while **full obligation** applied (per **Obligation (full branch survey)**) and work was not waived.  
 **SKIP escalation (human STOP) when:** `implementation_reference: none` **and** greenfield rationale **and** discovery found **no** conflicting remote branches — still log **`[DISCOVERY] … matched=0`**; do **not** STOP.
 
+**LOGGING (State 2.5):**
+```
+[DISCOVERY] task_id=<id> repos_checked=<n> implementation_reference=<branch|pr|none> branches_noted=<summary>
+[DISCOVERY] task_id=<id> obligation=waived reason=implementation_closure_not_applicable
+```
+
+### State 2.6: Adjacency code scan (before Council)
+**ENTRY:** State 2.5 satisfied — **`[DISCOVERY]`** logged.  
+**ACTION:** From the **forge plugin repo root**, run **`python3 tools/forge_adjacency_scan.py ~/forge/brain/prds/<task-id> <repo1> <repo2> …`** (each **Q4** repo path; **`--patterns`** optional). Triage output per **`docs/adjacency-and-cohorts.md`** (artifact paths + **`docs/templates/adjacency-cohort-and-signals.template.md`**).
+
+**SUCCESS / FAILURE / HUMAN-REQUIRED + example log lines:** **`docs/adjacency-and-cohorts.md`** § *Conductor (State 2.6)* — normative; do not fork prose in this skill.
+
 ### State 3: Council Negotiation
-**ENTRY:** `context-loaded.md` exists; **State 2.5 complete** — a **`[DISCOVERY]`** line is logged (full survey or **`obligation=waived`** per State 2.5).  
+**ENTRY:** `context-loaded.md` exists; **State 2.5 complete** — a **`[DISCOVERY]`** line is logged (full survey or **`obligation=waived`** per State 2.5); **`[ADJACENCY-SCAN]`** logged per State 2.6 (**COMPLETE** or documented **SKIPPED**).  
 **ACTION:** Invoke `council-multi-repo-negotiate` skill. For each repo, reason about:
   - REST API contracts
   - Event/Kafka schemas

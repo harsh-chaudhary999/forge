@@ -11,6 +11,7 @@ Small, repo-local utilities shipped with Forge. The main maintained package here
 | [`forge_scan.py`](forge_scan.py) | CLI entry: prepends `tools/` on `sys.path` and runs `scan_forge.cli` |
 | [`verify_forge_task.py`](verify_forge_task.py) | **Machine gate:** validates `prds/<task-id>/eval/*.yaml`, optional `conductor.log` ordering (P4.0 before P4.1), QA CSV when `forge_qa_csv_before_eval: true`, net-new design evidence — stdlib only ([doc](../docs/forge-task-verification.md)) |
 | [`forge_graph_query.py`](forge_graph_query.py) | **Ad-hoc queries** on **`graph.json`** from a completed scan: `summary`, `neighbors <node_id>`, `search <substring>` — stdlib only. Example: `python3 tools/forge_graph_query.py --graph ~/forge/brain/products/<slug>/codebase/graph.json summary` |
+| [`forge_adjacency_scan.py`](forge_adjacency_scan.py) | **Optional** pre-Council scan — workflow **`docs/adjacency-and-cohorts.md`**. Appends `discovery-adjacency.md` using **`rg`** + org patterns (`adjacency-seed-patterns.txt` or `--patterns`). |
 
 There is **no** separate throwaway “temp” tree under `tools/`; scan run artifacts are always created in a directory you pass as **`--run-dir`** (or a process temp dir), not committed here.
 

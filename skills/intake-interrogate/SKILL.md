@@ -139,6 +139,21 @@ The numbering below is a **checklist of fields** that must appear in `prd-locked
 **SUCCESS:** User confirms repo list **or** explicitly accepts risk after reading mismatch notes.  
 **FAILURE:** You locked Q4 with a **letter-only** answer and **no** `repo_registry_confidence` / mismatch notes — that is incomplete intake.
 
+**Q4b — Pipeline adjacency (ask when Q4 touches a “hero” or shared entity)**
+
+When the PRD centers on an entity type that likely participates in **multiple product pipelines** (CRM / leads, acquisition feeds, verification, fraud or trust scoring, billing, messaging, regional compliance, alpha vs production paths — **use neutral names from the PRD**), add **`pipeline_adjacency_notes`** to `prd-locked.md` after this cluster (MCQ + free text is fine):
+
+1. **Does this change touch or read state also used by other flows?** (yes / no / unknown)
+2. If **yes** or **unknown**: list **which** adjacent pipelines (from PRD + `product.md` roles) and whether this task **reads**, **writes**, or **must explicitly avoid** each.
+3. **Brain follow-up:** Point to **`docs/adjacency-and-cohorts.md`** for **`discovery-adjacency.md`** + **`touchpoints/`** artifacts before Council closes (**State 2.6** + council), unless **`adjacency_waiver`** with owner.
+
+**Lock snippet (append to `prd-locked.md` when Q4b applies):**
+
+```markdown
+**pipeline_adjacency_notes:** (bullets: pipelines + R/W/exclude + confidence)
+**adjacency_waiver:** no | yes (if yes: owner + reason)
+```
+
 **Q5: Any contract changes?**
 "Will this PRD require changes to any contracts? (API endpoints, DB schema, event schemas, cache keys, search indexes)"
 → Examples: "REST API v2 migration", "Add Order event to Kafka", "New MySQL table"

@@ -52,6 +52,8 @@ If you notice any of these, STOP and do not proceed:
 - **PRD implies gated / variant UI or post-condition behaviour (e.g. after deadline), web in scope, but spec lacks a locked surface matrix** — No enum / flag / route allow-list describing which UI exists in which state. STOP. Add contract text or **`WAIVER: …`** + owner + ticket until intake supplies it.
 - **PRD names a third-party verifier / identity or document provider, but spec lacks retention + secret handling** — No rows for token lifetime, hash vs raw storage, encryption boundary, audit. STOP. Lock in **`shared-dev-spec`** or **`contract-*`** or **`WAIVER`** — not silence.
 - **PRD puts message broker on critical path, but spec lacks choreography** — Unclear what advances the next stage (sync HTTP vs which consumer), idempotency, DLQ. STOP. Lock in **`contract-event-bus`** or **`WAIVER`** — not silence.
+- **Product cohorts / segmentation without a locked matrix** — PRD implies segment-specific behavior but brain lacks **`touchpoints/COHORT-AND-ADJACENCY.md`** (see **`docs/adjacency-and-cohorts.md`** + template **`docs/templates/adjacency-cohort-and-signals.template.md`** § A) with **USER/PO-backed** rows or **waivers**. STOP. No **`SPEC_INFERENCE`**-only cohort policy at council close.
+- **Trust / persistence claims without signal anchors** — PRD lines assert stored truth but there is no **`touchpoints/PRD-SIGNAL-REGISTRY.md`** (same doc + template § B) mapping to **table.column**, **topic+schema**, **cache key**, or **eval fixture**. STOP. Add rows or **`WAIVER`**.
 
 Master orchestration skill that brings together all 4 surface reasoning skills and all 5 contract skills to negotiate conflicts and lock the shared-dev-spec.
 
@@ -69,6 +71,7 @@ Verify the PRD is locked (status = LOCKED). Extract:
 - Affected repos: which codebases change?
 - Interfaces: what contracts matter (API, events, cache, DB, search)?
 - **Design / UI (from intake `prd-locked.md`):** `design_new_work`, `design_assets`, optional `design_waiver`, or `design_ui_scope: not applicable`. When web or app repos are in scope, these fields **must exist** (per `intake-interrogate` Q9). **Pass the full locked PRD text (including the Design / UI section) into every surface reasoning invocation** so agents do not rely on chat memory alone.
+- **Cohort & adjacency (before surface work completes):** Follow **`docs/adjacency-and-cohorts.md`** — read **`discovery-adjacency.md`** if present; **`touchpoints/COHORT-AND-ADJACENCY.md`** must be **drafted or waived** before council is treated as done when the PRD segments users or data.
 
 ### Step 1.2: Invoke All 4 Surface Reasoning Skills in Parallel
 Invoke these skills in parallel (no dependencies between them):

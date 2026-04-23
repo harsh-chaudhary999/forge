@@ -68,3 +68,4 @@ Adjust **`--brain`** if the brain content is in a subdirectory.
 
 - Does **not** prove scenarios are **green** or that **stack-up** works — only that **gates and files** expected by Forge’s own rules are present and ordered in the log.
 - Does **not** stop a misbehaving LLM in the IDE; it stops **bad commits** and **broken merge candidates** when wired into CI or hooks.
+- Does **not** validate adjacency/cohort artifacts — see **`docs/adjacency-and-cohorts.md`**; optional: grep **`conductor.log`** for **`[ADJACENCY-SCAN]`**. Tool: **`tools/forge_adjacency_scan.py`** (**`tools/README.md`**).

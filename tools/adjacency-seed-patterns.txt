@@ -1,0 +1,5 @@
+# One ripgrep pattern per line (`rg -e`). Lines starting with # are ignored.
+# Org/product tokens belong here or in a brain-local file: --patterns /path/to/file.txt
+# Workflow + rationale: docs/adjacency-and-cohorts.md (repo root)
+#
+# Run: python3 tools/forge_adjacency_scan.py ~/forge/brain/prds/<task-id> /path/to/repo1 …

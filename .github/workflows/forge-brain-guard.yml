@@ -3,8 +3,9 @@
 # checkout Forge (sparse) or vendor tools/verify_forge_task.py.
 #
 # Required repo/organization variable: FORGE_TASK_ID (e.g. add-2fa).
-# Optional: FORGE_STRICT_TDD = true to enforce [P4.0-TDD-RED] before P4.1 in the log.
-# Optional: FORGE_STRICT_TECH_PLANS = true to add --strict-tech-plans (needs tools/verify_tech_plans.py in sparse checkout).
+# Optional repo/org variables (exported via env: below — the shell reads env, not ${{ vars.* }}):
+#   FORGE_STRICT_TDD = true → adds --strict-tdd ([P4.0-TDD-RED] before first [P4.1-DISPATCH]).
+#   FORGE_STRICT_TECH_PLANS = true → adds --strict-tech-plans (needs verify_tech_plans.py in sparse checkout).
 # Optional: FORGE_TOOLS_REPO = owner/repo (Forge checkout for verify_forge_task.py). Defaults to harsh-chaudhary999/forge if unset.
 
 name: Forge brain guard
@@ -42,6 +43,8 @@ jobs:
       - name: Verify Forge task
         env:
           FORGE_TASK_ID: ${{ vars.FORGE_TASK_ID }}
+          FORGE_STRICT_TDD: ${{ vars.FORGE_STRICT_TDD }}
+          FORGE_STRICT_TECH_PLANS: ${{ vars.FORGE_STRICT_TECH_PLANS }}
         run: |
           set -euo pipefail
           if [ -z "${FORGE_TASK_ID:-}" ]; then

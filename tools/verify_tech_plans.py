@@ -3,8 +3,8 @@
 Structural machine checks for per-repo tech plans under a brain task.
 
 Catches common "looks complete" slips:
-  - Missing canonical headings (1b.0, 0b, 2, 2a, 1b.6, Section 1c)
-  - ### 1b.2a placed before wire-map headings (1b.5 / 1b.5b)
+  - Missing canonical headings (### 1b.0, 1b.0b, 1b.2, 1b.2a, 1b.6, Section 1c)
+  - ### 1b.2a placed before wire-map headings (### 1b.5 / #### 1b.5b)
   - REVIEW_PASS without file-embedded self-review anchors (inventory + recross)
 
 Stdlib only. Intended for CI via verify_forge_task.py --strict-tech-plans
@@ -142,6 +142,10 @@ def main() -> int:
         if args.brain
         else Path(__import__("os").environ.get("FORGE_BRAIN", str(home / "forge" / "brain"))).expanduser()
     )
+    task_dir = brain / "prds" / args.task_id
+    if not task_dir.is_dir():
+        print(f"Tech plan verification FAILED: missing task dir {task_dir}", file=sys.stderr)
+        return 1
     errs = verify_tech_plans(brain, args.task_id)
     if errs:
         print("Tech plan verification FAILED:", file=sys.stderr)

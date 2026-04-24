@@ -198,6 +198,7 @@ When `/scan` is invoked automatically at the end of `/workspace` init:
 
 ## Principles
 
+- **Evidence is what / where / how** — when you report scan outcomes in chat or docs, cite **paths**, **`SCAN.json` / `index.md` anchors**, and **how** each fact was produced (phase artifact, command + cwd). Do not substitute headline counts or **"N+"** for that detail (see **AGENTS.md** — *Written artifacts — precision*).
 - **Grep first, read second.** Structural relationships are free. File bodies are expensive.
 - **Hubs only.** Read top-N lines of files referenced by 3+ other modules. Nothing else.
 - **Obsidian format.** Every output file uses `[[wikilinks]]`. The brain is navigable by humans and agents alike.

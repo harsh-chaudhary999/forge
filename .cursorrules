@@ -32,6 +32,16 @@ requires: [other-skill-name]
 - D24: HARD-GATE tags on every non-skippable step.
 - D25: Anti-Pattern preambles on every discipline-enforcing skill.
 
+## Written artifacts — precision (scans, plans, QA, eval, code, tests)
+
+- Do **not** use vague scale (**"60+"**, **"many"**) **or** stop at **bare counts** when the reader needs to verify or implement. They need **what / where / how**: named paths or ids, location in repo or brain, and reproducible observation (command + cwd, `rg`/`Read`, commit, artifact field).
+- Prefer **lists of concrete paths / endpoints / case ids** over aggregate-only headlines. Counts are optional extras, not substitutes for identifiers.
+- If not evidenced: **UNKNOWN** + the **specific** file or command you will use next — not **N+**.
+
+## Instruction completeness — volume is not a skip lever
+
+- Never treat **large files** or **long lists** as a reason to skip required steps or substitute summaries. Complete the work (chunked reads/writes, disk under brain) or **BLOCKED** with evidence. Skill-written **HARD-GATE** / fail rules in that skill still apply.
+
 ## Core Rules (Non-Negotiable)
 
 1. **Intake first**: Every PRD must go through `forge-intake-gate` before any implementation
@@ -39,6 +49,7 @@ requires: [other-skill-name]
 3. **Worktree per task**: Every task gets a fresh git worktree — never work on main directly
 4. **Eval gates everything**: Nothing ships without `forge-eval-gate` passing
 5. **Brain persistence**: Every decision is recorded via `forge-brain-persist`
+6. **Volume is not a skip lever**: Large files or long exports do not waive required steps — see **AGENTS.md** Core rule **6** and section *Instruction completeness* in **CLAUDE.md**.
 
 ## Where Things Live
 

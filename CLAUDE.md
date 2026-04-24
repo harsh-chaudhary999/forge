@@ -29,6 +29,22 @@ requires: [other-skill-name]
 - **Never write scripts to `/tmp` and execute them.** Run all bash commands inline. Writing `/tmp/verify.sh`, `/tmp/check.sh`, `/tmp/final_check.sh` etc. and then running them is forbidden — it obscures what's being executed, creates untracked side effects, and requires extra permission approvals. If a command is complex, run it directly as a multi-line heredoc or chained pipeline.
 - **`/tmp` is only for data files, never for scripts.** Intermediate data files (e.g. scan output, temp lists) are acceptable. Executable scripts written to `/tmp` are not.
 
+## Written artifacts — precision (scans, plans, QA, eval, code, tests)
+
+- **Forbidden:** vague quantifiers **and** claims that stop at **counts** when the job is to describe **inventory, behavior, or coverage**. Example: **"14 services"** without **which directories / which entrypoints / how listed** is still too thin.
+- **Required — what / where / how** for anything another person (or agent) must verify:
+  - **What** — specific artifact or fact (file, symbol, route, test step id, requirement id).
+  - **Where** — absolute or repo-root path, brain path, or stable doc anchor.
+  - **How** — reproducible observation (exact command + cwd, `rg`/`Read` with pattern or line range, `SCAN.json` field name + path, git `rev-parse`).
+- Prefer **tables or bullet lists of paths and roles** over headline numbers. Use counts only **alongside** that detail, not instead of it.
+- If not yet evidenced: **UNKNOWN** + **concrete** next probe (which path you will open, which command you will run) — never **N+** or count-only summaries.
+
+## Instruction completeness — volume is not a skip lever
+
+- **Large** inputs or outputs (very long files, full export lists, many brain writes) are **not** a reason to skip numbered steps, replace required work with a high-level summary, or stop early without **BLOCKED** + evidence.
+- **Do** batch reads/writes, stream to files under **`~/forge/brain/`**, and continue until the **skill or command** is satisfied. Self-directed “too big” shortcuts are **forbidden**.
+- A **skill’s own** explicit stop rule (e.g. its **HARD-GATE** or stated fail condition) overrides nothing — follow that skill’s letter. Do **not** conflate that with ad‑hoc “too much data.”
+
 ## Key Constraints
 
 - **D5 (agent frameworks vs eval hosts):** Do **not** ship **LangChain** (or similar agent orchestration frameworks) **inside Forge plugin code** (skills, bundled hooks, first-party tools) as a runtime dependency. **Playwright, Puppeteer, raw CDP clients, Appium, XCTest, or browser/device automation invoked via MCP** are **not** banned for **your product’s eval** on the **operator’s machine or CI**: they run **outside** Forge’s shipped plugin code. **Before choosing a web or mobile driver implementation**, ask the human **how they want to proceed** (e.g. existing **MCP** for browser/Appium vs local **CDP** / **ADB** / **XCTest** scripts). Document the choice in the task brain if it affects reproducibility.

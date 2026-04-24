@@ -231,6 +231,7 @@ install_cursor() {
   cp -r "${FORGE_DIR}/commands"           "${plugin_dir}/commands"
   cp -r "${FORGE_DIR}/hooks"              "${plugin_dir}/hooks"
   cp    "${FORGE_DIR}/CLAUDE.md"          "${plugin_dir}/CLAUDE.md"
+  copy_optional_file "${FORGE_DIR}/AGENTS.md" "${plugin_dir}/AGENTS.md"
   cp -r "${FORGE_DIR}/.cursor-plugin"     "${plugin_dir}/.cursor-plugin"
   # Same as Claude install: full scanner so /scan works without a separate Forge clone on PATH
   rm -rf "${plugin_dir}/tools"
@@ -257,6 +258,8 @@ The Forge plugin is installed at: ~/.cursor/plugins/local/forge
 Key commands: /workspace /intake /council /plan /build /eval /heal /review /dream /forge-status
 
 Scanner (class/method stubs, full scan pipeline): python3 ~/.cursor/plugins/local/forge/tools/forge_scan.py --help
+
+Written artifacts (plans, scan notes, QA): every material claim needs **what / where / how** — paths, anchors, reproducible commands — not headline counts alone. See **AGENTS.md** / **CLAUDE.md** in this plugin directory (same folder as `skills/`). **Never** skip required steps because inputs are large — **AGENTS.md** Core rule **6** (batch reads/writes; **BLOCKED** only with evidence).
 
 On every session start: read ~/.cursor/plugins/local/forge/skills/using-forge/SKILL.md and follow its bootstrap instructions.
 RULES

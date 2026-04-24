@@ -29,6 +29,8 @@ allowed-tools:
 | "The spirit wants us to be careful, I'm being careful, so the letter is optional" | Being careful is not the same as following the rule. Both are required. Careful AND compliant. |
 | "This is internal-only, the rule doesn't apply to internal work" | The rule is unchanged by audience. Apply the rule everywhere or retract the rule. No hidden exceptions. |
 | "The rule is a good-to-have, not a must-have, so I can skip it if pressed for time" | No rule is a good-to-have in Forge. All rules are must-haves. If time pressure is real, escalate (don't rationalize). |
+| "Vague scale (~60+ items) is honest enough for scans / plans / tests" | **Not honest enough.** Letter **and** spirit require **what / where / how** — paths, anchors, commands — not counts alone. **AGENTS.md** / **CLAUDE.md** — *Written artifacts — precision*. |
+| "The export / file is 5k–8k lines — I'll sample or skip the heavy step" | **Violation** unless that **exact** sampling is prescribed by the skill. **Size is not a skip lever** — complete the instruction set or **BLOCKED** with evidence. **AGENTS.md** Core rule **6**. |
 
 ## Iron Law
 

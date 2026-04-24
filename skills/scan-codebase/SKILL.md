@@ -48,6 +48,15 @@ This graph exists so **operators who do not know the repo** can still ship safel
 **Enforcement:**
 - MUST produce separate `.md` files per module — not a single summary document
 - MUST use `[[wikilinks]]` to cross-reference between brain files
+
+### Anti-Pattern 3: "I'll headline inventory with ~60+ files / many services — sounds credible"
+
+**Why This Fails:** **"60+"**, **"many"**, or even **"exactly 62"** without **which paths / what role / how listed** does not let the next agent open the right files. Brain output exists so people can **navigate** — summaries must point to **named nodes** (modules, routes, dirs), not scale alone.
+
+**Enforcement:**
+- MUST ground inventory in **what / where / how**: path or `[[wikilink]]`, repo + role, and the Phase artifact or command that produced the row (e.g. line in `forge_scan_source_files.txt`, key in **`SCAN.json`**).
+- MUST NOT use **N+** / vague quantifiers; MUST NOT use **count-only** bullets when a **path list or table** is practical for the slice you are describing.
+- If not yet written: **UNKNOWN** + the **specific** Phase 1 file or command you will use — never a guessed floor.
 - MUST write each file to `~/forge/brain/products/<slug>/codebase/` individually
 - MUST git-commit after each project role is scanned (backend, web, app) — not after all
 

@@ -101,6 +101,9 @@ install_claude_code() {
   cp -r "${FORGE_DIR}/agents"                "${plugin_dir}/agents"
   cp -r "${FORGE_DIR}/hooks"                 "${plugin_dir}/hooks"
   cp -r "${FORGE_DIR}/commands"              "${plugin_dir}/commands"
+  # scan-codebase / /scan need forge_scan.py + scan_forge (phase4 → classes/, methods/, …)
+  rm -rf "${plugin_dir}/tools"
+  cp -r "${FORGE_DIR}/tools"                 "${plugin_dir}/tools"
   cp    "${FORGE_DIR}/package.json"          "${plugin_dir}/package.json"
   cp    "${FORGE_DIR}/CLAUDE.md"             "${plugin_dir}/CLAUDE.md"
   cp    "${FORGE_DIR}/AGENTS.md"             "${plugin_dir}/AGENTS.md"
@@ -229,6 +232,10 @@ install_cursor() {
   cp -r "${FORGE_DIR}/hooks"              "${plugin_dir}/hooks"
   cp    "${FORGE_DIR}/CLAUDE.md"          "${plugin_dir}/CLAUDE.md"
   cp -r "${FORGE_DIR}/.cursor-plugin"     "${plugin_dir}/.cursor-plugin"
+  # Same as Claude install: full scanner so /scan works without a separate Forge clone on PATH
+  rm -rf "${plugin_dir}/tools"
+  cp -r "${FORGE_DIR}/tools"              "${plugin_dir}/tools"
+  copy_optional_file "${FORGE_DIR}/package.json" "${plugin_dir}/package.json"
 
   # Make hook scripts executable (graceful — not all files may exist)
   find "${plugin_dir}/hooks" -type f \( -name "*.sh" -o -name "session-start" -o -name "run-hook.cmd" \) -exec chmod +x {} \; 2>/dev/null || true
@@ -248,6 +255,8 @@ You have the Forge plugin installed. Forge skills, agents, and commands are avai
 The Forge plugin is installed at: ~/.cursor/plugins/local/forge
 
 Key commands: /workspace /intake /council /plan /build /eval /heal /review /dream /forge-status
+
+Scanner (class/method stubs, full scan pipeline): python3 ~/.cursor/plugins/local/forge/tools/forge_scan.py --help
 
 On every session start: read ~/.cursor/plugins/local/forge/skills/using-forge/SKILL.md and follow its bootstrap instructions.
 RULES

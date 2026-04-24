@@ -69,6 +69,18 @@ verify_claude_plugin_layout() {
   return 0
 }
 
+# /scan / scan-codebase need tools/forge_scan.py in the merged plugin tree
+verify_plugin_tools_scanner() {
+  local root="$1"
+  local label="${2:-plugin}"
+  if [[ ! -f "${root}/tools/forge_scan.py" ]]; then
+    echo "ERROR [${label}]: missing ${root}/tools/forge_scan.py — re-run: bash scripts/install.sh --platform ${label}" >&2
+    return 1
+  fi
+  echo "OK [${label}]: ${root}/tools/forge_scan.py present"
+  return 0
+}
+
 opencode_skills_root() {
   local base="${HOME}/.opencode/plugins/forge"
   if [[ -d "${base}/skills" ]]; then
@@ -119,6 +131,9 @@ run_one() {
   if [[ "${lbl}" == "claude-code" ]] && [[ -d "${r}/skills" ]]; then
     verify_claude_plugin_layout "${r}" || return 1
   fi
+  if [[ "${lbl}" == "cursor" || "${lbl}" == "claude-code" ]] && [[ -d "${r}/skills" ]]; then
+    verify_plugin_tools_scanner "${r}" "${lbl}" || return 1
+  fi
 }
 
 if [[ "$ALL" -eq 1 ]]; then
@@ -141,13 +156,18 @@ fi
 
 case "${PLATFORM}" in
   cursor)
-    verify_merged_skills_root "${HOME}/.cursor/plugins/local/forge" "cursor"
+    cr="${HOME}/.cursor/plugins/local/forge"
+    verify_merged_skills_root "${cr}" "cursor"
+    if [[ -d "${cr}/skills" ]]; then
+      verify_plugin_tools_scanner "${cr}" "cursor" || exit 1
+    fi
     ;;
   claude-code)
     cc="${HOME}/.claude/plugins/cache/forge-plugin/forge/${FORGE_VERSION}"
     verify_merged_skills_root "${cc}" "claude-code"
     if [[ -d "${cc}/skills" ]]; then
       verify_claude_plugin_layout "${cc}" || exit 1
+      verify_plugin_tools_scanner "${cc}" "claude-code" || exit 1
     fi
     ;;
   opencode)

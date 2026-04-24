@@ -6,7 +6,7 @@ trigger: /scan
 
 # /scan
 
-**Forge plugin:** Invokes **`scan-codebase`** / **`forge_scan`** from **this** repo; outputs go under **`~/forge/brain/products/<slug>/codebase/`** (per skill). Not a substitute for **`/forge`** delivery.
+**Forge plugin:** Invokes **`scan-codebase`** / **`forge_scan.py`**; outputs go under **`~/forge/brain/products/<slug>/codebase/`** (per skill). Not a substitute for **`/forge`** delivery. **`scripts/install.sh`** (Cursor + Claude Code) copies the full **`tools/`** tree into the plugin dir so **`classes/`**, **`methods/`**, and the rest of the pipeline run from an installed plugin — not module-only stubs from a missing scanner.
 
 Build a codebase knowledge graph for the Forge brain. Works on any existing repo — no prior Forge setup needed. Produces navigable Obsidian markdown files that agents can query without re-reading source code.
 
@@ -103,7 +103,15 @@ Run the scan-codebase skill for each project role. Process roles in this order:
 2. `shared` / `lib` (often imported by everything)
 3. `web` / `mobile` (consumer layers)
 
-**Runner (multi-repo — see `scan-codebase` SKILL):** one invocation — `python3 tools/forge_scan.py` (or `PYTHONPATH=tools python3 -m scan_forge`) with `--brain-codebase`, `--repos role:path …`, optional `--product-md` (validates roles), optional `--phase57-write-report`, optional **`--cleanup`** (removes `forge_scan_*.txt` in the temp run directory). Phases 1 → 3.5 → 4 → 5 → 56 → 57 run in order inside `tools/scan_forge/`. See `tools/README.md`.
+**Runner (multi-repo — see `scan-codebase` SKILL):** one invocation with **`forge_scan.py`** and `--brain-codebase`, `--repos role:path …`, optional `--product-md`, optional `--phase57-write-report`, optional **`--cleanup`**. Phases 1 → 3.5 → 4 → 5 → 56 → 57 run in order inside `tools/scan_forge/`. See `tools/README.md`.
+
+**Which `forge_scan.py`:** Prefer **`python3 tools/forge_scan.py`** when the workspace is a Forge git checkout and **`tools/forge_scan.py`** exists. Otherwise call the scanner from the merged plugin **`tools/`** tree (copied by **`install.sh`**):
+- **Cursor:** `python3 "$HOME/.cursor/plugins/local/forge/tools/forge_scan.py"`
+- **Claude Code:** under **`$HOME/.claude/plugins/cache/forge-plugin/forge/<version>/tools/forge_scan.py`** where **`<version>`** matches **`package.json`** in that directory (run **`ls ~/.claude/plugins/cache/forge-plugin/forge/`** if unsure).
+
+Optional equivalent: **`PYTHONPATH=$HOME/.cursor/plugins/local/forge/tools python3 -m scan_forge`** (adjust **`PYTHONPATH`** to the same **`tools`** directory you used for **`forge_scan.py`**).
+
+Hand verification uses the same prefix: **`python3 …/tools/verify_scan_outputs.py ~/forge/brain/products/<slug>/codebase`**.
 
 ---
 

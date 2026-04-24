@@ -27,7 +27,11 @@ from phase_ledger import append_entry, build_entry  # noqa: E402
 
 def main() -> int:
     p = argparse.ArgumentParser(description="Append phase-ledger.jsonl entry with artifact SHA256.")
-    p.add_argument("--brain", default=None, help="Brain root (default $FORGE_BRAIN or ~/forge/brain)")
+    p.add_argument(
+        "--brain",
+        default=None,
+        help="Brain root (default $FORGE_BRAIN or $FORGE_BRAIN_PATH or ~/forge/brain)",
+    )
     p.add_argument("--task-id", required=True)
     p.add_argument("--phase", required=True, help='Phase marker text, e.g. "[P4.0-EVAL-YAML]"')
     p.add_argument(

@@ -42,7 +42,7 @@ Runs approved QA test cases from `manual-test-cases.csv` against a live applicat
 ### For `/qa-live-app status`
 
 ```bash
-BRAIN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 TASK_DIR=$(ls -td "$BRAIN_DIR/prds"/*/ 2>/dev/null | head -1)
 RESULTS_DIR="$TASK_DIR/qa-live-results"
 
@@ -74,7 +74,7 @@ echo "Base URL reachable: $BASE_URL (HTTP $HTTP_STATUS)"
 **Step 2 — Find and read the QA CSV:**
 
 ```bash
-BRAIN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 TASK_DIR=$(ls -td "$BRAIN_DIR/prds"/*/ 2>/dev/null | head -1)
 TASK_ID=$(basename "$TASK_DIR")
 QA_CSV=$(find "$TASK_DIR" -name "*.csv" 2>/dev/null | head -1)

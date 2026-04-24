@@ -2,7 +2,7 @@
 /**
  * pre-tool-use.cjs
  *
- * PreToolUse hook: /freeze scope (Edit/Write/NotebookEdit), skill allowed-tools
+ * PreToolUse hook: /freeze scope (Edit/Write/NotebookEdit/StrReplace), skill allowed-tools
  * (when PreToolUse is wired for that tool in hooks.json), then Bash-only checks:
  * canary-in-command and destructive command patterns (HARD-GATE / confirm).
  * Intercepts patterns that are irreversible
@@ -11,7 +11,7 @@
  * pushes, hard resets) that violate forge-letter-spirit.
  *
  * Blocks (asks for confirmation):
- *   - Edit/Write/NotebookEdit outside the /freeze scope (if active)
+ *   - Edit/Write/NotebookEdit/StrReplace outside the /freeze scope (if active)
  *   - git push --force / -f
  *   - git reset --hard
  *   - git checkout -- .  / git restore .
@@ -72,7 +72,7 @@ if (!toolName) {
 const isBash = toolName === 'Bash';
 
 // ── Freeze scope check ────────────────────────────────────────────────────
-// If ~/.forge/.freeze exists, block Edit/Write/NotebookEdit to paths outside
+// If ~/.forge/.freeze exists, block Edit/Write/NotebookEdit/StrReplace to paths outside
 // the frozen directory. Set by /freeze <dir>; cleared by /freeze off.
 
 const FREEZE_FILE = path.join(os.homedir(), '.forge', '.freeze');
@@ -83,12 +83,23 @@ try {
   }
 } catch (_) {}
 
-if (frozenDir && (toolName === 'Edit' || toolName === 'Write' || toolName === 'NotebookEdit')) {
+if (
+  frozenDir &&
+  (toolName === 'Edit' ||
+    toolName === 'Write' ||
+    toolName === 'NotebookEdit' ||
+    toolName === 'StrReplace')
+) {
   const resolvedFrozen = frozenDir.startsWith('~')
     ? path.join(os.homedir(), frozenDir.slice(1))
     : path.resolve(frozenDir);
-  // Edit/Write use file_path; NotebookEdit uses notebook_path
-  const targetPath = toolInput.file_path || toolInput.notebook_path || toolInput.new_path || '';
+  // Edit/Write use file_path; NotebookEdit uses notebook_path; StrReplace uses path
+  const targetPath =
+    toolInput.file_path ||
+    toolInput.notebook_path ||
+    toolInput.new_path ||
+    toolInput.path ||
+    '';
   if (targetPath) {
     const resolvedTarget = path.resolve(targetPath);
     const sep = path.sep;

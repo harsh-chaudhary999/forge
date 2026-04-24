@@ -45,7 +45,7 @@ Run each check in order. Collect pass/fail per item. Display all at once at the 
 **Check 1 — Brain directory:**
 
 ```bash
-BRAIN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 if [ -d "$BRAIN_DIR" ] && [ "$(ls -A "$BRAIN_DIR" 2>/dev/null)" ]; then
   echo "✓ Brain directory     $BRAIN_DIR — accessible"
 else
@@ -264,7 +264,7 @@ Tiers: **GREEN ≥ 8.0** | **YELLOW 6.0-7.9** | **RED < 6.0**
 Fill in each field with the computed values from Step 3, then append:
 
 ```bash
-LEARN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}/quality-history"
+LEARN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}/quality-history"
 mkdir -p "$LEARN_DIR"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
@@ -276,7 +276,7 @@ printf '{"timestamp":"%s","commit":"%s","score":SCORE_FINAL,"tier":"TIER","type_
 **Step 5 — Show trend (last 5 runs)**
 
 ```bash
-LEARN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}/quality-history"
+LEARN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}/quality-history"
 tail -5 "$LEARN_DIR/quality-scores.jsonl" 2>/dev/null \
   | python3 -c "import sys,json; [print(f\"{r['timestamp'][:10]}  {r['commit']}  {r['score']:.1f}/10  {r['tier']}\") for r in (json.loads(l) for l in sys.stdin)]"
 ```

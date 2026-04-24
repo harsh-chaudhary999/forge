@@ -69,7 +69,7 @@ SLUG=$(echo "$RAW" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed '
 ### Step 4 — Write learning to brain
 
 ```bash
-BRAIN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}/learnings"
+BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}/learnings"
 mkdir -p "$BRAIN_DIR"
 FILENAME="${FILEDATE}-${SLUG}.md"
 ```

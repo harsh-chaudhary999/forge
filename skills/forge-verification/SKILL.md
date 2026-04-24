@@ -64,7 +64,7 @@ Before beginning a new verification run, check whether a PASS verdict already ex
 
 ```bash
 TASK_ID="${FORGE_TASK_ID:-unknown}"
-BRAIN="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+BRAIN="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 VERDICT_FILE="$BRAIN/prds/$TASK_ID/review-verdicts.jsonl"
 CURRENT_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "")
 NOW_EPOCH=$(date -u +%s)
@@ -151,7 +151,7 @@ For each verification target:
 
 ```bash
 TASK_ID="${FORGE_TASK_ID:-unknown}"
-BRAIN="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+BRAIN="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 VERDICT_FILE="$BRAIN/prds/$TASK_ID/review-verdicts.jsonl"
 mkdir -p "$(dirname "$VERDICT_FILE")"
 COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")

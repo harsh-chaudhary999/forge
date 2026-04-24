@@ -38,7 +38,7 @@ Post-deploy monitoring. Captures a baseline snapshot before deploy, then monitor
 ### For `/canary status`
 
 ```bash
-BRAIN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 TASK_DIR=$(ls -td "$BRAIN_DIR/prds"/*/ 2>/dev/null | head -1)
 CANARY_DIR="$TASK_DIR/canary"
 
@@ -71,7 +71,7 @@ echo "Baseline HTTP: $HTTP_CODE | Response time: ${RESPONSE_TIME}s"
 **Step 2 — Write baseline to brain:**
 
 ```bash
-BRAIN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 TASK_DIR=$(ls -td "$BRAIN_DIR/prds"/*/ 2>/dev/null | head -1)
 CANARY_DIR="$TASK_DIR/canary"
 mkdir -p "$CANARY_DIR"
@@ -100,7 +100,7 @@ echo "Baseline saved to: $CANARY_DIR/${TIMESTAMP}-baseline.md"
 
 ```bash
 BASE_URL="<user-provided URL>"
-BRAIN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 TASK_DIR=$(ls -td "$BRAIN_DIR/prds"/*/ 2>/dev/null | head -1)
 CANARY_DIR="$TASK_DIR/canary"
 BASELINE=$(ls -1t "$CANARY_DIR"/*-baseline.md 2>/dev/null | head -1)

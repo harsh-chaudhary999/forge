@@ -95,7 +95,7 @@ echo "Prior period commits: $PRIOR_COUNT | Trend: $TREND"
 ### Step 4 — Write to brain
 
 ```bash
-BRAIN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}/retros"
+BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}/retros"
 mkdir -p "$BRAIN_DIR"
 FILEDATE=$(date -u +"%Y%m%d")
 RESULT_FILE="$BRAIN_DIR/${FILEDATE}-retro.md"

@@ -648,7 +648,7 @@ Before claiming the bug is fixed:
 After the fix is committed and verified, append one entry to the learnings log. This makes the session durable — the next person (or next context window) hitting a similar failure can skip the investigate phase.
 
 ```bash
-LEARN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}/learnings"
+LEARN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}/learnings"
 mkdir -p "$LEARN_DIR"
 TIMESTAMP=$(date -u +"%Y%m%dT%H%M%SZ")
 # Fill in each field below before running — do not leave angle-bracket placeholders

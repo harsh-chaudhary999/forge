@@ -47,6 +47,11 @@ KNOWN_TOOLS = frozenset(
         "EditNotebook",
         "TodoWrite",
         "Shell",
+        "StrReplace",
+        "CodebaseSearch",
+        "NotebookEdit",
+        "AwaitShell",
+        "ListMcpResources",
         "call_mcp_tool",
         "fetch_mcp_resource",
     }

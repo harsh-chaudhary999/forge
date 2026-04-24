@@ -47,7 +47,7 @@ Performance regression detection. Baselines key metrics, flags regressions again
 ### For `/benchmark history`
 
 ```bash
-BRAIN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 TASK_DIR=$(ls -td "$BRAIN_DIR/prds"/*/ 2>/dev/null | head -1)
 BENCH_DIR="$TASK_DIR/benchmarks"
 
@@ -81,7 +81,7 @@ echo "TTFB: ${TTFB}s | Total: ${TOTAL}s | Size: ${SIZE} bytes"
 **Step 2 — Write baseline:**
 
 ```bash
-BRAIN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 TASK_DIR=$(ls -td "$BRAIN_DIR/prds"/*/ 2>/dev/null | head -1)
 BENCH_DIR="$TASK_DIR/benchmarks"
 mkdir -p "$BENCH_DIR"
@@ -108,7 +108,7 @@ echo "Baseline saved: $BENCH_DIR/${TIMESTAMP}-baseline.md"
 
 ```bash
 BASE_URL="<user-provided URL>"
-BRAIN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 TASK_DIR=$(ls -td "$BRAIN_DIR/prds"/*/ 2>/dev/null | head -1)
 BENCH_DIR="$TASK_DIR/benchmarks"
 BASELINE=$(ls -1t "$BENCH_DIR"/*-baseline.md 2>/dev/null | head -1)

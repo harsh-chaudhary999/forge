@@ -62,7 +62,7 @@ ABS_TARGET=$(cd "$TARGET" 2>/dev/null && pwd || echo "$TARGET")
 echo "$ABS_TARGET" > "$FREEZE_FILE"
 echo "SCOPE FROZEN"
 echo "Directory: $ABS_TARGET"
-echo "Effect:    Edit/Write/Bash commands outside this path will be flagged by pre-tool-use"
+echo "Effect:    Edit/Write/StrReplace (and Bash destructive patterns) outside this path will be flagged by pre-tool-use"
 echo "Remove:    Run /freeze off when done"
 ```
 

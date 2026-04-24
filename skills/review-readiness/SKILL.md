@@ -35,7 +35,7 @@ Run all 5 checks. Collect pass/fail. Display at end.
 ### Check 1 — Spec frozen
 
 ```bash
-BRAIN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 TASK_DIR=$(ls -td "$BRAIN_DIR/prds"/*/ 2>/dev/null | head -1)
 SPEC="$TASK_DIR/shared-dev-spec.md"
 

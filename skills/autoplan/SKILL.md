@@ -32,7 +32,7 @@ Pre-loads planning context from the current brain task so `/tech-plan-write-per-
 ### Step 1 — Locate brain and task
 
 ```bash
-BRAIN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 PRDS_DIR="$BRAIN_DIR/prds"
 
 # Find most recent task dir by modification time

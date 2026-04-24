@@ -21,6 +21,8 @@ These skills extend Forge with **extra workflows** (benchmarking, session snapsh
 | **`retro`** | Retrospective facilitation outside **dream-retrospect-post-pr**. |
 | **`review-readiness`** | Pre-PR checklist beyond **forge-trust-code** / standards reviewer. |
 | **`qa-live-app`** | Live-app QA patterns when eval drivers are not enough. |
+| **`second-opinion-review`** | Structured second pass (another model or human) before merge on high-stakes diffs. |
+| **`security-checklist-pass`** | Quick STRIDE + OWASP-oriented checklist with file-level evidence. |
 
 When in doubt, read the skill’s own **WHEN** description in `skills/<name>/SKILL.md`.
 

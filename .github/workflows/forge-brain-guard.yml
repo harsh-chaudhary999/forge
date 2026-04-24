@@ -3,7 +3,10 @@
 # checkout Forge (sparse) or vendor tools/verify_forge_task.py.
 #
 # Required repo/organization variable: FORGE_TASK_ID (e.g. add-2fa).
-# Optional: FORGE_STRICT_TDD = true to enforce [P4.0-TDD-RED] before P4.1 in the log.
+# Optional repo/org variables (exported via env: below — the shell reads env, not ${{ vars.* }}):
+#   FORGE_STRICT_TDD = true → adds --strict-tdd ([P4.0-TDD-RED] before first [P4.1-DISPATCH]).
+#   FORGE_STRICT_TECH_PLANS = true → adds --strict-tech-plans (needs verify_tech_plans.py in sparse checkout).
+# Required: FORGE_TOOLS_REPO = owner/repo where Forge is hosted (e.g. your-org/forge). No default — must be set explicitly.
 
 name: Forge brain guard
 
@@ -23,13 +26,21 @@ jobs:
       - name: Checkout brain
         uses: actions/checkout@v4
 
+      - name: Validate FORGE_TOOLS_REPO
+        run: |
+          if [ -z "${{ vars.FORGE_TOOLS_REPO }}" ]; then
+            echo "ERROR: Set repository variable FORGE_TOOLS_REPO to owner/repo where Forge is hosted (e.g. your-org/forge)." >&2
+            exit 1
+          fi
+
       - name: Checkout Forge (verify script only)
         uses: actions/checkout@v4
         with:
-          repository: harsh-chaudhary999/forge
+          repository: ${{ vars.FORGE_TOOLS_REPO }}
           path: forge
           sparse-checkout: |
             tools/verify_forge_task.py
+            tools/verify_tech_plans.py
           sparse-checkout-cone-mode: false
 
       - uses: actions/setup-python@v5
@@ -39,6 +50,8 @@ jobs:
       - name: Verify Forge task
         env:
           FORGE_TASK_ID: ${{ vars.FORGE_TASK_ID }}
+          FORGE_STRICT_TDD: ${{ vars.FORGE_STRICT_TDD }}
+          FORGE_STRICT_TECH_PLANS: ${{ vars.FORGE_STRICT_TECH_PLANS }}
         run: |
           set -euo pipefail
           if [ -z "${FORGE_TASK_ID:-}" ]; then
@@ -46,7 +59,8 @@ jobs:
             exit 1
           fi
           EXTRA=""
-          if [ "${FORGE_STRICT_TDD:-}" = "true" ]; then EXTRA="--strict-tdd"; fi
+          if [ "${FORGE_STRICT_TDD:-}" = "true" ]; then EXTRA="${EXTRA} --strict-tdd"; fi
+          if [ "${FORGE_STRICT_TECH_PLANS:-}" = "true" ]; then EXTRA="${EXTRA} --strict-tech-plans"; fi
           python3 forge/tools/verify_forge_task.py \
             --brain "${GITHUB_WORKSPACE}" \
             --task-id "${FORGE_TASK_ID}" \

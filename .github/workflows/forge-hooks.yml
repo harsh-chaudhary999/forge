@@ -5,6 +5,7 @@ on:
     paths:
       - ".claude/hooks/session-start.cjs"
       - ".claude/hooks/pre-tool-use.cjs"
+      - ".claude/hooks/post-commit.cjs"
       - ".claude/hooks/forge-stage-detect.cjs"
       - ".claude/hooks/test-forge-stage-detect.cjs"
       - ".github/workflows/forge-hooks.yml"
@@ -12,6 +13,7 @@ on:
     paths:
       - ".claude/hooks/session-start.cjs"
       - ".claude/hooks/pre-tool-use.cjs"
+      - ".claude/hooks/post-commit.cjs"
       - ".claude/hooks/forge-stage-detect.cjs"
       - ".claude/hooks/test-forge-stage-detect.cjs"
       - ".github/workflows/forge-hooks.yml"
@@ -30,3 +32,6 @@ jobs:
 
       - name: Load pre-tool-use hook (syntax)
         run: node --check .claude/hooks/pre-tool-use.cjs
+
+      - name: Load post-commit hook (syntax)
+        run: node --check .claude/hooks/post-commit.cjs

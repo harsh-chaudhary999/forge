@@ -121,7 +121,7 @@ Scenarios are executable by `eval-coordinate-multi-surface` and support comprehe
 
 ## Minimum smoke scenario (unblock P4.4)
 
-To reach **`[P4.0-EVAL-YAML]`** and **`/eval`** without boiling the ocean, commit **one** minimal file under `~/forge/brain/prds/<task-id>/eval/` (e.g. `smoke.yaml`) with **one journey** and **one driver** your stack actually runs (often **`api-http`** against **`health`**). Expand coverage after GREEN.
+To reach **`[P4.0-EVAL-YAML]`** and **`/eval`** without boiling the ocean, commit **one** minimal file under `~/forge/brain/prds/<task-id>/eval/` (e.g. `smoke.yaml`) with **one journey** and **one driver** your stack actually runs (often **`api-http`** against **`health`**). Expand coverage after GREEN. Copy-ready examples live under **`docs/examples/`** (`eval-api-http-smoke.yaml`, `eval-web-cdp-smoke.yaml`).
 
 ```yaml
 scenario: stack-smoke
@@ -1043,7 +1043,10 @@ This data feeds back into your observability and helps future developers avoid t
 Replace manual steps with driver actions and expected assertions in YAML format.
 
 ### From Puppeteer/Playwright Scripts
-Convert JavaScript automation to declarative `web-cdp` actions with structured expected results.
+Convert JavaScript automation to declarative `web-cdp` actions with structured expected results. The **runner** may still be Playwright/Puppeteer on the host, raw CDP, or a **browser MCP** — **ask the operator** which stack to standardize on for this product; see **`eval-driver-web-cdp`** (“Host implementation choice”).
+
+### From Appium (or Appium MCP)
+If the host exposes **Appium MCP** tools, Android/iOS steps may be executed through MCP instead of **`eval-driver-android-adb`** / **`eval-driver-ios-xctest`** — **ask the operator** and document tool IDs and session lifecycle; keep YAML expectations aligned with whichever driver executes the steps.
 
 ### From Postman Collections
 Map Postman requests to `api-http` call/verify actions with response validation.

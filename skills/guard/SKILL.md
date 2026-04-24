@@ -11,6 +11,10 @@ triggers:
   - "confirm before running"
 allowed-tools:
   - Bash
+hooks:
+  PreToolUse:
+    - destructive-command-check
+    - freeze-scope-check
 ---
 
 # guard

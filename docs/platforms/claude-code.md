@@ -10,7 +10,7 @@
 **Auto (recommended):** Forge is detected as a plugin via `.claude-plugin/plugin.json`. Clone the repo and restart Claude Code.
 
 ```bash
-git clone https://github.com/harsh-chaudhary999/forge ~/forge
+git clone https://github.com/<YOUR_GITHUB_ORG_OR_USERNAME>/forge ~/forge
 ```
 
 **Fallback:**
@@ -25,11 +25,21 @@ Start a new Claude Code session. You should see Forge context injected (the `usi
 /forge-status
 ```
 
+## Keeping Forge updated
+
+There is **no** in-app auto-update for Forge. When your **`~/forge`** clone has new commits, refresh this host:
+
+```bash
+cd ~/forge && git pull && bash scripts/install.sh --platform claude-code
+```
+
+Start a **new Claude Code session** after skills or hooks change. **How to notice upstream changes** (GitHub Watch, Releases, team comms) is the same for every editor — see **[README Section 4 — Keeping Forge updated](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
+
 ## Available Features
 
 | Feature | Status |
 |---|---|
-| Skills (80) | Full support via Skill tool |
+| Skills (full `skills/` tree) | Full support via Skill tool — count: `bash scripts/count-skills.sh` |
 | Agents (4) | Full support via Agent tool |
 | Hooks | SessionStart injects `using-forge` bootstrap |
 | Commands (17) | All slash commands available |
@@ -40,7 +50,7 @@ Start a new Claude Code session. You should see Forge context injected (the `usi
 
 1. **Session Start:** The `hooks/session-start` script runs on every session start, clear, or compact event
 2. **Context Injection:** The `using-forge` skill content is injected as `additionalContext` via `hookSpecificOutput`
-3. **Skill Loading:** All 80 skills in `skills/` are available via the `Skill` tool
+3. **Skill Loading:** The full `skills/` catalog is available via the `Skill` tool (count: `bash scripts/count-skills.sh` from Forge root)
 4. **Agent Dispatch:** 4 subagents are available via the `Agent` tool with isolation via worktrees
 
 ## Forge phase session styles

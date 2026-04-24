@@ -111,6 +111,8 @@ Once frozen, all proposed changes fall into exactly one category:
 
 **When in doubt, classify as Behavioral.** Over-caution is correct. Under-caution ships conflicts.
 
+**`[SPEC-CHANGE]` + version honesty (MUST):** Any edit to **normative** `shared-dev-spec.md` text after a freeze record exists must be traceable: commit message prefix **`[SPEC-CHANGE]`**, a **`SPECCHG-*`** (or re-council) brain decision when behavior shifts, and a **version bump** or **changelog** entry at the top of the spec when the file uses semantic versioning — so **“locked”** stays honest and drift is visible in `git log`.
+
 ### Step 5: Change Request Process
 
 If a behavioral change is genuinely required:

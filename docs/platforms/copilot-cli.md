@@ -10,7 +10,7 @@
 **Auto:** The session-start hook detects Copilot CLI via the `COPILOT_CLI` environment variable.
 
 ```bash
-git clone https://github.com/harsh-chaudhary999/forge ~/forge
+git clone https://github.com/<YOUR_GITHUB_ORG_OR_USERNAME>/forge ~/forge
 ```
 
 **Fallback:**
@@ -22,11 +22,17 @@ cd ~/forge && bash scripts/install.sh --platform copilot-cli
 
 Start a Copilot CLI session in the Forge directory. The `using-forge` bootstrap should be injected as context.
 
+## Keeping Forge updated
+
+**Discovery:** **[README Section 4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
+
+**Apply:** `cd ~/forge && git pull && bash scripts/install.sh --platform copilot-cli` — then start a **new** Copilot CLI session so hooks and context pick up skill changes.
+
 ## Available Features
 
 | Feature | Status |
 |---|---|
-| Skills (80) | Available via skill invocation |
+| Skills (full tree) | Available via skill invocation |
 | Session bootstrap | Auto via hook detection |
 | Tool mapping | `references/copilot-tools.md` |
 

@@ -6,10 +6,15 @@ Small, repo-local utilities shipped with Forge. The main maintained package here
 
 | Path | Purpose |
 |------|---------|
-| [`scan_forge/`](scan_forge/) | Python package: phases 1, 3.5, 4, 5, 56, 57, CLI; smoke data is generated at runtime by `verify_smoke.py` |
+| [`scan_forge/`](scan_forge/) | Python package: phases 1, 3.5, 4, 5, 56, 57, CLI; smoke data is generated at runtime by `verify_smoke.py` — see **[`scan_forge/README.md`](scan_forge/README.md)** for phase map and module guide |
 | [`verify_scan_outputs.py`](verify_scan_outputs.py) | Standalone check: same rules as `scan_forge.verify_brain_codebase` (required files + non-empty `modules/` when `source_files` > 0). **`forge_scan.py` runs verify automatically** (3 retries) after writing `index.md`; set **`FORGE_SCAN_SKIP_VERIFY=1`** only for emergency triage |
 | [`forge_scan.py`](forge_scan.py) | CLI entry: prepends `tools/` on `sys.path` and runs `scan_forge.cli` |
-| [`verify_forge_task.py`](verify_forge_task.py) | **Machine gate:** validates `prds/<task-id>/eval/*.yaml`, optional `conductor.log` ordering (P4.0 before P4.1), QA CSV when `forge_qa_csv_before_eval: true`, net-new design evidence — stdlib only ([doc](../docs/forge-task-verification.md)) |
+| [`verify_forge_task.py`](verify_forge_task.py) | **Machine gate:** validates `prds/<task-id>/eval/*.yaml`, optional `conductor.log` ordering (P4.0 before P4.1), QA CSV when `forge_qa_csv_before_eval: true`, net-new design evidence; optional **`--strict-tech-plans`** delegates to [`verify_tech_plans.py`](verify_tech_plans.py) — stdlib only ([doc](../docs/forge-task-verification.md)) |
+| [`verify_tech_plans.py`](verify_tech_plans.py) | **Tech plan structure:** canonical Section **1b** headings, **`### 1b.2a` after** wire maps, **`REVIEW_PASS`** requires FORGE-GATE HTML comments for Section 0c inventory + code recross — runnable standalone or via **`verify_forge_task.py --strict-tech-plans`** |
+| [`forge_graph_query.py`](forge_graph_query.py) | **Ad-hoc queries** on **`graph.json`** from a completed scan: `summary`, `neighbors <node_id>`, `search <substring>` — stdlib only. Example: `python3 tools/forge_graph_query.py --graph ~/forge/brain/products/<slug>/codebase/graph.json summary` |
+| [`forge_adjacency_scan.py`](forge_adjacency_scan.py) | **Optional** pre-Council scan — workflow **`docs/adjacency-and-cohorts.md`**. Appends `discovery-adjacency.md` using **`rg`** + org patterns (`adjacency-seed-patterns.txt` or `--patterns`). |
+| [`check_frozen_spec.py`](check_frozen_spec.py) | **Pre-freeze lint:** fails if `TBD` or `TODO` (case-insensitive) appears outside code fences in a `shared-dev-spec.md`. Cheap CI hook or manual check before calling `spec-freeze`. Usage: `python3 tools/check_frozen_spec.py path/to/shared-dev-spec.md` |
+| [`brain_restore_deleted.py`](brain_restore_deleted.py) | **Recovery utility:** restores brain files deleted from git history. Accepts a path or glob and a git ref to restore from. Usage: `python3 tools/brain_restore_deleted.py --help` |
 
 There is **no** separate throwaway “temp” tree under `tools/`; scan run artifacts are always created in a directory you pass as **`--run-dir`** (or a process temp dir), not committed here.
 
@@ -22,6 +27,20 @@ python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain
 ```
 
 See **[`docs/forge-task-verification.md`](../docs/forge-task-verification.md)** and **[`.github/workflows/forge-brain-guard.yml`](../.github/workflows/forge-brain-guard.yml)** (template for your brain repo).
+
+## Verifying tech plan structure (standalone)
+
+```bash
+python3 tools/verify_tech_plans.py --help
+
+# Check all tech plans for a task (pass the tech-plans/ directory):
+python3 tools/verify_tech_plans.py ~/forge/brain/prds/<task-id>/tech-plans/
+
+# Or via verify_forge_task.py (combines eval + tech-plan checks in one pass):
+python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain --strict-tech-plans
+```
+
+Checks performed: canonical Section 1b headings present, `### 1b.2a` placed **after** wire-map sections (Section 1b.5 / `#### 1b.5b`), and any `Tech plan status: REVIEW_PASS` file contains both `<!-- FORGE-GATE:… -->` HTML comment markers in Section 1c.
 
 ## Verifying merged plugin `skills/` layout (all IDEs that copy the tree)
 

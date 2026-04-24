@@ -10,6 +10,8 @@ Validates (when applicable):
   - Optional --strict-tdd: [P4.0-TDD-RED] before first [P4.1-DISPATCH]
   - Optional --gates-dir: read gate JSON ledger (written by post-commit.cjs)
     instead of (or as supplement to) conductor.log regex parsing.
+  - Optional --strict-tech-plans: when prds/<task-id>/tech-plans/*.md exist,
+    run structural checks (headings, 1b.2a placement, REVIEW_PASS gate markers).
 
 Stdlib only — no PyYAML required (product.md may mix markdown headings with YAML).
 
@@ -31,6 +33,19 @@ import os
 import re
 import sys
 from pathlib import Path
+
+
+def _run_verify_tech_plans(brain: Path, task_id: str) -> list[str]:
+    """Load sibling verify_tech_plans.py via importlib (works regardless of cwd)."""
+    import importlib.util
+
+    path = Path(__file__).resolve().parent / "verify_tech_plans.py"
+    spec = importlib.util.spec_from_file_location("_forge_verify_tech_plans", path)
+    if spec is None or spec.loader is None:
+        return [f"Cannot load tech plan verifier from {path}"]
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.verify_tech_plans(brain, task_id)
 
 
 RE_PRODUCT_LINE = re.compile(r"^\*\*Product:\*\*\s*(.+)\s*$", re.MULTILINE)
@@ -155,6 +170,7 @@ def verify(
     strict_tdd: bool,
     require_log: bool,
     gates_dir: Path | None = None,
+    strict_tech_plans: bool = False,
 ) -> list[str]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -323,6 +339,16 @@ def verify(
     if slug and product_md:
         print(f"INFO: Using product slug={slug!r} ({product_md})", file=sys.stderr)
 
+    if strict_tech_plans:
+        tp_dir = task_dir / "tech-plans"
+        if tp_dir.is_dir() and any(
+            p.suffix.lower() == ".md"
+            and p.name.lower() not in ("human_signoff.md", "readme.md")
+            for p in tp_dir.iterdir()
+            if p.is_file()
+        ):
+            errors.extend(_run_verify_tech_plans(brain, task_id))
+
     return errors
 
 
@@ -360,6 +386,15 @@ def main() -> int:
             "Defaults to prds/<task-id>/gates under the brain directory."
         ),
     )
+    p.add_argument(
+        "--strict-tech-plans",
+        action="store_true",
+        help=(
+            "When tech-plans/*.md exist for the task, fail on missing canonical "
+            "headings, misplaced ### 1b.2a, or REVIEW_PASS without FORGE-GATE anchors "
+            "(see tech-plan-self-review + verify_tech_plans.py)."
+        ),
+    )
     args = p.parse_args()
 
     home = Path.home()
@@ -378,6 +413,7 @@ def main() -> int:
         strict_tdd=args.strict_tdd,
         require_log=args.require_log,
         gates_dir=gates_dir,
+        strict_tech_plans=args.strict_tech_plans,
     )
     if errs:
         print("Forge task verification FAILED:", file=sys.stderr)

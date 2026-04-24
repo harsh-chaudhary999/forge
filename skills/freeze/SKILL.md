@@ -12,6 +12,9 @@ triggers:
 allowed-tools:
   - Bash
   - Write
+hooks:
+  PreToolUse:
+    - freeze-scope-check
 ---
 
 # freeze

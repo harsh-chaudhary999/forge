@@ -950,6 +950,14 @@ User decides: retry, manual fix, or abort
 
 Legacy free-form lines (without `[P` phase tokens) may omit the prefix.
 
+### Human intent checkpoint (RECOMMENDED)
+
+Subagents and **future sessions** do not see operator chat — only brain files. After **major** transitions (e.g. intake complete, spec frozen, eval YAML written, dispatch, eval green) or when the human **changes goal or scope**, append **one timestamped free-form line** that **does not** contain a `[P…]` phase token (so it is not confused with phase state), for example:
+
+`2026-04-24T12:05:00Z HUMAN_INTENT task_id=<task-id> summary="Next: wire API eval; out of scope: billing UI"`
+
+Keep `summary=` to a **single line**. This gives **`session-start`** and humans a **durable anchor** against **context collapse** when stage stubs replace the full bootstrap.
+
 ```
 [<STATE>] task_id=<task-id> <key>=<value> timestamp=<ISO8601> status=<START|PROGRESS|COMPLETE|FAIL|ESCALATE>
 ```

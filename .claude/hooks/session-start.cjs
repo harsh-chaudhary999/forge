@@ -57,7 +57,10 @@ const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 
-const { detectStageFromLogContent } = require(path.join(__dirname, 'forge-stage-detect.cjs'));
+const {
+  detectStageFromLogContent,
+  findLastPhaseMarker,
+} = require(path.join(__dirname, 'forge-stage-detect.cjs'));
 
 // Configuration
 const SKILL_FILE = path.join(__dirname, '..', 'skills', 'using-forge', 'SKILL.md');
@@ -255,6 +258,45 @@ function tryDetectStage() {
   return null; // no brain found — use full fallback
 }
 
+/**
+ * First brain root with a resolvable conductor.log (same selection as tryDetectStage).
+ */
+function getResolvedConductorLogPath() {
+  for (const brainPath of forgeBrainSearchPaths()) {
+    if (!fs.existsSync(brainPath)) continue;
+    const logPath = resolveConductorLogPath(brainPath);
+    if (logPath && fs.existsSync(logPath)) return logPath;
+  }
+  return null;
+}
+
+/**
+ * Injected when a conductor.log exists — re-anchor after compact / reduce hallucination risk.
+ */
+function buildResumeChecklist(logPath) {
+  let lastMarker = '';
+  try {
+    const text = fs.readFileSync(logPath, 'utf-8');
+    lastMarker = findLastPhaseMarker(text) || '';
+  } catch (_) {
+    // omit marker line
+  }
+  const taskMatch = logPath.match(/prds[/\\]([^/\\]+)[/\\]conductor\.log$/);
+  const taskId = taskMatch ? taskMatch[1] : 'TASK_ID';
+  const markerLine = lastMarker
+    ? `- **Last phase marker in this log:** ${lastMarker}\n`
+    : '';
+  return (
+    `[Forge — resume / re-anchor]\n` +
+    `- **Authoritative log for stage detection:** \`${logPath}\`\n` +
+    markerLine +
+    `- **Before substantive work:** Re-read \`~/forge/brain/prds/${taskId}/prd-locked.md\` and \`shared-dev-spec.md\` (if present); skim the **tail** of this \`conductor.log\`\n` +
+    `- **Chat is not transport:** If something mattered only in a prior chat turn, it must live in brain files or you must ask the human to repeat it\n` +
+    `- **Scan / graph stubs ≠ runtime truth:** Confirm APIs and flows with real source or tests before changing code\n\n` +
+    `---\n\n`
+  );
+}
+
 // ==================== Edge Cases & Fallback Paths ====================
 
 // Edge Case 1: SKILL file doesn't exist
@@ -321,8 +363,11 @@ const stageNote = stageLabel !== 'full'
   ? `[Forge Session — Stage: ${stageLabel.toUpperCase()}]\n\n`
   : '';
 
+const activeLogPath = getResolvedConductorLogPath();
+const resumeBlock = activeLogPath ? buildResumeChecklist(activeLogPath) : '';
+
 const wrappedContent = `<EXTREMELY_IMPORTANT>
-${stageNote}${preamblePrefix}${contentToInject}
+${stageNote}${resumeBlock}${preamblePrefix}${contentToInject}
 </EXTREMELY_IMPORTANT>`;
 
 const output = {

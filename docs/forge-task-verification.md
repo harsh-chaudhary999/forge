@@ -135,5 +135,5 @@ tools/verify_tech_plans.py
 
 ## Hooks
 
-- **`session-start.cjs`**: warns when multiple `conductor.log` files exist and **`FORGE_TASK_ID`** is unset or points at a missing log. Repo also ships **`hooks/session-start`** (shell shim) for **`hooks-cursor.json`** and similar configs.
+- **`session-start.cjs`**: warns when multiple `conductor.log` files exist and **`FORGE_TASK_ID`** is unset or points at a missing log. When a **`conductor.log`** is resolved, it also prepends a short **resume / re-anchor** block (path, last `[P…]` marker, read-this-first hints) before stage stub or full bootstrap — see **`skills/using-forge/SKILL.md`** (*Agent reliability*). Repo also ships **`hooks/session-start`** (shell shim) for **`hooks-cursor.json`** and similar configs.
 - **`pre-tool-use.cjs`**: **`/freeze`** scope for Edit/Write/NotebookEdit; skill **`allowed_tools`** when PreToolUse is wired for that tool; Bash-only canary + destructive patterns.

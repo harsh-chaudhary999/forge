@@ -34,6 +34,15 @@ Council and subagents **do not** share your live chat. They only see **what is w
 
 **Session style (all hosts):** Forge cannot toggle your editor’s **planning vs execution** mode (or permissions) programmatically. Convention: **planning-style** for intake, council, and tech-plan **review**; **execution-style** for build, eval, heal. Instruct the user to switch style or permissions when the Forge phase changes — see **`docs/platforms/session-modes-forge.md`** (each platform doc links the same rules to local UI names).
 
+## Agent reliability (diversion, hallucination, context collapse)
+
+1. **Pin the task** — If more than one `prds/*/conductor.log` exists under the brain, set **`FORGE_TASK_ID`** (or **`FORGE_PRD_TASK_ID`**) before relying on stage injection or “next gate” hints; otherwise the hook may pick the **wrong** log by mtime.
+2. **Brain over chat** — Subagents and later sessions **do not** see this chat. **Decisions, scope changes, and URLs** must land under **`~/forge/brain/prds/<task-id>/`** (and related paths). If it is only in chat, assume it **will be lost** or **hallucinated** later.
+3. **Re-anchor after compact / clear** — After context compaction or a new session, **read** `prd-locked.md`, `shared-dev-spec.md` (if present), and the **tail** of `conductor.log` before big moves. Ask the human to restate **goal + non-negotiables** in one message if anything is ambiguous.
+4. **One objective per thread** — Vague “keep going” invites the wrong skill path (e.g. council when the user wanted a bugfix). State **what** and **what not to touch**.
+5. **Stubs are not specs** — Scan output and `modules/*.md` stubs are **hypotheses**. Confirm behavior with **real source**, APIs, or tests before implementing.
+6. **Subagent handoff** — When dispatching work that will not see this chat, write a **short handoff file** under the task brain (what was decided, what to do, links) so the parent does not **collapse** child context into a wrong summary.
+
 **Claude Code `session-start` hook (stage + preamble):** Optional env vars (export in shell or IDE env before launching Claude):
 
 | Variable | Purpose |

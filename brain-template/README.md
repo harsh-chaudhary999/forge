@@ -30,3 +30,12 @@ The `.obsidian/` config enables:
 - `assets/` as the default attachment folder
 
 These settings are intentionally minimal. Add plugins or themes to your local brain vault without committing them here.
+
+## Reliability for agents and CI (recommended)
+
+When this vault is the **git-backed brain** you use with Forge:
+
+1. **Set `FORGE_TASK_ID`** in your shell or CI whenever **multiple** tasks under `prds/` have a `conductor.log` — otherwise hooks and verifiers may use the **wrong** task (mtime heuristic). Same for **`FORGE_BRAIN`** / **`FORGE_BRAIN_PATH`** if the brain is not at `~/forge/brain`.
+2. **Copy CI from Forge** — Use **[`.github/workflows/forge-brain-guard.yml`](../.github/workflows/forge-brain-guard.yml)** as a template: set **`FORGE_TOOLS_REPO`**, **`FORGE_TASK_ID`**, and optional strict flags so **empty eval, bad log order, or drift** fail the merge, not the agent’s memory.
+3. **Human checkpoints in `conductor.log`** — After major transitions, log one **timestamped** `HUMAN_INTENT` line (see **`skills/conductor-orchestrate/SKILL.md`** → *Human intent checkpoint*) so post-compact sessions still see **what mattered**.
+4. **Operational docs** — **`docs/forge-task-verification.md`** and **`skills/using-forge/SKILL.md`** (*Agent reliability*) describe diversion and collapse mitigations.

@@ -8,6 +8,8 @@ Some Forge installs ship a **merged** tree:
 
 That layout is used by **Cursor** (`~/.cursor/plugins/local/forge`), **Claude Code** (`~/.claude/plugins/cache/forge-plugin/forge/<version>/`), and **OpenCode** when it falls back to a file copy under `~/.opencode/plugins/forge/` (when not symlinked to the full repo).
 
+After **`git pull`** in your Forge repo, **re-run `install.sh` for each IDE** you use so merged `skills/` trees are replaced — see **[README Section 4 — Keeping Forge updated](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)** and the other pages under **`docs/platforms/`**.
+
 ## What goes wrong
 
 If a **nested** directory appears:

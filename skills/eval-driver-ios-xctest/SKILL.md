@@ -19,7 +19,11 @@ allowed-tools:
 
 This skill provides a complete iOS app automation driver using XCTest UI Testing framework and `xcrun simctl` for simulator control. It enables programmatic interaction with iOS simulators and devices for eval scenarios.
 
-## Anti-Pattern Blockers
+## Optional: Appium MCP vs XCTest (host choice)
+
+**Ask the human** whether iOS UI eval should use **`xcrun simctl` + XCTest** (this skill) or an **Appium MCP** / host Appium stack when both are plausible (Appium can drive simulators and devices with different bootstrap tradeoffs). Record the decision and bootstrap commands in the task brain so local runs and CI do not diverge silently.
+
+## Anti-Pattern Preamble: Why iOS Eval Drivers Silently Fail
 
 **DO NOT proceed with these rationalizations:**
 

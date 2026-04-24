@@ -75,12 +75,16 @@ def main() -> int:
         help="Exit 1 when any success-criterion bullet is absent from eval+QA text",
     )
     args = ap.parse_args()
-    home = Path.home()
-    brain = (
-        Path(args.brain).expanduser()
-        if args.brain
-        else Path(os.environ.get("FORGE_BRAIN", str(home / "forge" / "brain"))).expanduser()
-    )
+    if args.brain:
+        brain = Path(args.brain).expanduser()
+    else:
+        home = Path.home()
+        brain = home / "forge" / "brain"
+        for key in ("FORGE_BRAIN", "FORGE_BRAIN_PATH"):
+            v = os.environ.get(key, "").strip()
+            if v:
+                brain = Path(v).expanduser()
+                break
     task_dir = brain / "prds" / args.task_id
     prd = task_dir / "prd-locked.md"
     if not prd.is_file():

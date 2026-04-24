@@ -3,8 +3,11 @@ name: forge-hooks
 on:
   push:
     paths:
+      - "hooks/session-start"
+      - "hooks/hooks.json"
       - ".claude/hooks/session-start.cjs"
       - ".claude/hooks/pre-tool-use.cjs"
+      - ".claude/hooks/post-commit.cjs"
       - ".claude/hooks/forge-stage-detect.cjs"
       - ".claude/hooks/test-forge-stage-detect.cjs"
       - "tools/verify_forge_task.py"
@@ -23,8 +26,11 @@ on:
       - ".github/workflows/forge-hooks.yml"
   pull_request:
     paths:
+      - "hooks/session-start"
+      - "hooks/hooks.json"
       - ".claude/hooks/session-start.cjs"
       - ".claude/hooks/pre-tool-use.cjs"
+      - ".claude/hooks/post-commit.cjs"
       - ".claude/hooks/forge-stage-detect.cjs"
       - ".claude/hooks/test-forge-stage-detect.cjs"
       - "tools/verify_forge_task.py"
@@ -56,6 +62,9 @@ jobs:
 
       - name: Load pre-tool-use hook (syntax)
         run: node --check .claude/hooks/pre-tool-use.cjs
+
+      - name: Load post-commit hook (syntax)
+        run: node --check .claude/hooks/post-commit.cjs
 
   verify-forge-task:
     runs-on: ubuntu-latest

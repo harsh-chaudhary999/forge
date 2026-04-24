@@ -14,6 +14,17 @@ allowed-tools:
 
 # Subagent Anatomy: Complete Authoring Guide
 
+## Anti-Pattern Preamble: Why Subagents Break Down
+
+| Rationalization | Why It Fails |
+|---|---|
+| "The parent session has context — the subagent will inherit it" | Subagents get only what you explicitly pass in the prompt. They start with zero session history. Anything not written in the dispatch prompt is invisible to them. |
+| "A vague role description is fine — the subagent is smart enough to figure it out" | Ambiguous role + no scope boundary = subagent doing half the work or the wrong work. The conductor gets back an output it cannot use and must redispatch. |
+| "I'll pass the full conversation history as context" | Context pollution is the failure mode subagents exist to prevent. Pass only the task-specific inputs: the plan file, the relevant brain slice, and the explicit output contract. |
+| "The subagent will decide what format to return results in" | If the parent doesn't specify the output format (status enum, file path, JSON fields), the subagent will invent one. The conductor's parse step breaks on first divergence. |
+| "Subagents are optional — the conductor can just do all the work" | Parallel subagent dispatch is how Forge compresses wall-clock time. Skipping subagents forces serial execution and caps throughput at single-session token rate. |
+| "I'll define the edge cases and error paths later" | Subagents hit edge cases during execution, not planning. Without explicit error-path instructions (what to return on BLOCKED, how to report partial results), the subagent silently drops work or returns NEEDS_CONTEXT. |
+
 ## Introduction: Why Specialized Subagents Matter
 
 Subagents are isolated agents that solve a **single, well-defined task** in a fresh context. They are not smaller versions of the main conductor — they are specialists with focused roles, clear boundaries, and zero context pollution.

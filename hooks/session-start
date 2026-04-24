@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Shim for Cursor `hooks-cursor.json` and docs that invoke ./hooks/session-start.
+# Delegates to the Node hook at .claude/hooks/session-start.cjs (repo root = parent of hooks/).
+set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$HERE/.." && pwd)"
+exec node "$ROOT/.claude/hooks/session-start.cjs"

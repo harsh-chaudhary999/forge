@@ -9,7 +9,7 @@
  * so the agent can't drift or rationalize shortcuts mid-conversation.
  *
  * Next-gate injection:
- * Reads conductor.log from the brain directory (FORGE_BRAIN_PATH or ~/forge/brain)
+ * Reads conductor.log from the brain directory (FORGE_BRAIN, FORGE_BRAIN_PATH, or ~/forge/brain)
  * and prepends a targeted "NEXT GATE" reminder based on which gates have been
  * crossed and which are still pending. If no brain/log found, emits no next-gate
  * line — existing static gate reminder is injected as before.
@@ -125,11 +125,24 @@ function resolveNextGate(logContent) {
  * Attempts to read conductor.log and resolve a next-gate message.
  * Returns the next-gate string or null if unavailable.
  */
+function forgeBrainSearchPaths() {
+  const out = [];
+  const seen = new Set();
+  for (const key of ['FORGE_BRAIN', 'FORGE_BRAIN_PATH']) {
+    const s = process.env[key] && String(process.env[key]).trim();
+    if (!s) continue;
+    const abs = path.resolve(s);
+    if (!seen.has(abs)) {
+      seen.add(abs);
+      out.push(abs);
+    }
+  }
+  out.push(path.join(process.env.HOME || '/root', 'forge', 'brain'));
+  return out;
+}
+
 function tryGetNextGate() {
-  const brainCandidates = [
-    process.env.FORGE_BRAIN_PATH,
-    path.join(process.env.HOME || '/root', 'forge', 'brain'),
-  ].filter(Boolean);
+  const brainCandidates = forgeBrainSearchPaths();
 
   for (const brainPath of brainCandidates) {
     if (!fs.existsSync(brainPath)) continue;

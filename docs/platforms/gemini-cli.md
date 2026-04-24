@@ -9,22 +9,32 @@
 **Auto:** Gemini CLI auto-discovers extensions from `gemini-extension.json` in the project root.
 
 ```bash
-git clone https://github.com/harsh-chaudhary999/forge ~/forge
+git clone https://github.com/<YOUR_GITHUB_ORG_OR_USERNAME>/forge ~/forge
 cd ~/forge
 gemini  # Start Gemini CLI in the Forge directory
 ```
 
-No install script needed.
+Opening the clone as the project is enough for discovery mode. For **`gemini extensions link` / `update forge`**, run **`bash scripts/install.sh --platform gemini-cli`** once from the clone so the CLI knows where Forge lives.
 
 ## Verification
 
 Start Gemini CLI in the Forge directory. The extension loads `GEMINI.md` which points to `skills/using-forge/SKILL.md`.
 
+## Keeping Forge updated
+
+**Discovery** of new Forge commits is the same for every host — **[README Section 4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)** (GitHub Watch / Releases, team comms).
+
+**Apply updates:**
+
+1. **`git pull`** in `~/forge` (or your clone).
+2. If you use **`gemini extensions link`** / the linked extension workflow, run **`gemini extensions update forge`** (or re-link) so the CLI picks up new files — see **`bash scripts/install.sh --platform gemini-cli`** for the supported layout.
+3. If you only ever open the **Forge repo as the project root**, pulling the repo is usually enough; still restart the CLI session after large skill changes.
+
 ## Available Features
 
 | Feature | Status |
 |---|---|
-| Skills (80) | Available via Gemini's tool system |
+| Skills (full tree) | Available via Gemini's tool system |
 | GEMINI.md context | Auto-loaded as project context |
 | AGENTS.md context | Auto-loaded (Gemini reads both) |
 

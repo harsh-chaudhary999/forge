@@ -3,16 +3,18 @@
 # checkout Forge (sparse) or vendor tools/verify_forge_task.py.
 #
 # Required repo/organization variable: FORGE_TASK_ID (e.g. add-2fa).
-# Optional env (repository or organization variables / secrets):
+# Optional repo/org variables (exported via env: below — the shell reads env, not ${{ vars.* }}):
 #   FORGE_STRICT_TDD=true — --strict-tdd
-#   FORGE_CHECK_PRD_SECTIONS=true — --check-prd-sections (intake template headings)
-#   FORGE_STRICT_SINGLE_TASK=true — --strict-single-task-brain (fail if multiple prds/*/conductor.log)
-#   FORGE_REQUIRE_CONDUCTOR_TIMESTAMPS=true — --require-conductor-timestamps on phase lines
-#   FORGE_DRIFT_STRICT=true — forge_drift_check.py --strict (success criteria vs eval/QA text)
+#   FORGE_STRICT_TECH_PLANS=true — --strict-tech-plans (needs verify_tech_plans.py in sparse checkout)
+#   FORGE_CHECK_PRD_SECTIONS=true — --check-prd-sections
+#   FORGE_STRICT_SINGLE_TASK=true — --strict-single-task-brain
+#   FORGE_REQUIRE_CONDUCTOR_TIMESTAMPS=true — --require-conductor-timestamps
+#   FORGE_DRIFT_STRICT=true — forge_drift_check.py --strict
 #   FORGE_CHECK_SHARED_SPEC=true — --check-shared-spec
 #   FORGE_VALIDATE_PHASE_LEDGER=true — --validate-phase-ledger
 #   FORGE_REQUIRE_PHASE_LEDGER=true — --require-phase-ledger
 #   FORGE_PHASE_LEDGER_VERIFY_HASHES=true — --phase-ledger-verify-hashes
+# Required: FORGE_TOOLS_REPO = owner/repo where Forge is hosted (e.g. your-org/forge).
 
 name: Forge brain guard
 
@@ -32,10 +34,17 @@ jobs:
       - name: Checkout brain
         uses: actions/checkout@v4
 
+      - name: Validate FORGE_TOOLS_REPO
+        run: |
+          if [ -z "${{ vars.FORGE_TOOLS_REPO }}" ]; then
+            echo "ERROR: Set repository variable FORGE_TOOLS_REPO to owner/repo where Forge is hosted (e.g. your-org/forge)." >&2
+            exit 1
+          fi
+
       - name: Checkout Forge (verify script only)
         uses: actions/checkout@v4
         with:
-          repository: harsh-chaudhary999/forge
+          repository: ${{ vars.FORGE_TOOLS_REPO }}
           path: forge
           sparse-checkout: |
             tools/verify_forge_task.py
@@ -45,6 +54,7 @@ jobs:
             tools/shared_spec_checklist.json
             tools/requirements-verify.txt
             tools/forge_drift_check.py
+            tools/verify_tech_plans.py
           sparse-checkout-cone-mode: false
 
       - uses: actions/setup-python@v5
@@ -57,6 +67,16 @@ jobs:
       - name: Verify Forge task
         env:
           FORGE_TASK_ID: ${{ vars.FORGE_TASK_ID }}
+          FORGE_STRICT_TDD: ${{ vars.FORGE_STRICT_TDD }}
+          FORGE_STRICT_TECH_PLANS: ${{ vars.FORGE_STRICT_TECH_PLANS }}
+          FORGE_CHECK_PRD_SECTIONS: ${{ vars.FORGE_CHECK_PRD_SECTIONS }}
+          FORGE_STRICT_SINGLE_TASK: ${{ vars.FORGE_STRICT_SINGLE_TASK }}
+          FORGE_REQUIRE_CONDUCTOR_TIMESTAMPS: ${{ vars.FORGE_REQUIRE_CONDUCTOR_TIMESTAMPS }}
+          FORGE_CHECK_SHARED_SPEC: ${{ vars.FORGE_CHECK_SHARED_SPEC }}
+          FORGE_VALIDATE_PHASE_LEDGER: ${{ vars.FORGE_VALIDATE_PHASE_LEDGER }}
+          FORGE_REQUIRE_PHASE_LEDGER: ${{ vars.FORGE_REQUIRE_PHASE_LEDGER }}
+          FORGE_PHASE_LEDGER_VERIFY_HASHES: ${{ vars.FORGE_PHASE_LEDGER_VERIFY_HASHES }}
+          FORGE_DRIFT_STRICT: ${{ vars.FORGE_DRIFT_STRICT }}
         run: |
           set -euo pipefail
           if [ -z "${FORGE_TASK_ID:-}" ]; then
@@ -65,6 +85,7 @@ jobs:
           fi
           EXTRA=""
           if [ "${FORGE_STRICT_TDD:-}" = "true" ]; then EXTRA="${EXTRA} --strict-tdd"; fi
+          if [ "${FORGE_STRICT_TECH_PLANS:-}" = "true" ]; then EXTRA="${EXTRA} --strict-tech-plans"; fi
           if [ "${FORGE_CHECK_PRD_SECTIONS:-}" = "true" ]; then EXTRA="${EXTRA} --check-prd-sections"; fi
           if [ "${FORGE_STRICT_SINGLE_TASK:-}" = "true" ]; then EXTRA="${EXTRA} --strict-single-task-brain"; fi
           if [ "${FORGE_REQUIRE_CONDUCTOR_TIMESTAMPS:-}" = "true" ]; then EXTRA="${EXTRA} --require-conductor-timestamps"; fi

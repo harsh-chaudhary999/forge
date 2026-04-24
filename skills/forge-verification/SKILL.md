@@ -42,6 +42,8 @@ RUN THE VERIFICATION COMMAND AND OBSERVE THE OUTPUT BEFORE CLAIMING SUCCESS. CON
 
 When work depends on **`~/forge/brain/products/<slug>/codebase/`** (council, tech plans, eval paths): if `SCAN.json` exists, run **`python3 tools/verify_scan_outputs.py <codebase-dir>`** and require **exit 0** (retry up to **3×** with **1s** delay before claiming the scan is load-bearing). The **`forge_scan.py`** CLI already verifies after each run unless **`FORGE_SCAN_SKIP_VERIFY=1`**. Treat verify failure like missing tests — **no success claims** until the brain tree is whole or the gap is explicitly waived in writing.
 
+When a **`task-id`** has **`~/forge/brain/prds/<task-id>/tech-plans/*.md`** and you are about to claim **plans are merge-ready** or **`REVIEW_PASS`**: run **`python3 tools/verify_forge_task.py --task-id <id> --brain ~/forge/brain --strict-tech-plans`** (or **`python3 tools/verify_tech_plans.py`** alone) and require **exit 0** — see **`docs/forge-task-verification.md`**. This catches missing **Section 0c** anchors and misplaced **`### 1b.2a`**; it does **not** replace reading **`prd-locked.md`**, but it blocks the common “chat-only self-review” slip.
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:
@@ -55,6 +57,38 @@ If you notice any of these, STOP and do not proceed:
 - **Verification is claimed complete but checklist items are unmarked** — Partial verification is not verification. STOP. Every checklist item must be independently confirmed.
 
 ## Detailed Workflow
+
+### Staleness Check (**run FIRST, before any verification work**)
+
+Before beginning a new verification run, check whether a PASS verdict already exists for the current commit and is less than 7 days old. If so, you may skip re-running and cite the existing evidence — but only if no code has changed since that commit.
+
+```bash
+TASK_ID="${FORGE_TASK_ID:-unknown}"
+BRAIN="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+VERDICT_FILE="$BRAIN/prds/$TASK_ID/review-verdicts.jsonl"
+CURRENT_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "")
+NOW_EPOCH=$(date -u +%s)
+SEVEN_DAYS=$((7 * 24 * 3600))
+
+if [ -f "$VERDICT_FILE" ] && [ -n "$CURRENT_COMMIT" ]; then
+  MATCH=$(grep "\"$CURRENT_COMMIT\"" "$VERDICT_FILE" | grep "\"PASS\"" | tail -1)
+  if [ -n "$MATCH" ]; then
+    TS=$(echo "$MATCH" | sed 's/.*"timestamp":"\([^"]*\)".*/\1/')
+    ENTRY_EPOCH=$(date -u -d "$TS" +%s 2>/dev/null || date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$TS" +%s 2>/dev/null || echo 0)
+    AGE=$(( NOW_EPOCH - ENTRY_EPOCH ))
+    if [ "$AGE" -lt "$SEVEN_DAYS" ]; then
+      echo "VERIFICATION PASS (cached — verified $(( AGE / 3600 ))h ago for commit $CURRENT_COMMIT)"
+      echo "Stop here. Re-run /forge-verification explicitly to force a fresh check."
+    else
+      echo "WARNING: Last PASS for this commit is $(( AGE / 86400 )) days old — re-verification required."
+    fi
+  fi
+fi
+```
+
+If the output prints "VERIFICATION PASS (cached…)" — stop. If it prints nothing or the warning — proceed with the full workflow below.
+
+---
 
 ### Identify What to Verify
 - **Input:** Task completed, code written, tests written
@@ -112,6 +146,18 @@ For each verification target:
   - Performance: p95 latency 145ms (SLA: 200ms)
   Evidence: [link to full test output log]
   ```
+
+- **Persist the verdict to the review dashboard (REQUIRED on every PASS):**
+
+```bash
+TASK_ID="${FORGE_TASK_ID:-unknown}"
+BRAIN="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+VERDICT_FILE="$BRAIN/prds/$TASK_ID/review-verdicts.jsonl"
+mkdir -p "$(dirname "$VERDICT_FILE")"
+COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "{\"commit\":\"$COMMIT\",\"timestamp\":\"$TIMESTAMP\",\"verdict\":\"PASS\",\"task_id\":\"$TASK_ID\"}" >> "$VERDICT_FILE"
+```
 
 ### Edge Cases & Fallback Paths
 

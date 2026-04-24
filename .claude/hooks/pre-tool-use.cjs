@@ -2,13 +2,16 @@
 /**
  * pre-tool-use.cjs
  *
- * DESTRUCTIVE COMMAND INTERCEPTOR (HARD-GATE)
- * Fires before every Bash tool call. Intercepts patterns that are irreversible
+ * PreToolUse hook: /freeze scope (Edit/Write/NotebookEdit), skill allowed-tools
+ * (when PreToolUse is wired for that tool in hooks.json), then Bash-only checks:
+ * canary-in-command and destructive command patterns (HARD-GATE / confirm).
+ * Intercepts patterns that are irreversible
  * or have high blast radius and requires explicit user confirmation before
  * proceeding. Prevents impulsive reflex actions (--no-verify bypasses, force
  * pushes, hard resets) that violate forge-letter-spirit.
  *
  * Blocks (asks for confirmation):
+ *   - Edit/Write/NotebookEdit outside the /freeze scope (if active)
  *   - git push --force / -f
  *   - git reset --hard
  *   - git checkout -- .  / git restore .
@@ -32,9 +35,9 @@
  * above this hook (…/forge). Used to load tools/skill-tool-policy.json when present.
  *
  * Skill gate: when ~/.forge/.active-skill contains a skill name, allowed-tools are
- * taken from tools/skill-tool-policy.json if that file exists (portable manifest from
- * lint_skill_allowed_tools.py); else parsed from skills/<name>/SKILL.md. Applies to
- * all tool types (Bash, Read, Write, …), not only Bash.
+ * taken from tools/skill-tool-policy.json if that file exists; else parsed from
+ * skills/<name>/SKILL.md. Wire PreToolUse in hooks/hooks.json for each tool name
+ * you want enforced (see matcher alternation there).
  */
 
 const fs = require('fs');
@@ -68,7 +71,50 @@ if (!toolName) {
 
 const isBash = toolName === 'Bash';
 
-// ── Skill-level allowed-tools (all tool types; portable policy JSON optional) ─
+// ── Freeze scope check ────────────────────────────────────────────────────
+// If ~/.forge/.freeze exists, block Edit/Write/NotebookEdit to paths outside
+// the frozen directory. Set by /freeze <dir>; cleared by /freeze off.
+
+const FREEZE_FILE = path.join(os.homedir(), '.forge', '.freeze');
+let frozenDir = '';
+try {
+  if (fs.existsSync(FREEZE_FILE)) {
+    frozenDir = fs.readFileSync(FREEZE_FILE, 'utf-8').trim();
+  }
+} catch (_) {}
+
+if (frozenDir && (toolName === 'Edit' || toolName === 'Write' || toolName === 'NotebookEdit')) {
+  const resolvedFrozen = frozenDir.startsWith('~')
+    ? path.join(os.homedir(), frozenDir.slice(1))
+    : path.resolve(frozenDir);
+  // Edit/Write use file_path; NotebookEdit uses notebook_path
+  const targetPath = toolInput.file_path || toolInput.notebook_path || toolInput.new_path || '';
+  if (targetPath) {
+    const resolvedTarget = path.resolve(targetPath);
+    const sep = path.sep;
+    const outsideScope =
+      resolvedTarget !== resolvedFrozen &&
+      !resolvedTarget.startsWith(resolvedFrozen + sep);
+    if (outsideScope) {
+      const output = {
+        hookSpecificOutput: {
+          hookEventName: 'PreToolUse',
+          permissionDecision: 'ask',
+          permissionDecisionReason:
+            `[forge-pre-tool-use] FREEZE SCOPE VIOLATION\n\n` +
+            `Frozen directory: ${resolvedFrozen}\n` +
+            `Attempted path:   ${resolvedTarget}\n\n` +
+            `The /freeze lock is active. You may only edit files inside '${resolvedFrozen}'.\n\n` +
+            `To proceed: confirm this is intentional and within scope, or run /freeze off to lift the lock.`,
+        },
+      };
+      process.stdout.write(JSON.stringify(output));
+      process.exit(0);
+    }
+  }
+}
+
+// ── Skill-level allowed-tools (when hooks.json wires PreToolUse for this tool) ─
 
 const ACTIVE_SKILL_FILE = path.join(os.homedir(), '.forge', '.active-skill');
 let activeSkill = '';
@@ -169,6 +215,7 @@ if (activeSkill) {
   }
 }
 
+// Canary + destructive-pattern checks are Bash-only
 if (!isBash) {
   process.exit(0);
 }

@@ -31,6 +31,10 @@ allowed-tools:
 BACKEND REASONING COVERS ALL API CONTRACTS, MIGRATION PLANS, AND SLOs BEFORE COUNCIL CLOSES. AN ENDPOINT WITHOUT AUTH, VERSIONING, OR ERROR CODES IS AN INCOMPLETE CONTRACT.
 ```
 
+## Adjacent domains & pipelines (MUST — one explicit block)
+
+Before listing endpoints or schema, add a short subsection **“Adjacent domains & pipelines”** naming **other** backend or batch domains the PRD might collide with (**use neutral names from the PRD**). For each: **read/write touchpoints**, **shared tables or flags**, **ordering or exclusion rules**, **explicit “no interaction”** where true. Align output with **`docs/adjacency-and-cohorts.md`** / **`touchpoints/COHORT-AND-ADJACENCY.md`** — silence here is unreviewed integration risk.
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:

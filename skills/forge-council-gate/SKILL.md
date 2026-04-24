@@ -49,6 +49,7 @@ If you notice any of these, STOP and do not proceed:
 - **The shared-dev-spec is frozen without a brain commit** — Spec freeze without a brain-write means the decision has no audit trail. STOP. Commit the frozen spec to `~/forge/brain/` before any surface proceeds to tech planning.
 - **Tech planning has begun for any surface before spec is frozen** — If any surface starts writing tasks before spec-freeze, they are planning against a moving target. STOP. Freeze the spec first.
 - **Council is skipped because "this is a patch to an existing feature"** — Patches modify behavior, touch contracts, and affect other surfaces. Every PRD — no matter how small — goes through council. STOP. No exceptions.
+- **Council closes without cohort/adjacency material when the PRD requires it** — Missing **`[ADJACENCY-SCAN]`**, missing cohort artifacts, or **`SPEC_INFERENCE`**-only segmentation per **`docs/adjacency-and-cohorts.md`**. STOP. Complete **State 2.6** + council checks before **`spec-freeze`**.
 
 ## Detailed Workflow
 

@@ -391,7 +391,7 @@ Key locked decisions:
 
 | Decision | Summary |
 |---|---|
-| D5 | No third-party agent frameworks (no LangChain, Playwright, Puppeteer) |
+| D5 | No **LangChain-style agent frameworks** in **Forge plugin code**. **Product eval** may use **CDP, Playwright, Puppeteer, Appium, XCTest, MCP** on the host — **ask the operator** (browser MCP vs local CDP; **Appium MCP** vs ADB / XCTest for mobile) before locking the driver stack. |
 | D13 | No runtime dependency on any external plugin at runtime |
 | D14 | Trust code: spec-reviewer reads actual code, not reports or summaries |
 | D15 | Skills are TDD'd against seed product pressure scenarios |

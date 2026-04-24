@@ -639,3 +639,35 @@ Before claiming the bug is fixed:
 - [ ] Verification run — failing test/eval re-run and passes after fix
 - [ ] Related tests pass (not just the one that was failing)
 - [ ] Fix committed with descriptive message explaining the root cause
+- [ ] Learning captured (see below)
+
+---
+
+## Capture Learning (REQUIRED after every resolved debug session)
+
+After the fix is committed and verified, append one entry to the learnings log. This makes the session durable — the next person (or next context window) hitting a similar failure can skip the investigate phase.
+
+```bash
+LEARN_DIR="${FORGE_BRAIN_PATH:-$HOME/forge/brain}/learnings"
+mkdir -p "$LEARN_DIR"
+TIMESTAMP=$(date -u +"%Y%m%dT%H%M%SZ")
+# Fill in each field below before running — do not leave angle-bracket placeholders
+cat >> "$LEARN_DIR/debug-learnings.jsonl" << 'ENTRY'
+{"timestamp":"FILL_TIMESTAMP","type":"pitfall","symptom":"FILL_SYMPTOM","root_cause":"FILL_ROOT_CAUSE","location":"FILL_FILE:LINE","fix":"FILL_FIX","regression_test":"FILL_TEST","confidence":"high"}
+ENTRY
+```
+
+Replace each `FILL_*` placeholder with the actual value for this debug session before appending. Use single-quoted heredoc (`<< 'ENTRY'`) to prevent accidental shell expansion of the JSON content.
+
+**Required fields:**
+
+| Field | What to put |
+|---|---|
+| `symptom` | The error message or observable failure (one line) |
+| `root_cause` | The actual cause — not "there was a bug" but the specific invariant that was violated |
+| `location` | `file:line` where the root cause lived |
+| `fix` | The exact change made (import added, config corrected, etc.) |
+| `regression_test` | Test name or eval scenario that now guards against recurrence |
+| `confidence` | How certain you are that this is the real root cause (`high` = verified by regression test, `medium` = fix worked but root cause inferred, `low` = fix worked but root cause unknown) |
+
+If `confidence` is `low`, note it in `root_cause` so the next reader knows the diagnosis was incomplete.

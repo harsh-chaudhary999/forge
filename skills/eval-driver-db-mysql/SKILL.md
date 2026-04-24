@@ -18,7 +18,7 @@ allowed-tools:
 
 Provides a complete driver for executing and verifying SQL queries against MySQL databases during e2e evaluation. Enables deterministic testing of database state, data integrity, and query results in eval scenarios.
 
-## CRITICAL: Anti-Patterns to Avoid
+## Anti-Pattern Preamble: MySQL Eval Failures You Will Hit
 
 **These misconceptions will break your eval scenarios.** Read carefully.
 

@@ -39,11 +39,15 @@ def main() -> int:
     args = p.parse_args()
 
     home = Path.home()
-    brain = (
-        Path(args.brain).expanduser()
-        if args.brain
-        else Path(os.environ.get("FORGE_BRAIN", str(home / "forge" / "brain"))).expanduser()
-    )
+    if args.brain:
+        brain = Path(args.brain).expanduser()
+    else:
+        brain = home / "forge" / "brain"
+        for key in ("FORGE_BRAIN", "FORGE_BRAIN_PATH"):
+            v = os.environ.get(key, "").strip()
+            if v:
+                brain = Path(v).expanduser()
+                break
     task_dir = brain / "prds" / args.task_id
     if not task_dir.is_dir():
         print(f"ERROR: task dir missing: {task_dir}", file=sys.stderr)

@@ -1,0 +1,15 @@
+# Example: minimal web CDP eval (copy to brain/prds/<task-id>/eval/ and edit URL).
+scenario: stack-smoke-web
+description: Load the app root in a browser to prove web-cdp wiring.
+preconditions: []
+steps:
+  - id: "step_1"
+    driver: "web-cdp"
+    action: "navigate"
+    url: "http://localhost:3001/"
+    wait_for: "document_ready"
+    expected:
+      status: "loaded"
+postconditions: []
+metadata:
+  tags: ["smoke", "example", "web-cdp"]

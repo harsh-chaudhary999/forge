@@ -21,6 +21,8 @@ Validates (when applicable):
     tools/shared_spec_checklist.json).
   - Optional phase-ledger.jsonl: --validate-phase-ledger, --require-phase-ledger,
     --phase-ledger-verify-hashes (see tools/append_phase_ledger.py).
+  - Optional --strict-tech-plans: when prds/<task-id>/tech-plans/*.md exist,
+    run structural checks (headings, 1b.2a placement, REVIEW_PASS gate markers).
 
 Core checks use stdlib only (product.md may mix markdown headings with YAML).
 PyYAML strengthens eval checks when installed (see tools/requirements-verify.txt);
@@ -59,6 +61,16 @@ if str(_TOOLS_DIR) not in sys.path:
 from eval_yaml_stdlib import validate_eval_dir_stdlib
 from phase_ledger import LEDGER_NAME, verify_ledger
 from shared_spec_policy import validate_shared_spec
+
+
+def _default_brain_root() -> Path:
+    """Honor FORGE_BRAIN or FORGE_BRAIN_PATH (same semantics), then ~/forge/brain."""
+    home = Path.home()
+    for key in ("FORGE_BRAIN", "FORGE_BRAIN_PATH"):
+        v = os.environ.get(key, "").strip()
+        if v:
+            return Path(v).expanduser()
+    return home / "forge" / "brain"
 
 
 def _validate_single_eval_document(data: object, label: str) -> list[str]:
@@ -261,6 +273,19 @@ def _multi_task_brain_messages(brain: Path, task_id: str, strict: bool) -> tuple
     return errs, warns
 
 
+def _run_verify_tech_plans(brain: Path, task_id: str) -> list[str]:
+    """Load sibling verify_tech_plans.py via importlib (works regardless of cwd)."""
+    import importlib.util
+
+    path = Path(__file__).resolve().parent / "verify_tech_plans.py"
+    spec = importlib.util.spec_from_file_location("_forge_verify_tech_plans", path)
+    if spec is None or spec.loader is None:
+        return [f"Cannot load tech plan verifier from {path}"]
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.verify_tech_plans(brain, task_id)
+
+
 RE_PRODUCT_LINE = re.compile(r"^\*\*Product:\*\*\s*(.+)\s*$", re.MULTILINE)
 RE_NAME_FIELD = re.compile(r"^name:\s*(.+)\s*$", re.MULTILINE)
 RE_QA_FLAG_TRUE = re.compile(r"^forge_qa_csv_before_eval:\s*true\s*$", re.MULTILINE)
@@ -393,6 +418,7 @@ def verify(
     phase_ledger_verify_hashes: bool = False,
     require_conductor_timestamps: bool = False,
     strict_single_task_brain: bool = False,
+    strict_tech_plans: bool = False,
 ) -> list[str]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -593,6 +619,16 @@ def verify(
     if slug and product_md:
         print(f"INFO: Using product slug={slug!r} ({product_md})", file=sys.stderr)
 
+    if strict_tech_plans:
+        tp_dir = task_dir / "tech-plans"
+        if tp_dir.is_dir() and any(
+            p.suffix.lower() == ".md"
+            and p.name.lower() not in ("human_signoff.md", "readme.md")
+            for p in tp_dir.iterdir()
+            if p.is_file()
+        ):
+            errors.extend(_run_verify_tech_plans(brain, task_id))
+
     return errors
 
 
@@ -602,7 +638,7 @@ def main() -> int:
     p.add_argument(
         "--brain",
         default=None,
-        help="Brain root (default: $FORGE_BRAIN or ~/forge/brain)",
+        help="Brain root (default: $FORGE_BRAIN or $FORGE_BRAIN_PATH or ~/forge/brain)",
     )
     p.add_argument(
         "--product",
@@ -687,14 +723,18 @@ def main() -> int:
         action="store_true",
         help="When validating phase-ledger.jsonl, re-hash artifact paths vs recorded sha256.",
     )
+    p.add_argument(
+        "--strict-tech-plans",
+        action="store_true",
+        help=(
+            "When tech-plans/*.md exist for the task, fail on missing canonical "
+            "headings, misplaced ### 1b.2a, or REVIEW_PASS without FORGE-GATE anchors "
+            "(see tech-plan-self-review + verify_tech_plans.py)."
+        ),
+    )
     args = p.parse_args()
 
-    home = Path.home()
-    brain = (
-        Path(args.brain).expanduser()
-        if args.brain
-        else Path(os.environ.get("FORGE_BRAIN", str(home / "forge" / "brain"))).expanduser()
-    )
+    brain = Path(args.brain).expanduser() if args.brain else _default_brain_root()
 
     gates_dir = Path(args.gates_dir).expanduser() if args.gates_dir else None
     shared_spec_path = Path(args.shared_spec_path).expanduser() if args.shared_spec_path else None
@@ -721,6 +761,7 @@ def main() -> int:
         phase_ledger_verify_hashes=args.phase_ledger_verify_hashes,
         require_conductor_timestamps=args.require_conductor_timestamps,
         strict_single_task_brain=strict_single,
+        strict_tech_plans=args.strict_tech_plans,
     )
     if errs:
         print("Forge task verification FAILED:", file=sys.stderr)

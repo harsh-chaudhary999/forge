@@ -8,8 +8,8 @@ Forge is a plug-and-play multi-repo product orchestration plugin. It takes a PRD
 
 - All skills live in `skills/` at repo root
 - All agents live in `agents/` at repo root
-- Plugin hooks live in `hooks/` at repo root
-- Git hooks live in `.claude/hooks/` — do not confuse these
+- **`hooks/`** — hook manifests (`hooks.json`, `hooks-cursor.json`) and **`hooks/session-start`** shim
+- **`.claude/hooks/`** — Claude Code + repo git hook scripts (`*.cjs`); do not confuse with `hooks/`
 - The `using-forge` skill is the bootstrap (at `skills/using-forge/SKILL.md`)
 
 ## Forge Core Rules (Non-Negotiable)
@@ -50,3 +50,7 @@ requires: [other-skill-name]
 | `README.md` | Full architecture and setup guide |
 | `brain/` | Decision memory (git-backed) |
 | `seed-product/` | Synthetic test product |
+
+## Repo constraints (Codex)
+
+**`CLAUDE.md`** is authoritative for **D5** (no LangChain-style frameworks in **Forge plugin code**; **host eval** may use CDP, Playwright, Puppeteer, Appium, XCTest, or **MCP** — **ask the user** which path), **D13**, and execution rules (no `/tmp` scripts, etc.).

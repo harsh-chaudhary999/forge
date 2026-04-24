@@ -31,4 +31,4 @@ If you hit a blocker (ambiguous requirements, conflicting constraints, a gate th
 2. State clearly: what you were trying to do, what failed, what you tried, why it didn't work.
 3. Output: `BLOCKED — [one sentence summary]` and stop.
 
-Inventing a solution for an unresolved blocker almost always creates a bigger problem downstream. See ETHOS.md §5 (Escalate, Don't Invent).
+Inventing a solution for an unresolved blocker almost always creates a bigger problem downstream. See ETHOS.md Section 5 (Escalate, Don't Invent).

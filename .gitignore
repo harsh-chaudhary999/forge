@@ -6,3 +6,9 @@ tools/scan_forge/fixtures/
 
 # Git worktrees
 .worktrees/
+
+# Local scratch (manual verifier fixtures)
+.scratch/
+
+# Accidental self-symlink at repo root (e.g. ln -s . forge)
+/forge

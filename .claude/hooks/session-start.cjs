@@ -8,7 +8,7 @@
  * Reads using-forge/SKILL.md and inlines it as additionalContext
  *
  * Stage-aware injection:
- * If FORGE_BRAIN_PATH or ~/forge/brain exists and contains a conductor.log,
+ * If FORGE_BRAIN, FORGE_BRAIN_PATH, or ~/forge/brain exists and contains a conductor.log,
  * injects the stage-specific stub (skills/using-forge/stages/<stage>.md)
  * instead of the full using-forge/SKILL.md, reducing token use and improving
  * LLM attention on rules that matter for the current pipeline phase.
@@ -36,7 +36,7 @@
  *   No recognizable marker     → intake
  *
  * Environment:
- *   FORGE_BRAIN_PATH          — brain root override
+ *   FORGE_BRAIN / FORGE_BRAIN_PATH — brain root override (either name)
  *   FORGE_TASK_ID / FORGE_PRD_TASK_ID — task-scoped conductor.log
  *   FORGE_PREAMBLE_TIER       — 1–4 (default 2); missing tier file skips preamble slice
  *   FORGE_HOOKS_DEBUG=1       — stderr traces (selection + stage)
@@ -214,11 +214,24 @@ function resolveConductorLogPath(brainPath) {
  * Attempts to detect the current pipeline stage from brain files.
  * Returns stage name or null if detection is not possible.
  */
+function forgeBrainSearchPaths() {
+  const out = [];
+  const seen = new Set();
+  for (const key of ['FORGE_BRAIN', 'FORGE_BRAIN_PATH']) {
+    const s = process.env[key] && String(process.env[key]).trim();
+    if (!s) continue;
+    const abs = path.resolve(s);
+    if (!seen.has(abs)) {
+      seen.add(abs);
+      out.push(abs);
+    }
+  }
+  out.push(path.join(process.env.HOME || '/root', 'forge', 'brain'));
+  return out;
+}
+
 function tryDetectStage() {
-  const brainCandidates = [
-    process.env.FORGE_BRAIN_PATH,
-    path.join(process.env.HOME || '/root', 'forge', 'brain'),
-  ].filter(Boolean);
+  const brainCandidates = forgeBrainSearchPaths();
 
   for (const brainPath of brainCandidates) {
     if (!fs.existsSync(brainPath)) continue;

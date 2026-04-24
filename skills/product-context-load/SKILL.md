@@ -122,6 +122,8 @@ Given a product slug (from the locked PRD), load and validate:
 
    **Purpose:** Surfaces existing topic / release / integration branches (including common naming patterns per team) so council and tech plans do not assume greenfield when a canonical implementation already exists. **Do not** checkout or merge — discovery only.
 
+   **Adjacency (State 2.6):** When the orchestrator reaches **State 2.6**, follow **`docs/adjacency-and-cohorts.md`** (CLI + log line). If the scan cannot run, note **`ADJACENCY_SCAN_SKIPPED: <reason>`** in `context-loaded.md` so **`[ADJACENCY-SCAN] … SKIPPED`** can be logged.
+
 8. **Output**
    Write to `~/forge/brain/prds/<task-id>/context-loaded.md`:
    ```markdown

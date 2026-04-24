@@ -9,7 +9,7 @@
 **Auto:** Codex reads `AGENTS.md` at session start automatically.
 
 ```bash
-git clone https://github.com/harsh-chaudhary999/forge ~/forge
+git clone https://github.com/<YOUR_GITHUB_ORG_OR_USERNAME>/forge ~/forge
 cd ~/forge
 codex  # Start Codex in the Forge directory
 ```
@@ -19,6 +19,14 @@ No install script needed.
 ## Verification
 
 Start a Codex session in the Forge directory. The `AGENTS.md` content should be displayed as context. Verify by asking Codex about Forge rules.
+
+## Keeping Forge updated
+
+**Discovery:** **[README Section 4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
+
+**Context-only mode** (open `~/forge` in Codex): **`git pull`** the clone; new sessions load updated `AGENTS.md` / `skills/`.
+
+**Marketplace / cached plugin** (after **`install.sh --platform codex`**): **`cd ~/forge && git pull && bash scripts/install.sh --platform codex`**, then **`codex plugin install forge`** again if Codex kept a stale cache (see `install.sh` notes).
 
 ## Available Features
 

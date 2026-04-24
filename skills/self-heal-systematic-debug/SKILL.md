@@ -93,7 +93,8 @@ Stack: at enableTwoFactor (/app/src/routes/auth.ts:145)
 **After Investigate — persist evidence to brain:**
 
 ```bash
-BRAIN_DIR="$(ls -d ~/forge/brain/prds/*/ 2>/dev/null | head -1)debug"
+ROOT="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
+BRAIN_DIR="$(ls -d "$ROOT"/prds/*/ 2>/dev/null | head -1)debug"
 mkdir -p "$BRAIN_DIR"
 TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
 # Write to: $BRAIN_DIR/${TIMESTAMP}-investigate.md
@@ -168,7 +169,8 @@ import { hash, verify, generateSecret } from './lib/crypto';
 **After each Fix attempt — persist attempt to brain:**
 
 ```bash
-BRAIN_DIR="$(ls -d ~/forge/brain/prds/*/ 2>/dev/null | head -1)debug"
+ROOT="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
+BRAIN_DIR="$(ls -d "$ROOT"/prds/*/ 2>/dev/null | head -1)debug"
 mkdir -p "$BRAIN_DIR"
 TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
 # Write to: $BRAIN_DIR/${TIMESTAMP}-fix-attempt.md

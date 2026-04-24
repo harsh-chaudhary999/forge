@@ -16,9 +16,20 @@ or direct invocation:
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from pathlib import Path
+
+
+def _default_brain_root() -> Path:
+    """Honor FORGE_BRAIN or FORGE_BRAIN_PATH (same semantics), then ~/forge/brain."""
+    home = Path.home()
+    for key in ("FORGE_BRAIN", "FORGE_BRAIN_PATH"):
+        v = os.environ.get(key, "").strip()
+        if v:
+            return Path(v).expanduser()
+    return home / "forge" / "brain"
 
 RE_STATUS_PASS = re.compile(
     r"^\s*Tech plan status:\s*REVIEW_PASS\s*$", re.IGNORECASE | re.MULTILINE
@@ -136,12 +147,7 @@ def main() -> int:
     p.add_argument("--task-id", required=True)
     p.add_argument("--brain", default=None)
     args = p.parse_args()
-    home = Path.home()
-    brain = (
-        Path(args.brain).expanduser()
-        if args.brain
-        else Path(__import__("os").environ.get("FORGE_BRAIN", str(home / "forge" / "brain"))).expanduser()
-    )
+    brain = Path(args.brain).expanduser() if args.brain else _default_brain_root()
     task_dir = brain / "prds" / args.task_id
     if not task_dir.is_dir():
         print(f"Tech plan verification FAILED: missing task dir {task_dir}", file=sys.stderr)

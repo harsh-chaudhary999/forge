@@ -63,7 +63,7 @@ def main() -> int:
     ap.add_argument(
         "--brain",
         default=None,
-        help="Brain git root (default: $FORGE_BRAIN or ~/forge/brain)",
+        help="Brain git root (default: $FORGE_BRAIN or $FORGE_BRAIN_PATH or ~/forge/brain)",
     )
     ap.add_argument(
         "--dry-run",
@@ -73,11 +73,15 @@ def main() -> int:
     args = ap.parse_args()
 
     home = Path.home()
-    brain = (
-        Path(args.brain).expanduser()
-        if args.brain
-        else Path(os.environ.get("FORGE_BRAIN", str(home / "forge" / "brain"))).expanduser()
-    )
+    if args.brain:
+        brain = Path(args.brain).expanduser()
+    else:
+        brain = home / "forge" / "brain"
+        for key in ("FORGE_BRAIN", "FORGE_BRAIN_PATH"):
+            v = os.environ.get(key, "").strip()
+            if v:
+                brain = Path(v).expanduser()
+                break
     if not (brain / ".git").is_dir() and not (brain / ".git").is_file():
         print(f"ERROR: not a git repository: {brain}", file=sys.stderr)
         return 1

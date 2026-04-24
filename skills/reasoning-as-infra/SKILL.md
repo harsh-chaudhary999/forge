@@ -651,7 +651,7 @@ Conservative (2x buffer):
 #### Failure: Connection Exhaustion
 
 **Metrics to Watch:**
-- `mysql_global_status_threads_connected` (current connections)
+- `db.active_connections` (current connections)
 - `db.connection_pool.utilization_percent` (pool fullness)
 - `db.connection_pool.queued_requests` (requests waiting)
 
@@ -677,9 +677,9 @@ Conservative (2x buffer):
 #### Failure: Replication Lag
 
 **Metrics to Watch:**
-- `mysql_slave_status_seconds_behind_master` (replication lag in seconds)
-- `mysql_slave_status_seconds_behind_master > 5` (warn), `> 30` (page)
-- `mysql_slave_sql_running_seconds` (time to apply events)
+- `db.replication.lag_seconds` (replication lag in seconds)
+- `db.replication.lag_seconds > 5` (warn), `> 30` (page)
+- `db.replication.apply_lag_seconds` (time to apply events)
 
 **Immediate Action (< 5 min):**
 1. Check secondary status: `SHOW SLAVE STATUS\G` → look for `Seconds_Behind_Master`

@@ -18,17 +18,6 @@ allowed-tools:
 
 Deployment driver for PM2 over SSH on remote servers. Provides SSH connection management, process launching via PM2, HTTP-based health checks, and graceful shutdown via pkill.
 
-## Red Flags — STOP
-
-If you notice any of these, STOP and do not proceed:
-
-- **SSH connection is tested with `ping` or TCP port probe only** — A reachable host does not mean SSH is functional. Firewall rules can allow TCP but block the SSH daemon; a key mismatch will fail at authentication, not at connection. STOP. Test SSH by executing a no-op command (`echo ok`) over the connection before calling any deploy function.
-- **PM2 process is claimed healthy because `pm2 start` exited 0** — PM2 start exit code reflects whether PM2 accepted the command, not whether the process is actually healthy. STOP. Always follow `start()` with `health_check()` against the application's HTTP health endpoint.
-- **`stop()` is not called during cleanup when eval fails** — A process left running on the remote server will conflict with the next deployment's port binding or state. STOP. `stop()` must be called unconditionally in cleanup, not only on success paths.
-- **SSH key fingerprint is not validated on first connect** — A changed host key (server reinstall, MitM) accepted silently means credentials may be sent to an unexpected host. STOP. Validate host key fingerprint against the known whitelist on every `connect()`.
-- **Application logs are not retrieved after a failed health check** — When health check fails, the root cause is in the application logs on the remote server. Without fetching them, diagnosis is blind. STOP. On any health check failure, fetch and record the last 100 lines of the process log before reporting BLOCKED.
-- **Deployment proceeds while a previous version's process is still running** — Two versions of the process running simultaneously can corrupt shared state (DB, cache, files). STOP. Always verify no previous process is running on the target port before `start()`.
-
 ## HARD-GATE: Anti-Pattern Preambles
 
 The following rationalizations **WILL BLOCK** your deployment. These are not edge cases—they are guaranteed failure modes that will surface in production.
@@ -121,6 +110,17 @@ The following rationalizations **WILL BLOCK** your deployment. These are not edg
 ```
 EVERY PM2 SSH DEPLOYMENT VALIDATES SSH CONNECTIVITY WITH A NO-OP COMMAND, VERIFIES THE HOST KEY FINGERPRINT, CONFIRMS NO PRIOR VERSION IS RUNNING, STARTS THE PROCESS, AND FOLLOWS WITH A HEALTH CHECK. stop() IS CALLED IN ALL PATHS. CONFIDENCE THAT IT WORKED IS NOT A HEALTH CHECK.
 ```
+
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **SSH connection is tested with `ping` or TCP port probe only** — A reachable host does not mean SSH is functional. Firewall rules can allow TCP but block the SSH daemon; a key mismatch will fail at authentication, not at connection. STOP. Test SSH by executing a no-op command (`echo ok`) over the connection before calling any deploy function.
+- **PM2 process is claimed healthy because `pm2 start` exited 0** — PM2 start exit code reflects whether PM2 accepted the command, not whether the process is actually healthy. STOP. Always follow `start()` with `health_check()` against the application's HTTP health endpoint.
+- **`stop()` is not called during cleanup when eval fails** — A process left running on the remote server will conflict with the next deployment's port binding or state. STOP. `stop()` must be called unconditionally in cleanup, not only on success paths.
+- **SSH key fingerprint is not validated on first connect** — A changed host key (server reinstall, MitM) accepted silently means credentials may be sent to an unexpected host. STOP. Validate host key fingerprint against the known whitelist on every `connect()`.
+- **Application logs are not retrieved after a failed health check** — When health check fails, the root cause is in the application logs on the remote server. Without fetching them, diagnosis is blind. STOP. On any health check failure, fetch and record the last 100 lines of the process log before reporting BLOCKED.
+- **Deployment proceeds while a previous version's process is still running** — Two versions of the process running simultaneously can corrupt shared state (DB, cache, files). STOP. Always verify no previous process is running on the target port before `start()`.
 
 ## Architecture
 

@@ -3,3 +3,20 @@
 # Workflow + rationale: docs/adjacency-and-cohorts.md (repo root)
 #
 # Run: python3 tools/forge_adjacency_scan.py ~/forge/brain/prds/<task-id> /path/to/repo1 …
+#
+# ── Example org patterns ── replace or extend with your product's actual tokens ──
+#
+# Shared-entity / trust-line markers (adapt column/field names to your schema):
+# user[_-]tier
+# subscription[_-]status
+# eligibility[_-]flag
+# is[_-]verified
+#
+# Cross-pipeline event / message tokens (adapt to your broker's topic conventions):
+# publish_message\|produce\|sendEvent\|emit_event
+# user\.events\.\|order\.events\.
+#
+# Cron / batch entrypoints that could touch shared state:
+# @Scheduled\|schedule\.every\|cron\.schedule\|celery\.task
+#
+# ── End examples ──

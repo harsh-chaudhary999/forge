@@ -20,7 +20,7 @@ allowed-tools:
 name: {skill-name}
 description: "WHEN: {trigger condition}. {What the skill does in one sentence}."
 type: rigid | flexible | reference
-requires: [other-skill-name]
+requires: []
 version: 1.0.0
 preamble-tier: 2
 triggers:
@@ -30,6 +30,10 @@ allowed-tools:
   - Bash
   - Read
   - Write
+hooks:
+  PreToolUse:
+    - freeze-scope-check        # remove lines that don't apply
+    - destructive-command-check
 ---
 ```
 
@@ -58,6 +62,7 @@ Four optional fields for all new skills. Existing skills do not need to be updat
 | `preamble-tier` | Optional | integer 1–4 | Which shared preamble tier to inject. See Preamble Tier Guide below. Omit if the skill manages its own preamble entirely. |
 | `triggers` | Optional | string list | Natural-language phrases that strongly suggest this skill should be invoked. Informational in the current implementation — helps skill authors document intent. |
 | `allowed-tools` | Optional | string list | Tools this skill is permitted to use. Documents intent; not enforced at runtime currently. |
+| `hooks` | Optional | object | Declares which `PreToolUse` enforcement checks this skill activates. Values correspond to named checks in `pre-tool-use.cjs` (`freeze-scope-check`, `destructive-command-check`). Purely declarative — hooks run automatically when their preconditions are met, but this field documents which ones are relevant to the skill's safety contract. |
 
 ### Preamble Tier Guide
 

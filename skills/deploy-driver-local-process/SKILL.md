@@ -1,6 +1,6 @@
 ---
 name: deploy-driver-local-process
-description: "WHEN: Deployment target is a local Node.js process. Provides start(project_path, script), health_check(port, endpoint), and stop(process_name)."
+description: "WHEN: Deployment target is a local process (any runtime — Node.js, Python, Go, Java, etc.). Provides start(project_path, script), health_check(port, endpoint), and stop(process_name)."
 type: rigid
 requires: [brain-read, eval-driver-api-http]
 version: 1.0.0
@@ -34,59 +34,9 @@ allowed-tools:
 EVERY local process MUST BE VERIFIED ALIVE VIA health_check() AGAINST ITS HTTP ENDPOINT BEFORE DECLARING DEPLOYMENT COMPLETE. A PROCESS APPEARING IN ps IS NOT SUFFICIENT.
 ```
 
-Deploy and manage local Node.js processes via npm scripts. Tracks process IDs, performs HTTP health checks, and gracefully terminates processes. Supports rapid deployment cycles with proper resource cleanup and health verification.
+Deploy and manage local processes via shell commands. Tracks process IDs, performs HTTP health checks, and gracefully terminates processes. Supports rapid deployment cycles with proper resource cleanup and health verification.
 
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────┐
-│         Deploy Driver Local Process                 │
-├─────────────────────────────────────────────────────┤
-│                                                      │
-│  ┌──────────────┐  ┌──────────────┐                │
-│  │ Process Fork │  │ PID Tracking │                │
-│  │ (nohup)      │  │ (memory)     │                │
-│  └──────────────┘  └──────────────┘                │
-│         │                   │                       │
-│         └───────┬───────────┘                       │
-│                 ▼                                    │
-│  ┌─────────────────────────────┐                   │
-│  │  Process Lifecycle Mgmt     │                   │
-│  │  • nohup background exec    │                   │
-│  │  • pkill -f pattern match   │                   │
-│  │  • SIGTERM → SIGKILL        │                   │
-│  └─────────────────────────────┘                   │
-│         │                                           │
-│         ├─► [Start] Fork process, capture PID      │
-│         ├─► [Health] HTTP GET to endpoint          │
-│         └─► [Stop] Graceful shutdown sequence      │
-│                                                      │
-│  ┌─────────────────────────────┐                   │
-│  │  Error Handling & Timeouts  │                   │
-│  │  • Port conflict detection  │                   │
-│  │  • Health check retry (3x)  │                   │
-│  │  • Graceful shutdown (2s)   │                   │
-│  └─────────────────────────────┘                   │
-│                                                      │
-│  ┌─────────────────────────────┐                   │
-│  │  Resource Tracking          │                   │
-│  │  • File descriptors         │                   │
-│  │  • Process state validation │                   │
-│  │  • Zombie cleanup           │                   │
-│  └─────────────────────────────┘                   │
-└─────────────────────────────────────────────────────┘
-```
-
-## Red Flags — STOP
-
-If you notice any of these, STOP and do not proceed:
-
-- **`start()` is called without verifying the port is free** — If another process is bound to the target port, `nohup` will succeed but the application will fail to bind and exit silently. STOP. Check port availability with `lsof -ti:<port>` before calling `start()`.
-- **PID is captured from `$!` and not re-verified with `ps`** — On some systems `$!` returns the shell's job PID, not the actual application PID. STOP. Always confirm the correct PID via `ps aux | grep` after capture.
-- **`health_check()` is skipped because `ps -p $PID` returned success** — Process running ≠ process ready. The application may be in initialization with the port bound but not yet serving requests. STOP. Always call `health_check()` after `start()`, never skip it.
-- **`stop()` is not called when eval fails or scenario teardown runs** — A leaked process will hold the port across subsequent runs, causing the next `start()` to fail on port binding. STOP. `stop()` must be called in all teardown paths, success and failure.
-- **Environment variables are inherited from the parent shell rather than set explicitly** — CI/CD environments do not have the same shell profile as a developer's local terminal. An env var that works locally will silently be absent in CI. STOP. All required environment variables must be explicitly set before `start()`.
-- **Output logs from the process are not captured or linked in the eval report** — A process that silently fails or panics produces no assertion failure — the health check just times out. Without logs, diagnosis is blind. STOP. Always redirect stdout/stderr to a log file and link it in the scenario output.
+> **Runtime note:** Code examples below use Node.js (`npm run …`) as a concrete illustration. The underlying pattern — `nohup` + PID capture + `health_check()` poll + SIGTERM/SIGKILL cleanup — applies equally to Python (`uvicorn`, `gunicorn`), Go (`go run .`), Java (`java -jar`), Ruby (`bundle exec`), or any process that exposes an HTTP health endpoint. Substitute the start command for your runtime; everything else is identical.
 
 ## HARD-GATE: Anti-Pattern Preambles
 
@@ -181,6 +131,58 @@ The following rationalizations **WILL BLOCK** your deployment. These are not edg
 - MUST account for supervisor restarts: if using process supervisor, configure it to NOT auto-restart during manual stop(), or coordinate with supervisor.
 
 ---
+
+## Red Flags — STOP
+
+If you notice any of these, STOP and do not proceed:
+
+- **`start()` is called without verifying the port is free** — If another process is bound to the target port, `nohup` will succeed but the application will fail to bind and exit silently. STOP. Check port availability with `lsof -ti:<port>` before calling `start()`.
+- **PID is captured from `$!` and not re-verified with `ps`** — On some systems `$!` returns the shell's job PID, not the actual application PID. STOP. Always confirm the correct PID via `ps aux | grep` after capture.
+- **`health_check()` is skipped because `ps -p $PID` returned success** — Process running ≠ process ready. The application may be in initialization with the port bound but not yet serving requests. STOP. Always call `health_check()` after `start()`, never skip it.
+- **`stop()` is not called when eval fails or scenario teardown runs** — A leaked process will hold the port across subsequent runs, causing the next `start()` to fail on port binding. STOP. `stop()` must be called in all teardown paths, success and failure.
+- **Environment variables are inherited from the parent shell rather than set explicitly** — CI/CD environments do not have the same shell profile as a developer's local terminal. An env var that works locally will silently be absent in CI. STOP. All required environment variables must be explicitly set before `start()`.
+- **Output logs from the process are not captured or linked in the eval report** — A process that silently fails or panics produces no assertion failure — the health check just times out. Without logs, diagnosis is blind. STOP. Always redirect stdout/stderr to a log file and link it in the scenario output.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│         Deploy Driver Local Process                 │
+├─────────────────────────────────────────────────────┤
+│                                                      │
+│  ┌──────────────┐  ┌──────────────┐                │
+│  │ Process Fork │  │ PID Tracking │                │
+│  │ (nohup)      │  │ (memory)     │                │
+│  └──────────────┘  └──────────────┘                │
+│         │                   │                       │
+│         └───────┬───────────┘                       │
+│                 ▼                                    │
+│  ┌─────────────────────────────┐                   │
+│  │  Process Lifecycle Mgmt     │                   │
+│  │  • nohup background exec    │                   │
+│  │  • pkill -f pattern match   │                   │
+│  │  • SIGTERM → SIGKILL        │                   │
+│  └─────────────────────────────┘                   │
+│         │                                           │
+│         ├─► [Start] Fork process, capture PID      │
+│         ├─► [Health] HTTP GET to endpoint          │
+│         └─► [Stop] Graceful shutdown sequence      │
+│                                                      │
+│  ┌─────────────────────────────┐                   │
+│  │  Error Handling & Timeouts  │                   │
+│  │  • Port conflict detection  │                   │
+│  │  • Health check retry (3x)  │                   │
+│  │  • Graceful shutdown (2s)   │                   │
+│  └─────────────────────────────┘                   │
+│                                                      │
+│  ┌─────────────────────────────┐                   │
+│  │  Resource Tracking          │                   │
+│  │  • File descriptors         │                   │
+│  │  • Process state validation │                   │
+│  │  • Zombie cleanup           │                   │
+│  └─────────────────────────────┘                   │
+└─────────────────────────────────────────────────────┘
+```
 
 ## Function Signatures
 

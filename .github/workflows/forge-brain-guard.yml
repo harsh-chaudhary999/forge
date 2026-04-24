@@ -6,7 +6,7 @@
 # Optional repo/org variables (exported via env: below — the shell reads env, not ${{ vars.* }}):
 #   FORGE_STRICT_TDD = true → adds --strict-tdd ([P4.0-TDD-RED] before first [P4.1-DISPATCH]).
 #   FORGE_STRICT_TECH_PLANS = true → adds --strict-tech-plans (needs verify_tech_plans.py in sparse checkout).
-# Optional: FORGE_TOOLS_REPO = owner/repo (Forge checkout for verify_forge_task.py). Defaults to harsh-chaudhary999/forge if unset.
+# Required: FORGE_TOOLS_REPO = owner/repo where Forge is hosted (e.g. your-org/forge). No default — must be set explicitly.
 
 name: Forge brain guard
 
@@ -26,10 +26,17 @@ jobs:
       - name: Checkout brain
         uses: actions/checkout@v4
 
+      - name: Validate FORGE_TOOLS_REPO
+        run: |
+          if [ -z "${{ vars.FORGE_TOOLS_REPO }}" ]; then
+            echo "ERROR: Set repository variable FORGE_TOOLS_REPO to owner/repo where Forge is hosted (e.g. your-org/forge)." >&2
+            exit 1
+          fi
+
       - name: Checkout Forge (verify script only)
         uses: actions/checkout@v4
         with:
-          repository: ${{ vars.FORGE_TOOLS_REPO || 'harsh-chaudhary999/forge' }}
+          repository: ${{ vars.FORGE_TOOLS_REPO }}
           path: forge
           sparse-checkout: |
             tools/verify_forge_task.py

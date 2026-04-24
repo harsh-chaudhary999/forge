@@ -59,6 +59,27 @@ EVERY TASK IN A TECH PLAN IS SELF-CONTAINED, COMPLETE, AND EXECUTABLE IN ISOLATI
 
 **Optional PM traceability (inside each `tech-plans/<repo>.md`):** You may group Section 2 tasks under IDs like **`REVERIF-<AREA>-<nn>`** with columns **Est / Deps / Acceptance / Spec refs** (link to `shared-dev-spec` heading or `contracts/` heading). This does **not** replace one-file-per-repo or self-contained task bodies.
 
+## Quick-Reference Index
+
+Cross-map between Anti-Pattern rows and Red Flags so you don't have to read both lists to find the relevant rule.
+
+| Concern | Anti-Pattern row | Red Flag |
+|---------|-----------------|----------|
+| Completeness scope (brief vs maximal) | "The skill says *brief*…" | "Plan has no Section 0 / 1b / 1c" |
+| PRD traceability | "I'll cover PRD cases implicitly" | "Section 1b.0 missing, empty, or has PRD/spec rows without Section 2 task ids" |
+| Intent / why columns | "Mechanics without intent…" | "Missing product intent trace" |
+| Schema / wire shapes | "Schema / payload details can wait" | "Section 1b.1 / Section 1b.5 / Section 1b.1a use vague language" |
+| Async contracts | *(see Red Flags)* | "Async contracts missing" |
+| Touchpoint exploration | "Touchpoint table is boilerplate…" | "`### 1b.2a` missing, shallow, or misplaced" |
+| Interactive vs form UX | "I'll put the whole dialogue in Section 0" / "I'll make the human review the plan file" | "Section 0 fake interactive" / "Section 0 cohorts via `SPEC_INFERENCE`" |
+| Scan authority | "Scan is optional if I know the repo" | *(see Overview — SCAN_INCOMPLETE failsafe)* |
+| Review gate | "`REVIEW_PASS` without FORGE-GATE markers" | "`Tech plan status: REVIEW_PASS` with no self-review round" |
+| Phantom backend work | "Every good plan has migrations and index mappings" | "Section 2 tasks exist before applicable Section 0.2 work is done" |
+
+Jump to: [Anti-Pattern Preamble](#anti-pattern-preamble) · [Iron Law](#iron-law) · [Red Flags](#red-flags--stop) · [Section 0](#section-0-planning-doubt-clearance-before-section-1b-and-section-2) · [Section 1b](#section-1b-elaborative-preamble-mandatory-per-tech-plan-file) · [Section 2](#section-2-bite-sized-task-breakdown) · [Checklist](#checklist)
+
+---
+
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:

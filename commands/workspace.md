@@ -14,7 +14,7 @@ Set up a Forge workspace by scanning an existing folder structure. Works with an
 
 ```
 /workspace                          # scan current directory
-/workspace <path>                   # scan a specific folder (e.g. /workspace ~/jh)
+/workspace <path>                   # scan a specific folder (e.g. /workspace ~/<workspace>)
 /workspace open <slug>              # open an existing workspace
 /workspace list                     # list all workspaces in brain
 /workspace add-repo <slug>          # add a repo to an existing workspace
@@ -94,11 +94,11 @@ If the folder name is ambiguous (e.g. `src`, `code`, `main`), ask once:
 Present a summary before creating anything:
 
 ```
-Detected the following repos in ~/jh:
+Detected the following repos in ~/<workspace>:
 
-  backend/    → role: backend  | node + express  | branch: main  | github.com/org/jh-backend
-  web/        → role: web      | typescript + next | branch: main | github.com/org/jh-web
-  app/        → role: mobile   | dart + flutter  | branch: main  | github.com/org/jh-app
+  backend/    → role: backend  | node + express  | branch: main  | github.com/<org>/<project>-backend
+  web/        → role: web      | typescript + next | branch: main | github.com/<org>/<project>-web
+  app/        → role: mobile   | dart + flutter  | branch: main  | github.com/<org>/<project>-app
 
 Does this look right? (yes / correct something)
 ```
@@ -140,7 +140,7 @@ There is **no “skip deploy” path** — you cannot run a meaningful **`eval-p
 After scan, ask **only** what is missing and cannot be inferred:
 
 1. **Product name** — if not obvious from folder name or repo names
-   - e.g. `jh` → ask "Is this JobHai? What should we call it?"
+   - e.g. `jh` → ask "What is the product name? What should we call this workspace?"
    - e.g. `my-startup-backend` → infer "my-startup", confirm
 
 2. **Role clarification** — only for ambiguous folder names (see Step 2)
@@ -164,8 +164,8 @@ Generate `~/forge/brain/products/<slug>/product.md` from the scan results:
 ## Projects
 
 ### backend
-- repo: ~/jh/backend
-- remote: https://github.com/org/jh-backend
+- repo: ~/<workspace>/backend
+- remote: https://github.com/<org>/<project>-backend
 - role: backend
 - language: node
 - framework: express
@@ -175,8 +175,8 @@ Generate `~/forge/brain/products/<slug>/product.md` from the scan results:
 # From Step 3b: pointer to run/deploy truth (required)
 
 ### web
-- repo: ~/jh/web
-- remote: https://github.com/org/jh-web
+- repo: ~/<workspace>/web
+- remote: https://github.com/<org>/<project>-web
 - role: web
 - language: typescript
 - framework: next
@@ -186,8 +186,8 @@ Generate `~/forge/brain/products/<slug>/product.md` from the scan results:
 # Optional if obvious from README: start, stop, health, port
 
 ### app
-- repo: ~/jh/app
-- remote: https://github.com/org/jh-app
+- repo: ~/<workspace>/app
+- remote: https://github.com/<org>/<project>-app
 - role: mobile
 - language: dart
 - framework: flutter
@@ -213,9 +213,9 @@ Then confirm and auto-trigger codebase scan:
 ✅ Workspace created: ~/forge/brain/products/<slug>/product.md
 
    3 repos registered:
-   → backend  (~/jh/backend)
-   → web      (~/jh/web)
-   → app      (~/jh/app)
+   → backend  (~/<workspace>/backend)
+   → web      (~/<workspace>/web)
+   → app      (~/<workspace>/app)
 
    Infrastructure: not configured (optional — add with /workspace add-infra <slug>)
 
@@ -338,9 +338,9 @@ After scan completes, show final confirmation:
 ✅ Workspace ready: <slug>
 
    3 repos registered and scanned:
-   → backend  (~/jh/backend)  → brain/products/<slug>/codebase/
-   → web      (~/jh/web)      → brain/products/<slug>/codebase/
-   → app      (~/jh/app)      → brain/products/<slug>/codebase/
+   → backend  (~/<workspace>/backend)  → brain/products/<slug>/codebase/
+   → web      (~/<workspace>/web)      → brain/products/<slug>/codebase/
+   → app      (~/<workspace>/app)      → brain/products/<slug>/codebase/
 
    Infrastructure: not configured (optional — add with /workspace add-infra <slug>)
 
@@ -373,9 +373,9 @@ Show a summary:
 📁 Workspace: <name> (<slug>)
 
    Repos:
-   → backend   ~/jh/backend    (node + express)
-   → web       ~/jh/web        (typescript + next)
-   → app       ~/jh/app        (dart + flutter)
+   → backend   ~/<workspace>/backend    (node + express)
+   → web       ~/<workspace>/web        (typescript + next)
+   → app       ~/<workspace>/app        (dart + flutter)
 
    Infrastructure: not configured (optional) — add with /workspace add-infra <slug> for DB/cache eval
 
@@ -446,6 +446,6 @@ Update `product.md` Infrastructure section in-place. Never rewrite the whole fil
 
 - **Scan first, ask second.** Never ask for something Forge can detect from the filesystem or git.
 - **One question at a time.** No forms. No YAML to fill in.
-- **Any folder structure works.** `jh/backend`, `projects/myapp/api`, `~/code/backend` — all the same.
+- **Any folder structure works.** `myapp/backend`, `projects/myapp/api`, `~/code/backend` — all the same.
 - **Infra is eval-time only.** Intake, council, and plan work without a single infra detail.
 - **Never overwrite existing product.md without confirmation.** If one already exists for the slug, show diff and ask.

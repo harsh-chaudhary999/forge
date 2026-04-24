@@ -58,6 +58,38 @@ If you notice any of these, STOP and do not proceed:
 
 ## Detailed Workflow
 
+### Staleness Check (**run FIRST, before any verification work**)
+
+Before beginning a new verification run, check whether a PASS verdict already exists for the current commit and is less than 7 days old. If so, you may skip re-running and cite the existing evidence — but only if no code has changed since that commit.
+
+```bash
+TASK_ID="${FORGE_TASK_ID:-unknown}"
+BRAIN="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+VERDICT_FILE="$BRAIN/prds/$TASK_ID/review-verdicts.jsonl"
+CURRENT_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "")
+NOW_EPOCH=$(date -u +%s)
+SEVEN_DAYS=$((7 * 24 * 3600))
+
+if [ -f "$VERDICT_FILE" ] && [ -n "$CURRENT_COMMIT" ]; then
+  MATCH=$(grep "\"$CURRENT_COMMIT\"" "$VERDICT_FILE" | grep "\"PASS\"" | tail -1)
+  if [ -n "$MATCH" ]; then
+    TS=$(echo "$MATCH" | sed 's/.*"timestamp":"\([^"]*\)".*/\1/')
+    ENTRY_EPOCH=$(date -u -d "$TS" +%s 2>/dev/null || date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$TS" +%s 2>/dev/null || echo 0)
+    AGE=$(( NOW_EPOCH - ENTRY_EPOCH ))
+    if [ "$AGE" -lt "$SEVEN_DAYS" ]; then
+      echo "VERIFICATION PASS (cached — verified $(( AGE / 3600 ))h ago for commit $CURRENT_COMMIT)"
+      echo "Stop here. Re-run /forge-verification explicitly to force a fresh check."
+    else
+      echo "WARNING: Last PASS for this commit is $(( AGE / 86400 )) days old — re-verification required."
+    fi
+  fi
+fi
+```
+
+If the output prints "VERIFICATION PASS (cached…)" — stop. If it prints nothing or the warning — proceed with the full workflow below.
+
+---
+
 ### Identify What to Verify
 - **Input:** Task completed, code written, tests written
 - **Action:** Enumerate all verification targets (unit tests, integration tests, e2e scenarios, performance baselines)
@@ -114,6 +146,18 @@ For each verification target:
   - Performance: p95 latency 145ms (SLA: 200ms)
   Evidence: [link to full test output log]
   ```
+
+- **Persist the verdict to the review dashboard (REQUIRED on every PASS):**
+
+```bash
+TASK_ID="${FORGE_TASK_ID:-unknown}"
+BRAIN="${FORGE_BRAIN_PATH:-$HOME/forge/brain}"
+VERDICT_FILE="$BRAIN/prds/$TASK_ID/review-verdicts.jsonl"
+mkdir -p "$(dirname "$VERDICT_FILE")"
+COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "{\"commit\":\"$COMMIT\",\"timestamp\":\"$TIMESTAMP\",\"verdict\":\"PASS\",\"task_id\":\"$TASK_ID\"}" >> "$VERDICT_FILE"
+```
 
 ### Edge Cases & Fallback Paths
 

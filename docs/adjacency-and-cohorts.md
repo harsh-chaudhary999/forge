@@ -42,7 +42,7 @@ Council (State 3) must not start **without** that line. Silent omission is a fai
 | PRD signals | `prds/<task-id>/touchpoints/PRD-SIGNAL-REGISTRY.md` | PRD trust lines → table.column / topic / key / fixture |
 | Risk register | `prds/<task-id>/parity/risk-register.md` | Optional “what we might break” (with **`spec-freeze`** parity) |
 
-**Copy-paste source:** one file with all three table packs — **`docs/templates/adjacency-cohort-and-signals.template.md`**. Split into the paths above when populating the brain.
+**Copy-paste source:** one file with all three table packs — **`docs/templates/adjacency-cohort-and-signals.template.md`**. The template is a single file for convenience; **split it into the three separate brain paths above when populating** — do not write all three table packs into one file under the task brain. Workflow: copy the full template → fill in Section A → write to `touchpoints/COHORT-AND-ADJACENCY.md`; fill in Section B → write to `touchpoints/PRD-SIGNAL-REGISTRY.md`; fill in Section C (if used) → write to `parity/risk-register.md`.
 
 ## Council and tech plans
 

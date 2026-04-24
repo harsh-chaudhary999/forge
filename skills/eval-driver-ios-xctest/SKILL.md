@@ -23,7 +23,7 @@ This skill provides a complete iOS app automation driver using XCTest UI Testing
 
 **Ask the human** whether iOS UI eval should use **`xcrun simctl` + XCTest** (this skill) or an **Appium MCP** / host Appium stack when both are plausible (Appium can drive simulators and devices with different bootstrap tradeoffs). Record the decision and bootstrap commands in the task brain so local runs and CI do not diverge silently.
 
-## Anti-Pattern Blockers
+## Anti-Pattern Preamble: Why iOS Eval Drivers Silently Fail
 
 **DO NOT proceed with these rationalizations:**
 

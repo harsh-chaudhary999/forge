@@ -36,7 +36,7 @@ The eval-driver-android-adb skill enables:
 
 When an **Appium MCP** server (or similar mobile MCP) is available on the host, the operator may prefer it over **ADB + UIAutomator** for Android eval steps. **Ask explicitly**: use this skill’s **ADB driver** end-to-end, or **delegate Android UI actions to Appium MCP** (document MCP tool names, session/device assumptions, and evidence paths). Either path is valid for **product eval**; pick **one** per task so **`eval-coordinate-multi-surface`** and CI stay aligned.
 
-## Anti-Pattern Blockers
+## Anti-Pattern Preamble: Why Android Eval Drivers Silently Fail
 
 **DO NOT proceed with these rationalizations:**
 

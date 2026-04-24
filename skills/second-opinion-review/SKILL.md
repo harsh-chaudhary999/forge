@@ -39,6 +39,17 @@ Use this **after** your primary implementation pass and **after** you would norm
 - [ ] Security-sensitive paths (auth, input validation, secrets) double-checked.
 - [ ] Contracts (API, events, DB) aligned with council-locked spec, not just "works locally."
 
+## Escalate vs proceed
+
+After the checklist, apply this decision table — do **not** leave it to judgment call alone:
+
+| Condition | Action |
+|-----------|--------|
+| All checklist items **Pass** | Proceed to merge. |
+| Any **Gap** in auth, authz, or contract alignment | **Block merge.** Open a `NEEDS_COORDINATION` item per **`forge-glossary`** and resolve before merge. |
+| Any **Gap** in non-critical paths (logging, copy, non-auth error messages) | Log with **`forge-brain-persist`** (what was missed, follow-up task id). Proceed with the tracked item. |
+| **≥ 2 Gaps** of any kind | **Block merge** regardless of individual severity — multiple small gaps compound at runtime. |
+
 ## Relationship to conductor
 
 **`conductor-orchestrate`** still owns phase order. This skill is an **optional adjunct** before merge when stakes or ambiguity are high.

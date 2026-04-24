@@ -31,7 +31,9 @@ def tbd_violations(text: str) -> list[str]:
             continue
         if in_fence:
             continue
-        if stripped.startswith("#") and "TBD" in stripped.upper():
+        if stripped.startswith("#") and (
+            "TBD" in stripped.upper() or "TODO" in stripped.upper()
+        ):
             continue
         if MARKERS.search(line):
             errs.append(f"shared-dev-spec.md line {i}: TBD/TODO in prose — {line.rstrip()[:160]!r}")

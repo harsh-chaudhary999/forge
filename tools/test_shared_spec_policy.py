@@ -25,6 +25,10 @@ class TestTbdViolations(unittest.TestCase):
         self.assertEqual(len(errs), 1)
         self.assertIn("TODO", errs[0])
 
+    def test_todo_in_heading_ignored(self) -> None:
+        text = "# TODO: follow-ups from council\n\nBody without markers.\n"
+        self.assertEqual(ssp.tbd_violations(text), [])
+
 
 if __name__ == "__main__":
     unittest.main()

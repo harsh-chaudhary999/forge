@@ -6,6 +6,7 @@
 # Optional repo/org variables (exported via env: below — the shell reads env, not ${{ vars.* }}):
 #   FORGE_STRICT_TDD=true — --strict-tdd
 #   FORGE_STRICT_TECH_PLANS=true — --strict-tech-plans (needs verify_tech_plans.py in sparse checkout)
+#   FORGE_STRICT_0C_INVENTORY=true — --strict-0c-inventory (GAP rows + multi-source citations; implies tech-plan checks)
 #   FORGE_CHECK_PRD_SECTIONS=true — --check-prd-sections
 #   FORGE_STRICT_SINGLE_TASK=true — --strict-single-task-brain
 #   FORGE_REQUIRE_CONDUCTOR_TIMESTAMPS=true — --require-conductor-timestamps
@@ -69,6 +70,7 @@ jobs:
           FORGE_TASK_ID: ${{ vars.FORGE_TASK_ID }}
           FORGE_STRICT_TDD: ${{ vars.FORGE_STRICT_TDD }}
           FORGE_STRICT_TECH_PLANS: ${{ vars.FORGE_STRICT_TECH_PLANS }}
+          FORGE_STRICT_0C_INVENTORY: ${{ vars.FORGE_STRICT_0C_INVENTORY }}
           FORGE_CHECK_PRD_SECTIONS: ${{ vars.FORGE_CHECK_PRD_SECTIONS }}
           FORGE_STRICT_SINGLE_TASK: ${{ vars.FORGE_STRICT_SINGLE_TASK }}
           FORGE_REQUIRE_CONDUCTOR_TIMESTAMPS: ${{ vars.FORGE_REQUIRE_CONDUCTOR_TIMESTAMPS }}
@@ -86,6 +88,7 @@ jobs:
           EXTRA=""
           if [ "${FORGE_STRICT_TDD:-}" = "true" ]; then EXTRA="${EXTRA} --strict-tdd"; fi
           if [ "${FORGE_STRICT_TECH_PLANS:-}" = "true" ]; then EXTRA="${EXTRA} --strict-tech-plans"; fi
+          if [ "${FORGE_STRICT_0C_INVENTORY:-}" = "true" ]; then EXTRA="${EXTRA} --strict-0c-inventory"; fi
           if [ "${FORGE_CHECK_PRD_SECTIONS:-}" = "true" ]; then EXTRA="${EXTRA} --check-prd-sections"; fi
           if [ "${FORGE_STRICT_SINGLE_TASK:-}" = "true" ]; then EXTRA="${EXTRA} --strict-single-task-brain"; fi
           if [ "${FORGE_REQUIRE_CONDUCTOR_TIMESTAMPS:-}" = "true" ]; then EXTRA="${EXTRA} --require-conductor-timestamps"; fi

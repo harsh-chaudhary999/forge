@@ -9,7 +9,7 @@ Forge’s **skills** and **agents** enforce Phase 4 ordering **procedurally**. T
 | [`tools/verify_forge_task.py`](../tools/verify_forge_task.py) | Gates: eval files, log order, QA CSV, design evidence, optional PRD headings, timestamps, single-task brain, optional tech-plan structure |
 | [`tools/eval_yaml_stdlib.py`](../tools/eval_yaml_stdlib.py) | Used internally when PyYAML is absent — best-effort eval YAML shape checks |
 | [`tools/forge_drift_check.py`](../tools/forge_drift_check.py) | Heuristic: **Success Criteria** bullets from `prd-locked.md` appear as substrings in `eval/*` + `qa/manual-test-cases.csv` (stdlib only) |
-| [`tools/verify_tech_plans.py`](../tools/verify_tech_plans.py) | Tech plan headings / `### 1b.2a` placement / `REVIEW_PASS` gate markers — used by **`--strict-tech-plans`** |
+| [`tools/verify_tech_plans.py`](../tools/verify_tech_plans.py) | Tech plan headings / `### 1b.2a` placement / `REVIEW_PASS` gate markers — used by **`--strict-tech-plans`**; optional **`--strict-0c-inventory`** adds GAP-row + multi-source citation checks |
 | [`tools/append_phase_ledger.py`](../tools/append_phase_ledger.py) | Append one **`phase-ledger.jsonl`** row with **SHA256** for listed task-relative files |
 | [`tools/phase_ledger.py`](../tools/phase_ledger.py) | Ledger schema + validation (used by verify and append CLI) |
 | [`tools/shared_spec_policy.py`](../tools/shared_spec_policy.py) + [`shared_spec_checklist.json`](../tools/shared_spec_checklist.json) | **`--check-shared-spec`** anchors + TBD/TODO scan |
@@ -35,6 +35,7 @@ Forge’s **skills** and **agents** enforce Phase 4 ordering **procedurally**. T
 | **Net-new design** | If `prd-locked.md` indicates **design_new_work: yes** and no `design_waiver` … `prd_only`: requires files under `design/` and/or `[DESIGN-INGEST]` before first `[P4.1-DISPATCH]` when a log exists; if the log is missing, **design/** must be non-empty |
 | **`--strict-tdd`** | `[P4.0-TDD-RED]` must appear before the first `[P4.1-DISPATCH]` |
 | **`--strict-tech-plans`** | When `prds/<task-id>/tech-plans/*.md` exist (excluding `HUMAN_SIGNOFF.md` / `README.md`): each plan must include canonical headings (`### 1b.0`, `### 1b.0b`, `### 1b.2`, `### 1b.2a`, `### 1b.6`), **`### 1b.2a` after** `### 1b.5` / `#### 1b.5b`, a **`Section 1c`** marker, and — if **`Tech plan status: REVIEW_PASS`** — the literals **`<!-- FORGE-GATE:SECTION-0C-INVENTORY:v1 -->`** and **`<!-- FORGE-GATE:CODE-RECROSS:v1 -->`** (see **`skills/tech-plan-self-review/SKILL.md`** Section 0c and **`skills/tech-plan-write-per-project/SKILL.md`** Section 1c). Implemented by [`tools/verify_tech_plans.py`](../tools/verify_tech_plans.py). |
+| **`--strict-0c-inventory`** | Same tech-plan files gate as **`--strict-tech-plans`**, plus for **`REVIEW_PASS`** only: Section 0c inventory table must not end any row with **`GAP`** in the last column; and when **`prd-source-confluence.md`** / **`source-confluence.md`**, **`touchpoints/*.md`**, or **`qa/manual-test-cases.csv`** (with ≥1 data row) exist under the task, the inventory block must contain citation substrings (**`confluence`** / **`prd-source-confluence`** / **`source-confluence`**, **`touchpoints`**, **`manual-test-cases`** or **`qa/manual`**). Heuristic — not a substitute for human **`tech-plan-self-review`**. |
 | **`--check-shared-spec`** | `shared-dev-spec.md` (override with **`--shared-spec-path`**) must include anchors from **`shared_spec_checklist.json`** (override with **`--shared-spec-checklist`**) and must not contain **TBD/TODO** outside fenced blocks |
 | **`--validate-phase-ledger`** | If **`phase-ledger.jsonl`** exists, every line is valid JSON with **`schema_version`**, **`task_id`**, **`phase_marker`**, **`recorded_at`**, **`artifacts`** |
 | **`--require-phase-ledger`** | **`phase-ledger.jsonl`** must exist |
@@ -70,6 +71,7 @@ python3 tools/verify_forge_task.py \
 - `--require-conductor-timestamps`
 - `--strict-single-task-brain` (use `--allow-multi-task-brain` if the brain legitimately tracks several tasks)
 - `--strict-tech-plans`
+- `--strict-0c-inventory` (stricter Section 0c — pair with human self-review)
 - `--check-shared-spec`
 - `--validate-phase-ledger` / `--require-phase-ledger` / `--phase-ledger-verify-hashes`
 
@@ -122,6 +124,7 @@ tools/verify_tech_plans.py
 - **`shared_spec_checklist.json`**: must stay aligned with council template edits; loosen or extend the list when the normative spec outline changes.
 - **`phase-ledger.jsonl`**: rows are only as trustworthy as the process that appends them; **`--phase-ledger-verify-hashes`** catches post-append file edits, not malicious ledger edits (git history is the backstop).
 - **`--strict-tech-plans`** checks **structure + anchors**, not whether inventory rows are *correct* — humans still judge content; the tool blocks the common slip of **REVIEW_PASS** with no file-backed Section 0c / recross.
+- **`--strict-0c-inventory`** adds **machine-detectable** rails: **no `GAP`** in the last column of Section 0c inventory rows, and **no silent prd-locked-only** inventory when Confluence mirror, **touchpoints/**, or populated **QA CSV** exist. It does **not** prove row count vs every acceptance phrase in merged sources; extend with custom tooling or human review for that bar.
 - Does **not** validate adjacency/cohort artifacts — see **`docs/adjacency-and-cohorts.md`**; optional: grep **`conductor.log`** for **`[ADJACENCY-SCAN]`**. Tool: **`tools/forge_adjacency_scan.py`** (**`tools/README.md`**).
 - These tools do **not** prove eval is **GREEN** or that **stack-up** works — only **committed** artifacts and ordering.
 - They do **not** stop a misbehaving LLM in the IDE; they stop **bad commits** and **broken merge candidates** when wired into CI or hooks.

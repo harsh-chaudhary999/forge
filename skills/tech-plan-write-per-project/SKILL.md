@@ -488,6 +488,8 @@ Tech plans are **not one-shot** documents. They go through **review → revise �
 
    **Why:** Skills are prose; agents optimize for “sounds done.” Anchors force **inventory + recross** to exist in the same artifact the implementer reads — the failure mode you get without them is chat-only PASS.
 
+   **First-class inputs (Section 0c inventory — HARD):** If any of these exist under **`~/forge/brain/prds/<task-id>/`**, the Section 0c requirement inventory (the markdown table **immediately below** **`<!-- FORGE-GATE:SECTION-0C-INVENTORY:v1 -->`**) **must** include **≥1 row** that cites that source (source id / short text / trace columns — machine CI uses substring presence in the inventory block): **`prd-locked.md`**, **`prd-source-confluence.md`** or **`source-confluence.md`** (Confluence mirror / normative PRD body), **`shared-dev-spec.md`**, **`touchpoints/*.md`** (especially **`COHORT-AND-ADJACENCY`**, **`PRD-SIGNAL-REGISTRY`**), **`qa/manual-test-cases.csv`**. An inventory that only traces **`prd-locked.md`** while **`prd-source-confluence.md`**, **`touchpoints/*.md`**, or populated **QA CSV** exists is **BLOCKED** for **`REVIEW_PASS`** when CI enables **`verify_forge_task.py --strict-0c-inventory`** (see **`docs/forge-task-verification.md`**).
+
 3. **Minimum feedback loop**
 
    - Run **`tech-plan-self-review`** on this file **before** treating the plan as final for dispatch.  

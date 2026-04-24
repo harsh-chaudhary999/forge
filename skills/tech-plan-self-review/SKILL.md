@@ -1,6 +1,6 @@
 ---
 name: tech-plan-self-review
-description: "WHEN: A per-project tech plan has been written and needs verification before dispatch to dev-implementer. **HARD-GATE:** Section 0c inventory + code recross **must** be written **into** each `tech-plans/<repo>.md` (FORGE-GATE HTML markers per **`tech-plan-write-per-project` Section 1c**) before **`REVIEW_PASS`** — chat-only review is **BLOCKED**. **First** inventory **every** material requirement from **`prd-locked.md`**, **`shared-dev-spec.md`**, and any other **task-bound development sources**; **then** verify Section 1b.0 ↔ Section 2 ↔ spec; **then** validate **`### 1b.2a`** touchpoint exploration (evidence + **Exploration notes**); **then** recross-check cited **`codebase/`** paths against the product repo; **then** fix gaps **in the plan** (new rows/tasks) or **CHANGES**; finally elaborative Section 1b–Section 1c, placeholders, code, commands, XALIGN. CI: **`python3 tools/verify_forge_task.py … --strict-tech-plans`**."
+description: "WHEN: A per-project tech plan has been written and needs verification before dispatch to dev-implementer. **HARD-GATE:** Section 0c inventory + code recross **must** be written **into** each `tech-plans/<repo>.md` (FORGE-GATE HTML markers per **`tech-plan-write-per-project` Section 1c**) before **`REVIEW_PASS`** — chat-only review is **BLOCKED**. **First** inventory **every** material requirement from **`prd-locked.md`**, **`shared-dev-spec.md`**, and any other **task-bound development sources**; **then** verify Section 1b.0 ↔ Section 2 ↔ spec; **then** validate **`### 1b.2a`** touchpoint exploration (evidence + **Exploration notes**); **then** recross-check cited **`codebase/`** paths against the product repo; **then** fix gaps **in the plan** (new rows/tasks) or **CHANGES**; finally elaborative Section 1b–Section 1c, placeholders, code, commands, XALIGN. CI structure: **`python3 tools/verify_forge_task.py … --strict-tech-plans`**. CI semantic rails (optional): **`--strict-0c-inventory`** — rejects inventory **GAP** rows and **prd-locked-only** inventories when Confluence mirror, **touchpoints/**, or QA CSV exist (**`docs/forge-task-verification.md`**)."
 type: rigid
 requires: [brain-read]
 version: 1.0.0
@@ -93,6 +93,9 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 **Inputs to load (all that exist for this `task-id`):**
 - `~/forge/brain/prds/<task-id>/prd-locked.md` — scope, success criteria, acceptance language, Q&A, NFRs, design locks, implementation reference
 - `~/forge/brain/prds/<task-id>/shared-dev-spec.md` — requirements, contracts, acceptance
+- **`prd-source-confluence.md`** or **`source-confluence.md`** (verbatim / mirror PRD body — **must** appear as Section 0c inventory rows when present; CI **`--strict-0c-inventory`** rejects **prd-locked-only** omission)
+- **`touchpoints/*.md`** — cohort/adjacency, signal registry, etc. (**must** appear as inventory rows when any such files exist; cite paths like **`touchpoints/COHORT-AND-ADJACENCY.md`**)
+- **`qa/manual-test-cases.csv`** — when it has data rows, inventory **must** cite it (substring **`manual-test-cases`** or **`qa/manual`**)
 - Parity / delivery / design artifacts under the same task path when referenced by **`spec-freeze`** or the plan (e.g. `parity/checklist.md`, `design/README.md`)
 - Any **explicit** “development source” files the plan’s header or Section 0 cites (treat as authoritative for trace)
 

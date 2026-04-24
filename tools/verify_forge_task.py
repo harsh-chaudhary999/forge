@@ -23,6 +23,10 @@ Validates (when applicable):
     --phase-ledger-verify-hashes (see tools/append_phase_ledger.py).
   - Optional --strict-tech-plans: when prds/<task-id>/tech-plans/*.md exist,
     run structural checks (headings, 1b.2a placement, REVIEW_PASS gate markers).
+  - Optional --strict-0c-inventory: same tech-plan gate as --strict-tech-plans,
+    plus REVIEW_PASS Section 0c semantic rails (no GAP last column; cite
+    Confluence mirror / touchpoints / QA CSV when those files exist — see
+    tools/verify_tech_plans.py).
 
 Core checks use stdlib only (product.md may mix markdown headings with YAML).
 PyYAML strengthens eval checks when installed (see tools/requirements-verify.txt);
@@ -273,7 +277,9 @@ def _multi_task_brain_messages(brain: Path, task_id: str, strict: bool) -> tuple
     return errs, warns
 
 
-def _run_verify_tech_plans(brain: Path, task_id: str) -> list[str]:
+def _run_verify_tech_plans(
+    brain: Path, task_id: str, *, strict_0c_inventory: bool = False
+) -> list[str]:
     """Load sibling verify_tech_plans.py via importlib (works regardless of cwd)."""
     import importlib.util
 
@@ -283,7 +289,7 @@ def _run_verify_tech_plans(brain: Path, task_id: str) -> list[str]:
         return [f"Cannot load tech plan verifier from {path}"]
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    return mod.verify_tech_plans(brain, task_id)
+    return mod.verify_tech_plans(brain, task_id, strict_0c_inventory=strict_0c_inventory)
 
 
 RE_PRODUCT_LINE = re.compile(r"^\*\*Product:\*\*\s*(.+)\s*$", re.MULTILINE)
@@ -419,6 +425,7 @@ def verify(
     require_conductor_timestamps: bool = False,
     strict_single_task_brain: bool = False,
     strict_tech_plans: bool = False,
+    strict_0c_inventory: bool = False,
 ) -> list[str]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -619,7 +626,7 @@ def verify(
     if slug and product_md:
         print(f"INFO: Using product slug={slug!r} ({product_md})", file=sys.stderr)
 
-    if strict_tech_plans:
+    if strict_tech_plans or strict_0c_inventory:
         tp_dir = task_dir / "tech-plans"
         if tp_dir.is_dir() and any(
             p.suffix.lower() == ".md"
@@ -627,7 +634,11 @@ def verify(
             for p in tp_dir.iterdir()
             if p.is_file()
         ):
-            errors.extend(_run_verify_tech_plans(brain, task_id))
+            errors.extend(
+                _run_verify_tech_plans(
+                    brain, task_id, strict_0c_inventory=strict_0c_inventory
+                )
+            )
 
     return errors
 
@@ -732,6 +743,16 @@ def main() -> int:
             "(see tech-plan-self-review + verify_tech_plans.py)."
         ),
     )
+    p.add_argument(
+        "--strict-0c-inventory",
+        action="store_true",
+        help=(
+            "Implies tech-plans/*.md checks (same as --strict-tech-plans) plus, for "
+            "REVIEW_PASS, reject Section 0c rows whose last table column is GAP and "
+            "require inventory citations when prd-source-confluence.md, "
+            "source-confluence.md, touchpoints/*.md, or qa/manual-test-cases.csv exist."
+        ),
+    )
     args = p.parse_args()
 
     brain = Path(args.brain).expanduser() if args.brain else _default_brain_root()
@@ -761,7 +782,8 @@ def main() -> int:
         phase_ledger_verify_hashes=args.phase_ledger_verify_hashes,
         require_conductor_timestamps=args.require_conductor_timestamps,
         strict_single_task_brain=strict_single,
-        strict_tech_plans=args.strict_tech_plans,
+        strict_tech_plans=bool(args.strict_tech_plans or args.strict_0c_inventory),
+        strict_0c_inventory=args.strict_0c_inventory,
     )
     if errs:
         print("Forge task verification FAILED:", file=sys.stderr)

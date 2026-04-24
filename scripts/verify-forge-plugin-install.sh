@@ -53,6 +53,22 @@ verify_merged_skills_root() {
   return 0
 }
 
+# Claude Code hooks/hooks.json runs node "${CLAUDE_PLUGIN_ROOT}/.claude/hooks/*.cjs"
+verify_claude_plugin_layout() {
+  local root="$1"
+  local hook="${root}/.claude/hooks/session-start.cjs"
+  if [[ ! -f "${hook}" ]]; then
+    echo "ERROR [claude-code]: missing ${hook} — install.sh must copy .claude/hooks into the plugin cache. Re-run: bash scripts/install.sh --platform claude-code" >&2
+    return 1
+  fi
+  if [[ ! -L "${root}/.claude/skills" ]] && [[ ! -d "${root}/.claude/skills" ]]; then
+    echo "ERROR [claude-code]: missing ${root}/.claude/skills (symlink to ../skills) — re-run install.sh --platform claude-code" >&2
+    return 1
+  fi
+  echo "OK [claude-code]: .claude/hooks + .claude/skills layout present under ${root}"
+  return 0
+}
+
 opencode_skills_root() {
   local base="${HOME}/.opencode/plugins/forge"
   if [[ -d "${base}/skills" ]]; then
@@ -100,6 +116,9 @@ run_one() {
   local r="$1"
   local lbl="$2"
   verify_merged_skills_root "$r" "$lbl"
+  if [[ "${lbl}" == "claude-code" ]] && [[ -d "${r}/skills" ]]; then
+    verify_claude_plugin_layout "${r}" || return 1
+  fi
 }
 
 if [[ "$ALL" -eq 1 ]]; then
@@ -125,7 +144,11 @@ case "${PLATFORM}" in
     verify_merged_skills_root "${HOME}/.cursor/plugins/local/forge" "cursor"
     ;;
   claude-code)
-    verify_merged_skills_root "${HOME}/.claude/plugins/cache/forge-plugin/forge/${FORGE_VERSION}" "claude-code"
+    cc="${HOME}/.claude/plugins/cache/forge-plugin/forge/${FORGE_VERSION}"
+    verify_merged_skills_root "${cc}" "claude-code"
+    if [[ -d "${cc}/skills" ]]; then
+      verify_claude_plugin_layout "${cc}" || exit 1
+    fi
     ;;
   opencode)
     oc=$(opencode_skills_root)

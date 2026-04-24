@@ -108,9 +108,22 @@ install_claude_code() {
   copy_optional_file "${FORGE_DIR}/gemini-extension.json" "${plugin_dir}/gemini-extension.json"
   cp -r "${FORGE_DIR}/.claude-plugin"        "${plugin_dir}/.claude-plugin"
 
+  # hooks/hooks.json runs node "${CLAUDE_PLUGIN_ROOT}/.claude/hooks/*.cjs" — the
+  # runnable hook scripts live in repo .claude/hooks/ (not hooks/). Without this
+  # copy, Claude Code shows forge-plugin "Failed to load".
+  rm -rf "${plugin_dir}/.claude/hooks"
+  mkdir -p "${plugin_dir}/.claude"
+  cp -r "${FORGE_DIR}/.claude/hooks" "${plugin_dir}/.claude/hooks"
+
+  # session-start.cjs resolves using-forge from .claude/skills/ (one dir up from
+  # .claude/hooks); merged install keeps the tree at skills/ — symlink so hooks match repo layout.
+  rm -f "${plugin_dir}/.claude/skills" 2>/dev/null || true
+  ln -sfn "../skills" "${plugin_dir}/.claude/skills"
+
   # Make hook scripts executable (graceful — not all files may exist)
   find "${plugin_dir}/hooks" -type f \( -name "*.sh" -o -name "session-start" -o -name "run-hook.cmd" \) -exec chmod +x {} \; 2>/dev/null || true
   find "${plugin_dir}/.claude-plugin" -name "*.cjs" -exec chmod +x {} \; 2>/dev/null || true
+  find "${plugin_dir}/.claude/hooks" -type f -name "*.cjs" -exec chmod +x {} \; 2>/dev/null || true
 
   local installed_file="${HOME}/.claude/plugins/installed_plugins.json"
   local entry="{

@@ -72,6 +72,12 @@ None — Claude Code is the primary platform. All features are fully supported.
 
 ## Troubleshooting
 
+**`/plugin` shows forge-plugin "Failed to load" (often 1 error):**
+
+- **Cause:** The user install cache must include **`.claude/hooks/*.cjs`** (Claude runs `node "${CLAUDE_PLUGIN_ROOT}/.claude/hooks/session-start.cjs"` per `hooks/hooks.json`). Older **`install.sh`** copies only the `hooks/` manifest folder and omitted those scripts.
+- **Fix:** `git pull` in your Forge clone, then re-run **`bash scripts/install.sh --platform claude-code`**, fully quit Claude Code, reopen, and check **`/plugin` → Installed** again.
+- **Verify on disk:** `ls ~/.claude/plugins/cache/forge-plugin/forge/*/.claude/hooks/session-start.cjs` — file must exist; **`…/forge/<version>/.claude/skills`** should be a symlink to **`../skills`**.
+
 **Hook not firing:**
 - Check `hooks/hooks.json` is valid JSON and **`SessionStart`** points at **`session-start.cjs`**
 - If you use the **`hooks/session-start`** shim (e.g. some Cursor-style configs), run **`chmod +x hooks/session-start`**

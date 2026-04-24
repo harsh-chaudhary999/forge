@@ -1,0 +1,710 @@
+{
+  "schema_version": 1,
+  "skills": {
+    "autoplan": {
+      "allowed_tools": [
+        "Bash",
+        "Read"
+      ],
+      "hard_gate": false,
+      "path": "autoplan/SKILL.md",
+      "type": "flexible"
+    },
+    "benchmark": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "benchmark/SKILL.md",
+      "type": "flexible"
+    },
+    "brain-forget": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "brain-forget/SKILL.md",
+      "type": "rigid"
+    },
+    "brain-link": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "brain-link/SKILL.md",
+      "type": "rigid"
+    },
+    "brain-read": {
+      "allowed_tools": [
+        "Bash",
+        "Edit",
+        "Read",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "brain-read/SKILL.md",
+      "type": "flexible"
+    },
+    "brain-recall": {
+      "allowed_tools": [
+        "Bash",
+        "Read",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "brain-recall/SKILL.md",
+      "type": "rigid"
+    },
+    "brain-why": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "brain-why/SKILL.md",
+      "type": "rigid"
+    },
+    "brain-write": {
+      "allowed_tools": [
+        "Bash",
+        "Edit",
+        "Read",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "brain-write/SKILL.md",
+      "type": "flexible"
+    },
+    "canary": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": false,
+      "path": "canary/SKILL.md",
+      "type": "flexible"
+    },
+    "conductor-orchestrate": {
+      "allowed_tools": [
+        "Bash",
+        "Edit",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "conductor-orchestrate/SKILL.md",
+      "type": "rigid"
+    },
+    "context-restore": {
+      "allowed_tools": [
+        "Bash",
+        "Read"
+      ],
+      "hard_gate": false,
+      "path": "context-restore/SKILL.md",
+      "type": "flexible"
+    },
+    "context-save": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "context-save/SKILL.md",
+      "type": "flexible"
+    },
+    "contract-api-rest": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": false,
+      "path": "contract-api-rest/SKILL.md",
+      "type": "rigid"
+    },
+    "contract-cache": {
+      "allowed_tools": [
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "contract-cache/SKILL.md",
+      "type": "rigid"
+    },
+    "contract-event-bus": {
+      "allowed_tools": [
+        "Edit"
+      ],
+      "hard_gate": false,
+      "path": "contract-event-bus/SKILL.md",
+      "type": "rigid"
+    },
+    "contract-schema-db": {
+      "allowed_tools": [
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "contract-schema-db/SKILL.md",
+      "type": "rigid"
+    },
+    "contract-search": {
+      "allowed_tools": [
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "contract-search/SKILL.md",
+      "type": "rigid"
+    },
+    "council-multi-repo-negotiate": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "council-multi-repo-negotiate/SKILL.md",
+      "type": "rigid"
+    },
+    "deploy-driver-docker-compose": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": true,
+      "path": "deploy-driver-docker-compose/SKILL.md",
+      "type": "rigid"
+    },
+    "deploy-driver-local-process": {
+      "allowed_tools": [
+        "Bash",
+        "Read",
+        "Write"
+      ],
+      "hard_gate": true,
+      "path": "deploy-driver-local-process/SKILL.md",
+      "type": "rigid"
+    },
+    "deploy-driver-pm2-ssh": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": true,
+      "path": "deploy-driver-pm2-ssh/SKILL.md",
+      "type": "rigid"
+    },
+    "deploy-driver-systemd": {
+      "allowed_tools": [
+        "Bash",
+        "Read",
+        "Write"
+      ],
+      "hard_gate": true,
+      "path": "deploy-driver-systemd/SKILL.md",
+      "type": "rigid"
+    },
+    "dream-resolve-inline": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": true,
+      "path": "dream-resolve-inline/SKILL.md",
+      "type": "rigid"
+    },
+    "dream-retrospect-post-pr": {
+      "allowed_tools": [
+        "Bash",
+        "Read"
+      ],
+      "hard_gate": false,
+      "path": "dream-retrospect-post-pr/SKILL.md",
+      "type": "flexible"
+    },
+    "eval-coordinate-multi-surface": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": false,
+      "path": "eval-coordinate-multi-surface/SKILL.md",
+      "type": "rigid"
+    },
+    "eval-driver-android-adb": {
+      "allowed_tools": [
+        "Bash",
+        "Read"
+      ],
+      "hard_gate": false,
+      "path": "eval-driver-android-adb/SKILL.md",
+      "type": "rigid"
+    },
+    "eval-driver-api-http": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": false,
+      "path": "eval-driver-api-http/SKILL.md",
+      "type": "rigid"
+    },
+    "eval-driver-bus-kafka": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": false,
+      "path": "eval-driver-bus-kafka/SKILL.md",
+      "type": "rigid"
+    },
+    "eval-driver-cache-redis": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": true,
+      "path": "eval-driver-cache-redis/SKILL.md",
+      "type": "rigid"
+    },
+    "eval-driver-db-mysql": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "eval-driver-db-mysql/SKILL.md",
+      "type": "rigid"
+    },
+    "eval-driver-ios-xctest": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": false,
+      "path": "eval-driver-ios-xctest/SKILL.md",
+      "type": "rigid"
+    },
+    "eval-driver-search-es": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": true,
+      "path": "eval-driver-search-es/SKILL.md",
+      "type": "rigid"
+    },
+    "eval-driver-web-cdp": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": false,
+      "path": "eval-driver-web-cdp/SKILL.md",
+      "type": "rigid"
+    },
+    "eval-judge": {
+      "allowed_tools": [
+        "Write"
+      ],
+      "hard_gate": true,
+      "path": "eval-judge/SKILL.md",
+      "type": "rigid"
+    },
+    "eval-product-stack-up": {
+      "allowed_tools": [
+        "Bash",
+        "Edit",
+        "Read",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "eval-product-stack-up/SKILL.md",
+      "type": "rigid"
+    },
+    "eval-scenario-format": {
+      "allowed_tools": [
+        "Bash",
+        "Edit"
+      ],
+      "hard_gate": false,
+      "path": "eval-scenario-format/SKILL.md",
+      "type": "rigid"
+    },
+    "eval-translate-english": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "eval-translate-english/SKILL.md",
+      "type": "rigid"
+    },
+    "forge-brain-layout": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "forge-brain-layout/SKILL.md",
+      "type": "reference"
+    },
+    "forge-brain-persist": {
+      "allowed_tools": [
+        "Bash",
+        "Edit",
+        "Read",
+        "Write"
+      ],
+      "hard_gate": true,
+      "path": "forge-brain-persist/SKILL.md",
+      "type": "rigid"
+    },
+    "forge-council-gate": {
+      "allowed_tools": [
+        "Bash",
+        "Read",
+        "Write"
+      ],
+      "hard_gate": true,
+      "path": "forge-council-gate/SKILL.md",
+      "type": "rigid"
+    },
+    "forge-eval-gate": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": true,
+      "path": "forge-eval-gate/SKILL.md",
+      "type": "rigid"
+    },
+    "forge-glossary": {
+      "allowed_tools": [
+        "Bash",
+        "Edit",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "forge-glossary/SKILL.md",
+      "type": "reference"
+    },
+    "forge-intake-gate": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": true,
+      "path": "forge-intake-gate/SKILL.md",
+      "type": "rigid"
+    },
+    "forge-letter-spirit": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": true,
+      "path": "forge-letter-spirit/SKILL.md",
+      "type": "rigid"
+    },
+    "forge-self-test": {
+      "allowed_tools": [
+        "Bash",
+        "Read",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "forge-self-test/SKILL.md",
+      "type": "rigid"
+    },
+    "forge-skill-anatomy": {
+      "allowed_tools": [
+        "Read"
+      ],
+      "hard_gate": false,
+      "path": "forge-skill-anatomy/SKILL.md",
+      "type": "reference"
+    },
+    "forge-standards-reviewer": {
+      "allowed_tools": [
+        "Bash",
+        "Read"
+      ],
+      "hard_gate": true,
+      "path": "forge-standards-reviewer/SKILL.md",
+      "type": "rigid"
+    },
+    "forge-subagent-anatomy": {
+      "allowed_tools": [
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "forge-subagent-anatomy/SKILL.md",
+      "type": "reference"
+    },
+    "forge-tdd": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": true,
+      "path": "forge-tdd/SKILL.md",
+      "type": "rigid"
+    },
+    "forge-trust-code": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": true,
+      "path": "forge-trust-code/SKILL.md",
+      "type": "rigid"
+    },
+    "forge-verification": {
+      "allowed_tools": [
+        "Bash",
+        "Read"
+      ],
+      "hard_gate": true,
+      "path": "forge-verification/SKILL.md",
+      "type": "rigid"
+    },
+    "forge-worktree-gate": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": true,
+      "path": "forge-worktree-gate/SKILL.md",
+      "type": "rigid"
+    },
+    "forge-writing-skills": {
+      "allowed_tools": [
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "forge-writing-skills/SKILL.md",
+      "type": "rigid"
+    },
+    "freeze": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "freeze/SKILL.md",
+      "type": "flexible"
+    },
+    "guard": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": false,
+      "path": "guard/SKILL.md",
+      "type": "flexible"
+    },
+    "health": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": false,
+      "path": "health/SKILL.md",
+      "type": "flexible"
+    },
+    "intake-interrogate": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": true,
+      "path": "intake-interrogate/SKILL.md",
+      "type": "rigid"
+    },
+    "learn": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "learn/SKILL.md",
+      "type": "flexible"
+    },
+    "pr-set-coordinate": {
+      "allowed_tools": [
+        "Bash",
+        "Edit",
+        "Read",
+        "Write"
+      ],
+      "hard_gate": true,
+      "path": "pr-set-coordinate/SKILL.md",
+      "type": "rigid"
+    },
+    "pr-set-merge-order": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": true,
+      "path": "pr-set-merge-order/SKILL.md",
+      "type": "rigid"
+    },
+    "product-context-load": {
+      "allowed_tools": [
+        "Bash",
+        "Read",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "product-context-load/SKILL.md",
+      "type": "rigid"
+    },
+    "qa-live-app": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": false,
+      "path": "qa-live-app/SKILL.md",
+      "type": "flexible"
+    },
+    "qa-manual-test-cases-from-prd": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": false,
+      "path": "qa-manual-test-cases-from-prd/SKILL.md",
+      "type": "rigid"
+    },
+    "qa-prd-analysis": {
+      "allowed_tools": [
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "qa-prd-analysis/SKILL.md",
+      "type": "rigid"
+    },
+    "reasoning-as-app-frontend": {
+      "allowed_tools": [
+        "Edit",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "reasoning-as-app-frontend/SKILL.md",
+      "type": "rigid"
+    },
+    "reasoning-as-backend": {
+      "allowed_tools": [
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "reasoning-as-backend/SKILL.md",
+      "type": "rigid"
+    },
+    "reasoning-as-infra": {
+      "allowed_tools": [
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "reasoning-as-infra/SKILL.md",
+      "type": "rigid"
+    },
+    "reasoning-as-web-frontend": {
+      "allowed_tools": [
+        "Bash",
+        "Edit"
+      ],
+      "hard_gate": false,
+      "path": "reasoning-as-web-frontend/SKILL.md",
+      "type": "rigid"
+    },
+    "retro": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "retro/SKILL.md",
+      "type": "flexible"
+    },
+    "review-readiness": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": false,
+      "path": "review-readiness/SKILL.md",
+      "type": "flexible"
+    },
+    "scan-codebase": {
+      "allowed_tools": [
+        "Bash",
+        "Read",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "scan-codebase/SKILL.md",
+      "type": "rigid"
+    },
+    "self-heal-locate-fault": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": true,
+      "path": "self-heal-locate-fault/SKILL.md",
+      "type": "rigid"
+    },
+    "self-heal-loop-cap": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": true,
+      "path": "self-heal-loop-cap/SKILL.md",
+      "type": "rigid"
+    },
+    "self-heal-systematic-debug": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "self-heal-systematic-debug/SKILL.md",
+      "type": "rigid"
+    },
+    "self-heal-triage": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": false,
+      "path": "self-heal-triage/SKILL.md",
+      "type": "rigid"
+    },
+    "spec-freeze": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": true,
+      "path": "spec-freeze/SKILL.md",
+      "type": "rigid"
+    },
+    "tech-plan-self-review": {
+      "allowed_tools": [
+        "Bash",
+        "Edit",
+        "Read"
+      ],
+      "hard_gate": false,
+      "path": "tech-plan-self-review/SKILL.md",
+      "type": "rigid"
+    },
+    "tech-plan-write-per-project": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "tech-plan-write-per-project/SKILL.md",
+      "type": "rigid"
+    },
+    "using-forge": {
+      "allowed_tools": [
+        "Bash"
+      ],
+      "hard_gate": false,
+      "path": "using-forge/SKILL.md",
+      "type": "rigid"
+    },
+    "worktree-per-project-per-task": {
+      "allowed_tools": [
+        "Bash",
+        "Write"
+      ],
+      "hard_gate": false,
+      "path": "worktree-per-project-per-task/SKILL.md",
+      "type": "rigid"
+    }
+  }
+}

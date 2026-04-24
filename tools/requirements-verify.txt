@@ -1,0 +1,3 @@
+# Optional deps for stricter Forge brain verification (CI / local).
+# Install: pip install -r tools/requirements-verify.txt
+PyYAML>=6.0.1

@@ -27,6 +27,14 @@
  *
  * FORGE_DISABLE_CANARY=1 — skip canary-in-command check (and match session-start:
  * no canary file expected). Use only on trusted local machines; default is secure.
+ *
+ * FORGE_ROOT — optional absolute path to Forge repo root; defaults to two levels
+ * above this hook (…/forge). Used to load tools/skill-tool-policy.json when present.
+ *
+ * Skill gate: when ~/.forge/.active-skill contains a skill name, allowed-tools are
+ * taken from tools/skill-tool-policy.json if that file exists (portable manifest from
+ * lint_skill_allowed_tools.py); else parsed from skills/<name>/SKILL.md. Applies to
+ * all tool types (Bash, Read, Write, …), not only Bash.
  */
 
 const fs = require('fs');
@@ -54,8 +62,114 @@ try {
   process.exit(0);
 }
 
-// Only inspect Bash tool calls
-if (toolName !== 'Bash') {
+if (!toolName) {
+  process.exit(0);
+}
+
+const isBash = toolName === 'Bash';
+
+// ── Skill-level allowed-tools (all tool types; portable policy JSON optional) ─
+
+const ACTIVE_SKILL_FILE = path.join(os.homedir(), '.forge', '.active-skill');
+let activeSkill = '';
+try {
+  if (fs.existsSync(ACTIVE_SKILL_FILE)) {
+    activeSkill = fs.readFileSync(ACTIVE_SKILL_FILE, 'utf-8').trim();
+  }
+} catch (_) {
+  // Unreadable — skip
+}
+
+const forgeRoot = process.env.FORGE_ROOT
+  ? path.resolve(String(process.env.FORGE_ROOT).trim())
+  : path.resolve(__dirname, '..', '..');
+
+function resolveSkillAllowedTools(skillKey, skillFilePath, skillContent) {
+  const policyPath = path.join(forgeRoot, 'tools', 'skill-tool-policy.json');
+  try {
+    if (fs.existsSync(policyPath)) {
+      const policy = JSON.parse(fs.readFileSync(policyPath, 'utf-8'));
+      const entry = policy.skills && policy.skills[skillKey];
+      if (entry && Array.isArray(entry.allowed_tools) && entry.allowed_tools.length > 0) {
+        return {
+          allowedTools: entry.allowed_tools,
+          isHardGate: !!entry.hard_gate,
+          source: 'skill-tool-policy.json',
+        };
+      }
+    }
+  } catch (_) {
+    // fall through to SKILL.md
+  }
+  if (!fs.existsSync(skillFilePath)) {
+    return { allowedTools: [], isHardGate: false, source: null };
+  }
+  const fmMatch = skillContent.match(/^---\n([\s\S]*?)\n---/);
+  if (!fmMatch) {
+    return { allowedTools: [], isHardGate: false, source: null };
+  }
+  const fm = fmMatch[1];
+  const toolsMatch = fm.match(/allowed-tools:\s*\n((?:\s+- \S+\n?)+)/);
+  if (!toolsMatch) {
+    const isHardGateSkill =
+      /(^|\n)##\s*HARD-GATE\b/m.test(skillContent) ||
+      /(^|\n)# [^\n]*\bHARD-GATE\b/m.test(skillContent) ||
+      /^description:\s*"[^"]*\bHARD-GATE:/m.test(fm);
+    return { allowedTools: [], isHardGate: isHardGateSkill, source: 'SKILL.md (no list)' };
+  }
+  const allowedTools = toolsMatch[1]
+    .split('\n')
+    .map(l => l.replace(/^\s+- /, '').trim())
+    .filter(Boolean);
+  const isHardGateSkill =
+    /(^|\n)##\s*HARD-GATE\b/m.test(skillContent) ||
+    /(^|\n)# [^\n]*\bHARD-GATE\b/m.test(skillContent) ||
+    /^description:\s*"[^"]*\bHARD-GATE:/m.test(fm);
+  return { allowedTools, isHardGate: isHardGateSkill, source: 'SKILL.md' };
+}
+
+if (activeSkill) {
+  const skillFile = path.join(forgeRoot, 'skills', activeSkill, 'SKILL.md');
+  let skillContent = '';
+  try {
+    if (fs.existsSync(skillFile)) {
+      skillContent = fs.readFileSync(skillFile, 'utf-8');
+    }
+  } catch (_) {
+    skillContent = '';
+  }
+  const { allowedTools, isHardGate, source } = resolveSkillAllowedTools(
+    activeSkill,
+    skillFile,
+    skillContent,
+  );
+  if (allowedTools.length > 0 && !allowedTools.includes(toolName)) {
+    const decision = isHardGate ? 'deny' : 'ask';
+    const tail =
+      decision === 'deny'
+        ? `HARD-GATE skill '${activeSkill}' does not allow '${toolName}'. ` +
+          `Unset ~/.forge/.active-skill or switch to a skill that lists this tool.`
+        : `The skill '${activeSkill}' does not declare '${toolName}' in its allowed-tools list. ` +
+          `Proceed only if this tool use is intentional and within the skill's scope.`;
+    const output = {
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: decision,
+        permissionDecisionReason:
+          `[forge-pre-tool-use] SKILL TOOL SCOPE ${decision === 'deny' ? 'VIOLATION' : 'WARNING'}\n\n` +
+          `Active skill: ${activeSkill}\n` +
+          `Policy source: ${source || 'none'}\n` +
+          `Attempted tool: ${toolName}\n` +
+          `Allowed tools: ${allowedTools.join(', ')}\n\n` +
+          tail,
+      },
+    };
+    process.stdout.write(JSON.stringify(output));
+    process.exit(0);
+  }
+}
+
+if (!isBash) {
   process.exit(0);
 }
 
@@ -173,60 +287,5 @@ for (const { pattern, reason } of BLOCKED_PATTERNS) {
   }
 }
 
-// ── Skill-level allowed-tools check ───────────────────────────────────────
-// If ~/.forge/.active-skill is set, verify the current tool is in that skill's
-// allowed-tools frontmatter. Warns (asks) but does not hard-block (Approach A).
-
-const ACTIVE_SKILL_FILE = path.join(os.homedir(), '.forge', '.active-skill');
-let activeSkill = '';
-try {
-  if (fs.existsSync(ACTIVE_SKILL_FILE)) {
-    activeSkill = fs.readFileSync(ACTIVE_SKILL_FILE, 'utf-8').trim();
-  }
-} catch (_) {
-  // Unreadable — skip check
-}
-
-if (activeSkill) {
-  // Find the skill's SKILL.md relative to the repo root (via __dirname)
-  const repoRoot = path.resolve(__dirname, '..', '..');
-  const skillFile = path.join(repoRoot, 'skills', activeSkill, 'SKILL.md');
-  try {
-    if (fs.existsSync(skillFile)) {
-      const skillContent = fs.readFileSync(skillFile, 'utf-8');
-      const fmMatch = skillContent.match(/^---\n([\s\S]*?)\n---/);
-      if (fmMatch) {
-        const fm = fmMatch[1];
-        const toolsMatch = fm.match(/allowed-tools:\s*\n((?:\s+- \S+\n?)+)/);
-        if (toolsMatch) {
-          const allowedTools = toolsMatch[1]
-            .split('\n')
-            .map(l => l.replace(/^\s+- /, '').trim())
-            .filter(Boolean);
-          if (allowedTools.length > 0 && !allowedTools.includes(toolName)) {
-            const output = {
-              hookSpecificOutput: {
-                hookEventName: 'PreToolUse',
-                permissionDecision: 'ask',
-                permissionDecisionReason:
-                  `[forge-pre-tool-use] SKILL TOOL SCOPE WARNING\n\n` +
-                  `Active skill: ${activeSkill}\n` +
-                  `Attempted tool: ${toolName}\n` +
-                  `Allowed tools: ${allowedTools.join(', ')}\n\n` +
-                  `The skill '${activeSkill}' does not declare '${toolName}' in its allowed-tools list. ` +
-                  `Proceed only if this tool use is intentional and within the skill's scope.`,
-              },
-            };
-            process.stdout.write(JSON.stringify(output));
-            process.exit(0);
-          }
-        }
-      }
-    }
-  } catch (_) {
-    // Skill file unreadable — skip check silently
-  }
-}
-
-// Allow all other commands
+// Allow all other Bash commands
 process.exit(0);

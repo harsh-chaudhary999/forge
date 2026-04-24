@@ -125,6 +125,24 @@ function generateCanary() {
 // ==================== Stage Detection ====================
 
 /**
+ * Count task directories under brain/prds that contain a conductor.log.
+ */
+function countTaskConductorLogs(brainPath) {
+  const prdsDir = path.join(brainPath, 'prds');
+  if (!fs.existsSync(prdsDir)) return 0;
+  let n = 0;
+  try {
+    for (const taskDir of fs.readdirSync(prdsDir)) {
+      const logPath = path.join(prdsDir, taskDir, 'conductor.log');
+      if (fs.existsSync(logPath)) n += 1;
+    }
+  } catch (_) {
+    return 0;
+  }
+  return n;
+}
+
+/**
  * Most recently modified conductor.log under brain/prds (each task subdir).
  */
 function findMostRecentConductorLog(brainPath) {
@@ -161,6 +179,7 @@ function findMostRecentConductorLog(brainPath) {
  */
 function resolveConductorLogPath(brainPath) {
   const taskIdRaw = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
+  const nWithLog = countTaskConductorLogs(brainPath);
   if (taskIdRaw) {
     const taskId = String(taskIdRaw).trim();
     const scoped = path.join(brainPath, 'prds', taskId, 'conductor.log');
@@ -170,6 +189,18 @@ function resolveConductorLogPath(brainPath) {
     }
     log(
       `FORGE_TASK_ID/FORGE_PRD_TASK_ID=${taskId} but missing ${scoped} — falling back to mtime heuristic`,
+    );
+    if (nWithLog > 1) {
+      console.error(
+        `[session-start] WARN: ${nWithLog} prds/*/conductor.log files exist; ` +
+          `FORGE_TASK_ID points to a missing log — mtime fallback may pick the wrong task.`,
+      );
+    }
+  } else if (nWithLog > 1) {
+    console.error(
+      '[session-start] WARN: multiple prds/*/conductor.log files; FORGE_TASK_ID / ' +
+        'FORGE_PRD_TASK_ID unset — stage injection follows newest mtime and may be wrong. ' +
+        'Export FORGE_TASK_ID=<active-task-id>.',
     );
   }
   const fallback = findMostRecentConductorLog(brainPath);

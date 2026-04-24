@@ -3,7 +3,16 @@
 # checkout Forge (sparse) or vendor tools/verify_forge_task.py.
 #
 # Required repo/organization variable: FORGE_TASK_ID (e.g. add-2fa).
-# Optional: FORGE_STRICT_TDD = true to enforce [P4.0-TDD-RED] before P4.1 in the log.
+# Optional env (repository or organization variables / secrets):
+#   FORGE_STRICT_TDD=true — --strict-tdd
+#   FORGE_CHECK_PRD_SECTIONS=true — --check-prd-sections (intake template headings)
+#   FORGE_STRICT_SINGLE_TASK=true — --strict-single-task-brain (fail if multiple prds/*/conductor.log)
+#   FORGE_REQUIRE_CONDUCTOR_TIMESTAMPS=true — --require-conductor-timestamps on phase lines
+#   FORGE_DRIFT_STRICT=true — forge_drift_check.py --strict (success criteria vs eval/QA text)
+#   FORGE_CHECK_SHARED_SPEC=true — --check-shared-spec
+#   FORGE_VALIDATE_PHASE_LEDGER=true — --validate-phase-ledger
+#   FORGE_REQUIRE_PHASE_LEDGER=true — --require-phase-ledger
+#   FORGE_PHASE_LEDGER_VERIFY_HASHES=true — --phase-ledger-verify-hashes
 
 name: Forge brain guard
 
@@ -30,11 +39,20 @@ jobs:
           path: forge
           sparse-checkout: |
             tools/verify_forge_task.py
+            tools/eval_yaml_stdlib.py
+            tools/phase_ledger.py
+            tools/shared_spec_policy.py
+            tools/shared_spec_checklist.json
+            tools/requirements-verify.txt
+            tools/forge_drift_check.py
           sparse-checkout-cone-mode: false
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Install verify extras (eval YAML schema)
+        run: pip install -r forge/tools/requirements-verify.txt
 
       - name: Verify Forge task
         env:
@@ -46,9 +64,23 @@ jobs:
             exit 1
           fi
           EXTRA=""
-          if [ "${FORGE_STRICT_TDD:-}" = "true" ]; then EXTRA="--strict-tdd"; fi
+          if [ "${FORGE_STRICT_TDD:-}" = "true" ]; then EXTRA="${EXTRA} --strict-tdd"; fi
+          if [ "${FORGE_CHECK_PRD_SECTIONS:-}" = "true" ]; then EXTRA="${EXTRA} --check-prd-sections"; fi
+          if [ "${FORGE_STRICT_SINGLE_TASK:-}" = "true" ]; then EXTRA="${EXTRA} --strict-single-task-brain"; fi
+          if [ "${FORGE_REQUIRE_CONDUCTOR_TIMESTAMPS:-}" = "true" ]; then EXTRA="${EXTRA} --require-conductor-timestamps"; fi
+          if [ "${FORGE_CHECK_SHARED_SPEC:-}" = "true" ]; then EXTRA="${EXTRA} --check-shared-spec"; fi
+          if [ "${FORGE_VALIDATE_PHASE_LEDGER:-}" = "true" ]; then EXTRA="${EXTRA} --validate-phase-ledger"; fi
+          if [ "${FORGE_REQUIRE_PHASE_LEDGER:-}" = "true" ]; then EXTRA="${EXTRA} --require-phase-ledger"; fi
+          if [ "${FORGE_PHASE_LEDGER_VERIFY_HASHES:-}" = "true" ]; then EXTRA="${EXTRA} --phase-ledger-verify-hashes"; fi
           python3 forge/tools/verify_forge_task.py \
             --brain "${GITHUB_WORKSPACE}" \
             --task-id "${FORGE_TASK_ID}" \
             --require-log \
+            --validate-eval-yaml \
             ${EXTRA}
+          DRIFT_EXTRA=""
+          if [ "${FORGE_DRIFT_STRICT:-}" = "true" ]; then DRIFT_EXTRA="--strict"; fi
+          python3 forge/tools/forge_drift_check.py \
+            --brain "${GITHUB_WORKSPACE}" \
+            --task-id "${FORGE_TASK_ID}" \
+            ${DRIFT_EXTRA}

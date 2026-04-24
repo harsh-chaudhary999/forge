@@ -141,7 +141,7 @@ metadata:
   tags: ["smoke"]
 ```
 
-Then grow steps per **`eval-scenario-format`** below. Optional CI: **`tools/verify_forge_task.py`** only checks that **≥1** YAML exists and log order — not scenario quality.
+Then grow steps per **`eval-scenario-format`** below. CI: **`tools/verify_forge_task.py`** checks **≥1** YAML and log order; **`--validate-eval-yaml`** uses **PyYAML** when installed, otherwise **`tools/eval_yaml_stdlib.py`** (same shape rules, best-effort on exotic YAML). **`tools/forge_drift_check.py`** can warn when **Success Criteria** prose never appears in eval/QA files — **`docs/forge-task-verification.md`**.
 
 ## Schema
 

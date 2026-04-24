@@ -7,6 +7,19 @@ on:
       - ".claude/hooks/pre-tool-use.cjs"
       - ".claude/hooks/forge-stage-detect.cjs"
       - ".claude/hooks/test-forge-stage-detect.cjs"
+      - "tools/verify_forge_task.py"
+      - "tools/eval_yaml_stdlib.py"
+      - "tools/test_verify_forge_task.py"
+      - "tools/test_eval_yaml_stdlib.py"
+      - "tools/forge_drift_check.py"
+      - "tools/phase_ledger.py"
+      - "tools/shared_spec_policy.py"
+      - "tools/shared_spec_checklist.json"
+      - "tools/append_phase_ledger.py"
+      - "tools/lint_skill_allowed_tools.py"
+      - "tools/skill-tool-policy.json"
+      - "tools/test_phase_ledger.py"
+      - "tools/requirements-verify.txt"
       - ".github/workflows/forge-hooks.yml"
   pull_request:
     paths:
@@ -14,6 +27,19 @@ on:
       - ".claude/hooks/pre-tool-use.cjs"
       - ".claude/hooks/forge-stage-detect.cjs"
       - ".claude/hooks/test-forge-stage-detect.cjs"
+      - "tools/verify_forge_task.py"
+      - "tools/eval_yaml_stdlib.py"
+      - "tools/test_verify_forge_task.py"
+      - "tools/test_eval_yaml_stdlib.py"
+      - "tools/forge_drift_check.py"
+      - "tools/phase_ledger.py"
+      - "tools/shared_spec_policy.py"
+      - "tools/shared_spec_checklist.json"
+      - "tools/append_phase_ledger.py"
+      - "tools/lint_skill_allowed_tools.py"
+      - "tools/skill-tool-policy.json"
+      - "tools/test_phase_ledger.py"
+      - "tools/requirements-verify.txt"
       - ".github/workflows/forge-hooks.yml"
 
 jobs:
@@ -30,3 +56,35 @@ jobs:
 
       - name: Load pre-tool-use hook (syntax)
         run: node --check .claude/hooks/pre-tool-use.cjs
+
+  verify-forge-task:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install PyYAML (eval scenario validation tests)
+        run: pip install -r tools/requirements-verify.txt
+
+      - name: verify_forge_task + eval stdlib unit tests
+        run: python3 -m unittest discover -s tools -p "test_*.py" -v
+
+  lint-skills-allowed-tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: rigid skills must declare allowed-tools
+        run: python3 tools/lint_skill_allowed_tools.py
+
+      - name: skill-tool-policy.json matches lint (no drift)
+        run: |
+          python3 tools/lint_skill_allowed_tools.py --write-policy /tmp/skill-tool-policy.json
+          diff -u tools/skill-tool-policy.json /tmp/skill-tool-policy.json

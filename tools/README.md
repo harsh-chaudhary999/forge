@@ -9,7 +9,12 @@ Small, repo-local utilities shipped with Forge. The main maintained package here
 | [`scan_forge/`](scan_forge/) | Python package: phases 1, 3.5, 4, 5, 56, 57, CLI; smoke data is generated at runtime by `verify_smoke.py` |
 | [`verify_scan_outputs.py`](verify_scan_outputs.py) | Standalone check: same rules as `scan_forge.verify_brain_codebase` (required files + non-empty `modules/` when `source_files` > 0). **`forge_scan.py` runs verify automatically** (3 retries) after writing `index.md`; set **`FORGE_SCAN_SKIP_VERIFY=1`** only for emergency triage |
 | [`forge_scan.py`](forge_scan.py) | CLI entry: prepends `tools/` on `sys.path` and runs `scan_forge.cli` |
-| [`verify_forge_task.py`](verify_forge_task.py) | **Machine gate:** validates `prds/<task-id>/eval/*.yaml`, optional `conductor.log` ordering (P4.0 before P4.1), QA CSV when `forge_qa_csv_before_eval: true`, net-new design evidence — stdlib only ([doc](../docs/forge-task-verification.md)) |
+| [`verify_forge_task.py`](verify_forge_task.py) | **Machine gate:** eval YAML ( **`--validate-eval-yaml`** — PyYAML if installed else [`eval_yaml_stdlib.py`](eval_yaml_stdlib.py)), `conductor.log` order, optional **`--check-prd-sections`**, **`--require-conductor-timestamps`**, **`--strict-single-task-brain`**, gates dir auto-fallback ([doc](../docs/forge-task-verification.md)) |
+| [`forge_drift_check.py`](forge_drift_check.py) | **Drift:** `prd-locked.md` **Success Criteria** bullets vs `eval/*` + QA CSV text (**stdlib**; optional **`--strict`**) |
+| [`eval_yaml_stdlib.py`](eval_yaml_stdlib.py) | Best-effort eval scenario shape without PyYAML (imported by verify script) |
+| [`phase_ledger.py`](phase_ledger.py) / [`append_phase_ledger.py`](append_phase_ledger.py) | Append-only **`phase-ledger.jsonl`** with per-file **SHA256** (editor-agnostic) |
+| [`shared_spec_policy.py`](shared_spec_policy.py) + [`shared_spec_checklist.json`](shared_spec_checklist.json) | **`verify_forge_task.py --check-shared-spec`** |
+| [`lint_skill_allowed_tools.py`](lint_skill_allowed_tools.py) | CI: rigid **`allowed-tools`**; **`--write-policy`** → [`skill-tool-policy.json`](skill-tool-policy.json) for hosts that can consume it |
 
 There is **no** separate throwaway “temp” tree under `tools/`; scan run artifacts are always created in a directory you pass as **`--run-dir`** (or a process temp dir), not committed here.
 
@@ -19,6 +24,8 @@ From the **Forge repo root**:
 
 ```bash
 python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain
+# stricter (PyYAML): pip install -r tools/requirements-verify.txt
+python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain --require-log --validate-eval-yaml
 ```
 
 See **[`docs/forge-task-verification.md`](../docs/forge-task-verification.md)** and **[`.github/workflows/forge-brain-guard.yml`](../.github/workflows/forge-brain-guard.yml)** (template for your brain repo).

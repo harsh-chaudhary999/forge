@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "description": "Minimal section anchors for locked shared-dev-spec.md (council Section 5 template).",
+  "required_substrings": [
+    "# Shared Development Spec",
+    "## Product Request Document (PRD)",
+    "## Design source (from intake)",
+    "## REST API Contract",
+    "## Event Bus Contract",
+    "## Cache Contract",
+    "## Database Schema Contract",
+    "## Search Contract",
+    "## Conflict Resolution Log",
+    "## Surface Sign-Offs"
+  ]
+}

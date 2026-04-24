@@ -4,14 +4,27 @@ Machine checks for Forge task readiness under a git-backed brain.
 
 Validates (when applicable):
   - At least one eval scenario file under prds/<task-id>/eval/
+  - Optional --validate-eval-yaml: eval scenario shape checks (PyYAML when
+    installed; else stdlib best-effort via tools/eval_yaml_stdlib.py).
+  - Optional --check-prd-sections: prd-locked.md mandatory lock headings/fields.
+  - Optional --require-conductor-timestamps: conductor.log lines with phase
+    markers must start with ISO-8601 (audit trail).
+  - Optional --strict-single-task-brain: fail if multiple prds/*/conductor.log
+    (use --allow-multi-task-brain to opt out).
   - conductor.log ordering: [P4.0-EVAL-YAML] before any [P4.1-DISPATCH]
   - forge_qa_csv_before_eval: true -> qa/manual-test-cases.csv + log order vs eval
   - Net-new design (prd-locked) -> design/ artifacts or [DESIGN-INGEST] before P4.1
   - Optional --strict-tdd: [P4.0-TDD-RED] before first [P4.1-DISPATCH]
   - Optional --gates-dir: read gate JSON ledger (written by post-commit.cjs)
     instead of (or as supplement to) conductor.log regex parsing.
+  - Optional --check-shared-spec: shared-dev-spec.md anchors + no TBD/TODO (see
+    tools/shared_spec_checklist.json).
+  - Optional phase-ledger.jsonl: --validate-phase-ledger, --require-phase-ledger,
+    --phase-ledger-verify-hashes (see tools/append_phase_ledger.py).
 
-Stdlib only — no PyYAML required (product.md may mix markdown headings with YAML).
+Core checks use stdlib only (product.md may mix markdown headings with YAML).
+PyYAML strengthens eval checks when installed (see tools/requirements-verify.txt);
+stdlib fallback is always available for the same flag.
 
 Usage (from Forge repo root, brain elsewhere):
   python3 tools/verify_forge_task.py --task-id my-feature --brain ~/forge/brain
@@ -21,6 +34,13 @@ Usage (brain repo checked out as cwd, Forge path explicit):
 
 Usage (with gate JSON ledger from post-commit.cjs):
   python3 tools/verify_forge_task.py --task-id my-feature --brain ~/forge/brain --gates-dir ~/forge/brain/prds/my-feature/gates
+
+Drift (PRD success criteria vs eval/QA text):
+  python3 tools/forge_drift_check.py --task-id my-feature --brain ~/forge/brain [--strict]
+
+Phase ledger (append-only JSONL + SHA256):
+  python3 tools/append_phase_ledger.py --brain ~/forge/brain --task-id my-feature \\
+    --phase '[P4.0-EVAL-YAML]' --artifacts eval/smoke.yaml
 """
 
 from __future__ import annotations
@@ -31,6 +51,214 @@ import os
 import re
 import sys
 from pathlib import Path
+
+_TOOLS_DIR = Path(__file__).resolve().parent
+if str(_TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(_TOOLS_DIR))
+
+from eval_yaml_stdlib import validate_eval_dir_stdlib
+from phase_ledger import LEDGER_NAME, verify_ledger
+from shared_spec_policy import validate_shared_spec
+
+
+def _validate_single_eval_document(data: object, label: str) -> list[str]:
+    """Minimal invariants aligned with skills/eval-scenario-format (smoke + steps)."""
+    errs: list[str] = []
+    if not isinstance(data, dict):
+        return [f"{label}: root must be a mapping (YAML object), got {type(data).__name__}"]
+    scenario = data.get("scenario")
+    if not scenario or not isinstance(scenario, str) or not scenario.strip():
+        errs.append(f"{label}: missing or empty 'scenario' (non-empty string required)")
+    steps = data.get("steps")
+    if not isinstance(steps, list) or len(steps) < 1:
+        errs.append(f"{label}: 'steps' must be a non-empty list")
+        return errs
+    for i, step in enumerate(steps):
+        prefix = f"{label} steps[{i}]"
+        if not isinstance(step, dict):
+            errs.append(f"{prefix}: must be a mapping, got {type(step).__name__}")
+            continue
+        for key in ("id", "driver", "action", "expected"):
+            if key not in step:
+                errs.append(f"{prefix}: missing key {key!r}")
+        exp = step.get("expected")
+        if exp is not None:
+            if not isinstance(exp, dict):
+                errs.append(f"{prefix}: 'expected' must be a mapping, got {type(exp).__name__}")
+            elif len(exp) == 0:
+                errs.append(
+                    f"{prefix}: 'expected' must not be empty "
+                    "(machine-readable assertions required per eval-scenario-format)"
+                )
+    return errs
+
+
+def _validate_eval_yaml_files_pyyaml(eval_dir: Path, yaml_mod: object) -> list[str]:
+    """Parse each *.yaml/*.yml with PyYAML (full fidelity)."""
+    errors: list[str] = []
+    yaml_files = sorted(
+        p for p in eval_dir.iterdir() if p.is_file() and p.suffix.lower() in (".yaml", ".yml")
+    )
+    for path in yaml_files:
+        try:
+            raw = path.read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:
+            errors.append(f"{path.name}: cannot read file: {exc}")
+            continue
+        try:
+            docs = list(yaml_mod.safe_load_all(raw))
+        except getattr(yaml_mod, "YAMLError", Exception) as exc:
+            errors.append(f"{path.name}: YAML parse error: {exc}")
+            continue
+        substantive = [d for d in docs if d is not None]
+        if not substantive:
+            errors.append(f"{path.name}: no YAML documents (empty or comments only)")
+            continue
+        for di, data in enumerate(substantive):
+            label = path.name if len(substantive) == 1 else f"{path.name} (document {di + 1})"
+            errors.extend(_validate_single_eval_document(data, label))
+    return errors
+
+
+def _validate_eval_yaml_files(eval_dir: Path) -> list[str]:
+    """
+    Eval scenario shape: prefer PyYAML when installed; else stdlib best-effort
+    (tools/eval_yaml_stdlib.py).
+    """
+    try:
+        import yaml as yaml_mod  # type: ignore
+    except ImportError:
+        print(
+            "INFO: PyYAML not installed — using stdlib eval YAML checks "
+            "(pip install -r tools/requirements-verify.txt for full fidelity).",
+            file=sys.stderr,
+        )
+        return validate_eval_dir_stdlib(eval_dir)
+    return _validate_eval_yaml_files_pyyaml(eval_dir, yaml_mod)
+
+
+RE_PRD_LOCKED_HEADING = re.compile(r"(?m)^#\s+PRD\s+Locked\s*$", re.IGNORECASE)
+RE_REPOS_AFFECTED = re.compile(
+    r"(?ms)\*\*Repos Affected:\*\*\s*\n(.*?)(?=\n\*\*[A-Za-z /]+:\*\*|\n---|\Z)"
+)
+RE_UI_SIGNAL = re.compile(
+    r"\b(web|app|mobile|dashboard|frontend|ui|ios|android|react|next)\b", re.IGNORECASE
+)
+
+# Mandatory lock dimensions from intake template (substring presence).
+PRD_REQUIRED_MARKERS: tuple[str, ...] = (
+    "**Product:**",
+    "**Goal:**",
+    "**Success Criteria:**",
+    "**Repos Affected:**",
+    "**repo_registry_confidence:**",
+    "**repo_naming_mismatch_notes:**",
+    "**product_md_update_required:**",
+    "**Contracts Affected:**",
+    "**Timeline:**",
+    "**Rollback:**",
+    "**Success Metrics:**",
+)
+
+
+def _validate_prd_locked_sections(prd_path: Path) -> list[str]:
+    """Structural checks on prd-locked.md (intake lock template)."""
+    errs: list[str] = []
+    if not prd_path.is_file():
+        errs.append(f"Missing {prd_path}")
+        return errs
+    text = _read_text(prd_path)
+    if not RE_PRD_LOCKED_HEADING.search(text):
+        errs.append("prd-locked.md: expected top-level heading '# PRD Locked'")
+    for marker in PRD_REQUIRED_MARKERS:
+        if marker not in text:
+            errs.append(f"prd-locked.md: missing required block/field {marker!r}")
+    if "**Design / UI" not in text and "design_ui_scope: not applicable" not in text:
+        block = RE_REPOS_AFFECTED.search(text)
+        body = block.group(1) if block else ""
+        if body and RE_UI_SIGNAL.search(body):
+            errs.append(
+                "prd-locked.md: UI-related repos/surfaces suggested in **Repos Affected:** "
+                "but no **Design / UI** section and no `design_ui_scope: not applicable` — "
+                "lock Q9 per intake-interrogate."
+            )
+    return errs
+
+
+RE_PHASE_MARKER_IN_LINE = re.compile(r"\[[Pp][0-9][^\]\s]*\]")
+
+
+def _line_has_leading_iso_timestamp(raw: str) -> bool:
+    """True if line starts with ISO-8601 date-time (plain or bracketed)."""
+    if re.match(r"^\d{4}-\d{2}-\d{2}T", raw):
+        return True
+    if re.match(r"^\[\d{4}-\d{2}-\d{2}T[^\]]*\]\s*\[", raw):
+        return True
+    return False
+
+
+def _conductor_timestamp_violations(lines: list[str]) -> list[str]:
+    """Lines containing [P…] phase markers should be auditable with a leading timestamp."""
+    errs: list[str] = []
+    for i, line in enumerate(lines, start=1):
+        raw = line.strip()
+        if not raw or raw.startswith("#"):
+            continue
+        if not RE_PHASE_MARKER_IN_LINE.search(raw):
+            continue
+        if _line_has_leading_iso_timestamp(raw):
+            continue
+        errs.append(
+            f"conductor.log line {i}: phase marker present but line lacks leading ISO-8601 "
+            f"timestamp (use e.g. '2026-04-24T12:00:00Z [P4.0-EVAL-YAML] …' or "
+            f"'[2026-04-24T12:00:00Z] [P4.0-EVAL-YAML] …'). Got: {raw[:160]!r}"
+        )
+    return errs
+
+
+def _effective_gates_dir(task_dir: Path, gates_dir: Path | None) -> tuple[Path | None, str | None]:
+    """
+    Resolve gate JSON directory. If explicit --gates-dir is missing on disk but
+    prds/<task-id>/gates exists, fall back to the task-local gates dir.
+    Returns (directory or None, optional INFO message).
+    """
+    task_gates = task_dir / "gates"
+    if gates_dir is not None:
+        if gates_dir.is_dir():
+            return gates_dir, None
+        if task_gates.is_dir():
+            return (
+                task_gates,
+                f"INFO: --gates-dir {gates_dir} not found or not a directory; using {task_gates}",
+            )
+        return None, None
+    if task_gates.is_dir():
+        return task_gates, None
+    return None, None
+
+
+def _multi_task_brain_messages(brain: Path, task_id: str, strict: bool) -> tuple[list[str], list[str]]:
+    """Returns (errors, warnings) for multiple prds/*/conductor.log files."""
+    errs: list[str] = []
+    warns: list[str] = []
+    prds = brain / "prds"
+    if not prds.is_dir():
+        return errs, warns
+    with_logs = sorted(d.name for d in prds.iterdir() if d.is_dir() and (d / "conductor.log").is_file())
+    if len(with_logs) <= 1:
+        return errs, warns
+    msg = (
+        f"Brain has {len(with_logs)} tasks with conductor.log ({', '.join(with_logs)}). "
+        f"Session hooks use mtime when FORGE_TASK_ID is unset — export FORGE_TASK_ID={task_id!r} "
+        "(or FORGE_PRD_TASK_ID) while working on this task."
+    )
+    if strict:
+        errs.append(
+            msg + " Or drop --strict-single-task-brain / pass --allow-multi-task-brain if intentional."
+        )
+    else:
+        warns.append(msg)
+    return errs, warns
 
 
 RE_PRODUCT_LINE = re.compile(r"^\*\*Product:\*\*\s*(.+)\s*$", re.MULTILINE)
@@ -155,6 +383,16 @@ def verify(
     strict_tdd: bool,
     require_log: bool,
     gates_dir: Path | None = None,
+    validate_eval_yaml: bool = False,
+    check_prd_sections: bool = False,
+    check_shared_spec: bool = False,
+    shared_spec_path: Path | None = None,
+    shared_spec_checklist: Path | None = None,
+    validate_phase_ledger: bool = False,
+    require_phase_ledger: bool = False,
+    phase_ledger_verify_hashes: bool = False,
+    require_conductor_timestamps: bool = False,
+    strict_single_task_brain: bool = False,
 ) -> list[str]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -170,12 +408,20 @@ def verify(
         errors.append(f"--product {product_slug}: missing {brain / 'products' / product_slug / 'product.md'}")
     require_qa = _product_requires_qa_before_eval(product_md)
 
+    if check_prd_sections:
+        errors.extend(_validate_prd_locked_sections(prd_locked))
+
+    if check_shared_spec:
+        spec_path = shared_spec_path or (task_dir / "shared-dev-spec.md")
+        errors.extend(validate_shared_spec(spec_path, checklist_path=shared_spec_checklist))
+
     # Load gate JSON ledger from post-commit.cjs (if available)
-    # Prefer ledger over conductor.log regex where both exist; fall back gracefully.
-    effective_gates_dir = gates_dir or (task_dir / "gates")
+    effective_gates_dir, gates_msg = _effective_gates_dir(task_dir, gates_dir)
+    if gates_msg:
+        print(gates_msg, file=sys.stderr)
     ledger = _load_gates_ledger(effective_gates_dir)
     using_ledger = bool(ledger)
-    if using_ledger:
+    if using_ledger and effective_gates_dir is not None:
         print(
             f"INFO: Gate ledger loaded from {effective_gates_dir} "
             f"({len(ledger)} satisfied gates: {sorted(ledger)})",
@@ -189,6 +435,9 @@ def verify(
             f"Need at least one eval scenario (*.yaml/*.yml) under {eval_dir} "
             "(State 4b / forge-eval-gate)."
         )
+
+    if validate_eval_yaml and eval_dir.is_dir():
+        errors.extend(_validate_eval_yaml_files(eval_dir))
 
     qa_csv = task_dir / "qa" / "manual-test-cases.csv"
     if require_qa:
@@ -210,6 +459,9 @@ def verify(
         lines: list[str] = []
     else:
         lines = _read_text(log_path).splitlines()
+
+    if lines and require_conductor_timestamps:
+        errors.extend(_conductor_timestamp_violations(lines))
 
     # When a gate ledger is available, use it for gate presence checks.
     # Ordering checks still use conductor.log line numbers (ledger has timestamps,
@@ -317,6 +569,24 @@ def verify(
                         "before first [P4.1-DISPATCH]."
                     )
 
+    ledger_path = task_dir / LEDGER_NAME
+    if require_phase_ledger and not ledger_path.is_file():
+        errors.append(f"Missing required {ledger_path} (--require-phase-ledger)")
+    if ledger_path.is_file() and (
+        validate_phase_ledger or require_phase_ledger or phase_ledger_verify_hashes
+    ):
+        errors.extend(
+            verify_ledger(
+                task_dir,
+                verify_hashes=phase_ledger_verify_hashes,
+                task_id_expected=task_id,
+            )
+        )
+
+    m_errs, m_warns = _multi_task_brain_messages(brain, task_id, strict_single_task_brain)
+    errors.extend(m_errs)
+    warnings.extend(m_warns)
+
     for w in warnings:
         print(f"WARN: {w}", file=sys.stderr)
 
@@ -355,10 +625,67 @@ def main() -> int:
         help=(
             "Path to gate JSON ledger directory written by post-commit.cjs "
             "(e.g. brain/prds/<task-id>/gates). "
-            "When present, gate presence checks use the JSON ledger instead of "
-            "conductor.log regex; ordering checks still use conductor.log line numbers. "
-            "Defaults to prds/<task-id>/gates under the brain directory."
+            "When omitted, uses prds/<task-id>/gates if that directory exists. "
+            "If this path is missing but the task-local gates/ exists, that directory is used."
         ),
+    )
+    p.add_argument(
+        "--validate-eval-yaml",
+        action="store_true",
+        help=(
+            "Validate each eval *.yaml/*.yml scenario shape (PyYAML if installed, "
+            "else stdlib best-effort in tools/eval_yaml_stdlib.py)."
+        ),
+    )
+    p.add_argument(
+        "--check-prd-sections",
+        action="store_true",
+        help="Require prd-locked.md intake template headings and Q9 heuristic for UI repos.",
+    )
+    p.add_argument(
+        "--require-conductor-timestamps",
+        action="store_true",
+        help="Fail if conductor.log lines with [P…] phase markers lack a leading ISO-8601 timestamp.",
+    )
+    p.add_argument(
+        "--strict-single-task-brain",
+        action="store_true",
+        help="Fail when more than one prds/*/conductor.log exists (multi-task ambiguity).",
+    )
+    p.add_argument(
+        "--allow-multi-task-brain",
+        action="store_true",
+        help="Allow multiple conductor.log files under prds/ (only with --strict-single-task-brain).",
+    )
+    p.add_argument(
+        "--check-shared-spec",
+        action="store_true",
+        help="Require shared-dev-spec.md and tools/shared_spec_checklist.json anchors (+ no TBD/TODO).",
+    )
+    p.add_argument(
+        "--shared-spec-path",
+        default=None,
+        help="Override path to shared-dev-spec.md (default: prds/<task-id>/shared-dev-spec.md).",
+    )
+    p.add_argument(
+        "--shared-spec-checklist",
+        default=None,
+        help="JSON checklist path (default: tools/shared_spec_checklist.json next to verify script).",
+    )
+    p.add_argument(
+        "--validate-phase-ledger",
+        action="store_true",
+        help="If phase-ledger.jsonl exists, validate JSON lines and schema.",
+    )
+    p.add_argument(
+        "--require-phase-ledger",
+        action="store_true",
+        help="Require prds/<task-id>/phase-ledger.jsonl to exist.",
+    )
+    p.add_argument(
+        "--phase-ledger-verify-hashes",
+        action="store_true",
+        help="When validating phase-ledger.jsonl, re-hash artifact paths vs recorded sha256.",
     )
     args = p.parse_args()
 
@@ -370,6 +697,12 @@ def main() -> int:
     )
 
     gates_dir = Path(args.gates_dir).expanduser() if args.gates_dir else None
+    shared_spec_path = Path(args.shared_spec_path).expanduser() if args.shared_spec_path else None
+    shared_spec_checklist = (
+        Path(args.shared_spec_checklist).expanduser() if args.shared_spec_checklist else None
+    )
+
+    strict_single = bool(args.strict_single_task_brain and not args.allow_multi_task_brain)
 
     errs = verify(
         brain=brain,
@@ -378,6 +711,16 @@ def main() -> int:
         strict_tdd=args.strict_tdd,
         require_log=args.require_log,
         gates_dir=gates_dir,
+        validate_eval_yaml=args.validate_eval_yaml,
+        check_prd_sections=args.check_prd_sections,
+        check_shared_spec=args.check_shared_spec,
+        shared_spec_path=shared_spec_path,
+        shared_spec_checklist=shared_spec_checklist,
+        validate_phase_ledger=args.validate_phase_ledger,
+        require_phase_ledger=args.require_phase_ledger,
+        phase_ledger_verify_hashes=args.phase_ledger_verify_hashes,
+        require_conductor_timestamps=args.require_conductor_timestamps,
+        strict_single_task_brain=strict_single,
     )
     if errs:
         print("Forge task verification FAILED:", file=sys.stderr)

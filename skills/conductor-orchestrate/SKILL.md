@@ -928,6 +928,15 @@ User decides: retry, manual fix, or abort
 
 ### Log Format
 
+**Audit rule (MUST for phase markers):** Every appended line that contains a **`[P…]`** phase token (e.g. **`[P4.0-EVAL-YAML]`**, **`[P4.1-DISPATCH]`**) MUST start with an **ISO-8601 UTC timestamp** so `conductor.log` sorts and verifies cleanly:
+
+- Preferred: `2026-04-24T12:00:00Z [P4.0-EVAL-YAML] scenario_files=1 …`
+- Also accepted: `[2026-04-24T12:00:00Z] [P4.0-EVAL-YAML] …`
+
+**Optional machine check:** `tools/verify_forge_task.py --require-conductor-timestamps` fails lines that omit the timestamp while still emitting `[P…]` markers.
+
+Legacy free-form lines (without `[P` phase tokens) may omit the prefix.
+
 ```
 [<STATE>] task_id=<task-id> <key>=<value> timestamp=<ISO8601> status=<START|PROGRESS|COMPLETE|FAIL|ESCALATE>
 ```
@@ -936,11 +945,22 @@ User decides: retry, manual fix, or abort
 
 All logs written to: `~/forge/brain/prds/<task-id>/conductor.log`
 
+### Phase ledger (optional, editor-agnostic)
+
+After materializing eval (or other) artifacts, record **SHA256 attestations** in append-only **`phase-ledger.jsonl`** at `~/forge/brain/prds/<task-id>/` — any shell can run:
+
+`python3 <forge>/tools/append_phase_ledger.py --brain … --task-id … --phase '[P4.0-EVAL-YAML]' --artifacts eval/smoke.yaml`
+
+CI can enforce with **`tools/verify_forge_task.py --validate-phase-ledger`** (and **`--phase-ledger-verify-hashes`** when you want bytes proof).
+
 ### Machine verification (optional)
 
-Forge ships **`tools/verify_forge_task.py`** (stdlib Python, no pip deps) to **fail CI or pre-push** when:
+Forge ships **`tools/verify_forge_task.py`** (stdlib core; optional PyYAML for eval shape) to **fail CI or pre-push** when:
 
-- `prds/<task-id>/eval/` has no scenario YAML, or
+- `prds/<task-id>/eval/` has no scenario YAML, or eval YAML shape is invalid (**`--validate-eval-yaml`**), or
+- **`prd-locked.md`** is missing mandatory intake sections (**`--check-prd-sections`**), or
+- **`shared-dev-spec.md`** fails checklist / TBD scan (**`--check-shared-spec`**), or
+- **`phase-ledger.jsonl`** is invalid or hashes do not match disk (**`--validate-phase-ledger`**, **`--phase-ledger-verify-hashes`**), or
 - `conductor.log` shows **`[P4.1-DISPATCH]`** before **`[P4.0-EVAL-YAML]`**, or
 - `forge_qa_csv_before_eval: true` but CSV / log order is wrong, or
 - Net-new design (per `prd-locked.md`) lacks **`design/`** files and/or **`[DESIGN-INGEST]`** before P4.1.

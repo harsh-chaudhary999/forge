@@ -207,6 +207,13 @@ install_claude_code() {
     echo "        See docs/platforms/claude-code.md for the manual hook registration snippet."
   fi
 
+  # Register slash commands globally via ~/.claude/commands/forge symlink.
+  # Claude Code loads commands from ~/.claude/commands/ in every session regardless of project.
+  # Symlinking to FORGE_DIR/commands means the commands stay current without re-running install.
+  mkdir -p "${HOME}/.claude/commands"
+  ln -sfn "${FORGE_DIR}/commands" "${HOME}/.claude/commands/forge"
+  echo "  Commands: ~/.claude/commands/forge → ${FORGE_DIR}/commands"
+
   echo "  Done: ${plugin_dir}"
   if [[ -x "${FORGE_DIR}/scripts/verify-forge-plugin-install.sh" ]]; then
     echo "  Verify merged skill trees: bash \"${FORGE_DIR}/scripts/verify-forge-plugin-install.sh\" --platform claude-code"
@@ -253,6 +260,11 @@ uninstall_claude_code() {
       fs.writeFileSync('${settings_file}', JSON.stringify(data, null, 2));
     " 2>/dev/null || true
     echo "  Removed hooks from settings.json"
+  fi
+  # Remove global commands symlink
+  if [ -L "${HOME}/.claude/commands/forge" ]; then
+    rm "${HOME}/.claude/commands/forge"
+    echo "  Removed: ~/.claude/commands/forge"
   fi
 }
 

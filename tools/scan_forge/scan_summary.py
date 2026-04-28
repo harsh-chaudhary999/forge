@@ -23,6 +23,24 @@ def write_scan_summary(brain_codebase: Path, repos: list[tuple[str, Path]]) -> P
             scan = {}
 
     mod_count = sum(1 for _ in brain_codebase.rglob("*.md") if "/modules/" in str(_).replace("\\", "/"))
+    state_doc: dict[str, Any] = {}
+    state_path = brain_codebase / ".forge_scan_file_state.json"
+    if state_path.is_file():
+        try:
+            state_doc = json.loads(state_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            state_doc = {}
+    changed_total = 0
+    state_roles = state_doc.get("roles")
+    if isinstance(state_roles, dict):
+        for _role, entry in state_roles.items():
+            if not isinstance(entry, dict):
+                continue
+            n = entry.get("changed_paths_count", 0)
+            try:
+                changed_total += int(n)
+            except (TypeError, ValueError):
+                pass
 
     lines = [
         "# Scan summary",
@@ -49,6 +67,7 @@ def write_scan_summary(brain_codebase: Path, repos: list[tuple[str, Path]]) -> P
             f"- **source_files:** {scan.get('source_files', 'n/a')}",
             f"- **tier1_hubs:** {scan.get('tier1_hubs', 'n/a')}",
             f"- **tier2_hubs:** {scan.get('tier2_hubs', 'n/a')}",
+            f"- **incremental changed paths (last run):** {changed_total}",
             "",
             "### Per-role",
             "",
@@ -79,6 +98,8 @@ def write_scan_summary(brain_codebase: Path, repos: list[tuple[str, Path]]) -> P
             "- **`graph.json`** — module nodes + `cross_repo_http` edges with `provenance` "
             "(regeneratable; markdown modules remain human source of truth). "
             "Check **`warnings`** for skipped legacy automap rows or unresolved module paths.",
+            "- **`forge_scan_edges.sqlite`** — queryable edge store regenerated from `graph.json` each successful scan.",
+            "- **`.forge_scan_file_state.json`** — per-role `head`, `tree`, tracked file blob SHAs, and changed-path counts for incremental runs.",
             "",
             "## Cross-repo",
             "",

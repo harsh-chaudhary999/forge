@@ -28,5 +28,5 @@ jobs:
       - name: Compile Python under tools/
         run: python3 -m compileall -q tools
 
-      - name: Smoke test (fixtures + scan CLI)
+      - name: Smoke test (fixtures + scan CLI + incremental)
         run: python3 tools/scan_forge/verify_smoke.py

@@ -23,6 +23,18 @@ _ROLE_SVC = "svc"
 _ROLE_UI = "ui"
 
 
+def _git(repo: Path, *args: str) -> None:
+    subprocess.run(["git", "-C", str(repo), *args], check=True)
+
+
+def _git_init_and_commit(repo: Path, message: str) -> None:
+    _git(repo, "init")
+    _git(repo, "config", "user.email", "smoke@example.com")
+    _git(repo, "config", "user.name", "Smoke Bot")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-m", message)
+
+
 def _write_smoke_fixtures(parent: Path) -> tuple[Path, Path]:
     """Write two minimal fake repos under parent/<role>/."""
     svc = parent / _ROLE_SVC
@@ -135,6 +147,8 @@ def main() -> int:
     fixtures_parent = Path(tempfile.mkdtemp(prefix="forge_scan_smoke_fixtures."))
     try:
         svc_repo, ui_repo = _write_smoke_fixtures(fixtures_parent)
+        _git_init_and_commit(svc_repo, "initial svc fixtures")
+        _git_init_and_commit(ui_repo, "initial ui fixtures")
         env = os.environ.copy()
         env["PYTHONPATH"] = str(root / "tools")
         cmd = [
@@ -144,6 +158,7 @@ def main() -> int:
             "--run-dir", str(run_dir),
             "--brain-codebase", str(brain),
             "--skip-phase57",
+            "--incremental",
             "--repos",
             f"{_ROLE_SVC}:{svc_repo}",
             f"{_ROLE_UI}:{ui_repo}",
@@ -232,6 +247,33 @@ def main() -> int:
             "DO_NOT_MIRROR" in e.get("source_relative", "") and e.get("reason") == "deny_policy"
             for e in skipped
         )
+
+        # Incremental second run: no git changes -> skip per-role scan phases.
+        subprocess.run(cmd, check=True, cwd=str(root), env=env)
+        meta2 = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
+        inc = meta2.get("incremental") or {}
+        assert inc.get("enabled") is True
+        assert inc.get("changed_files_n") == 0, inc
+        assert inc.get("skipped_scan_phases") is True, inc
+        state = json.loads((brain / ".forge_scan_file_state.json").read_text(encoding="utf-8"))
+        roles = state.get("roles") or {}
+        assert _ROLE_SVC in roles and _ROLE_UI in roles
+        assert isinstance(roles[_ROLE_SVC].get("tracked_blobs"), dict)
+        assert isinstance(roles[_ROLE_UI].get("tracked_blobs"), dict)
+
+        # Incremental third run: uncommitted tracked file change must trigger re-scan.
+        routes_ts = svc_repo / "src" / "routes.ts"
+        routes_ts.write_text(
+            routes_ts.read_text(encoding="utf-8")
+            + "\n// uncommitted smoke edit\n",
+            encoding="utf-8",
+        )
+        subprocess.run(cmd, check=True, cwd=str(root), env=env)
+        meta3 = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
+        inc3 = meta3.get("incremental") or {}
+        assert inc3.get("enabled") is True
+        assert int(inc3.get("changed_files_n", 0)) >= 1, inc3
+        assert not inc3.get("skipped_scan_phases", False), inc3
     finally:
         import shutil
         shutil.rmtree(run_dir, ignore_errors=True)

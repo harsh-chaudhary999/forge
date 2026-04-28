@@ -4,7 +4,7 @@ import re
 from collections import Counter
 from pathlib import Path
 
-from . import ast_http_calls, grep_util, log
+from . import ast_http_calls, ast_import_edges, grep_util, log
 
 # Repo-relative paths only (never match parent dirs like ``.../my-test-workspace/...``).
 _TEST_PATH_RE = re.compile(r"/(test|tests|__tests__|e2e|spec)/|\.test\.|\.spec\.|/testing/")
@@ -423,14 +423,18 @@ def run_phase5(repos: list[Path], scan_tmp: Path, topology=None) -> None:
 
     (scan_tmp / "forge_scan_url_strings.txt").write_text("\n".join(sorted(urls)) + "\n", encoding="utf-8")
 
+    # Optional import/export edge extraction for mapping quality.
+    imp_rows = ast_import_edges.append_import_edges(repos, scan_tmp)
+
     api_routes_n = len((scan_tmp / "forge_scan_api_routes.txt").read_text().splitlines()) if (scan_tmp / "forge_scan_api_routes.txt").is_file() else 0
     log.log_stat(
         f"phase=5.x-prep api_routes={api_routes_n} callsites={all_n} fe_urls={len(urls)} "
-        f"dynamic_urls={len(dyn_path.read_text().splitlines()) if dyn_path.is_file() else 0}",
+        f"dynamic_urls={len(dyn_path.read_text().splitlines()) if dyn_path.is_file() else 0} "
+        f"import_edges={imp_rows}",
     )
     log.log_done(
         f"callsites={all_n} fe_urls={len(urls)} dynamic_urls={len(dyn_path.read_text().splitlines()) if dyn_path.is_file() else 0} "
-        f"env_lines={len(env_lines.splitlines())} api_routes={api_routes_n}",
+        f"env_lines={len(env_lines.splitlines())} api_routes={api_routes_n} import_edges={imp_rows}",
     )
     print()
     print("Phase 5.1-5.5 prep complete.")

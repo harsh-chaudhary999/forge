@@ -29,14 +29,24 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const os = require('os');
+const { spawnSync } = require('child_process');
 
 // Configuration
 const TASK_ID = process.argv[2];
-const FORGE_ROOT = process.argv[3] || path.join(process.env.HOME || '/root', 'forge');
+const FORGE_ROOT = process.argv[3] || path.join(os.homedir(), 'forge');
 const BRAIN_DIR = path.join(FORGE_ROOT, 'brain');
 const RETROSPECTIVES_DIR = path.join(BRAIN_DIR, 'retrospectives');
 const EXOCORTEX_BRAIN = process.env.EXOCORTEX_BRAIN || '';
+
+function runGit(args, options = {}) {
+  return spawnSync('git', args, {
+    cwd: FORGE_ROOT,
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    ...options,
+  });
+}
 
 function die(message) {
   console.error(`ERROR: ${message}`);
@@ -82,8 +92,12 @@ function log(message) {
 if (!TASK_ID) {
   die('TASK_ID required as first argument');
 }
+if (!/^[\w.-]+$/.test(TASK_ID)) {
+  die(`Invalid TASK_ID format: ${TASK_ID}`);
+}
 
-if (!fs.existsSync(path.join(FORGE_ROOT, '.git'))) {
+const gitPath = path.join(FORGE_ROOT, '.git');
+if (!fs.existsSync(gitPath)) {
   die(`Not a git repo: ${FORGE_ROOT}`);
 }
 
@@ -105,11 +119,8 @@ let prLog = '';
 let prCount = 0;
 
 try {
-  prLog = execSync(`git log --all --grep="${TASK_ID}" --oneline 2>/dev/null || true`, {
-    cwd: FORGE_ROOT,
-    encoding: 'utf-8',
-    stdio: ['pipe', 'pipe', 'pipe']
-  });
+  const res = runGit(['log', '--all', '--grep', TASK_ID, '--oneline']);
+  prLog = res.status === 0 ? (res.stdout || '') : '';
   prCount = prLog.trim().split('\n').filter(line => line.length > 0).length;
 } catch (e) {
   prLog = '';
@@ -122,21 +133,16 @@ let workEnd = new Date().toISOString();
 let gitUser = 'unknown';
 
 try {
-  const commitDateCmd = `git log --all --grep="${TASK_ID}" --format=%aI 2>/dev/null | tail -1 || true`;
-  workStart = execSync(commitDateCmd, {
-    cwd: FORGE_ROOT,
-    encoding: 'utf-8',
-    stdio: ['pipe', 'pipe', 'pipe']
-  }).trim();
+  const res = runGit(['log', '--all', '--grep', TASK_ID, '--format=%aI']);
+  const lines = (res.stdout || '').trim().split('\n').filter(Boolean);
+  workStart = lines.length ? lines[lines.length - 1] : '';
 } catch (e) {
   workStart = '';
 }
 
 try {
-  gitUser = execSync('git config user.name || echo "unknown"', {
-    cwd: FORGE_ROOT,
-    encoding: 'utf-8'
-  }).trim();
+  const res = runGit(['config', 'user.name']);
+  gitUser = res.status === 0 ? (res.stdout || '').trim() || 'unknown' : 'unknown';
 } catch (e) {
   gitUser = 'unknown';
 }
@@ -161,13 +167,8 @@ if (prLog) {
 runLog += '\n=== Commit Details ===\n';
 
 try {
-  const detailCmd = `git log --all --grep="${TASK_ID}" --format="%H|%s|%aI|%b" 2>/dev/null || echo "No detailed commits available"`;
-  const commitDetails = execSync(detailCmd, {
-    cwd: FORGE_ROOT,
-    encoding: 'utf-8',
-    stdio: ['pipe', 'pipe', 'pipe']
-  });
-  runLog += commitDetails;
+  const res = runGit(['log', '--all', '--grep', TASK_ID, '--format=%H|%s|%aI|%b']);
+  runLog += res.status === 0 ? (res.stdout || '') : 'No detailed commits available\n';
 } catch (e) {
   runLog += 'No detailed commits available\n';
 }
@@ -249,10 +250,7 @@ log('Committing retrospective to forge repo...');
 
 try {
   // Add retrospective file
-  execSync(`git add "${retrospectiveFile}"`, {
-    cwd: FORGE_ROOT,
-    stdio: 'pipe'
-  });
+  runGit(['add', retrospectiveFile]);
 } catch (e) {
   // Continue even if add fails
 }
@@ -267,23 +265,22 @@ const commitMsg = `dreamer: retrospective for ${TASK_ID} after PR merge
 - Output: brain/retrospectives/${retroFileName}`;
 
 try {
-  // Check if there are staged changes
-  const statusOutput = execSync('git diff --cached --quiet', {
-    cwd: FORGE_ROOT,
-    stdio: 'pipe'
-  });
-
-  log('No changes to commit');
-} catch (e) {
-  try {
-    execSync(`git commit -m "${commitMsg.replace(/"/g, '\\"')}"`, {
-      cwd: FORGE_ROOT,
-      stdio: 'pipe'
-    });
-    log(`Committed retrospective`);
-  } catch (commitError) {
-    log(`Warning: commit may have failed or files already staged`);
+  // Check if there are staged changes: 0 means clean, 1 means changes.
+  const status = runGit(['diff', '--cached', '--quiet'], { encoding: 'utf-8' });
+  if (status.status === 0) {
+    log('No changes to commit');
+  } else if (status.status === 1) {
+    const commitRes = runGit(['commit', '-m', commitMsg]);
+    if (commitRes.status === 0) {
+      log(`Committed retrospective`);
+    } else {
+      log(`Warning: commit may have failed or files already staged`);
+    }
+  } else {
+    log(`Warning: unable to determine staged status`);
   }
+} catch (e) {
+  log('No changes to commit');
 }
 
 log(`Post-PR Hook: Complete for task ${TASK_ID}`);

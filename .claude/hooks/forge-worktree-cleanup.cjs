@@ -24,11 +24,14 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { spawnSync } = require('child_process');
 
 const PROJECT_ROOT = process.argv[2] || '.';
 const STALE_THRESHOLD_HOURS = parseInt(process.argv[3] || '24', 10);
 const VERBOSE = parseInt(process.argv[4] || '0', 10) === 1;
+if (!Number.isFinite(STALE_THRESHOLD_HOURS) || STALE_THRESHOLD_HOURS <= 0) {
+  die(`Invalid stale-threshold-hours: ${process.argv[3]}`);
+}
 
 function die(message) {
   console.error(`ERROR: ${message}`);
@@ -44,7 +47,7 @@ function log(message) {
 
 // Validate project is a git repo
 const gitDir = path.join(PROJECT_ROOT, '.git');
-if (!fs.existsSync(gitDir)) {
+if (!fs.existsSync(gitDir) && !fs.existsSync(path.join(PROJECT_ROOT, '.git'))) {
   die(`Not a git repo: ${PROJECT_ROOT}`);
 }
 
@@ -135,12 +138,17 @@ for (const worktreeName of worktrees) {
 
     // Remove worktree
     try {
-      execSync(`git worktree remove --force "${worktreePath}"`, {
+      const res = spawnSync('git', ['worktree', 'remove', '--force', worktreePath], {
         cwd: PROJECT_ROOT,
-        stdio: 'pipe'
+        stdio: ['ignore', 'pipe', 'pipe'],
+        encoding: 'utf-8',
       });
-      log(`Removed worktree: ${worktreeName}`);
-      removedCount += 1;
+      if (res.status === 0) {
+        log(`Removed worktree: ${worktreeName}`);
+        removedCount += 1;
+      } else {
+        log(`WARNING: Failed to remove worktree: ${worktreeName} (${(res.stderr || '').trim()})`);
+      }
     } catch (e) {
       log(`WARNING: Failed to remove worktree: ${worktreeName} (may be in use)`);
     }

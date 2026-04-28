@@ -30,8 +30,6 @@
  */
 
 const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
 
 const COMMIT_MSG_FILE = process.argv[2];
 
@@ -125,15 +123,12 @@ if (/^(v\d+\.\d+\.\d+|release:|RELEASE:|version:)/i.test(firstLine)) {
 // Edge case: conventional commits (feat:, fix:, docs:, chore:, refactor:, test:, etc.)
 // The forge repo itself uses conventional commits; tracked projects may also prefer this.
 const conventionalCommitPattern = /^(feat|fix|docs|chore|refactor|test|style|perf|ci|build|revert)(\(.+\))?!?:\s+\S+/i;
-if (conventionalCommitPattern.test(firstLine)) {
-  log('Conventional commit format detected - allowed');
-  allow();
-}
+const isConventional = conventionalCommitPattern.test(firstLine);
 
 // Validate first line has task-ID (format: task-NNN or task-NNNN)
 // Allow formats: task-123, TASK-123, [task-123], (task-123)
-const taskIdPattern = /task-\d+/i;
-if (!taskIdPattern.test(firstLine)) {
+const taskIdPattern = /task-[\w-]+/i;
+if (!taskIdPattern.test(firstLine) && !isConventional) {
   die(
     `Summary line missing task-ID or conventional commit prefix.\n` +
     `  Found: "${firstLine}"\n` +
@@ -155,8 +150,8 @@ if (firstLine.length > 100) {
 
 // Validate summary line has meaningful text after task-ID
 // Pattern: task-NNN: [something meaningful]
-const summaryPattern = /^task-\d+:\s+\S+/i;
-if (!summaryPattern.test(firstLine)) {
+const summaryPattern = /^task-[\w-]+:\s+\S+/i;
+if (!summaryPattern.test(firstLine) && !isConventional) {
   die(
     `Summary line must have text after task-ID.\n` +
     `  Format: "task-NNN: summary text" (e.g., "task-123: fix login bug")\n` +

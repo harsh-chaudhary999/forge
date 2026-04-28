@@ -32,10 +32,11 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { execSync } = require('child_process');
 
 const PROJECT_SLUG = process.argv[2] || 'unknown-project';
-const FORGE_ROOT = process.argv[3] || path.join(process.env.HOME || '/root', 'forge');
+const FORGE_ROOT = process.argv[3] || path.join(os.homedir(), 'forge');
 const BRAIN_DIR = path.join(FORGE_ROOT, 'brain');
 const INBOX_DIR = path.join(BRAIN_DIR, 'inbox');
 const MERGE_LOG = path.join(BRAIN_DIR, 'main-merge.log');
@@ -123,10 +124,11 @@ try {
 // Count merged commits
 let mergedCommitCount = 0;
 let mergedTasks = [];
+const TASK_RE = /task-[\w-]+/ig;
 
 try {
   // Get commits since last main merge
-  const logOutput = execSync('git log --oneline -20 | head -20', {
+  const logOutput = execSync('git log --oneline --max-count=20', {
     cwd: process.cwd(),
     encoding: 'utf-8',
     stdio: 'pipe'
@@ -137,9 +139,12 @@ try {
     mergedCommitCount += 1;
 
     // Try to extract task-ID
-    const taskMatch = line.match(/task-(\d+)/i);
-    if (taskMatch && !mergedTasks.includes(taskMatch[0])) {
-      mergedTasks.push(taskMatch[0]);
+    const taskMatches = line.match(TASK_RE) || [];
+    for (const match of taskMatches) {
+      const normalized = match.toLowerCase();
+      if (!mergedTasks.includes(normalized)) {
+        mergedTasks.push(normalized);
+      }
     }
   }
 } catch (e) {

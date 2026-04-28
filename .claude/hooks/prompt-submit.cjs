@@ -32,6 +32,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 function log(message) {
   if (process.env.FORGE_HOOKS_DEBUG === '1') {
@@ -137,7 +138,7 @@ function forgeBrainSearchPaths() {
       out.push(abs);
     }
   }
-  out.push(path.join(process.env.HOME || '/root', 'forge', 'brain'));
+  out.push(path.join(os.homedir(), 'forge', 'brain'));
   return out;
 }
 

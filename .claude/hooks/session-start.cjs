@@ -115,7 +115,7 @@ function generateCanary() {
   }
   try {
     if (!fs.existsSync(FORGE_RUNTIME_DIR)) {
-      fs.mkdirSync(FORGE_RUNTIME_DIR, { recursive: true });
+      fs.mkdirSync(FORGE_RUNTIME_DIR, { recursive: true, mode: 0o700 });
     }
     const token = 'FORGE_CANARY_' + crypto.randomBytes(16).toString('hex').toUpperCase();
     fs.writeFileSync(CANARY_FILE, token, { encoding: 'utf-8', mode: 0o600 });
@@ -185,6 +185,9 @@ function resolveConductorLogPath(brainPath) {
   const nWithLog = countTaskConductorLogs(brainPath);
   if (taskIdRaw) {
     const taskId = String(taskIdRaw).trim();
+    if (!/^[\w.-]+$/.test(taskId)) {
+      log(`Ignoring invalid FORGE_TASK_ID/FORGE_PRD_TASK_ID: ${taskId}`);
+    } else {
     const scoped = path.join(brainPath, 'prds', taskId, 'conductor.log');
     if (fs.existsSync(scoped)) {
       log(`conductor.log selection: task-scoped (FORGE_TASK_ID) → ${scoped}`);
@@ -198,6 +201,7 @@ function resolveConductorLogPath(brainPath) {
         `[session-start] WARN: ${nWithLog} prds/*/conductor.log files exist; ` +
           `FORGE_TASK_ID points to a missing log — mtime fallback may pick the wrong task.`,
       );
+    }
     }
   } else if (nWithLog > 1) {
     console.error(
@@ -229,7 +233,7 @@ function forgeBrainSearchPaths() {
       out.push(abs);
     }
   }
-  out.push(path.join(process.env.HOME || '/root', 'forge', 'brain'));
+  out.push(path.join(os.homedir(), 'forge', 'brain'));
   return out;
 }
 
@@ -242,32 +246,20 @@ function tryDetectStage() {
     const logPath = resolveConductorLogPath(brainPath);
     if (!logPath) {
       log(`Brain found at ${brainPath} but no conductor.log — defaulting to intake`);
-      return 'intake';
+      return { stage: 'intake', logPath: null };
     }
 
     try {
       const logContent = fs.readFileSync(logPath, 'utf-8');
       const stage = detectStageFromLogContent(logContent);
       log(`conductor.log: ${logPath} → stage: ${stage}`);
-      return stage;
+      return { stage, logPath };
     } catch (e) {
       log(`Failed to read conductor.log: ${e.message}`);
     }
   }
 
-  return null; // no brain found — use full fallback
-}
-
-/**
- * First brain root with a resolvable conductor.log (same selection as tryDetectStage).
- */
-function getResolvedConductorLogPath() {
-  for (const brainPath of forgeBrainSearchPaths()) {
-    if (!fs.existsSync(brainPath)) continue;
-    const logPath = resolveConductorLogPath(brainPath);
-    if (logPath && fs.existsSync(logPath)) return logPath;
-  }
-  return null;
+  return { stage: null, logPath: null }; // no brain found — use full fallback
 }
 
 /**
@@ -321,9 +313,12 @@ if (!skillContent || skillContent.trim().length === 0) {
 
 let contentToInject = skillContent; // default: full bootstrap
 let stageLabel = 'full';
+let activeLogPath = null;
 
 try {
-  const stage = tryDetectStage();
+  const detected = tryDetectStage();
+  const stage = detected.stage;
+  activeLogPath = detected.logPath;
 
   if (stage) {
     const stageFile = path.join(STAGES_DIR, `${stage}.md`);
@@ -363,7 +358,6 @@ const stageNote = stageLabel !== 'full'
   ? `[Forge Session — Stage: ${stageLabel.toUpperCase()}]\n\n`
   : '';
 
-const activeLogPath = getResolvedConductorLogPath();
 const resumeBlock = activeLogPath ? buildResumeChecklist(activeLogPath) : '';
 
 const wrappedContent = `<EXTREMELY_IMPORTANT>

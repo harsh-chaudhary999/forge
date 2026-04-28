@@ -30,3 +30,7 @@ jobs:
 
       - name: Smoke test (fixtures + scan CLI + incremental)
         run: python3 tools/scan_forge/verify_smoke.py
+
+      - name: Benchmark (non-blocking)
+        continue-on-error: true
+        run: python3 tools/scan_bench.py --output-json tools/scan_bench.ci.json --output-md tools/scan_bench.ci.md

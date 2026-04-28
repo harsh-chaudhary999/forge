@@ -118,6 +118,7 @@ def run_scan(
             "changed_paths_file": str(changed_file),
             "changed_files_n": sum(len(v) for v in changed_by_role.values()),
         }
+        meta["incremental"]["change_profile"] = scan_state.summarize_changed_paths(changed_by_role)
     else:
         for role, _path in repos:
             role_scan_mode[role] = "full"
@@ -146,7 +147,27 @@ def run_scan(
         timings[f"phase4:{role}"] = int((time.perf_counter() - t0) * 1000)
         scanned_idx += 1
 
-    if any_role_scanned:
+    run_phase5_stack = True
+    if incremental and any_role_scanned:
+        if any(m == "full_fallback" for m in role_scan_mode.values()):
+            run_phase5_stack = True
+            meta["incremental"]["phase5_56_mode"] = "run_full_fallback"
+            meta["incremental"]["phase5_56_reason"] = (
+                "fallback_role_detected; cannot trust prior state"
+            )
+        else:
+            prof = meta.get("incremental", {}).get("change_profile")
+            if isinstance(prof, dict) and prof.get("phase5_required") is False:
+                run_phase5_stack = False
+                meta["incremental"]["phase5_56_mode"] = "skipped_by_profile"
+                meta["incremental"]["phase5_56_reason"] = (
+                    "no_phase5_inputs_detected (heuristic); keeping previous cross-repo edges"
+                )
+            else:
+                meta["incremental"]["phase5_56_mode"] = "run_full"
+                meta["incremental"]["phase5_56_reason"] = "phase5_inputs_changed_or_uncertain"
+
+    if any_role_scanned and run_phase5_stack:
         t0 = time.perf_counter()
         openapi_schema_digest.write_digest(brain, repos)
         timings["openapi_schema_digest"] = int((time.perf_counter() - t0) * 1000)
@@ -170,6 +191,8 @@ def run_scan(
         t0 = time.perf_counter()
         edge_store.write_edge_store(brain)
         timings["edge_store"] = int((time.perf_counter() - t0) * 1000)
+    elif any_role_scanned:
+        meta["incremental"]["skipped_phase5_stack"] = True
     else:
         meta["incremental"]["skipped_scan_phases"] = True
 

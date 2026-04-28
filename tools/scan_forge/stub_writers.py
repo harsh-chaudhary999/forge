@@ -448,20 +448,35 @@ def write_module_scaffolds(
     repo: Path,
     role: str,
     sources_path: Path,
+    extra_inventory_paths: list[Path] | None,
     skipped: int,
 ) -> tuple[int, int]:
+    def _add_dir_from_path(path_s: str) -> None:
+        rel = inventory_text.repo_relative_posix(repo, path_s)
+        if rel is None:
+            return
+        d = str(Path(rel).parent.as_posix())
+        dirs.add(d if d != "." else "root")
+
     written = 0
     dirs: set[str] = set()
     if sources_path.is_file():
         for line in sources_path.read_text(encoding="utf-8", errors="replace").splitlines():
             if not line.strip():
                 continue
-            try:
-                rel = Path(line.strip()).resolve().relative_to(repo).as_posix()
-            except ValueError:
+            _add_dir_from_path(line.strip())
+
+    for inv in extra_inventory_paths or []:
+        if not inv.is_file():
+            continue
+        for line in inv.read_text(encoding="utf-8", errors="replace").splitlines():
+            if not line.strip():
                 continue
-            d = str(Path(rel).parent.as_posix())
-            dirs.add(d if d != "." else "root")
+            fpath, _lineno, _content = inventory_text.parse_grep_line(line)
+            if not fpath:
+                continue
+            _add_dir_from_path(fpath)
+
     dirs.discard("")
     if any((repo / n).is_file() for n in ("openapi.json", "swagger.json", "openapi.yaml", "openapi.yml")):
         dirs.add("root")

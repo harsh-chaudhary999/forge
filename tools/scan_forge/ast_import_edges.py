@@ -24,8 +24,9 @@ _PY_EXT = {".py"}
 _TS_IMPORT_RE = re.compile(
     r"""^\s*(?:import\s+(?:type\s+)?(?:[\w*{}\s,]+?\s+from\s+)?|export\s+(?:\*|{[^}]*}|type\s+[^=]+)\s+from\s+)["']([^"']+)["']""",
 )
+_TS_REQUIRE_RE = re.compile(r"""^\s*(?:const|let|var)\s+[\w$]+\s*=\s*require\(["']([^"']+)["']\)""")
 _PY_FROM_RE = re.compile(r"^\s*from\s+([A-Za-z0-9_\.]+)\s+import\s+")
-_PY_IMPORT_RE = re.compile(r"^\s*import\s+([A-Za-z0-9_\.]+)")
+_PY_IMPORT_RE = re.compile(r"^\s*import\s+([A-Za-z0-9_\.,\s]+)")
 
 
 def _load_lang(mod_name: str, attr: str) -> Language | None:
@@ -83,8 +84,49 @@ def _resolve_python_target(mod: str) -> str:
     return mod.replace(".", "/")
 
 
+def _resolve_local_target_rel(source_rel: str, spec: str) -> str | None:
+    """Resolve relative import specs to repo-relative-ish paths (without existence checks)."""
+    s = (spec or "").strip()
+    if not s:
+        return None
+    if s.startswith("/"):
+        return s.lstrip("/")
+    if not s.startswith("."):
+        return None
+    parent = Path(source_rel).parent.as_posix()
+    raw = f"{parent}/{s}" if parent and parent != "." else s
+    parts: list[str] = []
+    for seg in raw.split("/"):
+        if not seg or seg == ".":
+            continue
+        if seg == "..":
+            if parts:
+                parts.pop()
+            continue
+        parts.append(seg)
+    return "/".join(parts) if parts else None
+
+
+def _python_targets_from_import(line: str) -> list[str]:
+    """Extract one or more python import targets from `import a, b as c`."""
+    m = _PY_IMPORT_RE.match(line)
+    if not m:
+        return []
+    raw = m.group(1)
+    out: list[str] = []
+    for part in raw.split(","):
+        token = part.strip().split(" as ", 1)[0].strip()
+        if token:
+            out.append(_resolve_python_target(token))
+    return out
+
+
 def append_import_edges(repos: list[Path], run_dir: Path) -> int:
-    """Write `forge_scan_ast_import_edges.tsv` (repo, rel, line, kind, target, provenance)."""
+    """Write `forge_scan_ast_import_edges.tsv`.
+
+    Columns:
+    repo, rel, line, edge_kind, target_spec, provenance, resolved_target_rel
+    """
     flag = os.environ.get("FORGE_SCAN_AST_IMPORTS", "").strip().lower()
     out_path = run_dir.resolve() / "forge_scan_ast_import_edges.tsv"
     if flag not in ("1", "true", "yes"):
@@ -124,26 +166,32 @@ def append_import_edges(repos: list[Path], run_dir: Path) -> int:
                     ast_lines = set()
 
             for idx, line in enumerate(lines, start=1):
-                target = ""
-                kind = "IMPORT"
+                candidates: list[tuple[str, str]] = []
                 m = _TS_IMPORT_RE.match(line)
                 if m and ext in _TSJS_EXT:
-                    target = m.group(1)
-                    if line.lstrip().startswith("export"):
-                        kind = "EXPORT_REF"
-                elif ext in _PY_EXT:
+                    kind = "EXPORT_REF" if line.lstrip().startswith("export") else "IMPORT"
+                    candidates.append((kind, m.group(1)))
+                rq = _TS_REQUIRE_RE.match(line)
+                if rq and ext in _TSJS_EXT:
+                    candidates.append(("IMPORT", rq.group(1)))
+                if ext in _PY_EXT:
                     fm = _PY_FROM_RE.match(line)
-                    im = _PY_IMPORT_RE.match(line)
                     if fm:
-                        target = _resolve_python_target(fm.group(1))
-                        kind = "IMPORT"
-                    elif im:
-                        target = _resolve_python_target(im.group(1))
-                        kind = "IMPORT"
-                if not target:
-                    continue
-                prov = "AST" if idx in ast_lines else "HEURISTIC"
-                rows.append(f"{rname}\t{rel}\t{idx}\t{kind}\t{target}\t{prov}")
+                        candidates.append(("IMPORT", _resolve_python_target(fm.group(1))))
+                    for t in _python_targets_from_import(line):
+                        candidates.append(("IMPORT", t))
+
+                for kind, target in candidates:
+                    if not target:
+                        continue
+                    resolved = _resolve_local_target_rel(rel, target) or ""
+                    if idx in ast_lines:
+                        prov = "AST_STRONG" if resolved else "AST_WEAK"
+                    else:
+                        prov = "HEURISTIC"
+                    rows.append(
+                        f"{rname}\t{rel}\t{idx}\t{kind}\t{target}\t{prov}\t{resolved}"
+                    )
 
     rows = sorted(set(rows))
     out_path.write_text("\n".join(rows) + ("\n" if rows else ""), encoding="utf-8")

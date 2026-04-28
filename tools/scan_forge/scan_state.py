@@ -14,6 +14,8 @@ STATE_FILE = ".forge_scan_file_state.json"
 _UI_SUFFIXES = {".html", ".htm", ".vue", ".svelte"}
 _OPENAPI_SUFFIXES = {".json", ".yaml", ".yml"}
 _OPENAPI_NAMES = ("openapi", "swagger")
+_PHASE5_EXTS = {".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".java", ".kt", ".dart"}
+_TYPE_EXTS = {".ts", ".tsx", ".js", ".jsx"}
 
 
 def _git_out(repo: Path, args: list[str]) -> str | None:
@@ -194,3 +196,40 @@ def write_state_file(
     path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
     log.log_step(f"scan_state written path={path}")
     return path
+
+
+def summarize_changed_paths(changed_by_role: dict[str, list[str]]) -> dict[str, Any]:
+    """Classify changed paths to decide whether expensive cross-repo phases are needed."""
+    by_role: dict[str, Any] = {}
+    phase5_required = False
+    for role, rels in changed_by_role.items():
+        info: dict[str, Any] = {
+            "changed_files": len(rels),
+            "touches_phase5_inputs": False,
+            "touches_openapi": False,
+            "touches_ui_or_template": False,
+            "touches_types_inventory": False,
+        }
+        for rel in rels:
+            low = rel.lower()
+            name = Path(low).name
+            ext = Path(low).suffix
+            if ext in _PHASE5_EXTS:
+                info["touches_phase5_inputs"] = True
+            if ext in _TYPE_EXTS:
+                info["touches_types_inventory"] = True
+            if ext in _UI_SUFFIXES or low.endswith((".tsx", ".jsx")):
+                info["touches_ui_or_template"] = True
+            if ext in _OPENAPI_SUFFIXES and any(k in name for k in _OPENAPI_NAMES):
+                info["touches_openapi"] = True
+            if "route" in low or "controller" in low or "api" in low:
+                info["touches_phase5_inputs"] = True
+        # Conservative rule:
+        # - if any role changed files that can affect callsites/routes/types, keep phase5/56 on.
+        if info["touches_phase5_inputs"] or info["touches_openapi"] or info["touches_types_inventory"]:
+            phase5_required = True
+        by_role[role] = info
+    return {
+        "phase5_required": phase5_required,
+        "roles": by_role,
+    }

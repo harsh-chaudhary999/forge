@@ -144,7 +144,14 @@ def run_phase4(
 
     print()
     print("[4.3b] Generating module scaffold nodes from source directory structure...")
-    modules, skipped = stub_writers.write_module_scaffolds(brain_dir, repo, role, sources_path, skipped)
+    modules, skipped = stub_writers.write_module_scaffolds(
+        brain_dir,
+        repo,
+        role,
+        sources_path,
+        [types_path, funcs_path, methods_path],
+        skipped,
+    )
     print(f"  Written: {modules} module scaffold nodes")
 
     n_en = 0

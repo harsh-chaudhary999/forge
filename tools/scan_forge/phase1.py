@@ -203,7 +203,8 @@ def run_phase1(repo: Path, scan_tmp: Path) -> None:
         (scan_tmp / name).write_text(content, encoding="utf-8", errors="replace")
 
     def g(pat: str, includes: list[str]) -> str:
-        return grep_util.run_grep_rn(repo, pat, includes)
+        raw = grep_util.run_grep_rn(repo, pat, includes)
+        return grep_util.filter_grep_lines(raw, repo)
 
     # Java
     if java_count > 0:

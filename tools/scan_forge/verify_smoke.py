@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -184,6 +185,12 @@ def main() -> int:
         g = json.loads((brain / "graph.json").read_text(encoding="utf-8"))
         assert g.get("forge_scan_graph_version") == 1
         assert isinstance(g.get("nodes"), list)
+        assert isinstance(g.get("edges"), list)
+        edge_db = brain / "forge_scan_edges.sqlite"
+        assert edge_db.is_file(), edge_db
+        with sqlite3.connect(str(edge_db)) as conn:
+            row = conn.execute("select count(*) from edges").fetchone()
+        assert row and int(row[0]) >= 0
         assert (brain / "SCAN_SUMMARY.md").is_file()
         assert (brain / ".forge_scan_manifest.json").is_file()
         assert (brain / "index.md").is_file(), "cli must write codebase index before verify"
@@ -274,6 +281,59 @@ def main() -> int:
         assert inc3.get("enabled") is True
         assert int(inc3.get("changed_files_n", 0)) >= 1, inc3
         assert not inc3.get("skipped_scan_phases", False), inc3
+
+        # Incremental fourth run: rename/delete-heavy + mixed staged/unstaged/untracked.
+        _git(ui_repo, "mv", "src/client.ts", "src/client_renamed.ts")
+        _git(ui_repo, "rm", "src/App.jsx")
+        (ui_repo / "src" / "new_feature.ts").write_text(
+            "export const newlyAdded = true;\n",
+            encoding="utf-8",
+        )
+        main_jsx = ui_repo / "src" / "main.jsx"
+        main_jsx.write_text(main_jsx.read_text(encoding="utf-8") + "\n// staged edit\n", encoding="utf-8")
+        _git(ui_repo, "add", "src/main.jsx")
+        main_jsx.write_text(main_jsx.read_text(encoding="utf-8") + "\n// unstaged edit\n", encoding="utf-8")
+        subprocess.run(cmd, check=True, cwd=str(root), env=env)
+        meta4 = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
+        inc4 = meta4.get("incremental") or {}
+        assert int(inc4.get("changed_files_n", 0)) >= 3, inc4
+        assert not inc4.get("skipped_scan_phases", False), inc4
+        cp = Path((inc4.get("changed_paths_file") or ""))
+        assert cp.is_file(), inc4
+        cp_text = cp.read_text(encoding="utf-8")
+        assert "client_renamed.ts" in cp_text
+        assert "new_feature.ts" in cp_text
+
+        # Non-git fallback: incremental should stay safe and run full path.
+        nongit = fixtures_parent / "nongit"
+        (nongit / "src").mkdir(parents=True, exist_ok=True)
+        (nongit / "src" / "tool.py").write_text(
+            "def ping() -> str:\n    return 'pong'\n",
+            encoding="utf-8",
+        )
+        run_dir_ng = Path(tempfile.mkdtemp(prefix="forge_scan_smoke_nongit."))
+        brain_ng = Path(tempfile.mkdtemp(prefix="forge_scan_smoke_brain_nongit."))
+        cmd_ng = [
+            sys.executable,
+            "-m",
+            "scan_forge",
+            "--run-dir", str(run_dir_ng),
+            "--brain-codebase", str(brain_ng),
+            "--skip-phase57",
+            "--incremental",
+            "--repos",
+            f"misc:{nongit}",
+        ]
+        subprocess.run(cmd_ng, check=True, cwd=str(root), env=env)
+        meta_ng = json.loads((run_dir_ng / "run.json").read_text(encoding="utf-8"))
+        inc_ng = meta_ng.get("incremental") or {}
+        assert inc_ng.get("enabled") is True
+        assert (inc_ng.get("role_mode") or {}).get("misc") == "full_fallback", inc_ng
+        rsn = (inc_ng.get("reasons") or {}).get("misc")
+        assert rsn in {"no_previous_head", "git_head_unavailable", "previous_head_missing"}, inc_ng
+        import shutil
+        shutil.rmtree(run_dir_ng, ignore_errors=True)
+        shutil.rmtree(brain_ng, ignore_errors=True)
     finally:
         import shutil
         shutil.rmtree(run_dir, ignore_errors=True)

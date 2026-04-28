@@ -133,6 +133,13 @@ python3 tools/verify_scan_outputs.py ~/forge/brain/products/<slug>/codebase
 - `<run_dir>/changed_paths.txt` — role-scoped changed paths selected for this run.
 - `<brain-codebase>/.forge_scan_file_state.json` — per-role `head`, `tree`, tracked blob SHAs, untracked relevant files.
 - `<brain-codebase>/.forge_scan_manifest.json` — includes incremental metadata and changed-path sample.
+- `<run_dir>/run.json` (`incremental.phase5_56_mode`, `incremental.phase5_56_reason`) — explains why cross-repo recompute ran or was skipped.
+
+**Incremental fallback guidance (conservative by default):**
+
+- If any role is `full_fallback`, treat the run as low-confidence and expect full phase5/56 recompute.
+- If `phase5_56_mode=skipped_by_profile`, verify `graph.json` and `cross-repo-automap.md` still exist from prior full runs.
+- If `phase5_56_mode=run_full_fallback`, it indicates state uncertainty (for example, missing previous head) and is expected.
 
 ---
 
@@ -165,6 +172,9 @@ Ready to plan? Run: /intake
 - Local search over brain artifacts: `python3 tools/forge_codebase_search.py --brain-codebase <codebase> --query "auth middleware"`
 - SQL on regenerated edge store: `python3 -m scan_forge.query_repl --brain-codebase <codebase> --sql "select kind,count(*) from edges group by kind"`
 - Import edge extraction (opt-in at scan time): `FORGE_SCAN_AST_IMPORTS=1 python3 tools/forge_scan.py ...`
+  - Provenance tiers in `forge_scan_ast_import_edges.tsv`: `AST_STRONG`, `AST_WEAK`, `HEURISTIC`
+  - `graph.json` import edges include confidence-qualified rows only (`AST_STRONG`/`AST_WEAK`)
+- Benchmark gates/report: `python3 tools/scan_bench.py --output-json tools/scan_bench.ci.json --output-md tools/scan_bench.ci.md`
 
 **On re-scan, also show a diff summary:**
 

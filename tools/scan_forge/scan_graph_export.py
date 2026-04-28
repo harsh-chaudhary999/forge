@@ -128,8 +128,11 @@ def _edges_from_import_tsv(brain: Path) -> tuple[list[dict[str, Any]], list[str]
             warnings.append(f"import_tsv_bad_cols:{len(parts)}:{ln[:120]}")
             continue
         repo, caller_rel, lineno_s, edge_kind, target, prov = parts[:6]
+        resolved_target = parts[6] if len(parts) > 6 else ""
         src = _resolve_module_stem(brain, repo, caller_rel)
-        target_rel = _resolve_import_target_rel(caller_rel, target)
+        if prov not in {"AST_STRONG", "AST_WEAK"}:
+            continue
+        target_rel = resolved_target or _resolve_import_target_rel(caller_rel, target)
         tgt = _resolve_module_stem(brain, repo, target_rel) if target_rel else None
         if not src or not tgt:
             continue

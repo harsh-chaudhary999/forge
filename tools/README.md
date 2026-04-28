@@ -20,6 +20,8 @@ Small, repo-local utilities shipped with Forge. The main maintained package here
 | [`forge_graph_query.py`](forge_graph_query.py) | **Ad-hoc queries** on **`graph.json`** from a completed scan: `summary`, `neighbors <node_id>`, `search <substring>` — stdlib only |
 | [`forge_codebase_search.py`](forge_codebase_search.py) | Local BM25 search (SQLite FTS5) across scan artifacts (`modules/`, `index.md`, `SCAN_SUMMARY.md`, automap, doc index) |
 | `scan_forge/query_repl.py` | SQL helper for `forge_scan_edges.sqlite` (generated from `graph.json`) |
+| [`scan_bench.py`](scan_bench.py) | Synthetic benchmark harness: full vs incremental runtime, changed-file detection, and explicit gate booleans (`--output-json`, `--output-md`) |
+| `scan_forge/HARDENING_GATES.md` | Ship gates for precision, smoke coverage, import-depth confidence, and benchmark reporting |
 | [`forge_adjacency_scan.py`](forge_adjacency_scan.py) | **Optional** pre-Council scan — **`docs/adjacency-and-cohorts.md`**. Appends `discovery-adjacency.md` using **`rg`** + org patterns (`adjacency-seed-patterns.txt` or `--patterns`). |
 | [`check_frozen_spec.py`](check_frozen_spec.py) | **Pre-freeze lint:** fails if `TBD` or `TODO` appears outside code fences in `shared-dev-spec.md` |
 | [`brain_restore_deleted.py`](brain_restore_deleted.py) | **Recovery utility:** restores brain files deleted from git history (`--help` for usage) |
@@ -89,6 +91,12 @@ Smoke test (fixtures + full CLI):
 
 ```bash
 PYTHONPATH=tools python3 tools/scan_forge/verify_smoke.py
+```
+
+Benchmark report:
+
+```bash
+python3 tools/scan_bench.py --output-json tools/scan_bench.ci.json --output-md tools/scan_bench.ci.md
 ```
 
 After a successful CLI run, `run.json` should show **`"status": "ok"`** and **`verify_scan_outputs.exit_code": 0`**. If **`status`** is **`verify_failed`**, the brain tree is incomplete — fix and re-scan; **`--cleanup` was skipped** so **`run_dir`** still has `forge_scan_*.txt` for debugging.

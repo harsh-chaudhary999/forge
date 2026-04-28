@@ -14,6 +14,10 @@ def _collect_md_index(parent: Path) -> dict[str, list[Path]]:
         rel = str(p).replace("\\", "/")
         if "/.obsidian/" in rel:
             continue
+        if "/repo-docs/" in rel:
+            continue
+        if p.name == "wikilink-orphan-report.md":
+            continue
         idx[p.stem].append(p)
     for k in idx:
         idx[k] = sorted(idx[k])
@@ -30,6 +34,10 @@ def _normalize_embed(match: str) -> str:
 def _resolve_target(parent: Path, idx: dict[str, list[Path]], raw_inner: str) -> bool:
     target = raw_inner.split("|", 1)[0].split("#", 1)[0].strip()
     if not target:
+        return True
+    # Repo-doc mirrors may contain external wiki namespaces (e.g. "memory:1234")
+    # that are not expected to resolve inside codebase/.
+    if ":" in target:
         return True
     if "/" in target:
         rel = target if target.endswith(".md") else f"{target}.md"
@@ -74,6 +82,10 @@ def run_phase57(parent: Path, write_report: bool) -> None:
     for md in sorted(parent.rglob("*.md")):
         rel = str(md).replace("\\", "/")
         if "/.obsidian/" in rel:
+            continue
+        if "/repo-docs/" in rel:
+            continue
+        if md.name == "wikilink-orphan-report.md":
             continue
         for lineno, m in _wikilinks_in_file(md):
             key = (str(md.resolve()), lineno, m)

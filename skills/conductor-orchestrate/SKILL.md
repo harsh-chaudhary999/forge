@@ -2,7 +2,7 @@
 name: conductor-orchestrate
 description: "WHEN: PRD is locked. You are the master state machine orchestrating the entire forge workflow. Routes the task through all phases, tracks state, manages escalations, and coordinates subagents."
 type: rigid
-requires: [intake-interrogate, product-context-load, brain-read, brain-write, forge-tdd, forge-eval-gate]
+requires: [intake-interrogate, product-context-load, brain-read, brain-write, forge-worktree-gate, council-multi-repo-negotiate, spec-freeze, tech-plan-write-per-project, qa-manual-test-cases-from-prd, forge-tdd, eval-product-stack-up, eval-coordinate-multi-surface, forge-eval-gate, pr-set-coordinate, dream-retrospect-post-pr]
 version: 1.0.0
 preamble-tier: 4
 triggers:

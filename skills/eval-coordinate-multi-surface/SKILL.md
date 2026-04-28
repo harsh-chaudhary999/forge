@@ -2,7 +2,7 @@
 name: eval-coordinate-multi-surface
 description: "WHEN: A multi-surface eval scenario needs to be executed across web, API, DB, cache, search, and event bus layers. Coordinate multi-driver eval scenarios. Chain web (CDP) → API (HTTP) → DB (MySQL) → cache (Redis) → search (ES) → events (Kafka). Report pass/fail with evidence."
 type: rigid
-requires: [brain-read]
+requires: [brain-read, eval-driver-web-cdp, eval-driver-api-http, eval-driver-db-mysql, eval-driver-cache-redis, eval-driver-search-es, eval-driver-bus-kafka]
 version: 1.0.0
 preamble-tier: 3
 triggers:

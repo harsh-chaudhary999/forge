@@ -1,6 +1,6 @@
 ---
 name: forge-glossary
-description: "Forge glossary. Terms and definitions in Forge context. Look up when encountering unfamiliar Forge terminology."
+description: "WHEN: You encounter an unfamiliar Forge term and need its canonical definition."
 type: reference
 version: 1.0.0
 preamble-tier: 1
@@ -11,8 +11,7 @@ triggers:
   - "forge terminology"
 allowed-tools:
   - Bash
-  - Edit
-  - Write
+  - Read
 ---
 # Forge Glossary
 

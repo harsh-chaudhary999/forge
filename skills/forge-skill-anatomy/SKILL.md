@@ -1,6 +1,6 @@
 ---
 name: forge-skill-anatomy
-description: "Template, rigor checklist, and CSO guidelines for creating new Forge skills. Reference when writing or reviewing any skill."
+description: "WHEN: You are writing or reviewing a Forge skill and need the canonical template, rigor checklist, or CSO guidelines."
 type: reference
 version: 2.0.0
 preamble-tier: 1
@@ -67,6 +67,7 @@ Four optional fields for all new skills. Existing skills do not need to be updat
 ### Preamble Tier Guide
 
 Preamble tiers are cumulative — each tier includes all tiers below it. The tier files live in `skills/_preamble/`.
+Directories under `skills/` prefixed with `_` are reserved for support artifacts (not behavioral skill units).
 
 | Tier | Adds | Use for |
 |------|------|---------|

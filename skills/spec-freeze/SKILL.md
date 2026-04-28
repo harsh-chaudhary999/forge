@@ -1,6 +1,6 @@
 ---
 name: spec-freeze
-description: "WHEN the shared-dev-spec is locked after council negotiation. Prevents all spec mutations during build phase. Invoke before per-project tech planning begins."
+description: "WHEN: The shared-dev-spec is locked after council negotiation. Prevents all spec mutations during build phase. Invoke before per-project tech planning begins."
 type: rigid
 requires: [brain-read, brain-write]
 version: 1.0.0

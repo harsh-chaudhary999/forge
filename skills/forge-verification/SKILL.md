@@ -1,6 +1,6 @@
 ---
 name: forge-verification
-description: "HARD-GATE: Run verification, see output, THEN claim success. Never \"should pass\", \"confident\", \"should work\"."
+description: "WHEN: About to claim implementation is complete or working. HARD-GATE: Run verification, see output, THEN claim success. Never \"should pass\", \"confident\", \"should work\"."
 type: rigid
 version: 1.0.0
 preamble-tier: 3

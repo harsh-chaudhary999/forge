@@ -1,6 +1,6 @@
 ---
 name: forge-tdd
-description: "HARD-GATE: Iron law - write test first, watch fail, write minimal code, watch pass. No exceptions. Non-negotiable discipline enforcer."
+description: "WHEN: About to write any production code. HARD-GATE: Iron law - write test first, watch fail, write minimal code, watch pass. No exceptions."
 type: rigid
 version: 1.0.0
 preamble-tier: 3

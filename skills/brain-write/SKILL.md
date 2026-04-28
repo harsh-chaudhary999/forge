@@ -355,11 +355,22 @@ Resolves: D088 (unified name format)
 
 Use this YAML frontmatter in decision records, specs, and contracts. Standardize field names to enable brain-recall, brain-link, and brain-why.
 
+Valid decision `type` values:
+
+| type | Use for |
+|---|---|
+| architecture | System structure, service boundaries, component topology |
+| api | External/internal interface contracts and versioning choices |
+| database | Schema, migration, indexing, and data-model decisions |
+| infra | Deployment/runtime/platform choices (compute, network, ops) |
+| process | Workflow/governance/pipeline decisions |
+| decision | General decision record when none of the above is a precise fit |
+
 ```yaml
 ---
 decision_id: D087
 title: Adopt gRPC for Service-to-Service Communication
-type: architecture  # or: api, database, infra, process, decision
+type: architecture
 status: active  # active, warm, cold, archived
 date: 2025-11-15
 phase: scaling  # optional; omit if decision is evergreen

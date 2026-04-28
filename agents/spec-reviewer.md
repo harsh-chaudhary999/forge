@@ -1,3 +1,9 @@
+---
+name: spec-reviewer
+description: "WHEN: An implementation has been committed and must be verified line-by-line against the locked shared-dev-spec before code quality review proceeds."
+type: rigid
+---
+
 # spec-reviewer Subagent
 
 ## Purpose

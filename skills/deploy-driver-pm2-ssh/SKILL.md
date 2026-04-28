@@ -2,7 +2,7 @@
 name: deploy-driver-pm2-ssh
 description: "WHEN: Deployment target is a remote server managed via PM2 over SSH. Provides connect(ssh_config), start(project_path, script), health_check(port, endpoint), and stop(project_name)."
 type: rigid
-requires: [brain-read]
+requires: [brain-read, eval-driver-api-http]
 version: 1.0.0
 preamble-tier: 3
 triggers:
@@ -17,6 +17,13 @@ allowed-tools:
 # Deploy Driver: PM2 over SSH
 
 Deployment driver for PM2 over SSH on remote servers. Provides SSH connection management, process launching via PM2, HTTP-based health checks, and graceful shutdown via pkill.
+
+## SSH Security Requirements (Non-Optional)
+
+- Use key-based authentication only (no interactive password auth in automation flows).
+- Enforce strict host verification (`StrictHostKeyChecking=yes`) with pre-populated `known_hosts`.
+- Do not use agent forwarding unless explicitly required and documented for this task.
+- Keep private keys permission-restricted (`chmod 600`) and outside repo paths.
 
 ## HARD-GATE: Anti-Pattern Preambles
 

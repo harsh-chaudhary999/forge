@@ -1,7 +1,6 @@
 ---
 name: scan
 description: Map an existing codebase into the Forge brain. Produces an Obsidian-format knowledge graph — module relationships, architecture patterns, API surface, and documented edge cases. Zero-token structural phase first, targeted reads only for architectural hubs.
-trigger: /scan
 ---
 
 # /scan

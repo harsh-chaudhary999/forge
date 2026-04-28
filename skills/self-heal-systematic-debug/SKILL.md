@@ -1,6 +1,6 @@
 ---
 name: self-heal-systematic-debug
-description: "4-phase debugging workflow: investigate (logs, traces) → hypothesize (root cause) → fix (minimal) → verify (re-eval). Output: fixed code, commit."
+description: "WHEN: A fault has been triaged and a root cause is identified. Run 4-phase debug: investigate → hypothesize → fix (minimal) → verify (re-eval)."
 type: rigid
 requires: [brain-read]
 version: 1.0.0

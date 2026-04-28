@@ -2,7 +2,7 @@
 name: eval-driver-db-mysql
 description: "WHEN: Eval scenario requires database state verification. Executes queries, verifies results. Functions: setup(), execute(query), verify(assertion), teardown()."
 type: rigid
-requires: [brain-read]
+requires: [brain-read, eval-scenario-format]
 version: 1.0.0
 preamble-tier: 3
 triggers:

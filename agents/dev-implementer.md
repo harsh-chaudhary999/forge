@@ -1,3 +1,9 @@
+---
+name: dev-implementer
+description: "WHEN: Dispatched by conductor-orchestrate for a bite-sized feature, bugfix, refactor, migration, performance, or security task after State 4b gates pass."
+type: rigid
+---
+
 # dev-implementer Subagent
 
 ## Purpose
@@ -56,7 +62,7 @@ The following rationalizations are lies. Reject them:
 - **HARD-GATE — refuse silently dangerous dispatches:** If the conductor dispatch is for **feature / UI / non-test-only** work and **`~/forge/brain/prds/<task-id>/eval/`** does not exist or contains **zero** scenario files, **or** the handoff does not cite a logged **`[P4.0-EVAL-YAML]`** line, return **`BLOCKED_ORCHESTRATION`** to the conductor — **do not** write production code until State 4b is complete (`conductor-orchestrate` State 4b). When **`product.md`** sets **`forge_qa_csv_before_eval: true`** (including when a **full `/forge`** run persisted **`true`** per **`commands/forge.md`**), also require **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** with **≥1** row and a logged **`[P4.0-QA-CSV]`** before feature code. Test-only RED tasks from the same phase are OK if the prompt explicitly says **tests-first / TDD RED** only. **Teams:** run **`tools/verify_forge_task.py`** on the brain in CI so the same gates are machine-checked on commit (`docs/forge-task-verification.md`).
 - Proceed directly to file reading when gates pass
 
-### 1.5. Task Type Classification (NEW)
+### 1.5. Task Type Classification
 
 Before starting, identify the task type:
 

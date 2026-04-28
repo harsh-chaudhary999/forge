@@ -35,15 +35,21 @@ Pre-loads planning context from the current brain task so `/tech-plan-write-per-
 BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 PRDS_DIR="$BRAIN_DIR/prds"
 
-# Find most recent task dir by modification time
-TASK_DIR=$(ls -td "$PRDS_DIR"/*/ 2>/dev/null | head -1)
-TASK_ID=$(basename "$TASK_DIR")
+# Prefer explicit task pinning; fall back to mtime only when unset.
+if [ -n "${FORGE_TASK_ID:-}" ]; then
+  TASK_ID="$FORGE_TASK_ID"
+  TASK_DIR="$PRDS_DIR/$TASK_ID"
+else
+  TASK_DIR=$(ls -td "$PRDS_DIR"/*/ 2>/dev/null | head -1)
+  TASK_ID=$(basename "$TASK_DIR")
+fi
 
 echo "Brain: $BRAIN_DIR"
 echo "Task:  $TASK_ID"
 ```
 
 If no task dir found: output "No tasks found under $PRDS_DIR. Create a task first." and stop.
+If `FORGE_TASK_ID` is set but `"$PRDS_DIR/$FORGE_TASK_ID"` does not exist: output "FORGE_TASK_ID points to a missing task: $FORGE_TASK_ID" and stop.
 
 ### Step 2 — Read conductor stage
 
@@ -97,6 +103,8 @@ fi
 ```
 
 ### Step 6 — Output context block
+
+**HARD-GATE:** Do not invoke `/tech-plan-write-per-project` until this step's `AUTOPLAN CONTEXT` block has been printed for the active task.
 
 Display a structured summary:
 

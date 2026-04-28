@@ -1,6 +1,6 @@
 ---
 name: eval-driver-ios-xctest
-description: "Eval driver for iOS via XCTest + xcrun simctl. Functions: connect(simulator_id), launch(bundle_id), tap(target), type(text), swipe(direction, element), assert_element(target), screenshot(), disconnect(). Use when eval scenario has driver=ios-xctest."
+description: "WHEN: Eval scenario specifies driver=ios-xctest. Eval driver for iOS via XCTest + xcrun simctl. Functions: connect(simulator_id), launch(bundle_id), tap(target), type(text), swipe(direction, element), assert_element(target), screenshot(), disconnect()."
 type: rigid
 requires: [eval-scenario-format]
 version: 1.0.0

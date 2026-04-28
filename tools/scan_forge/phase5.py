@@ -8,6 +8,36 @@ from . import ast_http_calls, ast_import_edges, grep_util, log
 
 # Repo-relative paths only (never match parent dirs like ``.../my-test-workspace/...``).
 _TEST_PATH_RE = re.compile(r"/(test|tests|__tests__|e2e|spec)/|\.test\.|\.spec\.|/testing/")
+_LOW_SIGNAL_PATH_RE = re.compile(
+    r"(?:^|/)(?:public|dist|build|coverage|target|tmp|temp|\.tmp|\.cache|generated|swagger-ui)(?:/|$)",
+)
+_LOW_SIGNAL_FILE_RE = re.compile(r"(?:^|/)(?:\d+|chunk-[^/]+)\.js$", re.IGNORECASE)
+
+
+def _low_signal_relpath(rel: str) -> bool:
+    r = rel.strip().replace("\\", "/")
+    if _LOW_SIGNAL_PATH_RE.search(r):
+        return True
+    if _LOW_SIGNAL_FILE_RE.search(r):
+        return True
+    return False
+
+
+_ENDPOINT_CONST_RE = re.compile(
+    r"\b(?:const\s+val|val|const|public\s+static\s+final\s+String|static\s+final\s+String)\s+"
+    r"([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*[A-Za-z0-9_<>,.? ]+)?=\s*['\"]([^'\"]{2,260})['\"]",
+)
+
+
+def _looks_like_endpoint_value(v: str) -> bool:
+    low = (v or "").strip().lower()
+    if not low:
+        return False
+    if low.startswith("http://") or low.startswith("https://"):
+        return "/api" in low or "/v" in low or "/graphql" in low or "/internal" in low
+    if low.startswith("/") or low.startswith("api/") or low.startswith("v"):
+        return "api" in low or "graphql" in low or "internal" in low or re.match(r"^v[0-9]+", low) is not None
+    return False
 
 
 def _append_repo_lines(
@@ -32,6 +62,8 @@ def _append_repo_lines(
             try:
                 rel = Path(abs_p).resolve().relative_to(repo).as_posix()
             except ValueError:
+                continue
+            if _low_signal_relpath(rel):
                 continue
             if extra_filter_rel and extra_filter_rel(rel, content):
                 continue
@@ -60,6 +92,8 @@ def run_phase5(repos: list[Path], scan_tmp: Path, topology=None) -> None:
         "forge_scan_all_types.txt",
         "forge_scan_all_env_vars.txt",
         "forge_scan_dynamic_urls.txt",
+        "forge_scan_api_constant_calls.txt",
+        "forge_scan_endpoint_constants.tsv",
         "forge_scan_shared_types.tsv",
         "forge_scan_event_bus.tsv",
     ):
@@ -106,7 +140,7 @@ def run_phase5(repos: list[Path], scan_tmp: Path, topology=None) -> None:
                     continue
                 if _TEST_PATH_RE.search(rel):
                     continue
-                f.write(f"{name}/feign\t{rel}:{lineno}:{content}\n")
+                f.write(f"{name}\t{rel}:{lineno}:{content}\n")
         _append_repo_lines(
             repo,
             kt_pat,
@@ -115,7 +149,7 @@ def run_phase5(repos: list[Path], scan_tmp: Path, topology=None) -> None:
             name,
             extra_filter_rel=lambda rel, c: bool(re.search(r"(?:^|/)(?:Test|Spec)\.kt$", rel)),
         )
-        _append_repo_lines(repo, kt_retro, ["*.kt"], scan_tmp / "forge_scan_kotlin_calls.txt", f"{name}/retrofit")
+        _append_repo_lines(repo, kt_retro, ["*.kt"], scan_tmp / "forge_scan_kotlin_calls.txt", name)
         _append_repo_lines(
             repo,
             py_pat,
@@ -135,6 +169,38 @@ def run_phase5(repos: list[Path], scan_tmp: Path, topology=None) -> None:
             extra_filter_rel=lambda rel, c: rel.endswith("_test.go"),
         )
         _append_repo_lines(repo, dart_pat, ["*.dart"], scan_tmp / "forge_scan_dart_calls.txt", name)
+        # Endpoint constants: mobile/web code often stores API paths in constants instead of direct HTTP callsites.
+        const_files = []
+        for p in repo.rglob("*"):
+            if not p.is_file():
+                continue
+            if p.suffix.lower() not in (".kt", ".java", ".ts", ".tsx", ".js", ".jsx"):
+                continue
+            try:
+                rel = p.relative_to(repo).as_posix()
+            except ValueError:
+                continue
+            if _TEST_PATH_RE.search(rel) or _low_signal_relpath(rel) or "node_modules" in rel:
+                continue
+            const_files.append((p, rel))
+        with (scan_tmp / "forge_scan_endpoint_constants.tsv").open("a", encoding="utf-8", errors="replace") as tsv, (
+            scan_tmp / "forge_scan_api_constant_calls.txt"
+        ).open("a", encoding="utf-8", errors="replace") as calls_out:
+            for abs_p, rel in const_files:
+                try:
+                    lines = abs_p.read_text(encoding="utf-8", errors="replace").splitlines()
+                except OSError:
+                    continue
+                for i, ln in enumerate(lines, start=1):
+                    m = _ENDPOINT_CONST_RE.search(ln)
+                    if not m:
+                        continue
+                    symbol = m.group(1).strip()
+                    value = m.group(2).strip()
+                    if not _looks_like_endpoint_value(value):
+                        continue
+                    tsv.write(f"{name}\t{symbol}\t{rel}\t{i}\t{value}\n")
+                    calls_out.write(f"{name}\t{rel}:{i}:{ln}\n")
 
     ast_n = ast_http_calls.append_ast_http_calls(repos, scan_tmp)
     if ast_n:
@@ -156,6 +222,7 @@ def run_phase5(repos: list[Path], scan_tmp: Path, topology=None) -> None:
         "forge_scan_python_calls.txt",
         "forge_scan_go_calls.txt",
         "forge_scan_dart_calls.txt",
+        "forge_scan_api_constant_calls.txt",
         "forge_scan_ast_http_calls.txt",
     )
 
@@ -166,10 +233,15 @@ def run_phase5(repos: list[Path], scan_tmp: Path, topology=None) -> None:
     go_n = len((scan_tmp / "forge_scan_go_calls.txt").read_text().splitlines())
     da_n = len((scan_tmp / "forge_scan_dart_calls.txt").read_text().splitlines())
     all_n = len((scan_tmp / "forge_scan_all_callsites.txt").read_text().splitlines())
+    const_n = len((scan_tmp / "forge_scan_api_constant_calls.txt").read_text().splitlines())
+    const_sym_n = len((scan_tmp / "forge_scan_endpoint_constants.tsv").read_text().splitlines())
     print(f"  Total call sites: {all_n}")
-    print(f"    TS/JS: {js_n} | Java: {ja_n} | Kotlin: {kt_n} | Python: {py_n} | Go: {go_n} | Dart: {da_n}")
+    print(
+        f"    TS/JS: {js_n} | Java: {ja_n} | Kotlin: {kt_n} | Python: {py_n} | Go: {go_n} | Dart: {da_n} | API constants: {const_n}"
+    )
     log.log_stat(
-        f"phase=5.1 total_callsites={all_n} js={js_n} java={ja_n} kotlin={kt_n} python={py_n} go={go_n} dart={da_n}",
+        f"phase=5.1 total_callsites={all_n} js={js_n} java={ja_n} kotlin={kt_n} python={py_n} go={go_n} dart={da_n} "
+        f"api_constants={const_n} endpoint_symbols={const_sym_n}",
     )
 
     # 5.2 types
@@ -363,6 +435,8 @@ def run_phase5(repos: list[Path], scan_tmp: Path, topology=None) -> None:
                 continue
             rel = str(p.relative_to(repo))
             if "node_modules" in rel or "/dist/" in rel or "/build/" in rel:
+                continue
+            if _low_signal_relpath(rel):
                 continue
             try:
                 txt = p.read_text(encoding="utf-8", errors="replace")

@@ -18,6 +18,32 @@ _LINKABLE_SCRIPT_FMTS = frozenset(
 )
 
 
+def _prune_stale_autogen_nodes(
+    out_dir: Path,
+    expected_stems: set[str],
+    stem_prefix: str,
+) -> int:
+    if os.environ.get("FORGE_PHASE4_PRUNE_STALE", "1").strip().lower() not in ("1", "true", "yes"):
+        return 0
+    pruned = 0
+    for p in out_dir.glob(f"{stem_prefix}*.md"):
+        stem = p.stem
+        if stem in expected_stems:
+            continue
+        try:
+            text = p.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if "_Auto-generated" not in text:
+            continue
+        try:
+            p.unlink()
+            pruned += 1
+        except OSError:
+            continue
+    return pruned
+
+
 def write_class_stubs(
     brain_dir: Path,
     repo: Path,
@@ -31,6 +57,7 @@ def write_class_stubs(
         r"\b(class|interface|enum|object|data class|sealed class|abstract class|annotation class|struct|trait|protocol|@interface)\b ([A-Z][a-zA-Z0-9_]*)",
     )
     gen_re = re.compile(r"(Generated\.|_pb2\.|DataBinding|ViewBinding|Binding\b|\.generated\.)")
+    expected: set[str] = set()
     for line in type_lines:
         if not line.strip():
             continue
@@ -51,6 +78,7 @@ def write_class_stubs(
         if dir_name == ".":
             dir_name = "root"
         mod_basename = modslug.forge_mod_node_basename_from_rel(role, rel_file)
+        expected.add(f"{role}-{cls}")
         node = brain_dir / "classes" / f"{role}-{cls}.md"
         if node.is_file():
             skipped += 1
@@ -89,6 +117,9 @@ def write_class_stubs(
             errors="replace",
         )
         written += 1
+    pruned = _prune_stale_autogen_nodes(brain_dir / "classes", expected, f"{role}-")
+    if pruned:
+        log.log_stat(f"phase=4.3a classes_pruned={pruned}")
     log.log_stat(f"phase=4.3a classes_written={written} input_lines={len(type_lines)}")
     return written, skipped
 
@@ -103,6 +134,7 @@ def write_function_stubs(
     written = 0
     flines = funcs_path.read_text(encoding="utf-8", errors="replace").splitlines() if funcs_path.is_file() else []
     generic = re.compile(r"^(get|set|is|has|to|of|by|on|do)$")
+    expected: set[str] = set()
     for line in flines:
         if not line.strip():
             continue
@@ -132,6 +164,7 @@ def write_function_stubs(
             continue
         lang = inventory_text.detect_language(fpath)
         mod_basename = modslug.forge_mod_node_basename_from_rel(role, rel_file)
+        expected.add(f"{role}-{func}")
         node = brain_dir / "functions" / f"{role}-{func}.md"
         if node.is_file():
             skipped += 1
@@ -169,6 +202,9 @@ def write_function_stubs(
             errors="replace",
         )
         written += 1
+    pruned = _prune_stale_autogen_nodes(brain_dir / "functions", expected, f"{role}-")
+    if pruned:
+        log.log_stat(f"phase=4.3c functions_pruned={pruned}")
     log.log_stat(f"phase=4.3c functions_written={written} input_lines={len(flines)}")
     return written, skipped
 
@@ -188,6 +224,7 @@ def write_method_stubs(
         log.log_warn(f"missing {methods_path}")
         return 0, skipped
     mlines = methods_path.read_text(encoding="utf-8", errors="replace").splitlines()
+    expected: set[str] = set()
     for line in mlines:
         if not line.strip():
             continue
@@ -202,6 +239,7 @@ def write_method_stubs(
         if dir_name == ".":
             dir_name = "root"
         mid = grep_util.cksum_first_field(line)
+        expected.add(f"{role}-m-{mid}")
         node = brain_dir / "methods" / f"{role}-m-{mid}.md"
         if node.is_file():
             skipped += 1
@@ -242,6 +280,9 @@ def write_method_stubs(
             errors="replace",
         )
         written += 1
+    pruned = _prune_stale_autogen_nodes(brain_dir / "methods", expected, f"{role}-m-")
+    if pruned:
+        log.log_stat(f"phase=4.3d methods_pruned={pruned}")
     log.log_stat(f"phase=4.3d methods_written={written} input_lines={len(mlines)}")
     return written, skipped
 
@@ -307,6 +348,7 @@ def write_page_stubs(
         page_entries.append((fp, rel_file, name, fmt, kind, route, page_bn))
 
     rel_to_page_bn = {e[1]: e[6] for e in page_entries}
+    expected: set[str] = {entry[6] for entry in page_entries}
     incoming_html: dict[str, list[str]] = {}
     incoming_js: dict[str, list[str]] = {}
     for fp, rel_file, _name, fmt, _k, _r, _bn in page_entries:
@@ -439,7 +481,65 @@ def write_page_stubs(
             errors="replace",
         )
         written += 1
+    pruned = _prune_stale_autogen_nodes(brain_dir / "pages", expected, f"{role}-")
+    if pruned:
+        log.log_stat(f"phase=4.3e pages_pruned={pruned}")
     log.log_stat(f"phase=4.3e pages_written={written} input_lines={len(uilines)}")
+    return written, skipped
+
+
+def write_file_stubs(
+    brain_dir: Path,
+    repo: Path,
+    role: str,
+    sources_path: Path,
+    skipped: int,
+) -> tuple[int, int]:
+    """Write one lightweight note per source file for full scan coverage visibility."""
+    written = 0
+    lines = sources_path.read_text(encoding="utf-8", errors="replace").splitlines() if sources_path.is_file() else []
+    expected: set[str] = set()
+    for line in lines:
+        raw = line.strip()
+        if not raw:
+            continue
+        rel_file = inventory_text.repo_relative_posix(repo, raw)
+        if rel_file is None:
+            continue
+        bn = modslug.forge_file_node_basename_from_rel(role, rel_file)
+        expected.add(bn)
+        node = brain_dir / "files" / f"{bn}.md"
+        if node.is_file():
+            skipped += 1
+            continue
+        mod_basename = modslug.forge_mod_node_basename_from_rel(role, rel_file)
+        lang = inventory_text.detect_language(rel_file)
+        node.write_text(
+            "\n".join(
+                [
+                    f"# File: {Path(rel_file).name}",
+                    "",
+                    f"**Path:** `{rel_file}`",
+                    f"**Repo role:** `{role}`",
+                    f"**Language:** {lang}",
+                    f"**Module:** [[modules/{mod_basename}]]",
+                    "",
+                    "## Purpose",
+                    "_Auto-generated source-file coverage node._",
+                    "",
+                    "## Notes",
+                    "_Use class/function/method/page nodes for semantic details._",
+                    "",
+                ],
+            ),
+            encoding="utf-8",
+            errors="replace",
+        )
+        written += 1
+    pruned = _prune_stale_autogen_nodes(brain_dir / "files", expected, f"{role}-")
+    if pruned:
+        log.log_stat(f"phase=4.3f files_pruned={pruned}")
+    log.log_stat(f"phase=4.3f files_written={written} input_lines={len(lines)}")
     return written, skipped
 
 
@@ -480,9 +580,11 @@ def write_module_scaffolds(
     dirs.discard("")
     if any((repo / n).is_file() for n in ("openapi.json", "swagger.json", "openapi.yaml", "openapi.yml")):
         dirs.add("root")
+    expected: set[str] = set()
     for dir_name in sorted(dirs):
         d = dir_name if dir_name != "root" else "."
         module_name = modslug.forge_mod_dirslug_from_dir(d)
+        expected.add(f"{role}-{module_name}")
         node = brain_dir / "modules" / f"{role}-{module_name}.md"
         if node.is_file():
             skipped += 1
@@ -520,5 +622,8 @@ def write_module_scaffolds(
             errors="replace",
         )
         written += 1
+    pruned = _prune_stale_autogen_nodes(brain_dir / "modules", expected, f"{role}-")
+    if pruned:
+        log.log_stat(f"phase=4.3b modules_pruned={pruned}")
     log.log_stat(f"phase=4.3b modules_written={written} unique_dirs={len(dirs)}")
     return written, skipped

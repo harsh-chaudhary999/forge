@@ -49,4 +49,4 @@ bash skills/migrations/v2.0.0-freeze-scope-enforcement.sh
 
 | Version | Slug | Date | Affects | Notes |
 |---------|------|------|---------|-------|
-| (none yet) | — | — | — | First migrations will appear here when a skill hits v2.0.0 |
+| 2.0.0 | forge-skill-anatomy-frontmatter-standards | 2026-04-28 | `skills/forge-skill-anatomy/SKILL.md` | Major version bump for stricter frontmatter and rigor-template guidance; no executable migration script required (docs-only contract update). |

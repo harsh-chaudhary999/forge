@@ -37,6 +37,14 @@ SKIP_DIR_NAMES = {
     ".turbo",
     ".nuxt",
     ".output",
+    # Common temp/cache/build helper dirs
+    "tmp",
+    "temp",
+    ".tmp",
+    ".cache",
+    ".gradle",
+    # Generated sources are usually noisy for structural scan
+    "generated",
 }
 
 SKIP_PATH_PARTS = ("/.git/",)

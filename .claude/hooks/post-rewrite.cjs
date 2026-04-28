@@ -31,11 +31,12 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { execSync } = require('child_process');
 
 const REWRITE_TYPE = process.argv[2] || 'amend'; // 'amend' or 'rebase'
 const PROJECT_SLUG = process.argv[3] || 'unknown';
-const FORGE_ROOT = process.argv[4] || path.join(process.env.HOME || '/root', 'forge');
+const FORGE_ROOT = process.argv[4] || path.join(os.homedir(), 'forge');
 const BRAIN_DIR = path.join(FORGE_ROOT, 'brain');
 const INBOX_DIR = path.join(BRAIN_DIR, 'inbox');
 
@@ -90,6 +91,7 @@ if (!fs.existsSync(INBOX_DIR)) {
 // Read stdin to get old-new SHA mappings
 // Format from git: <old-sha> <new-sha>\n (one per line)
 let oldNewMappings = {};
+const FULL_SHA_RE = /^[a-f0-9]{40}$/i;
 
 // For amend: read from stdin
 // For rebase: build mapping from git reflog
@@ -98,7 +100,7 @@ if (REWRITE_TYPE === 'amend') {
   const lines = stdin.trim().split('\n');
   for (const line of lines) {
     const [oldSha, newSha] = line.split(/\s+/);
-    if (oldSha && newSha) {
+    if (oldSha && newSha && FULL_SHA_RE.test(oldSha) && FULL_SHA_RE.test(newSha)) {
       oldNewMappings[oldSha] = newSha;
       log(`SHA rewrite: ${oldSha.substring(0, 8)} → ${newSha.substring(0, 8)}`);
     }
@@ -140,22 +142,22 @@ try {
     // Replace old SHAs with new SHAs in the file
     for (const [oldSha, newSha] of Object.entries(oldNewMappings)) {
       // Look for SHA in various formats: full, abbreviated, in fields
-      const patterns = [
-        new RegExp(`\\b${oldSha}\\b`, 'g'),                    // Full SHA
-        new RegExp(`\\b${oldSha.substring(0, 8)}\\b`, 'g'),    // Short SHA
-        new RegExp(`commit:\\s*${oldSha}`, 'g'),               // commit: format
-        new RegExp(`sha:\\s*${oldSha}`, 'g'),                  // sha: format
-      ];
+      const escaped = oldSha.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const anyRef = new RegExp(`\\b${escaped}\\b`, 'g');
+      const commitRef = new RegExp(`(commit\\s*:\\s*)${escaped}`, 'gi');
+      const shaRef = new RegExp(`(sha\\s*:\\s*)${escaped}`, 'gi');
 
-      for (const pattern of patterns) {
-        if (pattern.test(newContent)) {
-          const shortOld = oldSha.substring(0, 8);
-          const shortNew = newSha.substring(0, 8);
-          newContent = newContent.replace(pattern, match => {
-            return match.replace(oldSha, newSha).replace(shortOld, shortNew);
-          });
-          updated = true;
-        }
+      if (anyRef.test(newContent)) {
+        newContent = newContent.replace(anyRef, newSha);
+        updated = true;
+      }
+      if (commitRef.test(newContent)) {
+        newContent = newContent.replace(commitRef, `$1${newSha}`);
+        updated = true;
+      }
+      if (shaRef.test(newContent)) {
+        newContent = newContent.replace(shaRef, `$1${newSha}`);
+        updated = true;
       }
     }
 

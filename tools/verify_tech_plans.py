@@ -25,20 +25,11 @@ or direct invocation:
 from __future__ import annotations
 
 import argparse
-import os
 import re
 import sys
 from pathlib import Path
 
-
-def _default_brain_root() -> Path:
-    """Honor FORGE_BRAIN or FORGE_BRAIN_PATH (same semantics), then ~/forge/brain."""
-    home = Path.home()
-    for key in ("FORGE_BRAIN", "FORGE_BRAIN_PATH"):
-        v = os.environ.get(key, "").strip()
-        if v:
-            return Path(v).expanduser()
-    return home / "forge" / "brain"
+from forge_paths import default_brain_root, sanitize_task_id
 
 RE_STATUS_PASS = re.compile(
     r"^\s*Tech plan status:\s*REVIEW_PASS\s*$", re.IGNORECASE | re.MULTILINE
@@ -59,6 +50,7 @@ MARKER_RECROSS = "<!-- FORGE-GATE:CODE-RECROSS:v1 -->"
 
 SKIP_NAMES = frozenset(
     {
+        # Meta-documents in tech-plans/ that are not per-repo plan files.
         "human_signoff.md",
         "readme.md",
     }
@@ -76,7 +68,9 @@ def _heading_body(line: str) -> str | None:
 
 def _heading_id(body: str) -> str:
     """First token of heading body (e.g. `1b.0 PRD↔scan` → `1b.0`)."""
-    return body.split()[0] if body else ""
+    if not body:
+        return ""
+    return body.split()[0].rstrip(":;")
 
 
 def _line_of_heading(lines: list[str], want: str) -> int | None:
@@ -90,19 +84,19 @@ def _line_of_heading(lines: list[str], want: str) -> int | None:
     return None
 
 
-def _lines_between_exact_markers(lines: list[str], start: str, end: str) -> list[str] | None:
-    """Lines strictly between ``start`` and ``end`` marker lines (exclusive). ``None`` if either marker is absent or ``end`` never follows ``start``."""
+def _lines_between_exact_markers(lines: list[str], start: str, end: str) -> tuple[list[str] | None, str | None]:
+    """Lines strictly between markers; returns (lines, reason_if_missing)."""
     start_i: int | None = None
     for i, ln in enumerate(lines):
         if ln.strip() == start:
             start_i = i + 1
             break
     if start_i is None:
-        return None
+        return None, "missing_start"
     for j in range(start_i, len(lines)):
         if lines[j].strip() == end:
-            return lines[start_i:j]
-    return None
+            return lines[start_i:j], None
+    return None, "missing_end"
 
 
 def _markdown_table_row_cells(line: str) -> list[str] | None:
@@ -160,11 +154,17 @@ def _strict_0c_semantic_errors(
     open GAP rows and on missing citations for task-bound inputs that exist.
     """
     errs: list[str] = []
-    inv = _lines_between_exact_markers(lines, MARKER_0C, MARKER_RECROSS)
+    inv, inv_reason = _lines_between_exact_markers(lines, MARKER_0C, MARKER_RECROSS)
     if inv is None:
+        reason = (
+            "missing opening marker"
+            if inv_reason == "missing_start"
+            else "missing closing marker"
+        )
         errs.append(
             f"{rel}: --strict-0c-inventory requires {MARKER_0C!r} and later "
-            f"{MARKER_RECROSS!r} each on their own line, with inventory table between them"
+            f"{MARKER_RECROSS!r} each on their own line, with inventory table between them "
+            f"({reason})"
         )
         return errs
     gap_lines = _inventory_block_has_gap_last_column(inv)
@@ -187,7 +187,7 @@ def _strict_0c_semantic_errors(
 
     tp_dir = task_dir / "touchpoints"
     if tp_dir.is_dir() and any(p.suffix.lower() == ".md" for p in tp_dir.iterdir() if p.is_file()):
-        if "touchpoints" not in inv_blob:
+        if not re.search(r"\btouchpoints\b", inv_blob):
             errs.append(
                 f"{rel}: task has touchpoints/*.md but Section 0c inventory never cites "
                 "'touchpoints/' — add ≥1 inventory row per tech-plan-write-per-project"
@@ -207,6 +207,10 @@ def _strict_0c_semantic_errors(
 
 def verify_tech_plans(brain: Path, task_id: str, *, strict_0c_inventory: bool = False) -> list[str]:
     errors: list[str] = []
+    try:
+        task_id = sanitize_task_id(task_id)
+    except ValueError as exc:
+        return [str(exc)]
     tp_dir = brain / "prds" / task_id / "tech-plans"
     if not tp_dir.is_dir():
         return errors
@@ -288,18 +292,23 @@ def main() -> int:
         ),
     )
     args = p.parse_args()
-    brain = Path(args.brain).expanduser() if args.brain else _default_brain_root()
-    task_dir = brain / "prds" / args.task_id
+    brain = Path(args.brain).expanduser() if args.brain else default_brain_root()
+    try:
+        task_id = sanitize_task_id(args.task_id)
+    except ValueError as exc:
+        print(f"Tech plan verification FAILED: {exc}", file=sys.stderr)
+        return 1
+    task_dir = brain / "prds" / task_id
     if not task_dir.is_dir():
         print(f"Tech plan verification FAILED: missing task dir {task_dir}", file=sys.stderr)
         return 1
-    errs = verify_tech_plans(brain, args.task_id, strict_0c_inventory=args.strict_0c_inventory)
+    errs = verify_tech_plans(brain, task_id, strict_0c_inventory=args.strict_0c_inventory)
     if errs:
         print("Tech plan verification FAILED:", file=sys.stderr)
         for e in errs:
             print(f"  - {e}", file=sys.stderr)
         return 1
-    print(f"OK: tech-plans for task {args.task_id!r} under {brain}")
+    print(f"OK: tech-plans for task {task_id!r} under {brain}")
     return 0
 
 

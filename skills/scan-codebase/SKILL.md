@@ -166,6 +166,8 @@ codebase/
 | `SCAN_SUMMARY.md` | One-page orientation: freshness, per-role stats, links to automap / digest / graph, known limitations |
 | `graph.json` | Machine graph: `nodes` (module stems + paths) + `edges` (`cross_repo_http` with `url` + `provenance`) — **derived** from markdown + automap; markdown modules remain the human source of truth |
 | `.forge_scan_manifest.json` | Per-role `git` `HEAD` + `HEAD^{tree}` after each successful scan — for tooling and future incremental strategies |
+| `.forge_scan_file_state.json` | Per-role `head` / `tree`, tracked source blob SHAs, and changed-path counts used by `--incremental` mode |
+| `forge_scan_edges.sqlite` | Regenerated query store from `graph.json` (ad-hoc SQL; non-canonical, disposable) |
 
 **Cross-repo provenance (phase56):** Injected module bullets and `cross-repo-automap.md` TSV use tags: **`OPENAPI`** (route line from OpenAPI append), **`GREP_SUBSTRING`** / **`GREP_TEMPLATE`** (grep route inventory; template = `{param}` match), **`MANUAL_ALIAS`** (rows from `route-aliases.tsv`). These label **how the join was made**, not runtime correctness.
 
@@ -217,6 +219,24 @@ python3 tools/verify_scan_outputs.py ~/forge/brain/products/<slug>/codebase
 | `--skip-phase57` | Skip wikilink validation |
 | `--phase57-write-report` | Write `wikilink-orphan-report.md` under the brain codebase parent |
 | `--cleanup` | Remove `forge_scan_*.txt` in the run dir after success |
+| `--incremental` | Use previous heads to compute changed paths and skip per-role phase1/3.5/4 when no scan-relevant files changed |
+
+**Related environment flags (operator controls):**
+
+- `FORGE_SCAN_INCREMENTAL=1` — same as passing `--incremental`
+- `FORGE_SCAN_AST_IMPORTS=1` — emit `forge_scan_ast_import_edges.tsv` and include import-ref edges in `graph.json`
+
+**Incremental confidence/fallback inspection:**
+
+- Check `run.json` keys `incremental.phase5_56_mode` and `incremental.phase5_56_reason`.
+- `run_full_fallback` means conservative full recompute due to low confidence in prior state.
+- `skipped_by_profile` means cross-repo recompute was skipped only after heuristic change profiling found no phase5 inputs.
+
+**Import-edge confidence guidance:**
+
+- TSV provenance tiers: `AST_STRONG`, `AST_WEAK`, `HEURISTIC`.
+- `graph.json` includes only confidence-qualified import edges (`AST_STRONG` / `AST_WEAK`).
+- Use `HEURISTIC` rows for diagnostics, not trusted dependency claims.
 
 ### Canonical command (multi-repo)
 
@@ -249,6 +269,17 @@ Tier 1 is **incoming reference score ≥5** from a cheap import-line scan, not �
 1. Re-run with **`--phase57-write-report`**.
 2. Align **`role`** in `product.md` with **`basename(repo path)`** for each project.
 3. Re-run scan after slug fixes; remove stale links the report flags.
+
+### Optional operator utilities (post-scan)
+
+- Search artifacts with local BM25:
+  - `python3 tools/forge_codebase_search.py --brain-codebase <codebase> --query "<terms>"`
+- Query edge store:
+  - `python3 -m scan_forge.query_repl --brain-codebase <codebase> --sql "select kind,count(*) from edges group by kind"`
+- Run benchmark harness:
+  - `python3 tools/scan_bench.py --output-json tools/scan_bench.ci.json --output-md tools/scan_bench.ci.md`
+
+These are convenience analysis tools; they do not replace scan verification or required outputs.
 
 ---
 

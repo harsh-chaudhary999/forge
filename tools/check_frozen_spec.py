@@ -10,41 +10,33 @@ Cheap CI / pre-freeze hook — not a full markdown parser.
 """
 from __future__ import annotations
 
-import re
+import argparse
 import sys
 from pathlib import Path
 
-MARKERS = re.compile(r"\b(TBD|TODO)\b", re.IGNORECASE)
+from shared_spec_policy import tbd_violations
+
+_MAX_VIOLATIONS_SHOWN = 50
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
-        print("usage: check_frozen_spec.py <shared-dev-spec.md>", file=sys.stderr)
-        return 2
-    path = Path(sys.argv[1])
+    ap = argparse.ArgumentParser(
+        description="Fail if shared-dev-spec.md contains TBD/TODO outside code fences."
+    )
+    ap.add_argument("path", help="Path to shared-dev-spec.md")
+    args = ap.parse_args()
+    path = Path(args.path)
     if not path.is_file():
         print(f"error: not a file: {path}", file=sys.stderr)
         return 2
     text = path.read_text(encoding="utf-8", errors="replace")
-    in_fence = False
-    bad: list[tuple[int, str]] = []
-    for i, line in enumerate(text.splitlines(), start=1):
-        stripped = line.strip()
-        if stripped.startswith("```"):
-            in_fence = not in_fence
-            continue
-        if in_fence:
-            continue
-        if stripped.startswith("#") and "TBD" in stripped.upper():
-            continue
-        if MARKERS.search(line):
-            bad.append((i, line.rstrip()[:200]))
+    bad = tbd_violations(text)
     if bad:
         print(f"check_frozen_spec: FAIL {path} — TBD/TODO in non-fence lines:")
-        for ln, content in bad[:50]:
-            print(f"  L{ln}: {content}")
-        if len(bad) > 50:
-            print(f"  ... and {len(bad) - 50} more")
+        for msg in bad[:_MAX_VIOLATIONS_SHOWN]:
+            print(f"  {msg}")
+        if len(bad) > _MAX_VIOLATIONS_SHOWN:
+            print(f"  ... and {len(bad) - _MAX_VIOLATIONS_SHOWN} more")
         return 1
     print(f"check_frozen_spec: OK {path}")
     return 0

@@ -23,6 +23,30 @@ def _resolve_module_stem(brain: Path, repo: str, rel: str) -> str | None:
     return None
 
 
+def _resolve_import_target_rel(caller_rel: str, target: str) -> str | None:
+    target = (target or "").strip()
+    if not target:
+        return None
+    if not target.startswith(".") and not target.startswith("/"):
+        return None
+    if target.startswith("/"):
+        rel = target.lstrip("/")
+    else:
+        parent = Path(caller_rel).parent.as_posix()
+        raw = f"{parent}/{target}" if parent and parent != "." else target
+        parts: list[str] = []
+        for seg in raw.split("/"):
+            if not seg or seg == ".":
+                continue
+            if seg == "..":
+                if parts:
+                    parts.pop()
+                continue
+            parts.append(seg)
+        rel = "/".join(parts)
+    return rel or None
+
+
 def _module_nodes(brain: Path) -> list[dict[str, Any]]:
     nodes: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -90,6 +114,49 @@ def _edges_from_automap(brain: Path) -> tuple[list[dict[str, Any]], list[str]]:
     return edges, warnings
 
 
+def _edges_from_import_tsv(brain: Path) -> tuple[list[dict[str, Any]], list[str]]:
+    tsv = brain / "forge_scan_ast_import_edges.tsv"
+    if not tsv.is_file():
+        return [], []
+    edges: list[dict[str, Any]] = []
+    warnings: list[str] = []
+    for ln in tsv.read_text(encoding="utf-8", errors="replace").splitlines():
+        if not ln.strip():
+            continue
+        parts = ln.split("\t")
+        if len(parts) < 6:
+            warnings.append(f"import_tsv_bad_cols:{len(parts)}:{ln[:120]}")
+            continue
+        repo, caller_rel, lineno_s, edge_kind, target, prov = parts[:6]
+        resolved_target = parts[6] if len(parts) > 6 else ""
+        src = _resolve_module_stem(brain, repo, caller_rel)
+        if prov not in {"AST_STRONG", "AST_WEAK"}:
+            continue
+        target_rel = resolved_target or _resolve_import_target_rel(caller_rel, target)
+        tgt = _resolve_module_stem(brain, repo, target_rel) if target_rel else None
+        if not src or not tgt:
+            continue
+        if src == tgt:
+            continue
+        try:
+            lineno = int(lineno_s)
+        except ValueError:
+            lineno = 0
+        edges.append(
+            {
+                "source": src,
+                "target": tgt,
+                "kind": "import_ref",
+                "edge_kind": edge_kind,
+                "provenance": prov,
+                "repo": repo,
+                "line": lineno,
+                "target_spec": target,
+            },
+        )
+    return edges, warnings
+
+
 def write_graph_json(brain_codebase: Path) -> Path | None:
     """Merge module nodes + automap edges into ``graph.json`` under ``brain_codebase``."""
     os.environ["FORGE_SCAN_SCRIPT_ID"] = "graph_export"
@@ -103,7 +170,10 @@ def write_graph_json(brain_codebase: Path) -> Path | None:
             scan_meta = {}
 
     nodes = _module_nodes(brain_codebase)
-    edges, graph_warnings = _edges_from_automap(brain_codebase)
+    http_edges, graph_warnings = _edges_from_automap(brain_codebase)
+    import_edges, import_warnings = _edges_from_import_tsv(brain_codebase)
+    edges = http_edges + import_edges
+    graph_warnings.extend(import_warnings)
     doc: dict[str, Any] = {
         "forge_scan_graph_version": GRAPH_VERSION,
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),

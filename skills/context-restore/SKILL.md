@@ -44,7 +44,12 @@ SLUG=$(git remote get-url origin 2>/dev/null \
   | sed 's/.*[:/]\([^/]*\)\.git$/\1/' \
   | sed 's/.*[:/]\([^/]*\)$/\1/')
 [ -z "$SLUG" ] && SLUG=$(basename "$(git rev-parse --show-toplevel)")
-CHECKPOINT_DIR="$HOME/.forge/projects/$SLUG/checkpoints"
+TASK_ID="${FORGE_TASK_ID:-${FORGE_PRD_TASK_ID:-}}"
+if [ -z "$TASK_ID" ]; then
+  echo "No FORGE_TASK_ID set. Set FORGE_TASK_ID (or FORGE_PRD_TASK_ID) before restoring checkpoints."
+  exit 1
+fi
+CHECKPOINT_DIR="$HOME/forge/brain/prds/$TASK_ID/checkpoints"
 echo "Checkpoint dir: $CHECKPOINT_DIR"
 ```
 

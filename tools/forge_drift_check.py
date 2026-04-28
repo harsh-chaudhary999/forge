@@ -15,10 +15,11 @@ Exit 1 on drift when --strict; otherwise prints WARN and exits 0.
 from __future__ import annotations
 
 import argparse
-import os
 import re
 import sys
 from pathlib import Path
+
+from forge_paths import default_brain_root, sanitize_task_id
 
 
 def _read(p: Path) -> str:
@@ -51,8 +52,8 @@ def _combined_eval_text(eval_dir: Path) -> str:
         if p.suffix.lower() in (".yaml", ".yml", ".json"):
             try:
                 parts.append(_read(p))
-            except OSError:
-                pass
+            except OSError as exc:
+                print(f"WARN: unable to read {p}: {exc}", file=sys.stderr)
     return "\n".join(parts).casefold()
 
 
@@ -75,17 +76,13 @@ def main() -> int:
         help="Exit 1 when any success-criterion bullet is absent from eval+QA text",
     )
     args = ap.parse_args()
-    if args.brain:
-        brain = Path(args.brain).expanduser()
-    else:
-        home = Path.home()
-        brain = home / "forge" / "brain"
-        for key in ("FORGE_BRAIN", "FORGE_BRAIN_PATH"):
-            v = os.environ.get(key, "").strip()
-            if v:
-                brain = Path(v).expanduser()
-                break
-    task_dir = brain / "prds" / args.task_id
+    brain = Path(args.brain).expanduser() if args.brain else default_brain_root()
+    try:
+        task_id = sanitize_task_id(args.task_id)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    task_dir = brain / "prds" / task_id
     prd = task_dir / "prd-locked.md"
     if not prd.is_file():
         print(f"ERROR: missing {prd}", file=sys.stderr)
@@ -101,8 +98,6 @@ def main() -> int:
     missing: list[str] = []
     for b in bullets:
         key = b.casefold()
-        if len(key) > 80:
-            key = key[:80]
         if key not in hay_cf:
             missing.append(b)
 

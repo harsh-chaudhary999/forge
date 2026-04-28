@@ -29,13 +29,17 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 // Configuration
-const PROJECT_ROOT = process.argv[2] || '.';
+const PROJECT_ROOT = path.resolve(process.argv[2] || '.');
 const PROJECT_SLUG = process.argv[3] || path.basename(PROJECT_ROOT);
-const FORGE_ROOT = process.argv[4] || path.join(process.env.HOME || '/root', 'forge');
+const FORGE_ROOT = path.resolve(process.argv[4] || path.join(require('os').homedir(), 'forge'));
+const FORCE_OVERWRITE = process.argv.includes('--force');
 const HOOKS_SRC = path.join(FORGE_ROOT, '.claude', 'hooks');
+
+function shQuote(s) {
+  return `'${String(s).replace(/'/g, `'\\''`)}'`;
+}
 
 function die(message) {
   console.error(`ERROR: ${message}`);
@@ -58,6 +62,14 @@ if (!fs.existsSync(HOOKS_SRC)) {
 }
 
 const HOOKS_DIR = path.join(gitDir, 'hooks');
+
+function writeHook(destPath, content) {
+  if (fs.existsSync(destPath) && !FORCE_OVERWRITE) {
+    die(`Hook already exists: ${destPath} (re-run with --force to overwrite)`);
+  }
+  fs.writeFileSync(destPath, content);
+  fs.chmodSync(destPath, 0o755);
+}
 
 // Create hooks directory if needed
 if (!fs.existsSync(HOOKS_DIR)) {
@@ -84,12 +96,9 @@ try {
   // Create a wrapper script that calls the Forge post-commit hook
   const postCommitWrapper = `#!/bin/bash
 # Forge post-commit hook — tracks commits in brain inbox
-node "${postCommitSrc}" "${PROJECT_SLUG}" "${FORGE_ROOT}"
-exit 0
+node ${shQuote(postCommitSrc)} ${shQuote(PROJECT_SLUG)} ${shQuote(FORGE_ROOT)}
 `;
-
-  fs.writeFileSync(postCommitDest, postCommitWrapper);
-  fs.chmodSync(postCommitDest, 0o755);
+  writeHook(postCommitDest, postCommitWrapper);
   log(`Installed post-commit hook`);
 } catch (e) {
   die(`Failed to install post-commit hook: ${e.message}`);
@@ -106,12 +115,9 @@ if (!fs.existsSync(commitMsgSrc)) {
 try {
   const commitMsgWrapper = `#!/bin/bash
 # Forge commit-msg hook — validates commit message format
-node "${commitMsgSrc}" "$1"
-exit 0
+node ${shQuote(commitMsgSrc)} "$1"
 `;
-
-  fs.writeFileSync(commitMsgDest, commitMsgWrapper);
-  fs.chmodSync(commitMsgDest, 0o755);
+  writeHook(commitMsgDest, commitMsgWrapper);
   log(`Installed commit-msg hook`);
 } catch (e) {
   die(`Failed to install commit-msg hook: ${e.message}`);
@@ -128,12 +134,9 @@ if (!fs.existsSync(preCommitSrc)) {
 try {
   const preCommitWrapper = `#!/bin/bash
 # Forge pre-commit hook — prevents committing secrets and large files
-node "${preCommitSrc}" . 0
-exit 0
+node ${shQuote(preCommitSrc)} ${shQuote(PROJECT_ROOT)} 0
 `;
-
-  fs.writeFileSync(preCommitDest, preCommitWrapper);
-  fs.chmodSync(preCommitDest, 0o755);
+  writeHook(preCommitDest, preCommitWrapper);
   log(`Installed pre-commit hook`);
 } catch (e) {
   die(`Failed to install pre-commit hook: ${e.message}`);
@@ -150,12 +153,9 @@ if (!fs.existsSync(postRewriteSrc)) {
 try {
   const postRewriteWrapper = `#!/bin/bash
 # Forge post-rewrite hook — updates brain state when commits are rewritten
-node "${postRewriteSrc}" "$1" "${PROJECT_SLUG}" "${FORGE_ROOT}"
-exit 0
+node ${shQuote(postRewriteSrc)} "$1" ${shQuote(PROJECT_SLUG)} ${shQuote(FORGE_ROOT)}
 `;
-
-  fs.writeFileSync(postRewriteDest, postRewriteWrapper);
-  fs.chmodSync(postRewriteDest, 0o755);
+  writeHook(postRewriteDest, postRewriteWrapper);
   log(`Installed post-rewrite hook`);
 } catch (e) {
   die(`Failed to install post-rewrite hook: ${e.message}`);
@@ -172,12 +172,9 @@ if (!fs.existsSync(postMergeSrc)) {
 try {
   const postMergeWrapper = `#!/bin/bash
 # Forge post-merge hook — consolidates brain state and validates main
-node "${postMergeSrc}" "${PROJECT_SLUG}" "${FORGE_ROOT}"
-exit 0
+node ${shQuote(postMergeSrc)} ${shQuote(PROJECT_SLUG)} ${shQuote(FORGE_ROOT)}
 `;
-
-  fs.writeFileSync(postMergeDest, postMergeWrapper);
-  fs.chmodSync(postMergeDest, 0o755);
+  writeHook(postMergeDest, postMergeWrapper);
   log(`Installed post-merge hook`);
 } catch (e) {
   die(`Failed to install post-merge hook: ${e.message}`);
@@ -205,7 +202,7 @@ do
   if [[ "$remote_ref" == "refs/heads/main" ]] || [[ "$remote_ref" == "refs/heads/master" ]]; then
     # Pushing to main/master — verify eval
     BRANCH=$(git rev-parse --abbrev-ref HEAD)
-    node "${preMergeSrc}" "${PROJECT_SLUG}" "${FORGE_ROOT}" "$BRANCH"
+    node ${shQuote(preMergeSrc)} ${shQuote(PROJECT_SLUG)} ${shQuote(FORGE_ROOT)} "$BRANCH"
     RESULT=$?
 
     if [ $RESULT -ne 0 ]; then
@@ -214,11 +211,8 @@ do
   fi
 done
 
-exit 0
 `;
-
-  fs.writeFileSync(prePushDest, prePushWrapper);
-  fs.chmodSync(prePushDest, 0o755);
+  writeHook(prePushDest, prePushWrapper);
   log(`Installed pre-push hook`);
 } catch (e) {
   die(`Failed to install pre-push hook: ${e.message}`);
@@ -245,12 +239,9 @@ if [ -z "$TASK_ID" ]; then
   echo "Usage: $0 <task-id>" >&2
   exit 1
 fi
-node "${postPrDreamerSrc}" "$TASK_ID" "${FORGE_ROOT}"
-exit 0
+node ${shQuote(postPrDreamerSrc)} "$TASK_ID" ${shQuote(FORGE_ROOT)}
 `;
-
-  fs.writeFileSync(postPrDreamerDest, postPrDreamerWrapper);
-  fs.chmodSync(postPrDreamerDest, 0o755);
+  writeHook(postPrDreamerDest, postPrDreamerWrapper);
   log(`Installed post-merge-dreamer hook`);
 } catch (e) {
   die(`Failed to install post-merge-dreamer hook: ${e.message}`);
@@ -272,12 +263,9 @@ try {
 # Usage: .git/hooks/forge-worktree-cleanup [stale-threshold-hours] [verbose]
 STALE_HOURS="\${1:-24}"
 VERBOSE="\${2:-0}"
-node "${worktreeCleanupSrc}" "$(pwd)" "$STALE_HOURS" "$VERBOSE"
-exit 0
+node ${shQuote(worktreeCleanupSrc)} "$(pwd)" "$STALE_HOURS" "$VERBOSE"
 `;
-
-  fs.writeFileSync(worktreeCleanupDest, worktreeCleanupWrapper);
-  fs.chmodSync(worktreeCleanupDest, 0o755);
+  writeHook(worktreeCleanupDest, worktreeCleanupWrapper);
   log(`Installed forge-worktree-cleanup hook`);
 } catch (e) {
   die(`Failed to install forge-worktree-cleanup hook: ${e.message}`);

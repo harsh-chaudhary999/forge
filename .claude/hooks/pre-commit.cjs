@@ -31,13 +31,13 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, spawnSync } = require('child_process');
 
 const PROJECT_ROOT = process.argv[2] || '.';
 const VERBOSE = parseInt(process.argv[3] || '0', 10) === 1;
 
 // Configuration
-const SECRET_PATTERNS = [
+const FILENAME_PATTERNS = [
   /\.env\.local/,           // Local env files with secrets
   /\.env\.development\.local/,
   /\.env\.production/,      // Production secrets
@@ -47,16 +47,18 @@ const SECRET_PATTERNS = [
   /id_dsa/,
   /\.pem$/,
   /\.key$/,
-  /password/,               // Hardcoded passwords
-  /api[-_]key/i,            // API keys
-  /aws[-_]access[-_]key/i,  // AWS credentials
+];
+const CONTENT_PATTERNS = [
+  /password/i,               // Hardcoded passwords
+  /api[-_]key/i,             // API keys
+  /aws[-_]access[-_]key/i,   // AWS credentials
   /aws[-_]secret/i,
-  /oauth[-_]token/i,        // OAuth tokens
-  /Bearer\s+[A-Za-z0-9\-._~\+\/]+=*/i, // Bearer tokens
-  /github[-_]token/i,       // GitHub tokens
-  /slack[-_]token/i,        // Slack webhooks
-  /firebase[-_]key/i,       // Firebase keys
-  /mongodb[-_]uri/i,        // DB connection strings
+  /oauth[-_]token/i,         // OAuth tokens
+  /Bearer\s+[A-Za-z0-9\-._~+/]{20,}={0,2}/i, // Bearer tokens
+  /github[-_]token/i,        // GitHub tokens
+  /slack[-_]token/i,         // Slack webhooks
+  /firebase[-_]key/i,        // Firebase keys
+  /mongodb[-_]uri/i,         // DB connection strings
   /postgresql[-_]password/i,
   /mysql[-_]password/i,
 ];
@@ -179,8 +181,8 @@ for (const file of stagedFiles) {
 
   // Check filename for secrets
   let isSecret = false;
-  for (const pattern of SECRET_PATTERNS) {
-    if (pattern.test(file.toLowerCase())) {
+  for (const pattern of FILENAME_PATTERNS) {
+    if (pattern.test(file)) {
       isSecret = true;
       issues.push(`SECRET FILE: ${file}`);
       hasIssues = true;
@@ -219,13 +221,17 @@ for (const file of stagedFiles) {
         try {
           // Read from the git index (staged version), not the working directory file.
           // This catches: staged secret removed from working copy before commit.
-          const stagedContent = execSync(`git show ":${file}"`, {
+          const show = spawnSync('git', ['show', `:${file}`], {
             cwd: PROJECT_ROOT,
             encoding: 'utf-8',
-            stdio: 'pipe',
-            maxBuffer: 2 * 1024 * 1024
+            stdio: ['ignore', 'pipe', 'pipe'],
+            maxBuffer: 2 * 1024 * 1024,
           });
-          for (const pattern of SECRET_PATTERNS) {
+          if (show.status !== 0) {
+            continue;
+          }
+          const stagedContent = show.stdout || '';
+          for (const pattern of CONTENT_PATTERNS) {
             if (pattern.test(stagedContent)) {
               issues.push(`SECRET IN STAGED FILE: ${file}`);
               hasIssues = true;

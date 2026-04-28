@@ -1,6 +1,6 @@
 ---
 name: forge-brain-layout
-description: "Brain directory structure, file naming conventions, and query patterns. Look up when writing to or reading from the brain."
+description: "WHEN: You need to look up brain directory structure, naming conventions, or query patterns before writing to or reading from the brain."
 type: reference
 version: 1.0.0
 preamble-tier: 2
@@ -10,7 +10,7 @@ triggers:
   - "brain folder structure"
 allowed-tools:
   - Bash
-  - Write
+  - Read
 ---
 # Brain Layout
 
@@ -44,6 +44,7 @@ Before any vector or FTS index ships, prefer **YAML frontmatter** on new decisio
 │       ├── tech-plans/
 │       │   ├── HUMAN_SIGNOFF.md            # After agent self-review + XALIGN: human approval / feedback / waiver before State 4b (see docs/tech-plan-human-signoff.template.md)
 │       │   └── <repo-name>.md
+│       ├── checkpoints/                    # Session checkpoints from context-save/context-restore
 │       └── eval/
 │
 ├── products/                              # All product, PRD, and delivery context

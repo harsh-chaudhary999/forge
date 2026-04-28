@@ -1,6 +1,6 @@
 ---
 name: self-heal-loop-cap
-description: "Max 3 retries per failure. Loop: locate → triage → fix → verify. After 3 tries, escalate (BLOCKED). Prevents infinite loops."
+description: "WHEN: A self-heal cycle is about to start its next retry. Enforces max 3 retries — locate → triage → fix → verify — then escalates BLOCKED."
 type: rigid
 requires: [brain-read]
 version: 1.0.0

@@ -46,10 +46,12 @@ def run_scan(
     skip_phase57: bool,
     do_cleanup: bool,
     phase57_write_report: bool,
+    incremental: bool,
 ) -> dict:
     from . import (
         cleanup,
         codebase_index,
+        edge_store,
         openapi_schema_digest,
         phase1,
         phase35,
@@ -60,6 +62,7 @@ def run_scan(
         repo_docs_mirror,
         scan_graph_export,
         scan_manifest,
+        scan_state,
         scan_paths,
         scan_summary,
         topology_reader,
@@ -90,38 +93,128 @@ def run_scan(
         validate_roles.run_validate_roles(product_md)
         topology = topology_reader.read_topology(product_md)
 
-    for i, (role, path) in enumerate(repos):
+    changed_by_role: dict[str, list[str]] = {}
+    role_scan_mode: dict[str, str] = {}
+    incremental_reasons: dict[str, str] = {}
+    previous_heads = scan_state.load_previous_heads(brain) if incremental else {}
+    if incremental:
+        for role, path in repos:
+            changed, reason = scan_state.detect_changed_paths(path, previous_heads.get(role))
+            incremental_reasons[role] = reason
+            if changed is None:
+                role_scan_mode[role] = "full_fallback"
+                changed_by_role[role] = []
+            elif not changed:
+                role_scan_mode[role] = "skip_no_changes"
+                changed_by_role[role] = []
+            else:
+                role_scan_mode[role] = "full_changed"
+                changed_by_role[role] = changed
+        changed_file = scan_state.write_changed_paths(run_dir, changed_by_role)
+        meta["incremental"] = {
+            "enabled": True,
+            "role_mode": role_scan_mode,
+            "reasons": incremental_reasons,
+            "changed_paths_file": str(changed_file),
+            "changed_files_n": sum(len(v) for v in changed_by_role.values()),
+        }
+        meta["incremental"]["change_profile"] = scan_state.summarize_changed_paths(changed_by_role)
+    else:
+        for role, _path in repos:
+            role_scan_mode[role] = "full"
+            changed_by_role[role] = []
+        meta["incremental"] = {
+            "enabled": False,
+            "role_mode": role_scan_mode,
+            "changed_files_n": 0,
+        }
+
+    any_role_scanned = False
+    scanned_idx = 0
+    for role, path in repos:
+        if role_scan_mode.get(role) == "skip_no_changes":
+            continue
         role_dir = scan_paths.role_scan_dir(run_dir, role)
+        any_role_scanned = True
         t0 = time.perf_counter()
         phase1.run_phase1(path, role_dir)
         timings[f"phase1:{role}"] = int((time.perf_counter() - t0) * 1000)
         t0 = time.perf_counter()
-        phase35.run_phase35(path, role_dir, run_dir, append_routes=(i > 0))
+        phase35.run_phase35(path, role_dir, run_dir, append_routes=(scanned_idx > 0))
         timings[f"phase35:{role}"] = int((time.perf_counter() - t0) * 1000)
         t0 = time.perf_counter()
         phase4.run_phase4(path, brain, role, role_dir, run_dir)
         timings[f"phase4:{role}"] = int((time.perf_counter() - t0) * 1000)
+        scanned_idx += 1
 
-    t0 = time.perf_counter()
-    openapi_schema_digest.write_digest(brain, repos)
-    timings["openapi_schema_digest"] = int((time.perf_counter() - t0) * 1000)
+    run_phase5_stack = True
+    if incremental and any_role_scanned:
+        if any(m == "full_fallback" for m in role_scan_mode.values()):
+            run_phase5_stack = True
+            meta["incremental"]["phase5_56_mode"] = "run_full_fallback"
+            meta["incremental"]["phase5_56_reason"] = (
+                "fallback_role_detected; cannot trust prior state"
+            )
+        else:
+            prof = meta.get("incremental", {}).get("change_profile")
+            if isinstance(prof, dict) and prof.get("phase5_required") is False:
+                run_phase5_stack = False
+                meta["incremental"]["phase5_56_mode"] = "skipped_by_profile"
+                meta["incremental"]["phase5_56_reason"] = (
+                    "no_phase5_inputs_detected (heuristic); keeping previous cross-repo edges"
+                )
+            else:
+                meta["incremental"]["phase5_56_mode"] = "run_full"
+                meta["incremental"]["phase5_56_reason"] = "phase5_inputs_changed_or_uncertain"
 
-    t0 = time.perf_counter()
-    phase5.run_phase5([p for _, p in repos], run_dir, topology=topology)
-    timings["phase5"] = int((time.perf_counter() - t0) * 1000)
-    t0 = time.perf_counter()
-    phase56.run_phase56(brain, run_dir, topology=topology)
-    timings["phase56"] = int((time.perf_counter() - t0) * 1000)
+    if any_role_scanned and run_phase5_stack:
+        t0 = time.perf_counter()
+        openapi_schema_digest.write_digest(brain, repos)
+        timings["openapi_schema_digest"] = int((time.perf_counter() - t0) * 1000)
 
-    t0 = time.perf_counter()
-    scan_graph_export.write_graph_json(brain)
-    timings["graph_export"] = int((time.perf_counter() - t0) * 1000)
+        t0 = time.perf_counter()
+        phase5.run_phase5([p for _, p in repos], run_dir, topology=topology)
+        timings["phase5"] = int((time.perf_counter() - t0) * 1000)
+        imp_tsv = run_dir / "forge_scan_ast_import_edges.tsv"
+        if imp_tsv.is_file():
+            (brain / "forge_scan_ast_import_edges.tsv").write_text(
+                imp_tsv.read_text(encoding="utf-8", errors="replace"),
+                encoding="utf-8",
+            )
+        t0 = time.perf_counter()
+        phase56.run_phase56(brain, run_dir, topology=topology)
+        timings["phase56"] = int((time.perf_counter() - t0) * 1000)
+
+        t0 = time.perf_counter()
+        scan_graph_export.write_graph_json(brain)
+        timings["graph_export"] = int((time.perf_counter() - t0) * 1000)
+        t0 = time.perf_counter()
+        edge_store.write_edge_store(brain)
+        timings["edge_store"] = int((time.perf_counter() - t0) * 1000)
+    elif any_role_scanned:
+        meta["incremental"]["skipped_phase5_stack"] = True
+    else:
+        meta["incremental"]["skipped_scan_phases"] = True
+
     t0 = time.perf_counter()
     scan_summary.write_scan_summary(brain, repos)
     timings["scan_summary"] = int((time.perf_counter() - t0) * 1000)
     t0 = time.perf_counter()
-    scan_manifest.write_manifest(brain, repos)
+    scan_manifest.write_manifest(
+        brain,
+        repos,
+        incremental_enabled=incremental,
+        changed_by_role=changed_by_role,
+    )
     timings["scan_manifest"] = int((time.perf_counter() - t0) * 1000)
+    t0 = time.perf_counter()
+    scan_state.write_state_file(
+        brain,
+        repos,
+        changed_by_role=changed_by_role,
+        incremental_enabled=incremental,
+    )
+    timings["scan_state"] = int((time.perf_counter() - t0) * 1000)
 
     t0 = time.perf_counter()
     codebase_index.write_codebase_index_md(brain, repos)
@@ -195,6 +288,7 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--skip-phase57", action="store_true")
     ap.add_argument("--phase57-write-report", action="store_true")
     ap.add_argument("--cleanup", action="store_true")
+    ap.add_argument("--incremental", action="store_true")
     args = ap.parse_args(argv)
 
     brain = args.brain_codebase.expanduser()
@@ -227,6 +321,12 @@ def main(argv: list[str] | None = None) -> None:
     else:
         pmd = None
 
+    env_incremental = os.environ.get("FORGE_SCAN_INCREMENTAL", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
     try:
         meta = run_scan(
             brain,
@@ -236,6 +336,7 @@ def main(argv: list[str] | None = None) -> None:
             skip_phase57=args.skip_phase57,
             do_cleanup=args.cleanup,
             phase57_write_report=args.phase57_write_report,
+            incremental=bool(args.incremental or env_incremental),
         )
     except SystemExit:
         raise

@@ -28,7 +28,7 @@ Skills from **`.agent/skills/`** (symlinks to **`skills/`**).
 **`AGENTS.md`** at session start
 
 ### GitHub Copilot CLI (Auto)
-Session-start hook; see **`references/copilot-tools.md`** for tool mapping
+Session-start hook; see **`docs/platforms/copilot-cli.md`** for tool mapping
 
 ### JetBrains AI (Manual)
 ```bash

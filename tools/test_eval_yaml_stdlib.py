@@ -33,6 +33,23 @@ steps:
         errs = ey.validate_eval_file_stdlib(y, "t.yaml")
         self.assertTrue(any("scenario" in e for e in errs))
 
+    def test_flow_style_steps_reported(self) -> None:
+        y = (
+            "scenario: s\n"
+            "steps:\n"
+            "  - {id: a, driver: api-http, action: call, expected: {status: 200}}\n"
+        )
+        errs = ey.validate_eval_file_stdlib(y, "t.yaml")
+        self.assertTrue(any("flow-style" in e for e in errs), errs)
+
+    def test_multi_document_supported(self) -> None:
+        y = (
+            "scenario: s1\nsteps:\n  - id: a\n    driver: x\n    action: y\n    expected:\n      k: 1\n"
+            "---\n"
+            "scenario: s2\nsteps:\n  - id: b\n    driver: x\n    action: y\n    expected:\n      k: 2\n"
+        )
+        self.assertEqual(ey.validate_eval_file_stdlib(y, "multi.yaml"), [])
+
 
 if __name__ == "__main__":
     unittest.main()

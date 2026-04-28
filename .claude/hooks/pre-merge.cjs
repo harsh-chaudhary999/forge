@@ -33,14 +33,20 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { execSync } = require('child_process');
 
 // Configuration
 const PROJECT_SLUG = process.argv[2] || 'unknown-project';
-const FORGE_ROOT = process.argv[3] || path.join(process.env.HOME || '/root', 'forge');
+const FORGE_ROOT = process.argv[3] || path.join(os.homedir(), 'forge');
 const BRANCH_NAME = process.argv[4] || '';
 const BRAIN_ROOT = path.join(FORGE_ROOT, 'brain');
 const PR_SET_FILE = path.join(BRAIN_ROOT, 'pr-set.md');
+const TASK_ID_RE = /task-[\w-]+/i;
+
+function escapeRegex(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 function log(message) {
   // Write to stderr so it appears in git merge output
@@ -91,9 +97,12 @@ function allowMerge() {
 // Extract task ID from branch name
 // Typical format: feature/task-123-description or bugfix/task-456-ui
 let taskId = '';
-const branchMatch = BRANCH_NAME.match(/task-(\d+)/);
+const envTask = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID || '';
+const branchMatch = BRANCH_NAME.match(TASK_ID_RE);
 if (branchMatch) {
   taskId = branchMatch[0]; // e.g., "task-123"
+} else if (envTask && TASK_ID_RE.test(envTask)) {
+  taskId = envTask.match(TASK_ID_RE)[0];
 }
 
 if (!taskId) {
@@ -103,7 +112,7 @@ if (!taskId) {
       encoding: 'utf-8',
       stdio: 'pipe'
     }).trim();
-    const commitMatch = lastCommit.match(/task-(\d+)/);
+    const commitMatch = lastCommit.match(TASK_ID_RE);
     if (commitMatch) {
       taskId = commitMatch[0];
     }
@@ -139,18 +148,21 @@ if (!prSetContent.includes(taskId)) {
 
 // Extract eval status for this task/project combination
 // Look for patterns like: "eval: green" or "eval: PASS" under the project section
-const projectSection = prSetContent.split(`### ${PROJECT_SLUG}`)[1];
-if (!projectSection) {
+const sectionRe = new RegExp(`###\\s+${escapeRegex(PROJECT_SLUG)}\\s*\\n([\\s\\S]*?)(?=\\n###\\s+|$)`, 'i');
+const sectionMatch = prSetContent.match(sectionRe);
+if (!sectionMatch) {
   blockMerge(`Project ${PROJECT_SLUG} not found in pr-set.md`);
 }
+const projectSection = sectionMatch[1];
 
-const taskSection = projectSection.split(taskId)[1];
-if (!taskSection) {
+const taskIdx = projectSection.indexOf(taskId);
+if (taskIdx < 0) {
   blockMerge(`Task ${taskId} not found for project ${PROJECT_SLUG} in pr-set.md`);
 }
+const taskSection = projectSection.slice(taskIdx);
 
-// Look for eval status in next 500 chars after task mention
-const statusCheck = taskSection.substring(0, 500);
+// Look for eval status in full task section (not a fixed window).
+const statusCheck = taskSection;
 const isGreen = /eval:\s*(green|pass|✅|OK)/i.test(statusCheck);
 const isRed = /eval:\s*(red|fail|❌|FAIL|NOT_OK)/i.test(statusCheck);
 

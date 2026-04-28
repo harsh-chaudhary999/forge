@@ -14,7 +14,7 @@ Example:
 from __future__ import annotations
 
 import argparse
-import os
+import re
 import sys
 from pathlib import Path
 
@@ -23,6 +23,9 @@ if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
 
 from phase_ledger import append_entry, build_entry  # noqa: E402
+from forge_paths import default_brain_root, sanitize_task_id  # noqa: E402
+
+_PHASE_RE = re.compile(r"^\[P\d(?:\.\d+)?(?:-[^\]]+)?\]$")
 
 
 def main() -> int:
@@ -39,27 +42,33 @@ def main() -> int:
         default="",
         help="Comma-separated paths relative to prds/<task-id>/ (e.g. eval/smoke.yaml)",
     )
+    p.add_argument(
+        "--artifact",
+        action="append",
+        default=[],
+        help="Single artifact relpath; may be repeated. Preferred over comma-separated --artifacts.",
+    )
     p.add_argument("--note", default=None)
     args = p.parse_args()
 
-    home = Path.home()
-    if args.brain:
-        brain = Path(args.brain).expanduser()
-    else:
-        brain = home / "forge" / "brain"
-        for key in ("FORGE_BRAIN", "FORGE_BRAIN_PATH"):
-            v = os.environ.get(key, "").strip()
-            if v:
-                brain = Path(v).expanduser()
-                break
-    task_dir = brain / "prds" / args.task_id
+    brain = Path(args.brain).expanduser() if args.brain else default_brain_root()
+    try:
+        task_id = sanitize_task_id(args.task_id)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    if not _PHASE_RE.match(args.phase.strip()):
+        print(f"ERROR: --phase must look like [P4.0-EVAL-YAML], got {args.phase!r}", file=sys.stderr)
+        return 1
+    task_dir = brain / "prds" / task_id
     if not task_dir.is_dir():
         print(f"ERROR: task dir missing: {task_dir}", file=sys.stderr)
         return 1
 
     rels = [x.strip() for x in str(args.artifacts).split(",") if x.strip()]
+    rels.extend([x.strip() for x in args.artifact if str(x).strip()])
     try:
-        entry = build_entry(args.task_id, args.phase, rels, task_dir, note=args.note)
+        entry = build_entry(task_id, args.phase, rels, task_dir, note=args.note)
         out = append_entry(task_dir, entry)
     except (OSError, ValueError, FileNotFoundError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

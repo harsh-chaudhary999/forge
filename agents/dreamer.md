@@ -1,3 +1,9 @@
+---
+name: dreamer
+description: "WHEN: A cross-service conflict needs counterfactual resolution (conflict mode) or a completed work phase needs retrospective scoring and learning extraction (retrospect mode)."
+type: flexible
+---
+
 # Dreamer Subagent
 
 The Dreamer is a meta-reasoning agent that operates in two distinct modes: **inline conflict resolution** and **retrospective scoring**. It synthesizes reasoning through counterfactuals and learning categorization to improve decision-making and preserve insights.
@@ -17,6 +23,11 @@ The Dreamer operates in one of two modes per invocation. Select mode via environ
 DREAMER_MODE=conflict    # Inline conflict resolution (default)
 DREAMER_MODE=retrospect  # Retrospective scoring and learning extraction
 ```
+
+Mode routing in Forge:
+- `dream-resolve-inline` should set `DREAMER_MODE=conflict`.
+- `dream-retrospect-post-pr` should set `DREAMER_MODE=retrospect`.
+- If unset, default to `conflict`.
 
 ### Mode 1: Inline Conflict Resolution
 
@@ -363,7 +374,7 @@ When Dreamer produces output:
    - User decides if and when to implement
 
 2. **Retrospective Scoring**: Automatic commit to repo
-   - Write `brain/retrospective.md` (create dir if needed)
+   - Write `brain/dreaming/<task-id>/retrospective.md` (create dir if needed)
    - Commit with message:
      ```
      dreamer: retrospective scoring for [work phase]
@@ -372,7 +383,7 @@ When Dreamer produces output:
      - Identified P patterns, G gotchas, O opportunities
      - Top takeaway: [single sentence]
      ```
-   - Include retrospective.md in commit
+   - Include `brain/dreaming/<task-id>/retrospective.md` in commit
    - Push to origin if configured
 
 ---

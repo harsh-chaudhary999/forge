@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -26,7 +27,9 @@ def _utc_now_iso() -> str:
 
 def file_sha256(path: Path) -> str:
     h = hashlib.sha256()
-    h.update(path.read_bytes())
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(65536), b""):
+            h.update(chunk)
     return h.hexdigest()
 
 
@@ -58,7 +61,10 @@ def build_entry(
         "artifacts": artifacts,
     }
     if note:
-        rec["note"] = str(note)[:2000]
+        note_text = str(note)
+        if len(note_text) > 2000:
+            warnings.warn("phase_ledger note truncated to 2000 characters", stacklevel=2)
+        rec["note"] = note_text[:2000]
     return rec
 
 
@@ -66,8 +72,17 @@ def append_entry(task_dir: Path, entry: dict[str, Any]) -> Path:
     path = task_dir / LEDGER_NAME
     line = json.dumps(entry, ensure_ascii=False, separators=(",", ":")) + "\n"
     path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        import fcntl  # type: ignore
+    except ImportError:  # pragma: no cover - non-POSIX
+        fcntl = None  # type: ignore[assignment]
     with path.open("a", encoding="utf-8") as f:
+        if fcntl is not None:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
         f.write(line)
+        if fcntl is not None:
+            f.flush()
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
     return path
 
 
@@ -151,7 +166,9 @@ def verify_ledger(
             if unsafe:
                 errs.append(f"{LEDGER_NAME} line {i} artifacts[{j}]: {unsafe}")
                 continue
-            assert fp is not None
+            if fp is None:
+                errs.append(f"{LEDGER_NAME} line {i} artifacts[{j}]: unresolved artifact path")
+                continue
             if verify_hashes:
                 if not fp.is_file():
                     errs.append(f"{LEDGER_NAME} line {i}: missing file {fp}")

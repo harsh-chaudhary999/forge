@@ -2,7 +2,7 @@
 name: eval-driver-search-es
 description: "WHEN: Eval scenario requires search index state verification. Eval driver for Elasticsearch via REST. Functions: connect(), index(doc), search(query), verify(assertion), teardown()."
 type: rigid
-requires: [brain-read]
+requires: [brain-read, eval-scenario-format]
 version: 1.0.0
 preamble-tier: 3
 triggers:

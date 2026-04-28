@@ -12,6 +12,7 @@ triggers:
   - "API endpoints spec"
 allowed-tools:
   - Bash
+  - Write
 ---
 
 # Contract-API-REST Skill

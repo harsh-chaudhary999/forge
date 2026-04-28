@@ -1,6 +1,6 @@
 ---
 name: tech-plan-self-review
-description: "WHEN: A per-project tech plan has been written and needs verification before dispatch to dev-implementer. **HARD-GATE:** Section 0c inventory + code recross **must** be written **into** each `tech-plans/<repo>.md` (FORGE-GATE HTML markers per **`tech-plan-write-per-project` Section 1c**) before **`REVIEW_PASS`** — chat-only review is **BLOCKED**. **First** inventory **every** material requirement from **`prd-locked.md`**, **`shared-dev-spec.md`**, and any other **task-bound development sources**; **then** verify Section 1b.0 ↔ Section 2 ↔ spec; **then** validate **`### 1b.2a`** touchpoint exploration (evidence + **Exploration notes**); **then** recross-check cited **`codebase/`** paths against the product repo; **then** fix gaps **in the plan** (new rows/tasks) or **CHANGES**; finally elaborative Section 1b–Section 1c, placeholders, code, commands, XALIGN. CI structure: **`python3 tools/verify_forge_task.py … --strict-tech-plans`**. CI semantic rails (optional): **`--strict-0c-inventory`** — rejects inventory **GAP** rows and **prd-locked-only** inventories when Confluence mirror, **touchpoints/**, or QA CSV exist (**`docs/forge-task-verification.md`**)."
+description: "WHEN: A per-project tech plan has been written and needs verification before dispatch to dev-implementer. HARD-GATE: Section 0c inventory, codebase path recross-check, and 1b.2a touchpoint evidence must be written into the plan file before REVIEW_PASS."
 type: rigid
 requires: [brain-read]
 version: 1.0.0

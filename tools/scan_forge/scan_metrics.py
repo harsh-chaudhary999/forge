@@ -71,6 +71,10 @@ def main(argv: list[str] | None = None) -> int:
             print("graph.json: present (unparseable)")
     else:
         print("graph.json: not found")
+    es = brain / "forge_scan_edges.sqlite"
+    print(f"forge_scan_edges.sqlite: {'present' if es.is_file() else 'not found'}")
+    state = brain / ".forge_scan_file_state.json"
+    print(f".forge_scan_file_state.json: {'present' if state.is_file() else 'not found'}")
 
     manifest = brain / ".forge_scan_manifest.json"
     print(f".forge_scan_manifest.json: {'present' if manifest.is_file() else 'not found'}")

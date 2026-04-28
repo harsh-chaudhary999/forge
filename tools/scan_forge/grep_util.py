@@ -35,6 +35,12 @@ def filter_grep_lines(stdout: str, repo: Path) -> str:
             continue
         if "/dist/" in line or "/build/" in line or "/target/" in line:
             continue
+        if "/tmp/" in line or "/temp/" in line or "/.tmp/" in line:
+            continue
+        if "/.cache/" in line or "/.gradle/" in line:
+            continue
+        if "/generated/" in line:
+            continue
         if "/.next/" in line:
             continue
         if "/.git/" in line:

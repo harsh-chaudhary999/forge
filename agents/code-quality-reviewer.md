@@ -1,3 +1,9 @@
+---
+name: code-quality-reviewer
+description: "WHEN: spec-reviewer has passed and a Phase 2 code quality audit is needed across maintainability, testing, performance, security, and observability dimensions."
+type: rigid
+---
+
 # Code Quality Reviewer Subagent
 
 ## Purpose
@@ -102,7 +108,7 @@ Reviews code quality assuming the specification is met. Evaluates code against q
    - Import statements organized (standard library → third-party → local)
    - **Phase 4**: Dependencies documented and minimal
 
-### 9. Performance Review (NEW)
+### 9. Performance Review
 
 - **Algorithm Complexity**
   - No obvious inefficiencies (O(n²) where O(n) possible)
@@ -129,7 +135,7 @@ Reviews code quality assuming the specification is met. Evaluates code against q
   
 - **Threshold**: Latency reasonable for declared purpose, throughput supports expected load
 
-### 10. Security Review (NEW)
+### 10. Security Review
 
 - **Input Validation**
   - User inputs validated before use (not trusted)
@@ -163,7 +169,7 @@ Reviews code quality assuming the specification is met. Evaluates code against q
   
 - **Threshold**: No critical security issues, reasonable security posture for service type
 
-### 11. Observability Review (NEW)
+### 11. Observability Review
 
 - **Logging**
   - Important operations logged (user actions, errors, state changes)

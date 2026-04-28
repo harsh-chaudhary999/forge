@@ -11,7 +11,7 @@ triggers:
   - "event bus spec"
   - "message schema"
 allowed-tools:
-  - Edit
+  - Write
 ---
 
 # Contract Event Bus Skill

@@ -14,6 +14,10 @@ allowed-tools:
 
 # Using Forge
 
+## Invocation Model
+
+This skill is auto-loaded by the session-start hook. Do not manually invoke it as a task skill; treat it as baseline session policy context.
+
 ## The 1% Rule
 
 If there's even a 1% chance a Forge skill might apply, you absolutely must invoke it. This is not negotiable.

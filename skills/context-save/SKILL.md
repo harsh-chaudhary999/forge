@@ -16,7 +16,7 @@ allowed-tools:
 
 # context-save
 
-Captures current working state to a structured checkpoint file. Read-only to the codebase — only writes to `~/.forge/`.
+Captures current working state to a structured checkpoint file under the Forge brain so it is auditable and shareable across sessions/subagents.
 
 ## Anti-Pattern Preamble
 
@@ -44,7 +44,13 @@ SLUG=$(git remote get-url origin 2>/dev/null \
   | sed 's/.*[:/]\([^/]*\)$/\1/')
 [ -z "$SLUG" ] && SLUG=$(basename "$(git rev-parse --show-toplevel)")
 
-DIR="$HOME/.forge/projects/$SLUG/checkpoints"
+TASK_ID="${FORGE_TASK_ID:-${FORGE_PRD_TASK_ID:-}}"
+if [ -z "$TASK_ID" ]; then
+  echo "No FORGE_TASK_ID set. Set FORGE_TASK_ID (or FORGE_PRD_TASK_ID) before listing checkpoints."
+  exit 1
+fi
+
+DIR="$HOME/forge/brain/prds/$TASK_ID/checkpoints"
 if [ ! -d "$DIR" ] || [ -z "$(ls -A "$DIR" 2>/dev/null)" ]; then
   echo "No checkpoints found for $SLUG. Run /context-save first."
 else
@@ -94,7 +100,13 @@ FILENAME="${FILETIMESTAMP}-${CLEAN_TITLE}-${SUFFIX}.md"
 **Step 4 — Create checkpoint directory:**
 
 ```bash
-CHECKPOINT_DIR="$HOME/.forge/projects/$SLUG/checkpoints"
+TASK_ID="${FORGE_TASK_ID:-${FORGE_PRD_TASK_ID:-}}"
+if [ -z "$TASK_ID" ]; then
+  echo "No FORGE_TASK_ID set. Set FORGE_TASK_ID (or FORGE_PRD_TASK_ID) before saving checkpoints."
+  exit 1
+fi
+
+CHECKPOINT_DIR="$HOME/forge/brain/prds/$TASK_ID/checkpoints"
 mkdir -p "$CHECKPOINT_DIR"
 ```
 
@@ -139,6 +151,6 @@ CONTEXT SAVED
 Title:    <CLEAN_TITLE>
 Branch:   <BRANCH>
 Commit:   <COMMIT (first 8 chars)>
-Path:     ~/.forge/projects/<SLUG>/checkpoints/<FILENAME>
+Path:     ~/forge/brain/prds/<TASK_ID>/checkpoints/<FILENAME>
 Modified: <MODIFIED> files
 ```

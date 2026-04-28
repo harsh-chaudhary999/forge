@@ -75,7 +75,7 @@ def run_phase4(
         if not p.is_file() or p.stat().st_size == 0:
             log.log_warn(f"input_missing_or_empty path={p} hint=run_phase1_first")
 
-    for d in ("classes", "methods", "functions", "pages", "modules"):
+    for d in ("classes", "methods", "functions", "pages", "files", "modules"):
         (brain_dir / d).mkdir(parents=True, exist_ok=True)
 
     skipped = 0
@@ -143,8 +143,22 @@ def run_phase4(
     print(f"  Written: {pages} page nodes")
 
     print()
+    print("[4.3f] Generating source-file coverage nodes from forge_scan_source_files.txt...")
+    n_src = len(sources_path.read_text(encoding="utf-8", errors="replace").splitlines()) if sources_path.is_file() else 0
+    print(f"  Input: {n_src} source files")
+    files, skipped = stub_writers.write_file_stubs(brain_dir, repo, role, sources_path, skipped)
+    print(f"  Written: {files} file nodes")
+
+    print()
     print("[4.3b] Generating module scaffold nodes from source directory structure...")
-    modules, skipped = stub_writers.write_module_scaffolds(brain_dir, repo, role, sources_path, skipped)
+    modules, skipped = stub_writers.write_module_scaffolds(
+        brain_dir,
+        repo,
+        role,
+        sources_path,
+        [types_path, funcs_path, methods_path],
+        skipped,
+    )
     print(f"  Written: {modules} module scaffold nodes")
 
     n_en = 0
@@ -155,7 +169,7 @@ def run_phase4(
             print(f"[4.4] Enriched {n_en} module note(s) with HTTP routes from route inventory")
         log.log_stat(f"phase=4.4 route_module_enrich_updated={n_en}")
 
-    total = classes + methods + functions + pages + modules
+    total = classes + methods + functions + pages + files + modules
     print()
     print("════════════════════════════════════════════════════════")
     print("PHASE 4 AUTO-GENERATION COMPLETE")
@@ -164,6 +178,7 @@ def run_phase4(
     print(f"  Methods     (methods/):     {methods}")
     print(f"  Functions   (functions/): {functions}")
     print(f"  Pages       (pages/):     {pages}")
+    print(f"  Files       (files/):     {files}")
     print(f"  Modules     (modules/):   {modules}")
     print(f"  Skipped (already exist):  {skipped}")
     print("════════════════════════════════════════════════════════")
@@ -172,6 +187,6 @@ def run_phase4(
     scan_metadata.merge_scan_json(brain_dir, repo, role, scan_tmp)
     print(f"SCAN.json updated under {brain_dir}")
     log.log_done(
-        f"classes={classes} methods={methods} functions={functions} pages={pages} modules={modules} "
+        f"classes={classes} methods={methods} functions={functions} pages={pages} files={files} modules={modules} "
         f"skipped_existing={skipped} total_new={total}",
     )

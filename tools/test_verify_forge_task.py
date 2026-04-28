@@ -109,5 +109,18 @@ steps:
             self.assertTrue(any("parse" in e.lower() for e in errs))
 
 
+class TestVerifyDetailed(unittest.TestCase):
+    def test_invalid_task_id_fails_fast(self) -> None:
+        errs, warns = vft.verify_detailed(
+            brain=Path("/tmp"),
+            task_id="../bad",
+            product_slug=None,
+            strict_tdd=False,
+            require_log=False,
+        )
+        self.assertTrue(errs)
+        self.assertEqual(warns, [])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -68,9 +68,11 @@ fi
 ```bash
 BASE_URL="<user-provided URL>"
 TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
+BODY_FILE=$(mktemp)
+trap 'rm -f "$BODY_FILE"' EXIT
 
 # Measure TTFB, total time, and response size
-METRICS=$(curl -s -o /tmp/bench_body.txt -w "%{time_starttransfer}|%{time_total}|%{size_download}" "$BASE_URL" --max-time 30 2>/dev/null)
+METRICS=$(curl -s -o "$BODY_FILE" -w "%{time_starttransfer}|%{time_total}|%{size_download}" "$BASE_URL" --max-time 30 2>/dev/null)
 TTFB=$(echo "$METRICS" | cut -d'|' -f1)
 TOTAL=$(echo "$METRICS" | cut -d'|' -f2)
 SIZE=$(echo "$METRICS" | cut -d'|' -f3)
@@ -121,8 +123,10 @@ fi
 BASE_TTFB=$(grep "^ttfb_s:" "$BASELINE" | awk '{print $2}')
 BASE_TOTAL=$(grep "^total_s:" "$BASELINE" | awk '{print $2}')
 BASE_SIZE=$(grep "^size_bytes:" "$BASELINE" | awk '{print $2}')
+BODY_FILE=$(mktemp)
+trap 'rm -f "$BODY_FILE"' EXIT
 
-METRICS=$(curl -s -o /tmp/bench_body.txt -w "%{time_starttransfer}|%{time_total}|%{size_download}" "$BASE_URL" --max-time 30 2>/dev/null)
+METRICS=$(curl -s -o "$BODY_FILE" -w "%{time_starttransfer}|%{time_total}|%{size_download}" "$BASE_URL" --max-time 30 2>/dev/null)
 CUR_TTFB=$(echo "$METRICS" | cut -d'|' -f1)
 CUR_TOTAL=$(echo "$METRICS" | cut -d'|' -f2)
 CUR_SIZE=$(echo "$METRICS" | cut -d'|' -f3)
@@ -158,6 +162,63 @@ else:
 
 ```bash
 TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
-# Write result file to $BENCH_DIR/${TIMESTAMP}-check.md with verdict (PASS/REGRESSION)
-# Output summary table comparing current vs baseline for each metric
+VERDICT=$(
+python3 -c "
+ttfb_base, ttfb_cur = float('$BASE_TTFB'), float('$CUR_TTFB')
+total_base, total_cur = float('$BASE_TOTAL'), float('$CUR_TOTAL')
+size_base, size_cur = float('$BASE_SIZE'), float('$CUR_SIZE')
+regression = (
+    ttfb_cur > ttfb_base * 1.5 or ttfb_cur > 0.5 or
+    total_cur > total_base * 1.5 or total_cur > 2.0 or
+    (size_base > 0 and size_cur > size_base * 1.25)
+)
+print('REGRESSION' if regression else 'PASS')
+"
+)
+
+TTFB_PCT=$(
+python3 -c "
+base, cur = float('$BASE_TTFB'), float('$CUR_TTFB')
+print('n/a' if base == 0 else f'{((cur-base)/base)*100:.1f}%')
+"
+)
+TOTAL_PCT=$(
+python3 -c "
+base, cur = float('$BASE_TOTAL'), float('$CUR_TOTAL')
+print('n/a' if base == 0 else f'{((cur-base)/base)*100:.1f}%')
+"
+)
+SIZE_PCT=$(
+python3 -c "
+base, cur = float('$BASE_SIZE'), float('$CUR_SIZE')
+print('n/a' if base == 0 else f'{((cur-base)/base)*100:.1f}%')
+"
+)
+
+cat > "$BENCH_DIR/${TIMESTAMP}-check.md" << EOF
+---
+type: check
+url: $BASE_URL
+timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+baseline_file: $(basename "$BASELINE")
+baseline_ttfb_s: $BASE_TTFB
+baseline_total_s: $BASE_TOTAL
+baseline_size_bytes: $BASE_SIZE
+current_ttfb_s: $CUR_TTFB
+current_total_s: $CUR_TOTAL
+current_size_bytes: $CUR_SIZE
+verdict: $VERDICT
+---
+# Benchmark Check
+| Metric | Baseline | Current | Delta |
+|---|---:|---:|---:|
+| TTFB (s) | $BASE_TTFB | $CUR_TTFB | $TTFB_PCT |
+| Total (s) | $BASE_TOTAL | $CUR_TOTAL | $TOTAL_PCT |
+| Size (bytes) | $BASE_SIZE | $CUR_SIZE | $SIZE_PCT |
+
+Verdict: $VERDICT
+EOF
+
+echo "Result saved: $BENCH_DIR/${TIMESTAMP}-check.md"
+echo "Verdict: $VERDICT"
 ```

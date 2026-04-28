@@ -1,7 +1,6 @@
 ---
 name: scan
 description: Map an existing codebase into the Forge brain. Produces an Obsidian-format knowledge graph — module relationships, architecture patterns, API surface, and documented edge cases. Zero-token structural phase first, targeted reads only for architectural hubs.
-trigger: /scan
 ---
 
 # /scan
@@ -103,7 +102,7 @@ Run the scan-codebase skill for each project role. Process roles in this order:
 2. `shared` / `lib` (often imported by everything)
 3. `web` / `mobile` (consumer layers)
 
-**Runner (multi-repo — see `scan-codebase` SKILL):** one invocation with **`forge_scan.py`** and `--brain-codebase`, `--repos role:path …`, optional `--product-md`, optional `--phase57-write-report`, optional **`--cleanup`**. Phases 1 → 3.5 → 4 → 5 → 56 → 57 run in order inside `tools/scan_forge/`. See `tools/README.md`.
+**Runner (multi-repo — see `scan-codebase` SKILL):** one invocation with **`forge_scan.py`** and `--brain-codebase`, `--repos role:path …`, optional `--product-md`, optional `--phase57-write-report`, optional **`--cleanup`**, optional **`--incremental`** (or `FORGE_SCAN_INCREMENTAL=1`). Phases 1 → 3.5 → 4 → 5 → 56 → 57 run in order inside `tools/scan_forge/`; in incremental mode, unchanged roles may skip phase 1/3.5/4 and still regenerate summaries/manifest/state. See `tools/README.md`.
 
 **Which `forge_scan.py`:** Prefer **`python3 tools/forge_scan.py`** when the workspace is a Forge git checkout and **`tools/forge_scan.py`** exists. Otherwise call the scanner from the merged plugin **`tools/`** tree (copied by **`install.sh`**):
 - **Cursor:** `python3 "$HOME/.cursor/plugins/local/forge/tools/forge_scan.py"`
@@ -127,6 +126,19 @@ python3 tools/verify_scan_outputs.py ~/forge/brain/products/<slug>/codebase
 
 - **If this fails after 3 tries:** Do **not** print “scan complete.” Full re-scan: **fresh `--run-dir`**, correct **`--brain-codebase`**, **`backend` first** in `--repos`, install scan deps if needed, then Step 3b again. Log `[SCAN-VERIFY] status=FAIL` with the last script stdout.
 - **If OK:** Log `[SCAN-VERIFY] status=OK` and continue to Step 4.
+
+**Incremental artifacts to inspect when `--incremental` is used:**
+
+- `<run_dir>/changed_paths.txt` — role-scoped changed paths selected for this run.
+- `<brain-codebase>/.forge_scan_file_state.json` — per-role `head`, `tree`, tracked blob SHAs, untracked relevant files.
+- `<brain-codebase>/.forge_scan_manifest.json` — includes incremental metadata and changed-path sample.
+- `<run_dir>/run.json` (`incremental.phase5_56_mode`, `incremental.phase5_56_reason`) — explains why cross-repo recompute ran or was skipped.
+
+**Incremental fallback guidance (conservative by default):**
+
+- If any role is `full_fallback`, treat the run as low-confidence and expect full phase5/56 recompute.
+- If `phase5_56_mode=skipped_by_profile`, verify `graph.json` and `cross-repo-automap.md` still exist from prior full runs.
+- If `phase5_56_mode=run_full_fallback`, it indicates state uncertainty (for example, missing previous head) and is expected.
 
 ---
 
@@ -153,6 +165,15 @@ Token usage: ~<N>K tokens (<well-within budget> / over budget — see concerns b
 
 Ready to plan? Run: /intake
 ```
+
+**Optional post-scan analysis tools (no change to HARD-GATE):**
+
+- Local search over brain artifacts: `python3 tools/forge_codebase_search.py --brain-codebase <codebase> --query "auth middleware"`
+- SQL on regenerated edge store: `python3 -m scan_forge.query_repl --brain-codebase <codebase> --sql "select kind,count(*) from edges group by kind"`
+- Import edge extraction (opt-in at scan time): `FORGE_SCAN_AST_IMPORTS=1 python3 tools/forge_scan.py ...`
+  - Provenance tiers in `forge_scan_ast_import_edges.tsv`: `AST_STRONG`, `AST_WEAK`, `HEURISTIC`
+  - `graph.json` import edges include confidence-qualified rows only (`AST_STRONG`/`AST_WEAK`)
+- Benchmark gates/report: `python3 tools/scan_bench.py --output-json tools/scan_bench.ci.json --output-md tools/scan_bench.ci.md`
 
 **On re-scan, also show a diff summary:**
 

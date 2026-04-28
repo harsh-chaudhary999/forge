@@ -31,3 +31,14 @@ def forge_page_node_basename_from_rel(role: str, rel: str) -> str:
         slug = slug.replace("--", "-")
     slug = slug.strip("-").lower()
     return f"{role}-{slug}"
+
+
+def forge_file_node_basename_from_rel(role: str, rel: str) -> str:
+    """Stable basename for source-file nodes under files/."""
+    r = rel.replace("\\", "/").strip("/")
+    slug = r.replace("/", "-").replace(".", "-")
+    slug = re.sub(r"[^a-zA-Z0-9_-]+", "-", slug)
+    while "--" in slug:
+        slug = slug.replace("--", "-")
+    slug = slug.strip("-").lower()
+    return f"{role}-{slug}"

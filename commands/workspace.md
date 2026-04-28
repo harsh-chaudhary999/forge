@@ -1,7 +1,6 @@
 ---
 name: workspace
 description: Initialize or open a Forge workspace. Point it at any folder — it scans for git repos, infers roles from folder names, detects languages, runs a deploy/runbook gate (README or user-provided doc), then builds product.md. No manual merge-order config needed.
-trigger: /workspace
 ---
 
 # /workspace

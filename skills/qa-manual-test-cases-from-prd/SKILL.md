@@ -12,6 +12,7 @@ triggers:
   - "create QA CSV"
 allowed-tools:
   - Bash
+  - Write
 ---
 
 # Manual QA Test Cases from PRD (CSV)

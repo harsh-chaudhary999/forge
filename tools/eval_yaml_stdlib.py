@@ -13,24 +13,17 @@ from pathlib import Path
 
 
 def _strip_yaml_comments(text: str) -> str:
+    """
+    Remove full-line comments only.
+
+    This avoids brittle quote-state parsing and matches Forge eval style, which is
+    block YAML with occasional full-line comments.
+    """
     out: list[str] = []
     for line in text.splitlines():
         stripped = line.lstrip()
         if stripped.startswith("#"):
             continue
-        if "#" in line:
-            in_single = False
-            in_double = False
-            cut = len(line)
-            for i, ch in enumerate(line):
-                if ch == "'" and not in_double:
-                    in_single = not in_single
-                elif ch == '"' and not in_single:
-                    in_double = not in_double
-                elif ch == "#" and not in_single and not in_double:
-                    cut = i
-                    break
-            line = line[:cut].rstrip()
         out.append(line)
     return "\n".join(out)
 
@@ -38,6 +31,13 @@ def _strip_yaml_comments(text: str) -> str:
 def validate_eval_file_stdlib(raw: str, label: str) -> list[str]:
     """Return error strings; empty = pass."""
     errs: list[str] = []
+    docs = re.split(r"(?m)^\s*---\s*$", raw)
+    substantive_docs = [d for d in docs if d.strip()]
+    if len(substantive_docs) > 1:
+        for di, doc in enumerate(substantive_docs, start=1):
+            errs.extend(validate_eval_file_stdlib(doc, f"{label} (document {di})"))
+        return errs
+
     text = _strip_yaml_comments(raw)
     if not text.strip():
         return [f"{label}: empty after stripping comments"]
@@ -48,8 +48,15 @@ def validate_eval_file_stdlib(raw: str, label: str) -> list[str]:
     if not re.search(r"(?m)^\s*steps:\s*(#.*)?$", text):
         errs.append(f"{label}: missing top-level 'steps:' (stdlib check)")
 
+    if re.search(r"(?m)^\s*-\s*\{[^}]*\bid\s*:", text):
+        errs.append(
+            f"{label}: flow-style step objects detected; stdlib validator supports block YAML only "
+            "(install PyYAML for full-fidelity validation)"
+        )
+        return errs
+
     # Steps: collect blocks starting at "  - id:" (list item under steps)
-    step_starts = list(re.finditer(r"(?m)^(\s*)-\s+id:\s*(\S.+)?$", text))
+    step_starts = list(re.finditer(r"(?m)^(\s*)-\s+id:\s*(\S.*)?$", text))
     if not step_starts:
         errs.append(f"{label}: no list steps with '- id:' found (stdlib check)")
         return errs

@@ -78,6 +78,7 @@ mkdir -p "$CANARY_DIR"
 
 cat > "$CANARY_DIR/${TIMESTAMP}-baseline.md" << EOF
 ---
+# output-file type for canary artifacts (not SKILL frontmatter type)
 type: baseline
 url: $BASE_URL
 timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -140,6 +141,7 @@ Wait 60 seconds between checks (output a countdown notice to the user).
 TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
 cat > "$CANARY_DIR/${TIMESTAMP}-watch.md" << EOF
 ---
+# output-file type for canary artifacts (not SKILL frontmatter type)
 type: watch
 url: $BASE_URL
 timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")

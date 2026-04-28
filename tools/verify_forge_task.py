@@ -53,7 +53,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import sys
 from pathlib import Path
@@ -63,18 +62,9 @@ if str(_TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(_TOOLS_DIR))
 
 from eval_yaml_stdlib import validate_eval_dir_stdlib
+from forge_paths import default_brain_root, sanitize_task_id
 from phase_ledger import LEDGER_NAME, verify_ledger
 from shared_spec_policy import validate_shared_spec
-
-
-def _default_brain_root() -> Path:
-    """Honor FORGE_BRAIN or FORGE_BRAIN_PATH (same semantics), then ~/forge/brain."""
-    home = Path.home()
-    for key in ("FORGE_BRAIN", "FORGE_BRAIN_PATH"):
-        v = os.environ.get(key, "").strip()
-        if v:
-            return Path(v).expanduser()
-    return home / "forge" / "brain"
 
 
 def _validate_single_eval_document(data: object, label: str) -> list[str]:
@@ -284,11 +274,16 @@ def _run_verify_tech_plans(
     import importlib.util
 
     path = Path(__file__).resolve().parent / "verify_tech_plans.py"
+    if not path.is_file():
+        return [f"Cannot load tech plan verifier: missing file {path}"]
     spec = importlib.util.spec_from_file_location("_forge_verify_tech_plans", path)
     if spec is None or spec.loader is None:
         return [f"Cannot load tech plan verifier from {path}"]
     mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    try:
+        spec.loader.exec_module(mod)
+    except Exception as exc:
+        return [f"Cannot execute tech plan verifier from {path}: {exc}"]
     return mod.verify_tech_plans(brain, task_id, strict_0c_inventory=strict_0c_inventory)
 
 
@@ -427,13 +422,60 @@ def verify(
     strict_tech_plans: bool = False,
     strict_0c_inventory: bool = False,
 ) -> list[str]:
+    errors, _warnings = verify_detailed(
+        brain=brain,
+        task_id=task_id,
+        product_slug=product_slug,
+        strict_tdd=strict_tdd,
+        require_log=require_log,
+        gates_dir=gates_dir,
+        validate_eval_yaml=validate_eval_yaml,
+        check_prd_sections=check_prd_sections,
+        check_shared_spec=check_shared_spec,
+        shared_spec_path=shared_spec_path,
+        shared_spec_checklist=shared_spec_checklist,
+        validate_phase_ledger=validate_phase_ledger,
+        require_phase_ledger=require_phase_ledger,
+        phase_ledger_verify_hashes=phase_ledger_verify_hashes,
+        require_conductor_timestamps=require_conductor_timestamps,
+        strict_single_task_brain=strict_single_task_brain,
+        strict_tech_plans=strict_tech_plans,
+        strict_0c_inventory=strict_0c_inventory,
+    )
+    return errors
+
+
+def verify_detailed(
+    brain: Path,
+    task_id: str,
+    product_slug: str | None,
+    strict_tdd: bool,
+    require_log: bool,
+    gates_dir: Path | None = None,
+    validate_eval_yaml: bool = False,
+    check_prd_sections: bool = False,
+    check_shared_spec: bool = False,
+    shared_spec_path: Path | None = None,
+    shared_spec_checklist: Path | None = None,
+    validate_phase_ledger: bool = False,
+    require_phase_ledger: bool = False,
+    phase_ledger_verify_hashes: bool = False,
+    require_conductor_timestamps: bool = False,
+    strict_single_task_brain: bool = False,
+    strict_tech_plans: bool = False,
+    strict_0c_inventory: bool = False,
+) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     warnings: list[str] = []
+    try:
+        task_id = sanitize_task_id(task_id)
+    except ValueError as exc:
+        return [str(exc)], []
 
     task_dir = brain / "prds" / task_id
     if not task_dir.is_dir():
         errors.append(f"Task directory missing: {task_dir}")
-        return errors
+        return errors, warnings
 
     prd_locked = task_dir / "prd-locked.md"
     slug, product_md = _resolve_product_slug(brain, prd_locked, product_slug)
@@ -620,9 +662,6 @@ def verify(
     errors.extend(m_errs)
     warnings.extend(m_warns)
 
-    for w in warnings:
-        print(f"WARN: {w}", file=sys.stderr)
-
     if slug and product_md:
         print(f"INFO: Using product slug={slug!r} ({product_md})", file=sys.stderr)
 
@@ -640,7 +679,7 @@ def verify(
                 )
             )
 
-    return errors
+    return errors, warnings
 
 
 def main() -> int:
@@ -755,7 +794,12 @@ def main() -> int:
     )
     args = p.parse_args()
 
-    brain = Path(args.brain).expanduser() if args.brain else _default_brain_root()
+    brain = Path(args.brain).expanduser() if args.brain else default_brain_root()
+    try:
+        task_id = sanitize_task_id(args.task_id)
+    except ValueError as exc:
+        print(f"Forge task verification FAILED:\n  - {exc}", file=sys.stderr)
+        return 1
 
     gates_dir = Path(args.gates_dir).expanduser() if args.gates_dir else None
     shared_spec_path = Path(args.shared_spec_path).expanduser() if args.shared_spec_path else None
@@ -765,9 +809,9 @@ def main() -> int:
 
     strict_single = bool(args.strict_single_task_brain and not args.allow_multi_task_brain)
 
-    errs = verify(
+    errs, warns = verify_detailed(
         brain=brain,
-        task_id=args.task_id,
+        task_id=task_id,
         product_slug=args.product,
         strict_tdd=args.strict_tdd,
         require_log=args.require_log,
@@ -785,12 +829,14 @@ def main() -> int:
         strict_tech_plans=bool(args.strict_tech_plans or args.strict_0c_inventory),
         strict_0c_inventory=args.strict_0c_inventory,
     )
+    for w in warns:
+        print(f"WARN: {w}", file=sys.stderr)
     if errs:
         print("Forge task verification FAILED:", file=sys.stderr)
         for e in errs:
             print(f"  - {e}", file=sys.stderr)
         return 1
-    print(f"OK: task {args.task_id!r} under {brain}")
+    print(f"OK: task {task_id!r} under {brain}")
     return 0
 
 

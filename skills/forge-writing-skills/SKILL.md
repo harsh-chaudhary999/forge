@@ -10,6 +10,7 @@ triggers:
   - "how to write a skill"
   - "skill writing rules"
 allowed-tools:
+  - Read
   - Write
 ---
 
@@ -108,7 +109,8 @@ Before writing the skill, try to break it.
 ---
 name: {skill-name}             # kebab-case, matches directory name
 description: "WHEN: {exact trigger condition}. {What happens + what comes out}."
-type: rigid | flexible | reference
+type: {skill-type}
+# valid type values: rigid | flexible | reference
 requires: [dependency-skill-1, dependency-skill-2]
 ---
 ```

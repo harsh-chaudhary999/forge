@@ -12,6 +12,7 @@ triggers:
 allowed-tools:
   - Bash
   - Read
+  - Write
 ---
 
 # Dream Retrospect Post-PR

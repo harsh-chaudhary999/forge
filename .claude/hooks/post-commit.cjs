@@ -49,11 +49,12 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const os = require('os');
+const { execSync, spawnSync } = require('child_process');
 
 // Configuration
 const PROJECT_SLUG = process.argv[2] || 'unknown-project';
-const FORGE_ROOT = process.argv[3] || path.join(process.env.HOME || '/root', 'forge');
+const FORGE_ROOT = process.argv[3] || path.join(os.homedir(), 'forge');
 const BRAIN_ROOT = path.join(FORGE_ROOT, 'brain');
 const INBOX_DIR = path.join(BRAIN_ROOT, 'inbox');
 
@@ -66,9 +67,7 @@ function log(message) {
 }
 
 function die(message) {
-  if (process.env.FORGE_HOOKS_DEBUG === '1') {
-    console.error(`ERROR: ${message}`);
-  }
+  console.error(`ERROR: ${message}`);
   process.exit(1);
 }
 
@@ -97,6 +96,13 @@ let commitAuthor = '';
 let commitDate = '';
 let filesChanged = [];
 
+function runGit(args) {
+  return spawnSync('git', args, {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+}
+
 try {
   // Get HEAD commit info
   commitSha = execSync('git rev-parse HEAD', {
@@ -110,28 +116,32 @@ try {
   }
 
   // Get commit message
-  commitMessage = execSync(`git log -1 --format=%B "${commitSha}"`, {
-    encoding: 'utf-8',
-    stdio: 'pipe'
-  }).trim();
+  const msgRes = runGit(['log', '-1', '--format=%B', 'HEAD']);
+  if (msgRes.status !== 0) {
+    throw new Error((msgRes.stderr || '').trim() || 'failed to read commit message');
+  }
+  commitMessage = (msgRes.stdout || '').trim();
 
   // Get author
-  commitAuthor = execSync(`git log -1 --format=%an "${commitSha}"`, {
-    encoding: 'utf-8',
-    stdio: 'pipe'
-  }).trim();
+  const authorRes = runGit(['log', '-1', '--format=%an', commitSha]);
+  if (authorRes.status !== 0) {
+    throw new Error((authorRes.stderr || '').trim() || 'failed to read commit author');
+  }
+  commitAuthor = (authorRes.stdout || '').trim();
 
   // Get commit date
-  commitDate = execSync(`git log -1 --format=%aI "${commitSha}"`, {
-    encoding: 'utf-8',
-    stdio: 'pipe'
-  }).trim();
+  const dateRes = runGit(['log', '-1', '--format=%aI', commitSha]);
+  if (dateRes.status !== 0) {
+    throw new Error((dateRes.stderr || '').trim() || 'failed to read commit date');
+  }
+  commitDate = (dateRes.stdout || '').trim();
 
   // Get list of changed files
-  const fileList = execSync(`git diff-tree --no-commit-id --name-only -r "${commitSha}"`, {
-    encoding: 'utf-8',
-    stdio: 'pipe'
-  }).trim();
+  const filesRes = runGit(['diff-tree', '--no-commit-id', '--name-only', '-r', commitSha]);
+  if (filesRes.status !== 0) {
+    throw new Error((filesRes.stderr || '').trim() || 'failed to list changed files');
+  }
+  const fileList = (filesRes.stdout || '').trim();
 
   filesChanged = fileList ? fileList.split('\n').filter(f => f.length > 0) : [];
 } catch (e) {
@@ -166,15 +176,15 @@ ${filesChanged.map(f => `- ${f}`).join('\n')}
 
 ## Raw Metadata
 \`\`\`json
-{
-  "repo": "${PROJECT_SLUG}",
-  "sha": "${commitSha}",
-  "short_sha": "${shortSha}",
-  "author": "${commitAuthor}",
-  "date": "${commitDate}",
-  "message_first_line": "${commitMessage.split('\n')[0].replace(/"/g, '\\"')}",
-  "files_count": ${filesChanged.length}
-}
+${JSON.stringify({
+  repo: PROJECT_SLUG,
+  sha: commitSha,
+  short_sha: shortSha,
+  author: commitAuthor,
+  date: commitDate,
+  message_first_line: commitMessage.split('\n')[0] || '',
+  files_count: filesChanged.length,
+}, null, 2)}
 \`\`\`
 `;
 
@@ -221,6 +231,10 @@ function writeGateArtifact(gateId, taskId, logLine, conductorLogRelPath) {
     log(`Gate ${gateId} found but no task_id in log line — skipping artifact`);
     return;
   }
+  if (!/^[\w.-]+$/.test(taskId)) {
+    log(`Gate ${gateId} has invalid task_id '${taskId}' — skipping artifact`);
+    return;
+  }
 
   const gatesDir = path.join(BRAIN_ROOT, 'prds', taskId, 'gates');
   try {
@@ -241,7 +255,7 @@ function writeGateArtifact(gateId, taskId, logLine, conductorLogRelPath) {
   const artifact = {
     gate_id: gateId,
     task_id: taskId,
-    satisfied_at: timestamp,
+    satisfied_at: new Date().toISOString(),
     commit_sha: commitSha,
     evidence: {
       log_line: logLine.trim(),

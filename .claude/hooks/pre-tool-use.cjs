@@ -43,6 +43,8 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const CASE_INSENSITIVE_FS = process.platform === 'win32' || process.platform === 'darwin';
+let CACHED_CANARY_TOKEN = null;
 
 // Read tool call from stdin
 let input = '';
@@ -100,12 +102,30 @@ if (
     toolInput.new_path ||
     toolInput.path ||
     '';
+  if (!targetPath || String(targetPath).trim() === '') {
+    const output = {
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'ask',
+        permissionDecisionReason:
+          `[forge-pre-tool-use] FREEZE SCOPE PATH UNKNOWN\n\n` +
+          `Frozen directory: ${resolvedFrozen}\n` +
+          `Tool '${toolName}' did not provide a valid target path. ` +
+          `Refusing to proceed while /freeze is active.`,
+      },
+    };
+    process.stdout.write(JSON.stringify(output));
+    process.exit(0);
+  }
   if (targetPath) {
-    const resolvedTarget = path.resolve(targetPath);
+    const resolvedTarget = path.normalize(path.resolve(targetPath));
+    const normalizedFrozen = path.normalize(resolvedFrozen);
+    const lhs = CASE_INSENSITIVE_FS ? resolvedTarget.toLowerCase() : resolvedTarget;
+    const rhs = CASE_INSENSITIVE_FS ? normalizedFrozen.toLowerCase() : normalizedFrozen;
     const sep = path.sep;
     const outsideScope =
-      resolvedTarget !== resolvedFrozen &&
-      !resolvedTarget.startsWith(resolvedFrozen + sep);
+      lhs !== rhs &&
+      !lhs.startsWith(rhs + sep);
     if (outsideScope) {
       const output = {
         hookSpecificOutput: {
@@ -140,6 +160,12 @@ try {
 const forgeRoot = process.env.FORGE_ROOT
   ? path.resolve(String(process.env.FORGE_ROOT).trim())
   : path.resolve(__dirname, '..', '..');
+if (process.env.FORGE_ROOT) {
+  const home = os.homedir();
+  if (!forgeRoot.startsWith(home + path.sep) && forgeRoot !== home) {
+    process.exit(0);
+  }
+}
 
 function resolveSkillAllowedTools(skillKey, skillFilePath, skillContent) {
   const policyPath = path.join(forgeRoot, 'tools', 'skill-tool-policy.json');
@@ -186,6 +212,9 @@ function resolveSkillAllowedTools(skillKey, skillFilePath, skillContent) {
 }
 
 if (activeSkill) {
+  if (!/^[a-zA-Z0-9_-]+$/.test(activeSkill)) {
+    process.exit(0);
+  }
   const skillFile = path.join(forgeRoot, 'skills', activeSkill, 'SKILL.md');
   let skillContent = '';
   try {
@@ -247,12 +276,17 @@ const canaryDisabled =
 const CANARY_FILE = path.join(os.homedir(), '.forge', '.canary');
 let canaryToken = '';
 if (!canaryDisabled) {
-  try {
-    if (fs.existsSync(CANARY_FILE)) {
-      canaryToken = fs.readFileSync(CANARY_FILE, 'utf-8').trim();
+  if (CACHED_CANARY_TOKEN !== null) {
+    canaryToken = CACHED_CANARY_TOKEN;
+  } else {
+    try {
+      if (fs.existsSync(CANARY_FILE)) {
+        canaryToken = fs.readFileSync(CANARY_FILE, 'utf-8').trim();
+      }
+    } catch (_) {
+      // Canary file unreadable — skip check silently
     }
-  } catch (_) {
-    // Canary file unreadable — skip check silently
+    CACHED_CANARY_TOKEN = canaryToken;
   }
 }
 
@@ -311,7 +345,7 @@ const BLOCKED_PATTERNS = [
       'Force-deleting a git branch may destroy unmerged commits. Confirm the branch has been fully merged.',
   },
   {
-    pattern: /\brm\s+-[a-z]*r[a-z]*f[a-z]*\s+[^\s-]/i,
+    pattern: /\brm\s+(?:-[a-z]*r[a-z]*f[a-z]*|-[a-z]*f[a-z]*r[a-z]*|--recursive(?:\s+--force)?|--force(?:\s+--recursive)?)\b/i,
     reason:
       'rm -rf is irreversible. Verify the exact path matches your intent and does not expand to an unexpected directory.',
   },

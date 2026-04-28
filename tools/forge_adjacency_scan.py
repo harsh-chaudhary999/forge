@@ -29,8 +29,8 @@ def load_patterns(path: Path) -> list[str]:
     return out
 
 
-def run_rg(repo: Path, pattern: str, limit: int = 80) -> tuple[list[str], str | None]:
-    """Return (lines, error). error set on rg failure."""
+def run_rg(repo: Path, pattern: str, limit: int = 80) -> tuple[list[str], bool, str | None]:
+    """Return (lines, truncated, error). error set on rg failure."""
     cmd = [
         "rg",
         "-n",
@@ -50,11 +50,12 @@ def run_rg(repo: Path, pattern: str, limit: int = 80) -> tuple[list[str], str | 
             timeout=120,
         )
     except (OSError, subprocess.TimeoutExpired) as e:
-        return [], str(e)
+        return [], False, str(e)
     if p.returncode not in (0, 1):
-        return [], (p.stderr or p.stdout or f"exit {p.returncode}")[:500]
-    lines = (p.stdout or "").splitlines()[:limit]
-    return lines, None
+        return [], False, (p.stderr or p.stdout or f"exit {p.returncode}")[:500]
+    all_lines = (p.stdout or "").splitlines()
+    lines = all_lines[:limit]
+    return lines, len(all_lines) > limit, None
 
 
 def main() -> int:
@@ -71,10 +72,19 @@ def main() -> int:
         default=None,
         help="Newline-separated rg -e patterns (default: tools/adjacency-seed-patterns.txt)",
     )
+    ap.add_argument(
+        "--replace",
+        action="store_true",
+        help="Overwrite discovery-adjacency.md instead of appending.",
+    )
     args = ap.parse_args()
 
     tools_dir = Path(__file__).resolve().parent
-    patterns_path = args.patterns or (tools_dir / "adjacency-seed-patterns.txt")
+    patterns_path = (
+        args.patterns.expanduser().resolve()
+        if args.patterns
+        else (tools_dir / "adjacency-seed-patterns.txt").resolve()
+    )
     task_dir: Path = args.task_dir.expanduser().resolve()
     task_dir.mkdir(parents=True, exist_ok=True)
     out_path = task_dir / "discovery-adjacency.md"
@@ -112,20 +122,25 @@ def main() -> int:
             for pat in patterns:
                 safe = pat.replace("`", "")
                 chunks.append(f"#### Pattern: `{safe}`")
-                lines, err = run_rg(repo, pat)
+                lines, truncated, err = run_rg(repo, pat)
                 if err:
                     chunks.append(f"_rg error: {err}_")
                 elif not lines:
                     chunks.append("_No matches._")
                 else:
                     chunks.extend(f"- {line}" for line in lines)
+                    if truncated:
+                        chunks.append("- # TRUNCATED (limit=80)")
                 chunks.append("")
 
         chunks.append(_FOOTER)
         chunks.append("")
 
-    existing = out_path.read_text(encoding="utf-8", errors="replace") if out_path.is_file() else ""
-    out_path.write_text(existing + "\n".join(chunks), encoding="utf-8")
+    if args.replace or not out_path.is_file():
+        out_path.write_text("\n".join(chunks), encoding="utf-8")
+    else:
+        existing = out_path.read_text(encoding="utf-8", errors="replace")
+        out_path.write_text(existing + "\n" + "\n".join(chunks), encoding="utf-8")
     return 0
 
 

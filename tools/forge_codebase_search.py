@@ -32,17 +32,27 @@ def _iter_docs(brain: Path) -> list[tuple[str, str]]:
 
 def _build_fts(docs: list[tuple[str, str]]) -> sqlite3.Connection:
     conn = sqlite3.connect(":memory:")
-    conn.execute("CREATE VIRTUAL TABLE docs USING fts5(path, content)")
+    try:
+        conn.execute("CREATE VIRTUAL TABLE docs USING fts5(path, content)")
+    except sqlite3.OperationalError as exc:
+        raise RuntimeError(
+            "SQLite FTS5 is unavailable in this Python build (no such module: fts5)."
+        ) from exc
     conn.executemany("INSERT INTO docs(path, content) VALUES (?, ?)", docs)
     return conn
 
 
 def _search(conn: sqlite3.Connection, q: str, limit: int) -> list[dict[str, object]]:
-    cur = conn.execute(
-        "SELECT path, snippet(docs, 1, '[', ']', ' … ', 8) AS snippet, bm25(docs) AS score "
-        "FROM docs WHERE docs MATCH ? ORDER BY score LIMIT ?",
-        (q, max(1, int(limit))),
-    )
+    try:
+        cur = conn.execute(
+            "SELECT path, snippet(docs, 1, '[', ']', ' … ', 8) AS snippet, bm25(docs) AS score "
+            "FROM docs WHERE docs MATCH ? ORDER BY score LIMIT ?",
+            (q, max(1, int(limit))),
+        )
+    except sqlite3.OperationalError as exc:
+        raise RuntimeError(
+            f"Invalid FTS query {q!r} (or FTS5 unavailable): {exc}"
+        ) from exc
     out: list[dict[str, object]] = []
     for path, snippet, score in cur.fetchall():
         out.append({"path": path, "score": score, "snippet": snippet})
@@ -70,8 +80,12 @@ def main(argv: list[str] | None = None) -> int:
     if not docs:
         print("forge_codebase_search: no searchable docs found", file=sys.stderr)
         return 1
-    conn = _build_fts(docs)
-    rows = _search(conn, args.query, args.limit)
+    try:
+        conn = _build_fts(docs)
+        rows = _search(conn, args.query, args.limit)
+    except RuntimeError as exc:
+        print(f"forge_codebase_search: {exc}", file=sys.stderr)
+        return 2
     if args.json:
         print(json.dumps({"query": args.query, "hits": rows}, indent=2))
         return 0

@@ -16,7 +16,7 @@ import re
 import sys
 from pathlib import Path
 
-RE_FM = re.compile(r"^---\n([\s\S]*?)\n---", re.MULTILINE)
+RE_FM = re.compile(r"\A---\n([\s\S]*?)\n---")
 RE_NAME = re.compile(r"^name:\s*(.+)\s*$", re.MULTILINE)
 RE_TYPE = re.compile(r"^type:\s*(\S+)\s*$", re.MULTILINE)
 RE_ALLOWED_BLOCK = re.compile(
@@ -65,13 +65,19 @@ def _parse_frontmatter(text: str) -> str | None:
 
 def _allowed_tools(fm: str) -> list[str]:
     m = RE_ALLOWED_BLOCK.search(fm)
-    if not m:
-        return []
     out: list[str] = []
-    for line in m.group(1).splitlines():
-        line = line.strip()
-        if line.startswith("- "):
-            out.append(line[2:].strip())
+    if m:
+        for line in m.group(1).splitlines():
+            line = line.strip()
+            if line.startswith("- "):
+                out.append(line[2:].strip())
+        return out
+    inline = re.search(r"^allowed-tools:\s*\[(.*)\]\s*$", fm, re.MULTILINE)
+    if inline:
+        for tok in inline.group(1).split(","):
+            t = tok.strip()
+            if t:
+                out.append(t)
     return out
 
 
@@ -164,7 +170,16 @@ def main() -> int:
         return 1
 
     if args.write_policy:
-        out = Path(args.write_policy).expanduser()
+        out = Path(args.write_policy).expanduser().resolve()
+        root_resolved = root.resolve()
+        try:
+            out.relative_to(root_resolved)
+        except ValueError:
+            print(
+                f"ERROR: --write-policy must stay within repository root: {root_resolved}",
+                file=sys.stderr,
+            )
+            return 2
         out.parent.mkdir(parents=True, exist_ok=True)
         pol = collect_policy(skills_root)
         out.write_text(json.dumps(pol, indent=2, sort_keys=True) + "\n", encoding="utf-8")

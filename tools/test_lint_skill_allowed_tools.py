@@ -36,6 +36,29 @@ class TestCollectPolicySkillsRoot(unittest.TestCase):
             self.assertIn("autoplan", pol["skills"])
             self.assertEqual(pol["skills"]["autoplan"]["allowed_tools"], ["Read", "Grep"])
 
+    def test_lint_rigid_without_allowed_tools_errors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            skill = Path(tmp) / "skill" / "SKILL.md"
+            skill.parent.mkdir(parents=True)
+            skill.write_text(
+                "---\nname: s\ntype: rigid\n---\n\nbody\n",
+                encoding="utf-8",
+            )
+            errs, _warns = lst.lint_skill_file(skill)
+            self.assertTrue(any("type rigid" in e for e in errs), errs)
+
+    def test_collect_policy_parses_inline_allowed_tools(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "skills"
+            skill = root / "s" / "SKILL.md"
+            skill.parent.mkdir(parents=True)
+            skill.write_text(
+                "---\nname: s\ntype: rigid\nallowed-tools: [Read, Grep]\n---\n",
+                encoding="utf-8",
+            )
+            pol = lst.collect_policy(root)
+            self.assertEqual(pol["skills"]["s"]["allowed_tools"], ["Read", "Grep"])
+
 
 if __name__ == "__main__":
     unittest.main()

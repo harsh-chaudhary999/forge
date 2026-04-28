@@ -17,10 +17,11 @@ Examples::
 from __future__ import annotations
 
 import argparse
-import os
 import subprocess
 import sys
 from pathlib import Path
+
+from forge_paths import default_brain_root
 
 
 def _git_ls_files_deleted(repo: Path) -> list[str]:
@@ -31,7 +32,7 @@ def _git_ls_files_deleted(repo: Path) -> list[str]:
         check=False,
     )
     if r.returncode != 0:
-        raise SystemExit(
+        raise RuntimeError(
             f"git ls-files failed (exit {r.returncode}): {r.stderr.strip() or r.stdout}"
         )
     if not r.stdout:
@@ -72,21 +73,20 @@ def main() -> int:
     )
     args = ap.parse_args()
 
-    home = Path.home()
-    if args.brain:
-        brain = Path(args.brain).expanduser()
-    else:
-        brain = home / "forge" / "brain"
-        for key in ("FORGE_BRAIN", "FORGE_BRAIN_PATH"):
-            v = os.environ.get(key, "").strip()
-            if v:
-                brain = Path(v).expanduser()
-                break
+    brain = (
+        Path(args.brain).expanduser().resolve()
+        if args.brain
+        else default_brain_root().resolve()
+    )
     if not (brain / ".git").is_dir() and not (brain / ".git").is_file():
         print(f"ERROR: not a git repository: {brain}", file=sys.stderr)
         return 1
 
-    deleted = _git_ls_files_deleted(brain)
+    try:
+        deleted = _git_ls_files_deleted(brain)
+    except RuntimeError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
     if not deleted:
         print(f"OK: no deleted tracked files under {brain}")
         return 0

@@ -21,10 +21,18 @@ if str(TOOLS) not in sys.path:
 from scan_forge.verify_smoke import _ROLE_SVC, _ROLE_UI, _git_init_and_commit, _write_smoke_fixtures
 
 
-def _run_scan(cmd: list[str], cwd: Path, env: dict[str, str]) -> dict:
-    subprocess.run(cmd, check=True, cwd=str(cwd), env=env)
-    run_dir = Path(cmd[cmd.index("--run-dir") + 1])
-    return json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
+def _run_scan(
+    cmd: list[str], cwd: Path, env: dict[str, str], run_dir: Path, label: str
+) -> dict:
+    try:
+        subprocess.run(cmd, check=True, cwd=str(cwd), env=env, timeout=300)
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"{label}: scan timed out after {exc.timeout}s") from exc
+    run_json = run_dir / "run.json"
+    try:
+        return json.loads(run_json.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"{label}: invalid JSON in {run_json}: {exc}") from exc
 
 
 def _compute_metrics() -> dict:
@@ -35,8 +43,11 @@ def _compute_metrics() -> dict:
         svc_repo, ui_repo = _write_smoke_fixtures(fixtures_parent)
         _git_init_and_commit(svc_repo, "bench fixtures svc")
         _git_init_and_commit(ui_repo, "bench fixtures ui")
-        env = os.environ.copy()
-        env["PYTHONPATH"] = str(TOOLS)
+        env = {
+            "PATH": os.environ.get("PATH", ""),
+            "HOME": os.environ.get("HOME", ""),
+            "PYTHONPATH": str(TOOLS),
+        }
 
         base_cmd = [
             sys.executable,
@@ -51,16 +62,16 @@ def _compute_metrics() -> dict:
             f"{_ROLE_SVC}:{svc_repo}",
             f"{_ROLE_UI}:{ui_repo}",
         ]
-        full_meta = _run_scan(base_cmd, ROOT, env)
+        full_meta = _run_scan(base_cmd, ROOT, env, run_dir, "full")
 
         inc_cmd = [*base_cmd, "--incremental"]
-        inc_warm = _run_scan(inc_cmd, ROOT, env)
-        inc_nochange = _run_scan(inc_cmd, ROOT, env)
+        inc_warm = _run_scan(inc_cmd, ROOT, env, run_dir, "incremental_warm")
+        inc_nochange = _run_scan(inc_cmd, ROOT, env, run_dir, "incremental_nochange")
 
         # small tracked change
         routes_ts = svc_repo / "src" / "routes.ts"
         routes_ts.write_text(routes_ts.read_text(encoding="utf-8") + "\n// bench touch\n", encoding="utf-8")
-        inc_small_change = _run_scan(inc_cmd, ROOT, env)
+        inc_small_change = _run_scan(inc_cmd, ROOT, env, run_dir, "incremental_small_change")
 
         metrics = {
             "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -118,14 +129,18 @@ def _write_markdown(path: Path, doc: dict) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Run synthetic scan benchmark and emit gate report.")
-    ap.add_argument("--output-json", type=Path, default=ROOT / "tools" / "scan_bench.latest.json")
-    ap.add_argument("--output-md", type=Path, default=ROOT / "tools" / "scan_bench.latest.md")
+    ap.add_argument("--output-json", type=Path, default=None)
+    ap.add_argument("--output-md", type=Path, default=None)
     ap.add_argument("--strict", action="store_true", help="Exit non-zero when any gate fails.")
     args = ap.parse_args(argv)
 
     doc = _compute_metrics()
-    args.output_json.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
-    _write_markdown(args.output_md, doc)
+    output_json = args.output_json or Path(tempfile.mkdtemp(prefix="forge_scan_bench_out.")) / "scan_bench.latest.json"
+    output_md = args.output_md or output_json.with_suffix(".md")
+    output_json.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    _write_markdown(output_md, doc)
+    print(f"scan_bench: wrote {output_json}")
+    print(f"scan_bench: wrote {output_md}")
 
     if args.strict and not all(bool(v) for v in (doc.get("gates") or {}).values()):
         return 1

@@ -13,6 +13,7 @@ after each run with retries unless ``FORGE_SCAN_SKIP_VERIFY=1``).
 """
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -20,14 +21,27 @@ _TOOLS = Path(__file__).resolve().parent
 if str(_TOOLS) not in sys.path:
     sys.path.insert(0, str(_TOOLS))
 
-from scan_forge.verify_brain_codebase import verify_brain_codebase_once
+_IMPORT_ERR: Exception | None = None
+try:
+    from scan_forge.verify_brain_codebase import verify_brain_codebase_once
+except ImportError as exc:  # pragma: no cover - environment-dependent
+    _IMPORT_ERR = exc
+    verify_brain_codebase_once = None  # type: ignore[assignment]
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
-        print("usage: verify_scan_outputs.py <brain-codebase-directory>", file=sys.stderr)
+    if _IMPORT_ERR is not None or verify_brain_codebase_once is None:
+        print(
+            f"verify_scan_outputs.py: cannot import scan_forge.verify_brain_codebase: {_IMPORT_ERR}",
+            file=sys.stderr,
+        )
         return 2
-    root = Path(sys.argv[1]).resolve()
+    ap = argparse.ArgumentParser(
+        description="Verify scan outputs under a brain codebase directory."
+    )
+    ap.add_argument("brain_codebase_directory", help="Path to brain/products/<slug>/codebase")
+    args = ap.parse_args()
+    root = Path(args.brain_codebase_directory).resolve()
     code, lines = verify_brain_codebase_once(root)
     for ln in lines:
         print(ln)

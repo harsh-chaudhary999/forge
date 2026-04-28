@@ -96,6 +96,10 @@ class TestStrict0cInventory(unittest.TestCase):
         errs = vtp.verify_tech_plans(self.brain, self.task_id, strict_0c_inventory=True)
         self.assertTrue(any("touchpoints" in e for e in errs), errs)
 
+    def test_invalid_task_id_rejected(self) -> None:
+        errs = vtp.verify_tech_plans(self.brain, "../bad", strict_0c_inventory=False)
+        self.assertTrue(any("unsafe task_id" in e or "task_id" in e for e in errs), errs)
+
 
 if __name__ == "__main__":
     unittest.main()

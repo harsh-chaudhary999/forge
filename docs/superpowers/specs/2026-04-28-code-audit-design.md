@@ -27,7 +27,7 @@ The Forge plugin has three distinct runtime surfaces — CJS hook scripts, Pytho
 | Surface | Files | Location |
 |---|---|---|
 | CJS hooks | 14 `.cjs` files (~3,250 LOC) | `.claude/hooks/` |
-| Python tools | 15 `.py` files (~2,930 LOC) | `tools/` |
+| Python tools | 22 `.py` files (~2,930 LOC) | `tools/` |
 | Skills / commands / agents | ~84 skills + 17 commands + 4 agents | `skills/`, `commands/`, `agents/` |
 
 ### Out of scope

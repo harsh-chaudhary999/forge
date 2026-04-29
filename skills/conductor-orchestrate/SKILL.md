@@ -3,7 +3,7 @@ name: conductor-orchestrate
 description: "WHEN: PRD is locked. You are the master state machine orchestrating the entire forge workflow. Routes the task through all phases, tracks state, manages escalations, and coordinates subagents."
 type: rigid
 requires: [intake-interrogate, product-context-load, brain-read, brain-write, forge-worktree-gate, council-multi-repo-negotiate, spec-freeze, tech-plan-write-per-project, qa-manual-test-cases-from-prd, forge-tdd, eval-product-stack-up, eval-coordinate-multi-surface, forge-eval-gate, pr-set-coordinate, dream-retrospect-post-pr]
-version: 1.0.5
+version: 1.0.6
 preamble-tier: 4
 triggers:
   - "start the pipeline"
@@ -21,7 +21,7 @@ allowed-tools:
 
 ## Human input (all hosts)
 
-This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input** and **Stage-local questioning**. Assistant dialogue must follow **`docs/forge-one-step-horizon.md`** (**one-step horizon** — do not narrate full downstream phases each turn).
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input** and **Stage-local questioning**. Assistant dialogue: **`docs/forge-one-step-horizon.md`** and **`using-forge`** **Multi-question elicitation** items **4–8** (same as the **`Assistant chat`** line in **`commands/`**).
 
 ## Anti-Pattern Preamble
 

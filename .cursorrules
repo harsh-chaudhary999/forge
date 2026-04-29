@@ -51,8 +51,7 @@ requires: [other-skill-name]
 5. **Brain persistence**: Every decision is recorded via `forge-brain-persist`
 6. **Volume is not a skip lever**: Large files or long exports do not waive required steps — see **AGENTS.md** Core rule **6** and section *Instruction completeness* in **CLAUDE.md**.
 7. **One-step horizon (assistant chat):** Do **not** narrate the full downstream pipeline in dialogue unless the next stage is the **immediate** prerequisite, the question **depends** on it, or the user asked what comes next. **`docs/forge-one-step-horizon.md`** + **`skills/using-forge/SKILL.md`** **Horizon narration**.
-8. **No bundled intake:** Do **not** use **one** structured prompt for task-id while burying Q9 design locks and roadmap/waiver prose in the **same** turn — **`docs/forge-one-step-horizon.md`** **Bundled intake turns**; **`using-forge`** **Multi-question elicitation** item **6**.
-9. **Question-forward elicitation:** When asking for **one** answer, do **not** open with what **`/qa-write`** / **`/forge`** do or which **gates** are open — **`docs/forge-one-step-horizon.md`** **Elicitation mode**; **`using-forge`** item **7** — unless the user asked for status.
+8. **Elicitation structure:** **No bundled** unrelated decisions in one turn; **question-forward** (no unsolicited command/skill preface; no **trailing** later-stage status lines) except when the user asked — **`docs/forge-one-step-horizon.md`**; **`using-forge`** **Multi-question elicitation** items **6–8**.
 
 ## Where Things Live
 

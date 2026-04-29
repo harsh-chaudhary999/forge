@@ -3,7 +3,7 @@ name: qa-write-scenarios
 description: "WHEN: qa-prd-analysis is complete and you need to write the maximum possible number of executable eval YAML scenarios — one per test type × surface × scenario variant. No gaps. No shortcuts."
 type: rigid
 requires: [brain-read, qa-prd-analysis, eval-scenario-format]
-version: 2.4.8
+version: 2.4.9
 preamble-tier: 3
 triggers:
   - "write eval scenarios"
@@ -28,6 +28,8 @@ Generates the **maximum possible number of executable eval YAML scenarios** from
 ## Human input (all hosts)
 
 **`AskUserQuestion`** in **`allowed-tools`** is canonical; map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** on every IDE. **Step −1** governs *when* to prompt; **`using-forge`** governs *how* (**Interactive human input**, **Multi-question elicitation** for sequences, **Stage-local questioning**).
+
+**Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8** (repository-wide; not QA-only).
 
 ## Anti-Pattern Preamble
 

@@ -3,7 +3,7 @@ name: qa-branch-env-prep
 description: "WHEN: About to run QA eval and need to set up the execution environment. Determines run mode: URL-only (test against live URL), branch-local (checkout + start stack + run eval drivers), branch-code-validate (checkout + run repo test suite directly), or branch-tracking (record which branch is on a remote URL). Writes runtime env config for eval drivers."
 type: rigid
 requires: [brain-read]
-version: 1.0.2
+version: 1.0.3
 preamble-tier: 3
 triggers:
   - "checkout branches for QA"
@@ -23,6 +23,8 @@ allowed-tools:
 ## Human input (all hosts)
 
 This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). Run-mode and checkout confirmations below use the same mapping. See **`using-forge`** **Interactive human input**.
+
+**Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**.
 
 Sets up the execution environment for a QA eval run. **The first decision is always: what kind of run is this?**
 

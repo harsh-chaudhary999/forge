@@ -3,7 +3,7 @@ name: qa-prd-analysis
 description: "WHEN: Before generating QA test cases from a PRD. Loads ALL brain artifacts first (PRD, tech plans, scan, contracts, product topology), then runs a structured interrogation to lock test types, surfaces, coverage depth, and all open ambiguities before a single scenario is written."
 type: rigid
 requires: [brain-read]
-version: 2.2.3
+version: 2.2.4
 preamble-tier: 3
 triggers:
   - "analyze PRD for QA"
@@ -24,6 +24,8 @@ allowed-tools:
 ## Human input (all hosts)
 
 **`AskUserQuestion`** in **`allowed-tools`** is canonical; map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** on every IDE. **Step 0.5** applies **`using-forge`** **Multi-question elicitation** to coverage templates **Q1–Q8** (see **`using-forge`** **QA PRD analysis** specialization). **One primary topic per assistant turn**; after each answer **reconcile**. **Never** a full Q1–Q8 wall **plus** a meta-prompt in the **same** turn.
+
+**Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8** (all coverage turns; same norms repository-wide).
 
 **HARD-GATE:** ALL brain artifacts must be loaded BEFORE asking the user any question. Questions asked without brain context are generic and waste the user's time. Brain-loaded questions are specific, informed, and resolve real ambiguities.
 

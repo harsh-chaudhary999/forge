@@ -21,17 +21,17 @@ If `AskQuestion` is not available or a call fails, present the same choices as a
 
 Any **doubt, question, confirmation, or choice** that needs a human answer — including **task-id**, **next step**, **waiver**, **priority** — must use a **blocking interactive prompt** or **numbered list + stop**, not prose-only *“reply if…”* walls. In Cursor that is usually **`AskQuestion`**. Full norm: **`using-forge`** → **Interactive human input** (applies to Gemini CLI, JetBrains, Codex, etc., with host mapping in that skill).
 
-**Invalid:** A **“What to do next”** markdown section (intake → qa-analysis → CSV → `/qa-write`) that ends with *“reply with task-id / confirm you started intake”* **without** **`AskQuestion`** or **numbered options in the same message** — that fails **interactive human input**. Always append **`AskQuestion`** or **numbered choices** for the **first** real fork (e.g. have **`prd-locked`**? run **`/intake`** vs paste PRD vs stop).
+**Invalid:** A **“What to do next”** markdown section that ends with *“reply with task-id / confirm you started …”* **without** **`AskQuestion`** or **numbered options in the same message** — that fails **interactive human input**. Always append **`AskQuestion`** or **numbered choices** for the **first** real fork.
 
 ## Chat-visible questioning & multi-question elicitation
 
-**Project standard (all skills):** **`skills/using-forge/SKILL.md`** → **Multi-question elicitation** — **transcript-first** (questions visible in assistant markdown, not only modal/brain), **one primary topic per message** when multiple answers are needed, **blocking** **`AskQuestion`** / **numbered options + stop** for discrete forks, **reconcile** after each reply. Applies to intake, planning judgment rounds, QA analysis, CSV approvals, env choices — not only one skill.
+**Project standard (all skills):** **`skills/using-forge/SKILL.md`** → **Multi-question elicitation** — **transcript-first**, **one primary topic per message** when multiple answers are needed, **blocking** **`AskQuestion`** / **numbered options + stop** for discrete forks, **reconcile** after each reply. Applies to intake, council, planning, QA, env choices — **not** only one skill.
 
-**Examples:** **`intake-interrogate` Q9** — **verbatim** design blockquote in thread. **`qa-prd-analysis` Step 0.5** — same **Multi-question elicitation** pattern applied to coverage **Q1–Q8** (see **`qa-prd-analysis`** + **`using-forge`** **QA PRD analysis**). **Forbidden:** full questionnaire dump + unrelated meta-prompt in one turn; brain-only “confirmed” without thread.
+**Examples:** **`intake-interrogate` Q9** — **verbatim** design blockquote in thread. **`qa-prd-analysis` Step 0.5** — same pattern for coverage **Q1–Q8**. **Forbidden:** full questionnaire dump + unrelated meta-prompt in one turn; brain-only “confirmed” without thread.
 
-**Forbidden bundle:** **One** **`AskQuestion`** (e.g. task-id) **plus** a prose wall demanding Q9 / design / Figma answers **and** downstream QA→YAML / waiver text **in the same message** — use **sequential turns** or **blocking** per fork (**`using-forge`** item **6**; **`docs/forge-one-step-horizon.md`** **Bundled intake turns**).
+**Forbidden bundle:** **One** **`AskQuestion`** plus a prose wall demanding **other** needle-moving answers **and** unrelated roadmap / waiver text **in the same message** — use **sequential turns** (**`using-forge`** item **6**; **`docs/forge-one-step-horizon.md`** **No bundled unrelated decisions**).
 
-**Question-forward:** When eliciting **one** answer (Q9, design confirm, …), do **not** lead with a **`/qa-write`** / gate-status essay — **`docs/forge-one-step-horizon.md`** **Elicitation mode**; **`using-forge`** item **7**.
+**Question-forward / no trailing nag:** **`docs/forge-one-step-horizon.md`** **Question-forward elicitation**; **`using-forge`** items **7–8**.
 
 **In Cursor you MUST:** output chat-visible text so the transcript shows what was asked; then **`AskQuestion`** when choices are discrete.
 
@@ -41,8 +41,8 @@ Any **doubt, question, confirmation, or choice** that needs a human answer — i
 
 ## Automation ≠ assumption
 
-Forge **automates artifacts and pipelines** — not **decisions**. At every **needle-moving** step (scope, design authority, QA interrogation, CSV/eval ordering waivers, prioritization), use **`AskQuestion`** (or numbered choices) and **wait**. Do **not** infer “confirmed” answers or waiver frontmatter from docs alone; see **`using-forge`**.
+Forge **automates artifacts and pipelines** — not **decisions**. At every **needle-moving** step (scope, design authority, prioritization, waivers), use **`AskQuestion`** (or numbered choices) and **wait**. Do **not** infer “confirmed” answers from docs alone; see **`using-forge`**.
 
-**Stage-local questioning — respect process order:** Ask only what unblocks the **current** Forge stage (or the **next** prerequisite in dependency order). **Do not** open with a **blocking prompt** about **later** phases — merge, eval harness, council contracts, tech-plan approval, QA CSV, design ingest, PR strategy — when the pipeline **has not reached** that stage or **upstream** prerequisites are still missing. Fix the **first** gap first. **Do not** narrate the full downstream roadmap in chat **before** the user is there — **one-step horizon** (next artifact/skill only) unless they asked “what’s after?” Full norm in **`using-forge`** → **Stage-local questioning** + **horizon narration** rule. Canonical doc: **`docs/forge-one-step-horizon.md`**.
+**Stage-local questioning — respect process order:** Ask only what unblocks the **current** Forge stage (or the **next** prerequisite in dependency order). **Do not** open with a **blocking prompt** about **later** phases when upstream prerequisites are still missing. Fix the **first** gap first. **Do not** narrate the full downstream roadmap in chat **before** the user is there — **one-step horizon** unless they asked “what’s after?” Full norm: **`using-forge`** → **Stage-local questioning** + **horizon narration**; **`docs/forge-one-step-horizon.md`**.
 
-**QA→eval slice (when applicable):** If **`prd-locked`** or **`qa-analysis`** is missing, **do not** ask about **eval YAML or CSV waiver** first — intake → **`qa-prd-analysis`** → manual CSV (or waiver) → then YAML. See **`qa-write-scenarios`** **Step −1**.
+**Example (when QA automation is in scope):** If **`prd-locked`** or **`qa-analysis`** is missing, **do not** ask about **eval YAML or CSV waiver** first — follow the dependency chain in the active skill (e.g. **`qa-write-scenarios`** **Step −1**).

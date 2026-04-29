@@ -116,9 +116,7 @@ Do NOT skip `qa-prd-analysis` — scenario generation without surface analysis p
 Do NOT bulk-generate eval YAML without an approved **`manual-test-cases.csv`** baseline (or documented waiver in **`qa-analysis.md`**) — see **`qa-write-scenarios`** Step 0.0.
 </HARD-GATE>
 
-**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
-
-**When eliciting an answer** (not when the user opened this file to read it): do **not** repeat this command’s pipeline diagram or “what `/qa-write` does” around a simple confirm — **question-forward** — see **`docs/forge-one-step-horizon.md`** **Elicitation mode — no command tutorial**.
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns); **one blocking affordance per unrelated fork** (no bundled prose obligations); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**. *(Canonical paragraph — same for every `commands/*.md`; reference diagrams above stay documentation-only.)*
 
 **Forge plugin scope:** Skills from `skills/`; brain from `~/forge/brain/`.
 

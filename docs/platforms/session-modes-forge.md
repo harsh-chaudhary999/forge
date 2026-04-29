@@ -21,6 +21,8 @@ Forge gates (State 4b, `eval/*.yaml`, TDD, etc.) apply **regardless** of host se
 
 Human-needed answers (intake, QA, waivers, confirmations) must use **blocking interactive prompts** — not prose-only “reply with…”. Canonical skill tool name is **`AskUserQuestion`**; **each IDE maps** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor → **`AskQuestion`**; Gemini CLI, Codex, JetBrains, etc. → numbered options + wait when no tool exists). This is **not** Claude- or Cursor-specific.
 
+**Full dialogue norms** (one-step horizon, question-forward, bundled-turn rules, trailing-reminder ban — **all** phases): **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** **Multi-question elicitation** items **4–8** — same text as the **`Assistant chat`** paragraph in every **`commands/*.md`** file.
+
 ---
 
 ## How to apply this on your host

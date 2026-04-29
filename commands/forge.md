@@ -22,7 +22,7 @@ Single-line map (same as **`conductor-orchestrate`**): intake → council → te
 
 **Do not misrepresent intake:** Forge **`intake-interrogate`** is **not** “exactly eight chat questions, no design.” It requires **concrete `prd-locked.md` sections** (product, goal, success, **repos + registry**, contracts, timeline, rollback, metrics) and **design / UI (Q9)** when web, app, or user-visible UI is in scope — including the **verbatim design source-of-truth blockquote** in the intake thread and **`design_intake_anchor`**. A Figma URL in the PRD alone is **insufficient**. If an earlier run skipped that, **re-run intake**; do not tell the user Forge forbade asking.
 
-**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns); **one blocking affordance per unrelated fork** (no bundled prose obligations); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
 
 **Forge plugin scope:** Orchestration uses skills and **`agents/`** from **this** repository and artifacts under **`~/forge/brain/`** only — no external “Forge-compatible” frameworks.
 

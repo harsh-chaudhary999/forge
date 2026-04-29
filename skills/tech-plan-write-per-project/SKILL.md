@@ -3,7 +3,7 @@ name: tech-plan-write-per-project
 description: "WHEN: Shared-dev-spec is frozen and per-project tech plans must be written before dev-implementer dispatch. Output: 1 maximal plan per repo with Section 1b detail, 1b.2a exploration, and Section 2 tasks fully elaborated."
 type: rigid
 requires: [brain-read]
-version: 1.0.1
+version: 1.0.2
 preamble-tier: 3
 triggers:
   - "write tech plan"
@@ -19,6 +19,8 @@ allowed-tools:
 ## Human input (all hosts)
 
 **Judgment rounds** (**Section 0.1** / **Section 0.2**) run **in chat** — the plan file summarizes outcomes, not a substitute for dialogue. Follow **`skills/using-forge/SKILL.md`** **Multi-question elicitation**: **transcript-visible** questions, **one coherent topic per message** when multiple decisions remain, **blocking interactive prompts** / **numbered options + stop** for discrete forks (**Cursor** **`AskQuestion`** maps canonical **`AskUserQuestion`**). Do **not** paste the whole interactive workshop into Section 0 as if the human answered inside the markdown (**Anti-Pattern** rows below).
+
+**Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**.
 
 ## Anti-Pattern Preamble
 

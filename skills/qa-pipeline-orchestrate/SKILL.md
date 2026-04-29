@@ -3,7 +3,7 @@ name: qa-pipeline-orchestrate
 description: "WHEN: A standalone QA run is needed against named feature branches and a target environment — independent of the full /forge delivery pipeline. Chains: brain read → scenario generation → branch prep → stack-up → multi-surface exec → verdict."
 type: rigid
 requires: [brain-read, qa-prd-analysis, qa-write-scenarios, qa-branch-env-prep, eval-product-stack-up, eval-coordinate-multi-surface, eval-judge]
-version: 1.0.8
+version: 1.0.9
 preamble-tier: 3
 triggers:
   - "run QA pipeline"
@@ -24,7 +24,7 @@ Standalone QA pipeline that runs from brain artifacts (PRD + tech plans) through
 
 ## Human input (all hosts)
 
-This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**, **Multi-question elicitation**, and **Stage-local questioning**; scenario ordering rules in **`qa-write-scenarios`** **Step −1**. Dialogue norm (**do not** restate the full QA→CSV→eval chain each message): **`docs/forge-one-step-horizon.md`**.
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**, **Multi-question elicitation**, and **Stage-local questioning**; scenario ordering rules in **`qa-write-scenarios`** **Step −1**. Dialogue norm: **`docs/forge-one-step-horizon.md`** + **`using-forge`** **Multi-question elicitation** items **4–8** (same as all **`commands/*.md`** **Assistant chat** — do not restate the full chain each message; question-forward; no trailing nag).
 
 **Entry points:**
 - `/qa` — full pipeline (write scenarios + branch prep + execute + judge)

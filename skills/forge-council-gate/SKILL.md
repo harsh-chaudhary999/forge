@@ -2,7 +2,7 @@
 name: forge-council-gate
 description: "WHEN: A PRD has been locked by intake and needs Council negotiation. HARD-GATE: Every locked PRD goes through Council (4 surfaces + 5 contracts negotiated). No skipping."
 type: rigid
-version: 1.0.1
+version: 1.0.2
 preamble-tier: 3
 triggers:
   - "council gate"
@@ -19,6 +19,8 @@ allowed-tools:
 ## Human input (all hosts)
 
 This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**.
+
+**Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**.
 
 **Rule:** Every locked PRD must be negotiated by Council.
 

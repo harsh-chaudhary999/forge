@@ -3,7 +3,7 @@ name: intake-interrogate
 description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Confidence-first: pre-fill from PRD + product.md; variable number of user turns — stop as soon as mandatory lock fields are concrete and doubts are cleared (no fixed question count; two answers can resolve many latent doubts). Q4 registry + Q9 design gates unchanged when they apply; **Q10 implementation closure** (VCS reference, authoritative delivery boundary, implementation stack) when the ambiguity gate in Q10 applies."
 type: rigid
 requires: [brain-write]
-version: 1.0.5
+version: 1.0.6
 preamble-tier: 2
 triggers:
   - "interrogate PRD"
@@ -23,6 +23,8 @@ allowed-tools:
 
 **`AskUserQuestion`** in **`allowed-tools`** is the canonical tool name (Claude Code + lint). **Every IDE** maps it per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** — not prose-only questions. The **Questioning Protocol** below defines *what* to elicit; *how* to run multi-turn elicitation follows **`using-forge`** **Multi-question elicitation** (**transcript-first**, **one primary topic per message** when asking distinct things, **reconcile** after replies — aligns with confidence-first and **Anti-Pattern** “one question at a time”). **Q9** verbatim blockquote remains a **chat-visible** one-shot per this skill. See **`using-forge`** **Interactive human input**.
 
+**Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**.
+
 ## Anti-Pattern Preamble
 
 | Rationalization | Why It Fails |
@@ -39,7 +41,7 @@ allowed-tools:
 | "I'll phrase option A as the narrowest scope so it looks like the right pick" | Narrowest ≠ correct. MCQ **order** and **only** wording bias humans and models toward A. STOP. When **PRD audience or surface** (who uses it: customer, partner, admin, internal, …) **conflicts** with a **project `role` name** or parent path segment, **do not** present a single-repo “100% confident” option — lead with **escalation / Other**. |
 | "**Forge intake is exactly eight questions in fixed order with no design question** — I stayed inside the gate" | **False.** This skill is **`intake-interrogate`**, not a literal eight-chat-turn script. **`prd-locked.md` must include defined sections** (see **Lock dimensions**); **Q9 (design / UI)** applies when web, app, or **user-visible UI** is in scope — including the **verbatim design source-of-truth blockquote** in the thread and **`design_intake_anchor`**. A Figma link in the PRD **does not** replace Q9 or the blockquote. Claiming “no ninth question” is **misreading Forge**; if you locked without Q9 when UI applied, **re-open intake** — do not defend it. |
 | "I'll prepend *after intake comes council, then tech plans, then …* every turn so the user sees the roadmap" | **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Horizon narration**. Stay on the **current** elicitation; full pipeline order is documented outside chat. |
-| "I'll use **one** **`AskQuestion`** for **task-id** (or one fork) and put Q9 design authority, net-new vs reuse, Figma confirmation, **and** downstream QA→YAML teaser **in prose** in the same message" | **Invalid — bundled intake.** **`using-forge`** **Multi-question elicitation** item **6** — discrete needle-moving decisions each need **blocking interactive** turns **or** sequential turns after each reply; **not** one modal + *reply with everything*. **`docs/forge-one-step-horizon.md`** **Bundled intake turns**. |
+| "I'll use **one** **`AskQuestion`** for **task-id** (or one fork) and put Q9 design authority, net-new vs reuse, Figma confirmation, **and** unrelated roadmap or waiver copy **in prose** in the same message" | **Invalid — bundled unrelated decisions.** **`using-forge`** **Multi-question elicitation** item **6** — discrete needle-moving decisions each need **blocking interactive** turns **or** sequential turns after each reply; **not** one modal + *reply with everything*. **`docs/forge-one-step-horizon.md`** **No bundled unrelated decisions**. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 

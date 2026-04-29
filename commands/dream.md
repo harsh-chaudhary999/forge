@@ -12,7 +12,7 @@ Invoke the **dreamer** agent (or equivalent skills **`dream-retrospect-post-pr`*
 Do NOT use retrospective mode to **waive** **`forge-eval-gate`** or merge on **RED** eval — dreamer resolves **conflicts**, not quality gates.
 </HARD-GATE>
 
-**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns); **one blocking affordance per unrelated fork** (no bundled prose obligations); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
 
 **Forge plugin scope:** Agent definition **`agents/`** + skills **`dream-*`** in this repo; brain under **`~/forge/brain/`**.
 

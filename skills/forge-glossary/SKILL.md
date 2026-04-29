@@ -2,7 +2,7 @@
 name: forge-glossary
 description: "WHEN: You encounter an unfamiliar Forge term and need its canonical definition."
 type: reference
-version: 1.0.5
+version: 1.0.7
 preamble-tier: 1
 triggers:
   - "what does X mean"
@@ -28,27 +28,27 @@ Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the
 
 ### One-step horizon (horizon narration)
 
-**Definition:** In **assistant dialogue** (not static README/commands), name **only** the **immediate** next prerequisite, artifact, or skill — or a downstream step when the **current** question truly depends on it, or when the human asked “what comes next.” Do **not** preemptively enumerate full pipelines (CSV → eval → merge → …) during intake, QA interrogation, tech-plan elicitation, or other **upstream** gates.
+**Definition:** In **assistant dialogue** (not static README/commands), name **only** the **immediate** next prerequisite, artifact, or skill — or a downstream step when the **current** question truly depends on it, or when the human asked “what comes next.” Do **not** preemptively enumerate full pipelines (council → tech plans → merge → …, or product-specific chains) during intake, council, planning, QA, or other **upstream** gates.
 
 **Usage Context:** Reduces confusion when the user is mid-interrogation and the model front-loads later phases. Complements **Stage-local questioning** in **`using-forge`**.
 
-**What It's NOT:** Not a ban on **documentation** — `README.md`, `commands/forge.md`, and brain templates may list full order. Not “never mention eval” — only **don’t** mention it **before** the user is on that gate without cause.
+**What It's NOT:** Not a ban on **documentation** — `README.md`, `commands/forge.md`, and brain templates may list full order. Not “never mention a later stage” — only **don’t** narrate it **before** the user is on that gate without cause.
 
 **Cross-References:** **`using-forge`** (**Horizon narration**, **Multi-question elicitation** item 5). Canonical doc: **`docs/forge-one-step-horizon.md`**.
 
-### Bundled intake (fake single-turn)
+### Bundled unrelated decisions (example: “bundled intake”)
 
-**Definition:** One assistant message uses **one** **blocking interactive** affordance (e.g. **`AskQuestion`** for **task-id** only) while treating **other** mandatory intake choices — **`intake-interrogate`** Q9 design source-of-truth, net-new vs reuse, Figma vs brain paths — as **prose** *“also answer…”* without their own **blocking** turn. Often bundled with **downstream roadmap** or **YAML-before-CSV waiver** copy (**wrong phase**).
+**Definition:** One assistant message uses **one** **blocking interactive** affordance (e.g. **`AskQuestion`** for a single fork) while treating **other** needle-moving choices as **prose** *“also answer…”* without their own **blocking** turn — or pastes **phase-specific** waiver/roadmap copy from a **later** gate. **Intake example:** **task-id** modal while Q9 design authority, net-new vs reuse, or Figma locks appear **only** in prose in the same turn.
 
-**Usage Context:** Violates **`using-forge`** **Multi-question elicitation** item **6**. Correct shape: **sequence** task-id → Q9 verbatim turn → remaining doubts **one primary topic per message**.
+**Usage Context:** Violates **`using-forge`** **Multi-question elicitation** item **6**. Correct shape: **one fork per turn** (or a **Confirm/Correct** batch only where the active skill allows).
 
-**Cross-References:** **`docs/forge-one-step-horizon.md`** **Bundled intake turns**; **`commands/intake.md`**; **`intake-interrogate`**.
+**Cross-References:** **`docs/forge-one-step-horizon.md`** **No bundled unrelated decisions**; **`commands/intake.md`**; **`intake-interrogate`**.
 
-### Question-forward elicitation (no command tutorial mid-answer)
+### Question-forward elicitation (no reference-doc preface mid-answer)
 
-**Definition:** In **live chat**, when the next message’s **job** is to get **one** human answer (Q9, design confirm, a single coverage dimension, …), the assistant **does not** prefix with what slash **commands** do, which **gates** are open, or that **eval YAML** is not written — unless the user **asked** for status. Reference material stays in **`commands/`** and **README**.
+**Definition:** In **live chat**, when the next message’s **job** is to get **one** human answer, the assistant **does not** prefix with what **`commands/`** or **named skills** do, which **gates** are open, or which **later** artifacts do not exist — unless the user **asked** for status. **Does not** suffix with *not ready for …* / *needs … first* unless that is the **immediate** blocker or the user asked. Reference material stays in **`commands/`** and **README**.
 
-**Cross-References:** **`using-forge`** **Multi-question elicitation** item **7**; **`docs/forge-one-step-horizon.md`** **Elicitation mode — no command tutorial**.
+**Cross-References:** **`using-forge`** **Multi-question elicitation** items **7**–**8**; **`docs/forge-one-step-horizon.md`** **Question-forward elicitation**.
 
 ---
 

@@ -3,7 +3,7 @@ name: qa-manual-test-cases-from-prd
 description: "WHEN: You need atomic manual QA test cases in CSV from a PRD plus optional existing suite and knowledge base, with estimation, reuse/deprecation tracking, review, and a final report — any product, any TMS."
 type: rigid
 requires: [qa-prd-analysis, brain-read, brain-write]
-version: 1.3.3
+version: 1.3.4
 preamble-tier: 3
 triggers:
   - "generate test cases"
@@ -22,6 +22,8 @@ allowed-tools:
 ## Human input (all hosts)
 
 **`AskUserQuestion`** in **`allowed-tools`** is canonical; map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** on every IDE (sample/count approvals, branch choices). See **`using-forge`** **Interactive human input**.
+
+**Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**.
 
 **HARD-GATE:** Do not append production CSV rows until **Step 3 (samples) is approved**; do not ship the final report until **Step 7 (count) is approved**. When **`forge_qa_csv_before_eval: true`**, do not author **`eval/*.yaml`** or start feature **TDD** until this skill’s CSV path is approved and logged per **`conductor-orchestrate`**.
 

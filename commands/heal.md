@@ -11,7 +11,7 @@ Pipeline: **locate** failing service → **triage** (flaky test, bad test, real 
 Do NOT silently drop failing eval scenarios — after three failed heal loops, **STOP** and escalate; do not merge or declare success.
 </HARD-GATE>
 
-**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns); **one blocking affordance per unrelated fork** (no bundled prose obligations); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
 
 **Forge plugin scope:** Skills under **`skills/self-heal-*`**; evidence in brain and repo worktrees.
 

@@ -301,9 +301,13 @@ install_cursor() {
 
   # Write global Cursor rules so Forge loads in ANY project opened in Cursor
   # Cursor reads ~/.cursor/rules/forge.mdc as a global always-on rule
+  # Prefer repo .cursor/rules/forge.mdc (AskQuestion alias + chat-visible QA gates); legacy fallback if missing
   local global_rules_dir="${HOME}/.cursor/rules"
   mkdir -p "${global_rules_dir}"
-  cat > "${global_rules_dir}/forge.mdc" << 'RULES'
+  if [[ -f "${FORGE_DIR}/.cursor/rules/forge.mdc" ]]; then
+    cp "${FORGE_DIR}/.cursor/rules/forge.mdc" "${global_rules_dir}/forge.mdc"
+  else
+    cat > "${global_rules_dir}/forge.mdc" << 'RULES'
 ---
 description: Forge — multi-repo product orchestration plugin
 alwaysApply: true
@@ -321,6 +325,7 @@ Written artifacts (plans, scan notes, QA): every material claim needs **what / w
 
 On every session start: read ~/.cursor/plugins/local/forge/skills/using-forge/SKILL.md and follow its bootstrap instructions.
 RULES
+  fi
 
   echo "  Done: ${plugin_dir}"
   echo "  Global Cursor rules: ${global_rules_dir}/forge.mdc (loads in every project)"

@@ -2,8 +2,8 @@
 name: qa-manual-test-cases-from-prd
 description: "WHEN: You need atomic manual QA test cases in CSV from a PRD plus optional existing suite and knowledge base, with estimation, reuse/deprecation tracking, review, and a final report — any product, any TMS."
 type: rigid
-requires: [qa-prd-analysis, brain-write]
-version: 1.0.0
+requires: [qa-prd-analysis, brain-read, brain-write]
+version: 1.2.0
 preamble-tier: 3
 triggers:
   - "generate test cases"
@@ -55,13 +55,14 @@ Approved manual test cases are **acceptance inventory**: they define *what* must
 | "XRAY/Atlassian MCP unavailable — I'll guess prior cases" | STOP. Use exports the user provides or block until Source 2 exists. |
 | "Step 7 count review is bureaucratic" | Estimation vs actual drift catches systematic under-coverage; skipping it ships silent gaps. |
 | "We'll publish the CSV after developers start" | When **`forge_qa_csv_before_eval: true`**, the CSV is **before** eval YAML and **before** TDD feature work — late CSV means rework and eval that does not match what RED asserted. |
+| "`qa-analysis.md` is enough — I don't need prd-locked / tech plans / contracts again" | **`qa-analysis.md` is an index and interrogation record, not a substitute for primary sources.** Rows must trace to **prd-locked**, **shared-dev-spec**, **tech-plans**, and **contracts** where those contain the actual acceptance rules, routes, and edge cases. Re-load the full task bundle before Step 5 (see Step 1b). |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
 ## Iron Law
 
 ```
-EACH TEST CASE TESTS EXACTLY ONE VERIFIABLE OUTCOME; EVERY ROW HAS A SOURCE (PRD | KB | REGRESSION | …); DO NOT APPEND ROWS TO THE CSV UNTIL STEP 3 (SAMPLES) IS APPROVED — AND NEVER SKIP STEP 7 COUNT APPROVAL BEFORE THE FINAL REPORT (STEP 8). FOR TEAMS THAT OPT IN (forge_qa_csv_before_eval: true), THIS CSV MUST BE APPROVED BEFORE EVAL YAML AND BEFORE TDD FEATURE WORK SO RED TESTS AND P4.4 EXECUTION TRACE TO THE SAME ACCEPTANCE SET.
+EACH TEST CASE TESTS EXACTLY ONE VERIFIABLE OUTCOME; EVERY ROW HAS A SOURCE (PRD | KB | REGRESSION | …); BEFORE STEP 5, RE-LOAD THE FULL REQUIREMENT BUNDLE (STEP 1b) — NOT JUST qa-analysis.md; EVERY NEW ROW MUST BE ANCHORABLE TO A PRD BULLET, SPEC SECTION, TECH-PLAN TASK, OR CONTRACT CLAUSE; DO NOT APPEND ROWS TO THE CSV UNTIL STEP 3 (SAMPLES) IS APPROVED — AND NEVER SKIP STEP 7 COUNT APPROVAL BEFORE THE FINAL REPORT (STEP 8). FOR TEAMS THAT OPT IN (forge_qa_csv_before_eval: true), THIS CSV MUST BE APPROVED BEFORE EVAL YAML AND BEFORE TDD FEATURE WORK SO RED TESTS AND P4.4 EXECUTION TRACE TO THE SAME ACCEPTANCE SET.
 ```
 
 ## Red Flags — STOP
@@ -72,6 +73,7 @@ EACH TEST CASE TESTS EXACTLY ONE VERIFIABLE OUTCOME; EVERY ROW HAS A SOURCE (PRD
 - **First step of Description is not navigation** (when UI applies) — STOP. Fix platform URLs from config.
 - **Multiple verification points in one Expected Result** — STOP. Split into atomic cases.
 - **Deprecation labels applied in TMS without user sign-off on uncertain cases** — STOP. List for review first.
+- **Generating Step 5 rows from memory or from `qa-analysis.md` alone** — STOP. Complete **Step 1b** (fresh read of prd-locked, shared-dev-spec, tech-plans, contracts, scan index when present).
 
 ## Configuration (set once per task — ask if missing)
 
@@ -111,7 +113,7 @@ Optional ninth column (recommended):
 | **Id** | Unique: `TC-<FeatureSlug>-<NNN>` (use your project’s slug, not a fixed vendor prefix). |
 | **Platform** | One of: `Web`, `iOS`, `Android`, `API`, or project-defined labels — **consistent** within the file. |
 | **Summary** | Single-sentence purpose; one verification focus. |
-| **Description** | Step list. **HARD-GATE:** Step 1 must be navigation when UI: `1. Navigate to <platform base URL> …` using configured URLs. No line breaks inside the CSV cell; use spaces between steps. **Append** at end: `EXPECTED RESULT: <same text as Expected Result column>`. |
+| **Description** | Step list. **HARD-GATE:** Step 1 must be navigation when UI: `1. Navigate to <platform base URL> …` using configured URLs. **When the case depends on account state** (blacklisted user, tier, overdue, feature flag), begin with explicit **Preconditions:** in the same cell (e.g. `Preconditions: Seeded recruiter R with L1 pending and crawl reason; valid session. 1. Navigate…`). Map screens/selectors to **`qa-prd-analysis` Q8** / design when applicable. No line breaks inside the CSV cell; use spaces between steps. **Append** at end: `EXPECTED RESULT: <same text as Expected Result column>`. |
 | **Expected Result** | **One** outcome; must **match** the `EXPECTED RESULT:` appendix in Description character-for-character. |
 | **Automatable** | `Yes` \| `No` \| `Partial`. |
 | **Type** | e.g. `Positive`, `Negative`, `Edge Case`, `API`, `Security`, `Performance`, `Smoke`, `Sanity`, `Regression`, … |
@@ -133,12 +135,53 @@ Optional ninth column (recommended):
 
 **HARD-GATE:** Complete or refresh **`qa-prd-analysis`**; attach `qa-analysis.md` (`~/forge/brain/prds/<task-id>/qa/qa-analysis.md`) as the ground truth.
 
-1. Summarize PRD scope from `<PRD_SOURCE>`.
+1. Summarize PRD scope from `<PRD_SOURCE>` **and** from **`~/forge/brain/prds/<task-id>/prd-locked.md`** (must align — brain wins if they differ; flag drift).
 2. Ingest `<EXISTING_TESTS>` (MCP or file); index summaries for reuse and gaps.
 3. Ingest `<KB_PATH>` if present; note rules not stated in the PRD.
 4. Synthesize: gaps, reuse, deprecated candidates, conflicts.
 5. **MANDATORY:** Ask the user **all** clarifying questions; get verbatim answers.
 6. **MANDATORY:** Confirm **new feature vs change to existing** — quote the user.
+
+### Step 1b — Full requirement context reload (HARD-GATE before Step 5)
+
+**Why:** `qa-prd-analysis` already loads the brain once; this skill **must not** collapse that work into a short summary when writing cases. **Primary artifacts** hold acceptance wording, routes, error codes, SLAs, and integration edges — **`qa-analysis.md` alone cannot substitute.**
+
+Resolve **`<slug>`** from `prd-locked.md` or `product.md` reference. Then **Read/cat each path that exists** (skip missing paths only after recording a **`CONTEXT_GAP`** line for Step 8):
+
+```bash
+BRAIN=~/forge/brain
+TASK=<task-id>
+SLUG=<product-slug>
+
+# Already required for orientation — re-read before authoring rows in Step 5
+cat "$BRAIN/prds/$TASK/qa/qa-analysis.md"
+cat "$BRAIN/prds/$TASK/prd-locked.md"
+cat "$BRAIN/prds/$TASK/shared-dev-spec.md" 2>/dev/null
+
+for f in "$BRAIN/prds/$TASK/tech-plans/"*.md; do [ -f "$f" ] && echo "=== $f ===" && cat "$f"; done
+
+for f in "$BRAIN/products/$SLUG/contracts/"*.md; do [ -f "$f" ] && echo "=== $f ===" && cat "$f"; done
+
+cat "$BRAIN/products/$SLUG/product.md" 2>/dev/null
+
+# Scan — architecture / API surface / hubs (when present)
+cat "$BRAIN/products/$SLUG/codebase/index.md" 2>/dev/null
+head -c 24000 "$BRAIN/products/$SLUG/codebase/SCAN.json" 2>/dev/null
+```
+
+**Extract for test authoring (written notes before Step 2):**
+
+| Layer | Use in CSV rows |
+|---|---|
+| **prd-locked** | Success criteria, roles, out-of-scope, NFRs → positive/negative/edge cases |
+| **shared-dev-spec** | Cross-surface behaviors, versioning, idempotency, SLAs → API/integration cases |
+| **tech-plans** | Concrete routes, schemas, component names, task IDs → **Summary/Description** specificity and traceability |
+| **contracts** | Error shapes, cache keys, event schemas → contract-driven cases |
+| **product.md** | Platforms, URLs, repo roles → **Platform** column and navigation prefixes |
+| **SCAN / index** | Real paths, hubs, known fragile modules → regression-suggested cases (tag Source appropriately) |
+| **qa-analysis.md** | Which **types** and **surfaces** to prioritize — not the only source of *what* to assert |
+
+**HARD-GATE:** Do not start **Step 5 (Generate new cases)** until Step 1b is complete **for this invocation** (fresh read, not session memory). If a file is missing and the PRD implies that layer (e.g. API feature but no `shared-dev-spec.md`), record **`CONTEXT_GAP`** and resolve or risk-accept before bulk row generation.
 
 ### Step 2 — Test plan and estimation
 
@@ -168,13 +211,15 @@ List IDs/keys from `<EXISTING_TESTS>` that are reusable (not copied into the new
 
 ### Step 5 — Generate new cases
 
+**Pre-batch:** Confirm Step 1b was executed this session. Each new row must be **anchorable**: you can name **one** of — PRD section/bullet, `shared-dev-spec` heading, tech-plan task id line, contract section, or KB rule (for `Source=KB`). If you cannot anchor, **do not add the row** — clarify in Step 2 style or record gap.
+
 1. Ensure `<OUTPUT_CSV>` directory exists (`qa/` under task).
 2. Write UTF-8 CSV with header; append in **batches** to avoid tool limits.
-3. **Every** new row: populate **Source** (`PRD` / `KB` / …).
+3. **Every** new row: populate **Source** (`PRD` / `KB` / …). Prefer **`Feature Categorization`** / **Summary** text that reflects **actual** names from tech plans and contracts (routes, fields), not generic placeholders.
 
 ### Step 6 — Final review pass
 
-Re-walk PRD + KB; add missing atomic rows; fix format violations.
+Re-walk **prd-locked + shared-dev-spec + tech-plans + contracts** (Step 1b set) **and** KB; add missing atomic rows; fix format violations. Use **`qa-analysis.md`** coverage map as a **checklist**, not as the only definition of “done.”
 
 ### Step 7 — Test count review
 
@@ -186,6 +231,8 @@ Re-walk PRD + KB; add missing atomic rows; fix format violations.
 
 After count approval, deliver a summary with:
 
+- **Sources consulted** — bullet list of brain paths whose content informed row text (minimum: `prd-locked.md`, `qa-analysis.md`, every `tech-plans/*.md` read, `shared-dev-spec.md` if present, `contracts/*.md` if read, `product.md`, scan `index.md` if used).
+- **`CONTEXT_GAP` entries** — any required artifact that was missing or stale and how it was handled.
 - Total reusable (Step 4).
 - Total deprecated (Step 4.5) + reasons + replacements.
 - Total new in CSV; split **Source=PRD** vs **Source=KB** counts.
@@ -212,6 +259,7 @@ Commit to brain when your workflow uses git-backed brain.
 ## Checklist (before claiming done)
 
 - [ ] `qa-prd-analysis` artifact exists and is referenced
+- [ ] **Step 1b** full bundle re-read completed before Step 5; Step 8 lists **Sources consulted** + **CONTEXT_GAP** (or explicit “none”)
 - [ ] User approved samples (Step 3) and final count (Step 7)
 - [ ] CSV validates: 8 columns, optional Source, quoting, navigation rule, EXPECTED RESULT appendix
 - [ ] Atomicity spot-check: random 10% of rows read for split violations

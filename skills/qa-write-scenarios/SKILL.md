@@ -3,7 +3,7 @@ name: qa-write-scenarios
 description: "WHEN: qa-prd-analysis is complete and you need to write the maximum possible number of executable eval YAML scenarios — one per test type × surface × scenario variant. No gaps. No shortcuts."
 type: rigid
 requires: [brain-read, qa-prd-analysis, eval-scenario-format]
-version: 2.1.0
+version: 2.3.0
 preamble-tier: 3
 triggers:
   - "write eval scenarios"
@@ -38,6 +38,8 @@ Generates the **maximum possible number of executable eval YAML scenarios** from
 | "Existing eval YAML is close enough, I'll add a few" | Read the existing files first. If test types are missing, add full sets — not a few patches. |
 | "I'll write scenarios from memory" | Memory drifts from the PRD. Read prd-locked.md, tech-plans, and qa-analysis.md fresh on every invocation. |
 | "I'll generate eval YAML before manual CSV — PRD is enough" | **Automation without an approved human baseline is orphan automation.** You cannot faithfully prioritize coverage or trace YAML rows to acceptance IDs until **`manual-test-cases.csv`** exists (skill **`qa-manual-test-cases-from-prd`** through approval). YAML then maps journeys to those rows where applicable. |
+| "`qa-analysis.md` + CSV is enough — I won't re-open tech plans or contracts" | **`qa-analysis.md` prioritizes types/surfaces; concrete routes, payloads, cache keys, and error codes live in shared-dev-spec, tech-plans, and contracts.** Shallow YAML repeats generic steps. Use the same primary-source bundle as **`qa-manual-test-cases-from-prd`** Step 1b (see Step 0.1 below). |
+| "I'll drop a Python/bash generator in `eval/` to emit YAML" | **`eval/` is only for driver-readable `*.yaml` (and manifests).** Generators like `_generate_scenarios.py` are not part of Forge, confuse CI/review, and usually produce **`preconditions: []`** and weak UI coverage. Author YAML directly (or use a **repo-local** `tools/` script **outside** `eval/` if you must codegen). **Never** commit `eval/_generate*.py` without team agreement — prefer deleting after one-off use. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -49,6 +51,7 @@ EVERY CONFIRMED TEST TYPE FROM qa-analysis.md GETS ITS OWN SCENARIO SET.
 EVERY CONFIRMED SURFACE GETS ITS OWN SCENARIO FILE.
 EVERY SCENARIO HAS EXACTLY ONE ASSERTION — NO MULTI-ASSERTION MEGA-SCENARIOS.
 WHERE CSV ROW IDS EXIST, REFERENCE THEM IN SCENARIO METADATA / COMMENTS FOR TRACEABILITY.
+SCENARIO STEPS AND TARGETS MUST BE GROUNDED IN prd-locked + shared-dev-spec + tech-plans + contracts (NOT qa-analysis.md ALONE).
 THE FINAL COUNT MUST BE AUDITED AGAINST THE COVERAGE MATRIX BEFORE COMMIT.
 A LOW COUNT IS A BUG IN THIS SKILL — TREAT IT AS A FAILURE, NOT A FEATURE.
 ```
@@ -56,6 +59,7 @@ A LOW COUNT IS A BUG IN THIS SKILL — TREAT IT AS A FAILURE, NOT A FEATURE.
 ## Red Flags — STOP
 
 - **`manual-test-cases.csv` missing or has no data rows** (only header / empty) — STOP. Run **`qa-manual-test-cases-from-prd`** through Step 7 approval first — unless **`qa/qa-analysis.md` YAML frontmatter** contains **`eval_yaml_without_manual_csv_baseline: true`** with a one-line **`csv_baseline_waiver_reason:`** (user explicitly accepted orphan automation in chat after warning).
+- **Scenario targets invented without tech-plan / contract / CSV grounding** — STOP. Complete **Step 0.1** or record **`CONTEXT_GAP`** in **`qa/scenarios-manifest.md`**.
 - **`qa-analysis.md` absent from brain** — STOP. Run `qa-prd-analysis` first.
 - **Test types from Q1 not listed in `qa-analysis.md`** — STOP. The selection must be written before generation.
 - **Scenario has no `test_type` field** — STOP. Every scenario must declare its type for filtering and reporting.
@@ -81,7 +85,7 @@ Before invoking this skill, verify:
 
 Before writing the first scenario:
 
-- [ ] Brain artifacts loaded fresh (Step 0 complete) — do not write from memory
+- [ ] Brain artifacts loaded fresh (**Step 0 + Step 0.1** complete) — do not write from memory or from **`qa-analysis.md`** alone
 - [ ] Scenario ID convention understood: `SC-{AREA}-{TYPE}-{NNN}`
 - [ ] Surface-to-driver map built from confirmed surfaces
 - [ ] Existing eval YAML checked — diff against it before adding new scenarios
@@ -104,7 +108,7 @@ Before marking this skill complete:
 ## Cross-References
 
 - **`qa-prd-analysis`** — writes `qa/qa-analysis.md` that this skill reads to determine which test types, surfaces, and feature areas are in scope. Must run before this skill.
-- **`qa-manual-test-cases-from-prd`** — produces **`manual-test-cases.csv`** (QA engineering baseline). **Must complete before this skill** unless waiver recorded in **`qa-analysis.md`** — eval YAML should trace to CSV **`Id`** columns where applicable.
+- **`qa-manual-test-cases-from-prd`** — produces **`manual-test-cases.csv`** (QA engineering baseline). **Must complete before this skill** unless waiver recorded in **`qa-analysis.md`** — eval YAML should trace to CSV **`Id`** columns where applicable. Its **Step 1b** requirement-bundle reload is the same primary-source bar **Step 0.1** here must meet for routes, payloads, and assertions.
 - **`eval-scenario-format`** — canonical YAML schema every scenario file produced here must follow. Read it before writing the first file.
 - **`qa-pipeline-orchestrate`** — the orchestrator that invokes this skill as phase QA-P2. Results feed directly into QA-P5 multi-surface execution.
 - **`eval-coordinate-multi-surface`** — downstream consumer: reads the YAML files this skill writes and dispatches them to surface-specific drivers.
@@ -139,9 +143,15 @@ cat "$BRAIN/qa/qa-analysis.md"
 # Manual QA baseline — REQUIRED unless qa-analysis.md waives (see Red Flags)
 cat "$BRAIN/qa/manual-test-cases.csv" 2>/dev/null
 
-# Strongly recommended — scenarios without these have placeholder targets
+# Primary requirement sources — REQUIRED for concrete targets (Step 0.1); without these you emit generic YAML
 for f in "$BRAIN/tech-plans/"*.md; do echo "=== $f ===" && cat "$f"; done
 cat "$BRAIN/shared-dev-spec.md" 2>/dev/null
+
+# Contracts + product (use SLUG from prd-locked product field — same as qa-prd-analysis / qa-manual Step 1b)
+SLUG=<product-slug>
+PROD=~/forge/brain/products/$SLUG
+for f in "$PROD/contracts/"*.md; do [ -f "$f" ] && echo "=== $f ===" && cat "$f"; done
+cat "$PROD/product.md" 2>/dev/null
 
 # Check existing eval YAML
 ls "$BRAIN/eval/" 2>/dev/null && echo "EXISTING SCENARIOS — diff before adding"
@@ -162,12 +172,41 @@ ls "$BRAIN/eval/" 2>/dev/null && echo "EXISTING SCENARIOS — diff before adding
 
 **Concrete check (evidence before proceeding):** From repo root or brain path, `wc -l` / `Read` on **`manual-test-cases.csv`** and confirm data rows, **or** show the waiver keys from **`qa-analysis.md`**.
 
+### Step 0.1 — Ground scenarios in primary sources (HARD-GATE)
+
+**`qa-analysis.md`** tells you **which test types and surfaces** apply; it does **not** replace **prd-locked**, **shared-dev-spec**, **tech-plans**, **contracts**, or **manual-test-cases.csv** for **what** to type into `target`, paths, HTTP bodies, DB assertions, cache keys, or topic names.
+
+Before **Step 3**, resolve **product `<slug>`** and ensure you have **Read** (this invocation):
+
+| Artifact | Why |
+|---|---|
+| **`prd-locked.md`** | Success criteria wording drives expected results. |
+| **`shared-dev-spec.md`** | Cross-service SLAs, error codes, versioning. |
+| **`tech-plans/*.md`** | Routes, schemas, component/task IDs — **mandatory** for non-placeholder targets. |
+| **`products/<slug>/contracts/*.md`** | Required whenever API/cache/event/search surfaces appear in confirmed surfaces. |
+| **`products/<slug>/product.md`** | Base URLs, platform list, deploy facts. |
+| **`qa/manual-test-cases.csv`** | Row **Id** linkage and step wording to mirror in automation. |
+| **`codebase/index.md` or SCAN.json`** (if present) | Hub files / API surface hints — use when tech plan lacks a selector (prefer tech plan + CSV first). |
+
+**HARD-GATE:** No scenario step may use **`TODO` / generic path** where a **tech plan**, **contract**, or **CSV row** already names the real resource. **STOP** and complete **`CONTEXT_GAP`** (brain path + what is missing) in **`qa/scenarios-manifest.md`** if you cannot ground a step.
+
 From `qa-analysis.md`, extract and record:
 - `test_types: [...]` — the confirmed list from Q1
 - `surfaces: [...]` — the confirmed list from Q2
 - `coverage_depth: smoke|standard|comprehensive`
 - Feature areas and priorities (Q4)
 - Interrogation Q&A (open ambiguities and their answers)
+- **Q8 design mapping** (when UI in scope): PRD→component→precondition from **`qa-analysis.md`**
+
+### Step 0.2 — Preconditions for auth-gated and stateful UI/API flows (HARD-GATE)
+
+When a scenario asserts **post-login** UI, **tier-specific** API behavior, **blacklist/overdue** states, or anything other than a cold anonymous call, the scenario **must** list **preconditions** (YAML `preconditions:` array of strings, or per **`eval-scenario-format`**) that name:
+
+- **Account / token / role** (e.g. recruiter with `L1_Verification_Pending` + crawl reason, blacklisted test user from Q8 fixtures).
+- **Data** already in DB or **env** (feature flag, `RECRUITER_FIXTURE_ID` meaning).
+- **Prior steps** if not expressed as API calls in the same file (e.g. "Session established via login" only when the driver cannot perform login in-step — then split scenarios or add login step).
+
+**Do not** ship **`preconditions: []`** for journeys that require a specific user state — that was the failure mode in codegen scripts.
 
 ---
 

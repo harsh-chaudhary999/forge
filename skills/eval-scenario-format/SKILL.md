@@ -3,7 +3,7 @@ name: eval-scenario-format
 description: "WHEN: Writing eval scenarios for a new PRD or feature. Defines the YAML format — driver action, target, expected result — for multi-surface eval execution."
 type: rigid
 requires: [brain-read]
-version: 1.0.0
+version: 1.1.0
 preamble-tier: 3
 triggers:
   - "format eval scenario"
@@ -59,6 +59,16 @@ allowed-tools:
 5. MUST NOT skip mobile scenarios for features that have mobile clients — `web-cdp` and `android-adb` scenarios are not interchangeable
 
 ---
+
+### Anti-Pattern 3a (UI/state): Empty `preconditions` for auth-gated or account-state journeys
+
+**Why This Fails:** A scenario that asserts a banner after login, a tier-specific tab, or overdue redirect **without** stating required account/seed/token state is neither reproducible nor auditable. It passes in one environment and fails in another; reviewers cannot set up the same world.
+
+**Enforcement (MUST):**
+1. MUST fill `preconditions` with the **named** state (e.g. "Recruiter fixture: L1 pending + crawl reason X", "Session: valid `RECRUITER_TOKEN` for blacklisted test user per Q8") when the journey is not anonymous cold-start.
+2. MUST align preconditions with **`qa-prd-analysis` Q8** and **`qa-analysis.md`** design/fixture matrix when UI is in scope.
+3. MUST NOT use `preconditions: []` for post-login or stateful UI assertions — use explicit steps to authenticate/seed or document the env token contract.
+4. API-only cold calls (401 without auth) may keep empty preconditions.
 
 ### Anti-Pattern 3b: Thin driver smoke without authoritative-boundary proof (when Q10 applies)
 

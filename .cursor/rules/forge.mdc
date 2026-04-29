@@ -5,6 +5,8 @@ alwaysApply: true
 
 # Forge in Cursor
 
+Forge skills load from **`~/.cursor/plugins/local/forge/skills/`** after **`scripts/install.sh --platform cursor`**. On every session start, read **`~/.cursor/plugins/local/forge/skills/using-forge/SKILL.md`**. Key commands include **`/forge`**, **`/workspace`**, **`/intake`**, **`/qa`**, **`/qa-write`**, **`/qa-run`** — full list in plugin **`commands/`**.
+
 ## `AskUserQuestion` → `AskQuestion`
 
 Forge skills (under `skills/`) name the blocking multiple-choice tool **`AskUserQuestion`** in body text and in `allowed-tools` (Claude Code + repo lint). **In Cursor sessions, use `AskQuestion`** with the same title, text, and options a skill would pass to `AskUserQuestion` — same semantics, same one-question-per-turn rules when a skill says so.
@@ -12,3 +14,13 @@ Forge skills (under `skills/`) name the blocking multiple-choice tool **`AskUser
 If `AskQuestion` is not available or a call fails, present the same choices as a **numbered list** in the assistant message, **stop**, and wait for the user. Do not skip skill gates that depend on a human answer.
 
 **Do not** mass-rename `AskUserQuestion` in `SKILL.md` files; keep skills canonical for other hosts and CI. This rule is the Cursor alias.
+
+## Chat-visible interrogation (QA, intake, any “questions in thread” HARD-GATE)
+
+Some Forge skills require the **full question text** to appear in the **assistant message** (markdown), **not** only inside `AskQuestion`, **not** only in a file write, **not** only in a modal body the user never scrolls past. Examples: **`qa-prd-analysis`** Step 0.5 (**paste complete Q1–Q7 blocks first**), **`intake-interrogate`** Q9 verbatim blockquote.
+
+**In Cursor you MUST:** (1) Output those blocks in plain assistant markdown in the **same turn** before any blocking tool. (2) Then call **`AskQuestion`** if appropriate. Skipping (1) invalidates the gate — the transcript shows nothing the user was asked.
+
+**Why this breaks more often in Cursor than in Claude Code:** `hooks/hooks-cursor.json` documents that Cursor has **no** `UserPromptSubmit`-style hook; Forge cannot reinject “next gate / ask Q1–Q7” on **every** user message. Only **session-start** runs. So nothing apart from **this rule + the skill text** forces the model to show questions — **you** must follow the skill literally.
+
+**If the user says questions never appeared:** Re-run the phase and paste this into the prompt: *“Follow `skills/qa-prd-analysis/SKILL.md` Step 0.5 HARD-GATE — print Q1–Q7 in full in chat, then wait for answers; do not write only to brain.”*

@@ -84,6 +84,18 @@ cd ~/forge && bash scripts/install.sh --platform cursor
 
 That creates `~/.cursor/plugins/local/forge` and `~/.cursor/rules/forge.mdc` even before first launch. In Cursor, use **Command Palette → “Shell Command: Install 'cursor' command in PATH”** so future auto-detect works.
 
+### QA / intake questions never appear in the chat thread
+
+Forge skills (e.g. **`qa-prd-analysis`** Step 0.5, **`intake-interrogate`** Q9) require the **full interrogation text** in the **assistant message** first, then optional **`AskQuestion`**. **Cursor does not** run Claude Code’s **`prompt-submit`** hook (`hooks-cursor.json` `_note`), so you do **not** get automatic per-prompt reminders to ask — only **session-start** injects **`using-forge`**.
+
+If the model skips straight to brain files or a modal:
+
+1. **User nudge (copy-paste):** *Run `skills/qa-prd-analysis/SKILL.md` Step 0.5 HARD-GATE: paste complete Q1–Q7 in this thread in markdown, then stop for my answers. Do not put questions only in `qa-analysis.md`.*
+2. **Agent:** Follow **`.cursor/rules/forge.mdc`** — **Chat-visible interrogation** section.
+3. **Verify install:** `bash scripts/verify-forge-plugin-install.sh --platform cursor` so **`~/.cursor/rules/forge.mdc`** matches the repo (stale global rules = weaker reminders).
+
+Other Cursor plugins typically do **not** ship a parallel “paste questions in chat first” policy in **`alwaysApply` rules**; Forge documents this explicitly because host hooks differ.
+
 ### Duplicate or nested `skills/` (agents read stale intake)
 
 Same issue as other merged-tree installs — see **[`plugin-skill-layout.md`](plugin-skill-layout.md)**.

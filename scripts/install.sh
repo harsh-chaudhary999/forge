@@ -169,7 +169,7 @@ install_claude_code() {
     });
 
     addHook('PreToolUse', {
-      matcher: 'Bash|Read|Write|Edit|StrReplace|Grep|Glob|SemanticSearch|CodebaseSearch|WebFetch|WebSearch|Task|Delete|ReadLints|EditNotebook|NotebookEdit|TodoWrite|Shell|GenerateImage|AskQuestion|SwitchMode|AwaitShell|call_mcp_tool|fetch_mcp_resource|ListMcpResources',
+      matcher: 'Bash|Read|Write|Edit|StrReplace|Grep|Glob|SemanticSearch|CodebaseSearch|WebFetch|WebSearch|Task|Delete|ReadLints|EditNotebook|NotebookEdit|TodoWrite|Shell|GenerateImage|AskQuestion|AskUserQuestion|SwitchMode|AwaitShell|call_mcp_tool|fetch_mcp_resource|ListMcpResources',
       hooks: [{type: 'command', command: 'node \"' + hooksDir + '/pre-tool-use.cjs\"', async: false}]
     });
 
@@ -305,7 +305,7 @@ You have the Forge plugin installed. Forge skills, agents, and commands are avai
 
 The Forge plugin is installed at: ~/.cursor/plugins/local/forge
 
-Key commands: /workspace /intake /council /plan /build /eval /heal /review /dream /forge-status
+Key commands: /forge /workspace /intake /council /plan /build /eval /heal /review /dream /forge-status — standalone QA pipeline: /qa /qa-write /qa-run — full slash-command list: plugin `commands/` (20 commands; see README).
 
 Scanner (class/method stubs, full scan pipeline): python3 ~/.cursor/plugins/local/forge/tools/forge_scan.py --help
 

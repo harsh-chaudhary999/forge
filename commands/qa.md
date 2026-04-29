@@ -18,6 +18,8 @@ brain artifacts (PRD + tech plans)
   → write run report to brain
 ```
 
+If automation cannot run (no stack, no env), the pipeline uses **`NOT_EXECUTED`** / **`execution_scope: static_only`** — **not** **YELLOW**. See **`commands/qa-run.md`** (*When browsers / devices never start*) and **`skills/qa-pipeline-orchestrate/SKILL.md`** Edge case *Static validation only*.
+
 ## Usage
 
 ```

@@ -3,7 +3,7 @@ name: eval-judge
 description: "WHEN: All eval drivers have returned results and you need a final pass/fail verdict. Receives driver outputs from eval-coordinate-multi-surface and renders GREEN/RED/YELLOW judgment."
 type: rigid
 requires: [brain-read]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "judge eval results"
@@ -25,6 +25,8 @@ The eval-judge is the terminal gate in the eval pipeline. It receives results fr
 ```
 THE JUDGE NEVER ISSUES GREEN WITHOUT EVIDENCE FROM EVERY DRIVER — NO VERDICT IS EMITTED UNTIL RESULTS FROM ALL EXPECTED DRIVERS ARE RECEIVED AND CLASSIFIED.
 ```
+
+**When drivers never ran:** Do **not** invoke this skill to manufacture GREEN, YELLOW, or RED. **`qa-pipeline-orchestrate`** Phase QA-P6 logs **`verdict=NOT_EXECUTED`** and QA-P7 sets **`execution_scope: static_only`** — **YELLOW** means non-critical driver failures after execution, not “we skipped automation.”
 
 ## Anti-Pattern Preamble: Why Agents Fabricate Green Verdicts
 

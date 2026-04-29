@@ -56,6 +56,10 @@ existing eval/*.yaml in brain
 
 **Remote mode (`--mode remote`):** Stack is already running (staging, preview, CI environment). Forge skips stack-up entirely. Point `BASE_URL` and other env vars at the remote stack. Branch checkout is still recorded for reproducibility even if the remote runs a different SHA.
 
+## When browsers / devices never start (expected in some sessions)
+
+If stack-up is skipped and drivers are not invoked (no reachable URL, no emulator, no credentials), the pipeline records **`NOT_EXECUTED`** / **`execution_scope: static_only`** — **not** **YELLOW**. **YELLOW** from **`eval-judge`** means automation ran and some non-critical steps failed. See **`skills/qa-pipeline-orchestrate/SKILL.md`** **Phase QA-P6**, **Edge Cases → Static validation only**, and the QA-P7 report template **Why WebDriver / Appium / ADB did not run**.
+
 ## After a RED verdict
 
 ```
@@ -76,7 +80,7 @@ Do not manually declare a fix GREEN without a verified re-run. The report must s
 ```
 
 <HARD-GATE>
-Do NOT declare the feature ready to merge on a RED or YELLOW verdict. Fix → re-run → GREEN is the only valid path to merge readiness.
+Do NOT declare the feature ready to merge on a RED or YELLOW **product** verdict after drivers ran. **`NOT_EXECUTED`** means no product verdict yet — obtain GREEN after a real **`/qa-run`** against an environment. Fix → re-run → GREEN is the only valid path to merge readiness.
 </HARD-GATE>
 
 **Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns); **one blocking affordance per unrelated fork** (no bundled prose obligations); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.

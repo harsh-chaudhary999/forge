@@ -2,7 +2,7 @@
 name: forge-glossary
 description: "WHEN: You encounter an unfamiliar Forge term and need its canonical definition."
 type: reference
-version: 1.0.7
+version: 1.0.8
 preamble-tier: 1
 triggers:
   - "what does X mean"
@@ -444,6 +444,7 @@ Key locked decisions:
 | **GREEN** | All critical scenarios passed. Ready to merge. | Proceed to Review stage. |
 | **YELLOW** | All critical passed, some non-critical failed. Decide: fix or accept trade-off. | Review or return to Self-Heal. |
 | **RED** | Critical scenario failed. Cannot merge. | Enter Self-Heal loop (max 3 retries). |
+| **NOT_EXECUTED** | **QA pipeline / orchestrator** — no driver results (no stack, no env, agent session static check only). **Not** an **`eval-judge`** outcome; do not confuse with **YELLOW**. | Provide URL/device/credentials; re-run **`/qa-run`**. See **`qa-pipeline-orchestrate`** QA-P6, Edge case *Static validation only*. |
 
 ---
 

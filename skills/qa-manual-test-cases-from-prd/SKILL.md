@@ -3,7 +3,7 @@ name: qa-manual-test-cases-from-prd
 description: "WHEN: You need atomic manual QA test cases in CSV from a PRD plus optional existing suite and knowledge base, with estimation, reuse/deprecation tracking, review, and a final report — any product, any TMS."
 type: rigid
 requires: [qa-prd-analysis, brain-read, brain-write]
-version: 1.3.4
+version: 1.3.5
 preamble-tier: 3
 triggers:
   - "generate test cases"
@@ -99,21 +99,45 @@ EACH TEST CASE TESTS EXACTLY ONE VERIFIABLE OUTCOME; EVERY ROW HAS A SOURCE (PRD
 
 **MCP tools (optional):** If the host provides Atlassian, Xray, or other TMS MCPs, read the **live tool schema** before calling. If MCPs are absent, require **exported** JSON/CSV from the user for `<EXISTING_TESTS>`.
 
-## Required CSV Fields (8 columns)
+## Required CSV Fields (8 columns + optionals)
 
-Header row **exactly**:
+**Base** header row **exactly** (8 columns — works with strict TMS importers):
 
 ```text
 "Id","Platform","Summary","Description","Expected Result","Automatable","Type","Feature Categorization"
 ```
 
-Optional ninth column (recommended):
+**Recommended** ninth column:
 
 ```text
 "Source"
 ```
 
 **Source** values (constrained): `PRD` | `KB` | `REGRESSION` | `HYBRID` (document in Summary why hybrid).
+
+**Optional** tenth column (use for **all** rows in a file when you use it — **do not** mix blank and filled inconsistently without reason):
+
+```text
+"Preconditions"
+```
+
+- If **`Preconditions`** is **absent** as a column: put preconditions in the **Description** cell only (see **Description** row below).
+- If **`Preconditions`** is **present**: that cell holds **setup state**; **Description** is **numbered action steps only** (start with `1. Navigate…` for UI). Do **not** duplicate the full precondition paragraph in both columns. Use `None` (or `N/A — default happy path`) when the case assumes only baseline authenticated user / default config with **no** special seed, flags, or prior workflow.
+
+### Preconditions — explicit coverage (HARD-GATE)
+
+**Every** test case must make setup **executable** by a human or automation team. Preconditions are **not** optional when the verification depends on anything other than “default user on default stack.”
+
+| Precondition domain | Examples | When unclear |
+|---|---|---|
+| **Identity / session** | Role, permissions, account tier, org | **Ask** which persona applies; do not invent credentials. |
+| **Data / seed** | DB rows, CMS content, queue depth, “user has already completed step X” | **Ask** seed recipe, fixture id, or admin path — or record **`CONTEXT_GAP`** if unknown. |
+| **Feature flags / config** | Flag on/off, kill switch, A/B bucket | **Ask** default for this QA cycle if PRD does not lock it. |
+| **Time / scheduling** | Business hours, expiry windows, cron-relative state | **Ask** how testers should simulate or freeze time. |
+| **External integrations** | Partner sandbox, webhook replay, third-party error injection | **Ask** stub vs live and **environment** (staging URL scope). |
+| **Prior workflow** | “Order already placed,” “invoice overdue” | State as precondition steps or seed — **split** into a separate case if the setup is itself a full journey. |
+
+**Human clarification (blocking):** If the PRD or brain artifacts **do not** specify how to reach the starting state (e.g. “suspended recruiter” with no suspension mechanism documented), use **`AskUserQuestion`** / **`AskQuestion`** / **numbered options + stop** per **`using-forge`** — **before** writing final CSV rows that assume that state. **Forbidden:** silent placeholders like *“appropriate test user”* without definition agreed in chat or KB.
 
 ### Field rules
 
@@ -122,11 +146,19 @@ Optional ninth column (recommended):
 | **Id** | Unique: `TC-<FeatureSlug>-<NNN>` (use your project’s slug, not a fixed vendor prefix). |
 | **Platform** | One of: `Web`, `iOS`, `Android`, `API`, or project-defined labels — **consistent** within the file. |
 | **Summary** | Single-sentence purpose; one verification focus. |
-| **Description** | Step list. **HARD-GATE:** Step 1 must be navigation when UI: `1. Navigate to <platform base URL> …` using configured URLs. **When the case depends on account state** (blacklisted user, tier, overdue, feature flag), begin with explicit **Preconditions:** in the same cell (e.g. `Preconditions: Seeded recruiter R with L1 pending and crawl reason; valid session. 1. Navigate…`). Map screens/selectors to **`qa-prd-analysis` Q8** / design when applicable. No line breaks inside the CSV cell; use spaces between steps. **Append** at end: `EXPECTED RESULT: <same text as Expected Result column>`. |
+| **Preconditions** (optional column) | When present: concise setup — auth + data + flags + environment references. Must align with **Description** steps. |
+| **Description** | **Numbered** step list. **HARD-GATE:** For UI, step **1** must be navigation: `1. Navigate to <platform base URL> …` using configured URLs. **If no `Preconditions` column:** when the case depends on non-default **account/data/flag** state, begin the cell with `Preconditions: <explicit setup>.` then `1. Navigate…`. Map screens/selectors to **`qa-prd-analysis` Q8** / design when applicable. No line breaks inside the CSV cell; use spaces between steps. **Append** at end: `EXPECTED RESULT: <same text as Expected Result column>`. |
 | **Expected Result** | **One** outcome; must **match** the `EXPECTED RESULT:` appendix in Description character-for-character. |
 | **Automatable** | `Yes` \| `No` \| `Partial`. |
 | **Type** | e.g. `Positive`, `Negative`, `Edge Case`, `API`, `Security`, `Performance`, `Smoke`, `Sanity`, `Regression`, … |
 | **Feature Categorization** | Module / epic name for filtering imports. |
+| **Source** (optional column) | `PRD` \| `KB` \| `REGRESSION` \| `HYBRID` — when column present, **every** data row must set it. |
+
+**Full header with both optionals** (when team wants Source + Preconditions separated):
+
+```text
+"Id","Platform","Summary","Description","Expected Result","Automatable","Type","Feature Categorization","Source","Preconditions"
+```
 
 ### CSV mechanics
 
@@ -150,6 +182,7 @@ Optional ninth column (recommended):
 4. Synthesize: gaps, reuse, deprecated candidates, conflicts.
 5. **MANDATORY:** Ask the user **all** clarifying questions; get verbatim answers. For **discrete** clarifications (yes/no, pick scope, approve assumption), use **blocking interactive prompts** per **`skills/using-forge`** (**`AskQuestion`** / **numbered options + stop**); open-ended follow-ups may be plain chat after those forks resolve.
 6. **MANDATORY:** Confirm **new feature vs change to existing** — quote the user.
+7. **Preconditions pass:** From PRD + contracts + tech plans, list **starting states** each case will need (roles, seeded entities, flags, environments). Where the doc is silent or ambiguous on **how** testers establish that state — **stop** and elicit answers with **blocking prompts** (same as item 5); do **not** bake guessed seeds into CSV.
 
 ### Step 1b — Full requirement context reload (HARD-GATE before Step 5)
 
@@ -182,7 +215,7 @@ head -c 24000 "$BRAIN/products/$SLUG/codebase/SCAN.json" 2>/dev/null
 
 | Layer | Use in CSV rows |
 |---|---|
-| **prd-locked** | Success criteria, roles, out-of-scope, NFRs → positive/negative/edge cases |
+| **prd-locked** | Success criteria, roles, out-of-scope, NFRs → positive/negative/edge cases + **preconditions** (who can act, what must already be true) |
 | **shared-dev-spec** | Cross-surface behaviors, versioning, idempotency, SLAs → API/integration cases |
 | **tech-plans** | Concrete routes, schemas, component names, task IDs → **Summary/Description** specificity and traceability |
 | **contracts** | Error shapes, cache keys, event schemas → contract-driven cases |
@@ -203,8 +236,8 @@ Deliver:
 ### Step 3 — Rules acknowledgment and samples
 
 1. State `<VALIDATION_CODE>` from the team’s rule doc (user must supply the code string — there is no global Forge default).
-2. Complete checklist: 8 fields, navigation first, Expected Result duality, quoting, atomicity.
-3. Present **exactly two** sample rows in final CSV shape — one **PRD-sourced**, one **KB-sourced** if possible.
+2. Complete checklist: 8 fields (+ **Source** / **Preconditions** if using optionals), navigation first, **explicit preconditions** (column or `Preconditions:` lead-in), Expected Result duality, quoting, atomicity.
+3. Present **exactly two** sample rows in final CSV shape — one **PRD-sourced**, one **KB-sourced** if possible. At least **one** sample must demonstrate **non-trivial preconditions** (or explicitly state **`None` / default baseline**) so reviewers see the pattern.
 4. **HARD-GATE:** **Wait for explicit user approval** before Step 4.
 
 ### Step 4 — Reusable cases (reference list)
@@ -225,10 +258,11 @@ List IDs/keys from `<EXISTING_TESTS>` that are reusable (not copied into the new
 1. Ensure `<OUTPUT_CSV>` directory exists (`qa/` under task).
 2. Write UTF-8 CSV with header; append in **batches** to avoid tool limits.
 3. **Every** new row: populate **Source** (`PRD` / `KB` / …). Prefer **`Feature Categorization`** / **Summary** text that reflects **actual** names from tech plans and contracts (routes, fields), not generic placeholders.
+4. **Every** new row: **preconditions written** — either **`Preconditions`** column (if that header is present) **or** `Preconditions:` prefix inside **Description**. Rows that need special setup must **not** ship with vague setup text; unresolved setup → **`CONTEXT_GAP`** or user clarification **before** the CSV is treated as approved.
 
 ### Step 6 — Final review pass
 
-Re-walk **prd-locked + shared-dev-spec + tech-plans + contracts** (Step 1b set) **and** KB; add missing atomic rows; fix format violations. Use **`qa-analysis.md`** coverage map as a **checklist**, not as the only definition of “done.”
+Re-walk **prd-locked + shared-dev-spec + tech-plans + contracts** (Step 1b set) **and** KB; add missing atomic rows; fix format violations; verify **each** row has **clear preconditions** for non-default paths. Use **`qa-analysis.md`** coverage map as a **checklist**, not as the only definition of “done.”
 
 ### Step 7 — Test count review
 
@@ -241,7 +275,7 @@ Re-walk **prd-locked + shared-dev-spec + tech-plans + contracts** (Step 1b set) 
 After count approval, deliver a summary with:
 
 - **Sources consulted** — bullet list of brain paths whose content informed row text (minimum: `prd-locked.md`, `qa-analysis.md`, every `tech-plans/*.md` read, `shared-dev-spec.md` if present, `contracts/*.md` if read, `product.md`, scan `index.md` if used).
-- **`CONTEXT_GAP` entries** — any required artifact that was missing or stale and how it was handled.
+- **`CONTEXT_GAP` entries** — any required artifact that was missing or stale and how it was handled; include **precondition** gaps (e.g. seed/flag undefined after user could not answer).
 - Total reusable (Step 4).
 - Total deprecated (Step 4.5) + reasons + replacements.
 - Total new in CSV; split **Source=PRD** vs **Source=KB** counts.

@@ -3,7 +3,7 @@ name: qa-pipeline-orchestrate
 description: "WHEN: A standalone QA run is needed against named feature branches and a target environment — independent of the full /forge delivery pipeline. Chains: brain read → scenario generation → branch prep → stack-up → multi-surface exec → verdict."
 type: rigid
 requires: [brain-read, qa-prd-analysis, qa-write-scenarios, qa-branch-env-prep, eval-product-stack-up, eval-coordinate-multi-surface, eval-judge]
-version: 1.0.9
+version: 1.0.10
 preamble-tier: 3
 triggers:
   - "run QA pipeline"
@@ -287,19 +287,24 @@ Log:
 
 ## Phase QA-P6 — Verdict
 
-Invoke `eval-judge` with the result payload from QA-P5.
+**When QA-P5 ran and produced driver results:** Invoke `eval-judge` with the result payload from QA-P5.
 
 `eval-judge` applies the judgment algorithm:
 - **GREEN** — all critical scenarios PASS, no non-retried FAILs
 - **YELLOW** — non-critical failures with documented acceptance
 - **RED** — any critical scenario FAIL, or FAIL after max retries
 
-If RED: do not proceed to report. Invoke `self-heal-triage` to classify the failure root cause. Output the failure summary to the user and stop. The pipeline must be re-run after the fix — do not patch and claim GREEN without a fresh run.
+**When QA-P5 did not run or produced zero driver attempts** (e.g. QA-P4 SKIP — no stack; no resolved `.eval-env` / URLs; agent session stopped after static checks): **Do not invoke `eval-judge`** for a product verdict — `eval-judge` requires driver result payloads (**Iron Law** in `skills/eval-judge/SKILL.md`). Treat this as **execution not performed**, not as YELLOW. **YELLOW** means “drivers ran and some non-critical steps failed,” not “we didn’t run automation.”
 
-Log:
+Log **one** of:
 ```
 [QA-P6-VERDICT] task_id=<task-id> verdict=GREEN|RED|YELLOW scenarios=<n> duration_ms=<n>
+[QA-P6-VERDICT] task_id=<task-id> verdict=NOT_EXECUTED reason=<no_stack|no_env|session_scope|credentials|...> static_validation=PASS|FAIL|SKIPPED
 ```
+
+If RED: do not proceed to report. Invoke `self-heal-triage` to classify the failure root cause. Output the failure summary to the user and stop. The pipeline must be re-run after the fix — do not patch and claim GREEN without a fresh run.
+
+If **NOT_EXECUTED**: proceed to QA-P7 with **`execution_scope: static_only`** — this is an **expected gap** in headless/agent sessions without stack or credentials, not a product regression.
 
 ---
 
@@ -322,21 +327,29 @@ If a **previous** `qa-run-report-*.md` exists for this task and **the same scena
 
 If verdict **RED** and Jira MCP is configured: after **`self-heal-triage`**, optionally batch **`createJiraIssue`** per failing scenario (link keys in **Failures**). One path only — do not duplicate Slack + Jira + chat without filing IDs in this report.
 
+**Execution vs product verdict:** Use **`execution_scope: full`** when drivers ran. Use **`execution_scope: static_only`** when only YAML/schema validation (or manifest writes) occurred — set **`product_verdict: null`** and **`pipeline_verdict: NOT_EXECUTED`** (do **not** put **YELLOW** here). **`verdict`** in frontmatter may duplicate **`product_verdict`** for backward compatibility when **`execution_scope: full`**.
+
 ```markdown
 ---
 task_id: <task-id>
 run_at: <ISO8601>
-verdict: GREEN | RED | YELLOW
+execution_scope: full | static_only
+product_verdict: GREEN | RED | YELLOW | null
+pipeline_verdict: GREEN | RED | YELLOW | NOT_EXECUTED
+verdict: GREEN | RED | YELLOW | NOT_EXECUTED
 brain_git_sha: <git -C ~/forge/brain rev-parse HEAD>
 forge_task_id_env: <FORGE_TASK_ID or empty>
 flake_suspected: false | true
+static_validation: PASS | FAIL | SKIPPED | null
 ---
 
 # QA Run Report
 
 **task_id:** <task-id>
 **run_at:** <ISO8601>
-**verdict:** GREEN | RED | YELLOW
+**execution_scope:** full | static_only
+**product verdict (GREEN/RED/YELLOW):** … or **N/A — drivers did not run**
+**pipeline verdict:** GREEN | RED | YELLOW | **NOT_EXECUTED**
 **duration:** <total seconds>
 
 ## Branch State
@@ -376,10 +389,27 @@ flake_suspected: false | true
 - [ ] Re-run `/qa-run` after fix to verify GREEN
 ```
 
+**When `execution_scope: static_only`** — add sections **Why automation did not run** (stack-up skipped, no env, agent session policy, etc.) and **How to get a real verdict** (bullet list: `url-only` / `branch-local` + credentials, device IDs, `/qa-run` from a machine that can reach the target). Tone: **expected limitation**, not failure.
+
+```markdown
+## Why WebDriver / Appium / ADB did not run
+
+| Gate | Status | Meaning |
+|---|---|---|
+| QA-P4 | SKIP | Stack-up not executed — nothing to open in browser or on device |
+| QA-P5 | SKIP | Eval drivers not invoked — no resolved env / no stack |
+| QA-P6 | NOT_EXECUTED | No driver payload for `eval-judge` — **not** the same as YELLOW |
+
+## How to obtain GREEN / RED / YELLOW
+
+1. Provide **`BASE_URL`** (or run mode **`url-only`** / **`branch-local`**) and any **`DEVICE_ID`** / simulator IDs required by scenarios.
+2. Re-run **`/qa-run <task-id>`** from an environment that can start or reach the stack.
+```
+
 Commit to brain:
 ```bash
 git -C ~/forge/brain add prds/<task-id>/qa/
-git -C ~/forge/brain commit -m "qa: run report <task-id> — verdict=<GREEN|RED|YELLOW>"
+git -C ~/forge/brain commit -m "qa: run report <task-id> — verdict=<GREEN|RED|YELLOW|NOT_EXECUTED>"
 ```
 
 Log:
@@ -391,7 +421,7 @@ Log:
 
 ## Full Pipeline Log (end state)
 
-At completion, `qa-pipeline.log` must contain all phase gate lines in order:
+At completion, `qa-pipeline.log` must contain phase gate lines in order. **Full execution path** example:
 
 ```
 [QA-P1-LOAD]       task_id=PRD-042 ...
@@ -403,7 +433,7 @@ At completion, `qa-pipeline.log` must contain all phase gate lines in order:
 [QA-P7-REPORT]     task_id=PRD-042 ...
 ```
 
-A pipeline log missing any phase line is an incomplete run. Do not report success without all lines present.
+**Static-only / execution blocked** path is valid when documented: QA-P4 or QA-P5 may log **SKIP**, then **`[QA-P6-VERDICT] … verdict=NOT_EXECUTED`** — still complete if QA-P7 records **`execution_scope: static_only`** and explains the gap. Do not treat **NOT_EXECUTED** as **YELLOW**.
 
 ## Edge Cases
 
@@ -415,6 +445,14 @@ All non-web scenarios get status `SKIPPED (surface filter)` in the report. Verdi
 
 ### Remote mode (testing staging)
 Skip QA-P4. In the report, note the remote BASE_URL as the test target. Record that the branch state is informational (the remote may be running a different commit than local HEAD).
+
+### Static validation only (no stack, no drivers — common in agent sessions)
+
+When the session validates **`eval/*.yaml`** (or writes manifests) but **does not** start a stack or invoke drivers (no **`BASE_URL`**, no device, no credentials, or policy forbids long-running services):
+
+- Label the outcome **`pipeline_verdict: NOT_EXECUTED`** and **`execution_scope: static_only`** — **not** **YELLOW**.
+- **YELLOW** remains reserved for **`eval-judge`** when drivers ran and non-critical steps failed.
+- The human summary should read like **“automation not run — environment gap”**, not **“partial pass.”**
 
 ### No tech plans in brain
 `qa-write-scenarios` will be blocked. The pipeline logs `[QA-P2-SCENARIOS] status=BLOCKED reason=no-tech-plans`. Ask user: "Tech plans are absent. Would you like to (1) run `/plan` first, (2) provide a brief description of what to test and generate minimal scenarios from the PRD only, or (3) supply existing eval YAML manually?"

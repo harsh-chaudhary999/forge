@@ -50,6 +50,7 @@ requires: [other-skill-name]
 4. **Eval gates everything**: Nothing ships without `forge-eval-gate` passing
 5. **Brain persistence**: Every decision is recorded via `forge-brain-persist`
 6. **Volume is not a skip lever**: Large files or long exports do not waive required steps — see **AGENTS.md** Core rule **6** and section *Instruction completeness* in **CLAUDE.md**.
+7. **One-step horizon (assistant chat):** Do **not** narrate the full downstream pipeline in dialogue unless the next stage is the **immediate** prerequisite, the question **depends** on it, or the user asked what comes next. **`docs/forge-one-step-horizon.md`** + **`skills/using-forge/SKILL.md`** **Horizon narration**.
 
 ## Where Things Live
 

@@ -3,7 +3,7 @@ name: qa-write-scenarios
 description: "WHEN: qa-prd-analysis is complete and you need to write the maximum possible number of executable eval YAML scenarios — one per test type × surface × scenario variant. No gaps. No shortcuts."
 type: rigid
 requires: [brain-read, qa-prd-analysis, eval-scenario-format]
-version: 2.4.5
+version: 2.4.7
 preamble-tier: 3
 triggers:
   - "write eval scenarios"
@@ -45,6 +45,8 @@ Generates the **maximum possible number of executable eval YAML scenarios** from
 | "`qa-analysis.md` + CSV is enough — I won't re-open tech plans or contracts" | **`qa-analysis.md` prioritizes types/surfaces; concrete routes, payloads, cache keys, and error codes live in shared-dev-spec, tech-plans, and contracts.** Shallow YAML repeats generic steps. Use the same primary-source bundle as **`qa-manual-test-cases-from-prd`** Step 1b (see Step 0.1 below). |
 | "I'll drop a Python/bash generator in `eval/` to emit YAML" | **`eval/` is only for driver-readable `*.yaml` (and manifests).** Generators like `_generate_scenarios.py` are not part of Forge, confuse CI/review, and usually produce **`preconditions: []`** and weak UI coverage. Author YAML directly (or use a **repo-local** `tools/` script **outside** `eval/` if you must codegen). **Never** commit `eval/_generate*.py` without team agreement — prefer deleting after one-off use. |
 | "Prerequisites are missing — I'll open with a blocking prompt about eval YAML / CSV waiver" | **Violates dependency order.** The **first** interaction must not be the **last** gate (automation-only waiver). Walk **forward** from **`prd-locked.md`** → **`qa-prd-analysis`** (**sequential interactive** Step 0.5 per **`using-forge`** / **`qa-prd-analysis`**) → **`manual-test-cases.csv`** (or waiver **after** PRD+QA exist). See **Step −1** below. |
+| "During **`qa-prd-analysis`** Step 0.5, I'll paste the *orphan automation / why eval YAML isn't written yet* essay **between** Q1, Q2, …" | **Invalid.** That explanation is for **gate-order violations** (Step −1), **not** between every interrogation turn. During Step 0.5, stay on the **current** question — one short forward sentence max. |
+| "I'll list the whole QA→CSV→eval→merge chain in chat while the user is still on an upstream step" | **Invalid.** **`using-forge`** — **one-step horizon** in assistant messages: name **only** the **immediate** next artifact/skill unless the user asked for the roadmap. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 

@@ -79,6 +79,8 @@ Do not manually declare a fix GREEN without a verified re-run. The report must s
 Do NOT declare the feature ready to merge on a RED or YELLOW verdict. Fix → re-run → GREEN is the only valid path to merge readiness.
 </HARD-GATE>
 
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+
 **Forge plugin scope:** Skills from `skills/`; brain from `~/forge/brain/`; repo paths from `product.md`.
 
 **vs `/eval`:** `/eval` is the forge delivery pipeline eval gate (State P4.4, requires State 4b artifacts). `/qa-run` is standalone — works without a full conductor run, targets any branch, generates its report independently.

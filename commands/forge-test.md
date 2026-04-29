@@ -13,4 +13,6 @@ Reports: **pass/fail per phase**, timing, any skill invocation or output anomali
 Do NOT confuse **`/forge-test`** with **`/forge`** — **`/forge-test`** validates **Forge itself**; **`/forge`** runs **your** task through **`conductor-orchestrate`** against **your** brain PRD and **`product.md`**.
 </HARD-GATE>
 
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+
 **Forge plugin scope:** This repo + **`seed-product`**; not a substitute for product-specific **`/forge`**.

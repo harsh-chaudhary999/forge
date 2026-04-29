@@ -29,6 +29,7 @@ requires: [other-skill-name]
 - **Never write scripts to `/tmp` and execute them.** Run all bash commands inline. Writing `/tmp/verify.sh`, `/tmp/check.sh`, `/tmp/final_check.sh` etc. and then running them is forbidden — it obscures what's being executed, creates untracked side effects, and requires extra permission approvals. If a command is complex, run it directly as a multi-line heredoc or chained pipeline.
 - **`/tmp` is only for data files, never for scripts.** Intermediate data files (e.g. scan output, temp lists) are acceptable. Executable scripts written to `/tmp` are not.
 - **Blocking interactive prompts (every supported IDE):** Skills name **`AskUserQuestion`** in **`allowed-tools`**; hosts map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor → **`AskQuestion`**; CLIs / editors without the tool → **numbered choices + stop**). Human answers must not be prose-only “reply if…” without that structure.
+- **Assistant dialogue — one-step horizon:** In **chat**, do **not** enumerate later pipeline stages (eval, merge, PR set, …) unless they are the **immediate** next prerequisite, the **current** prompt requires naming them, or the user asked for the roadmap. Canonical: **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** (**Horizon narration**, **Stage-local questioning**). Static docs (**README**, **`commands/`**) may still list full dependency order.
 
 ## Written artifacts — precision (scans, plans, QA, eval, code, tests)
 

@@ -12,6 +12,8 @@ Invoke **`forge-trust-code`** to run the **two-stage review** pipeline.
 Do NOT skip Stage 1 for “small” diffs when **`forge-trust-code`** is in scope — spec claims must be verified against code.
 </HARD-GATE>
 
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+
 **Forge plugin scope:** This repo’s review integration; brain + product repos as the skill specifies.
 
 **vs `/forge`:** **`/review`** is a **partial** slice (post-implementation gate). Full E2E: **`commands/forge.md`**.

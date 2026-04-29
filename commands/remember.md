@@ -13,6 +13,8 @@ The user’s message is the **content to record** (decision, learning, pattern).
 Do NOT fabricate decision IDs or back-date entries — follow the skill’s numbering and frontmatter rules.
 </HARD-GATE>
 
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+
 **Forge plugin scope:** Brain writes only; no product-repo commits unless the user asked.
 
 **vs `/forge`:** **`/remember`** is a **utility**; it does not advance the delivery pipeline. Full E2E: **`commands/forge.md`**.

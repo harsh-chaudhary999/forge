@@ -13,4 +13,6 @@ Optional: **`--out /path/to/out.tar.gz`**, **`--full`** to include the entire **
 
 Writes **`forge-evidence-<task>-<ts>.tar.gz`** and a sidecar **`.manifest.json`** in the current directory unless **`--out`** is set.
 
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+
 **Forge plugin scope:** brain paths only; never packs product repo `.env` files.

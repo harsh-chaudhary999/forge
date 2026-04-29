@@ -21,6 +21,8 @@ See **`docs/forge-task-verification.md`**.
 Do NOT treat **`/eval`** as “create test cases” — **YAML scenarios** and (when required) **manual QA CSV** are **State 4b** artifacts. This command **runs** eval against existing scenarios.
 </HARD-GATE>
 
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+
 **Forge plugin scope:** Forge repo **`tools/`** and **`skills/`**; brain **`~/forge/brain/`**.
 
 **vs `/forge`:** **`/eval`** runs **P4.4-style** eval only. Full E2E from intake through QA CSV authoring, RED, build, merge, dream: **`commands/forge.md`** (`/forge`).

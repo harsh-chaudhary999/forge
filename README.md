@@ -6,6 +6,8 @@ Forge ships a feature across **multiple repos** without embedding a runtime fram
 
 **`/forge`** (`commands/forge.md`) is the **full end-to-end** entrypoint: same phases as **`conductor-orchestrate`**, including **mandatory** State 4b **manual QA CSV** (`qa-prd-analysis` → `qa-manual-test-cases-from-prd` → approved `qa/manual-test-cases.csv` → `[P4.0-QA-CSV]`) **before** `[P4.0-EVAL-YAML]`, then eval YAML, TDD RED, design ingest when applicable, dispatch, reviews, **P4.4 eval**, self-heal, PR set, dream/brain. Other slash commands are **partial slices** — see [Commands reference](#commands-reference) and [Orchestration model](#orchestration-model-automation-vs-approvals).
 
+**AI hosts (dialogue):** When eliciting answers in chat, follow **[`docs/forge-one-step-horizon.md`](docs/forge-one-step-horizon.md)** — **one-step horizon** (only the immediate next prerequisite unless the user asks for the full roadmap). Full pipeline order remains in this README and **`commands/`**; do not restate it every turn in session.
+
 ---
 
 ## Table of contents
@@ -28,6 +30,7 @@ Forge ships a feature across **multiple repos** without embedding a runtime fram
 - [Brain layout](#brain-layout)
 - [Machine verification (optional CI)](#machine-verification-optional-ci)
 - [Orchestration model (automation vs approvals)](#orchestration-model-automation-vs-approvals)
+- [One-step horizon (AI dialogue)](docs/forge-one-step-horizon.md) — do not narrate the full pipeline each chat turn
 - [Troubleshooting](#troubleshooting)
 - [Requirements & license](#requirements--license)
 - [Opportunity backlog (market-shaped gaps)](docs/forge-opportunities.md) — internal prioritization lens, not a public roadmap commitment

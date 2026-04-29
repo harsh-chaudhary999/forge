@@ -3,7 +3,7 @@ name: qa-prd-analysis
 description: "WHEN: Before generating QA test cases from a PRD. Loads ALL brain artifacts first (PRD, tech plans, scan, contracts, product topology), then runs a structured interrogation to lock test types, surfaces, coverage depth, and all open ambiguities before a single scenario is written."
 type: rigid
 requires: [brain-read]
-version: 2.1.9
+version: 2.2.2
 preamble-tier: 3
 triggers:
   - "analyze PRD for QA"
@@ -51,6 +51,9 @@ allowed-tools:
 | "I'll paste the entire Q1–Q8 in one message **and** append **`AskQuestion`** *How should we proceed…* with options that overlap Q3/Q4 or bundle **CSV/YAML waiver**" | **Invalid UX + wrong gate.** One **primary** interaction model per turn; **waivers** belong to **`qa-write-scenarios`** / **`qa-manual-test-cases-from-prd`**, not **`qa-prd-analysis`**. **Sequential** turns only — never wall + unrelated modal. |
 | "I'll offer **single bulk**, **approve recommendations**, or **hybrid** so the user can skip the back-and-forth" | **Invalid for Step 0.5.** Interrogation is **mandatorily sequential and interactive** — no menu to bypass dialogue. Speed is not a substitute for doubt closure. |
 | "I must ask Q2 verbatim even though Q1 already fixed surfaces and depth" | **Invalid.** **Adaptive reconciliation** — skip or shorten template prompts when already answered; ask **net-new** doubts instead. |
+| "I'll ask Q1 using only **Full / Lean / Custom** (or similar presets) **without** showing the full test-type checklist" | **Invalid.** The human must **see** every category (functional, non-functional, security, accessibility rows) to choose or waive — presets **hide capability**. Show the **full fenced Q1 menu** below first; optional presets **below** the menu are OK as shortcuts **after** visibility. |
+| "I'll prepend *Why eval YAML isn't written yet* / *orphan automation* between every Step 0.5 answer" | **Invalid UX.** That ordering lecture belongs in **`qa-write-scenarios`** **Step −1** when the user **skips ahead** — **not** between Q1→Q2→Q3. Stay on the **current** question only; one-line forward pointers are OK, not essays. |
+| "I'll narrate the path *QA analysis → CSV → eval YAML → /qa-run* in every Q1–Q8 message so the user sees the ‘big picture’" | **Invalid.** **`using-forge`** — **do not** mention downstream stages unless **immediate** next dependency or user asked. Step 0.5 stays **coverage-only**; **`manual-test-cases.csv`** is the **next** artifact after **`qa-analysis.md`** — name it **only** when closing Step 0.5 / handing off, **not** before every answer. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -206,7 +209,7 @@ The human must **see Q1–Q7 and Q8 (when UI in scope)** in the **chat thread** 
 
 **How the dialogue runs**
 
-1. **One assistant message ≈ one topic** — usually **one** of Q1–Q8 at a time, using the templates below. Use **`AskUserQuestion`** / **`AskQuestion`** / **numbered options + stop** per **`using-forge`** wherever the human picks among discrete options. **Do not** paste the full Q1–Q8 menu in a single turn.
+1. **One assistant message ≈ one coverage dimension** — usually **one** of Q1–Q8 at a time, using the templates below. **Each dimension’s message includes that dimension’s full template** (e.g. **Q1** = entire test-type fence below — that is **one** topic, not “Q1–Q8”). Use **`AskUserQuestion`** / **`AskQuestion`** / **numbered options + stop** per **`using-forge`** for optional **shortcuts** only **after** the full checklist is visible where this skill requires it. **Do not** paste Q2–Q8 in the same turn as Q1.
 
 2. **Optional opener** — You may send **one** short line of context after Step 0 (e.g. “Brain loaded for `<task-id>`; starting coverage interrogation.”) **without** any fork like “how do you want to answer?” **There is no user choice** between bulk vs sequential — sequential is **required**.
 
@@ -221,6 +224,7 @@ The human must **see Q1–Q7 and Q8 (when UI in scope)** in the **chat thread** 
 
 - Pasting **full** Q1–Q8 in one message, or offering **single bulk / approve-all-recommendations / hybrid** flows — **not allowed**.  
 - A **second** blocking prompt in the same turn that **duplicates** coverage choices or bundles **CSV/YAML waiver** (that belongs to **`qa-write-scenarios`** / **`qa-manual-test-cases-from-prd`** after `qa-analysis.md`).
+- **Pipeline horizon in every turn** — do **not** restate *…then manual CSV, then `eval/*.yaml`, then `/qa-run`…* while asking Q1–Q8. Per **`using-forge`**: mention **only** the **immediate** next dependency; full chain lives in **README** / **commands**, not repeated in chat.
 
 **After** all dimensions are closed: if brain vs answers still disagree, **one** short clarification turn is OK — still **not** a full template dump.
 
@@ -230,7 +234,11 @@ The human must **see Q1–Q7 and Q8 (when UI in scope)** in the **chat thread** 
 
 ### Q1 — Test Types (mandatory)
 
-Ask as the **first** interrogation turn after Step 0 (after optional one-line context). **Only** this section’s content in that turn — then **wait**. Show the menu with brain-informed recommendations:
+Ask as the **first** interrogation turn after Step 0 (after optional one-line context). **Only** Q1 content in that turn — then **wait**.
+
+**HARD-GATE — Full checklist visible:** Paste the **complete** fenced menu below (Functional → Accessibility) with brain-informed ☑/○ — **every row the skill lists**. **Forbidden:** replacing Q1 with **only** prose plus **Full / Lean CI / Custom** (or similar) **without** the full structured list above it — users cannot consent to types they cannot see. **Allowed:** **after** the full menu, add optional shortcuts (*e.g.* “Reply **All recommended**, **Lean CI**, or line-by-line yes/no”) **below** the fence — shortcuts may **not** substitute for the checklist.
+
+Show the menu with brain-informed recommendations:
 
 ```
 Which test types do you want for this QA run?

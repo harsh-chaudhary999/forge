@@ -66,6 +66,8 @@ Use `/qa` when you want to verify a feature branch independently of whether the 
 A RED verdict from `/qa` must not be manually overridden. Fix the failing code and re-run `/qa-run` to obtain a verified GREEN before merging.
 </HARD-GATE>
 
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+
 **Forge plugin scope:** Skills from `skills/`; brain artifacts from `~/forge/brain/`; repos from `product.md` paths.
 
 **Session style:** Prefer execution-style (stack-up, browser/emulator automation, terminal output). See `docs/platforms/session-modes-forge.md`.

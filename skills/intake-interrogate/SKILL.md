@@ -3,7 +3,7 @@ name: intake-interrogate
 description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Confidence-first: pre-fill from PRD + product.md; variable number of user turns — stop as soon as mandatory lock fields are concrete and doubts are cleared (no fixed question count; two answers can resolve many latent doubts). Q4 registry + Q9 design gates unchanged when they apply; **Q10 implementation closure** (VCS reference, authoritative delivery boundary, implementation stack) when the ambiguity gate in Q10 applies."
 type: rigid
 requires: [brain-write]
-version: 1.0.3
+version: 1.0.4
 preamble-tier: 2
 triggers:
   - "interrogate PRD"
@@ -38,6 +38,7 @@ allowed-tools:
 | "Only one repo in `product.md` matches a signal (sole web app, sole API service, sole worker, …), so that must be the repo" | **Cardinality ≠ correctness.** Picking the only backend / only frontend / only mobile entry because it is unique is **registry guessing**, not a validated lock. STOP. Cross-check PRD audience and semantics against **`role:`** and **`repo:`** path; surface mismatches; use explicit list + `product.md` fix or human confirmation. |
 | "I'll phrase option A as the narrowest scope so it looks like the right pick" | Narrowest ≠ correct. MCQ **order** and **only** wording bias humans and models toward A. STOP. When **PRD audience or surface** (who uses it: customer, partner, admin, internal, …) **conflicts** with a **project `role` name** or parent path segment, **do not** present a single-repo “100% confident” option — lead with **escalation / Other**. |
 | "**Forge intake is exactly eight questions in fixed order with no design question** — I stayed inside the gate" | **False.** This skill is **`intake-interrogate`**, not a literal eight-chat-turn script. **`prd-locked.md` must include defined sections** (see **Lock dimensions**); **Q9 (design / UI)** applies when web, app, or **user-visible UI** is in scope — including the **verbatim design source-of-truth blockquote** in the thread and **`design_intake_anchor`**. A Figma link in the PRD **does not** replace Q9 or the blockquote. Claiming “no ninth question” is **misreading Forge**; if you locked without Q9 when UI applied, **re-open intake** — do not defend it. |
+| "I'll prepend *after intake comes council, then tech plans, then …* every turn so the user sees the roadmap" | **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Horizon narration**. Stay on the **current** elicitation; full pipeline order is documented outside chat. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 

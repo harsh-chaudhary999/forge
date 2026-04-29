@@ -9,6 +9,8 @@ description: Map an existing codebase into the Forge brain. Produces an Obsidian
 
 Build a codebase knowledge graph for the Forge brain. Works on any existing repo — no prior Forge setup needed. Produces navigable Obsidian markdown files that agents can query without re-reading source code.
 
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+
 ## Usage
 
 ```

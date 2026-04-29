@@ -47,4 +47,6 @@ bash scripts/install.sh --uninstall             # Remove
 
 See **`docs/platforms/`** for per-platform guides.
 
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+
 **vs `/forge`:** This command only **documents install**; it does not run the delivery pipeline. Full E2E: **`commands/forge.md`**.

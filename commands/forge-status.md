@@ -13,6 +13,8 @@ Produce a **concise status** summary for the **Forge brain** (read-only; no skil
 
 Format: **one line per item**, scannable.
 
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+
 **Forge plugin scope:** **`~/forge/brain/`** only; no third-party status APIs.
 
 **vs `/forge`:** Status is **observability**, not orchestration. Full E2E: **`commands/forge.md`**.

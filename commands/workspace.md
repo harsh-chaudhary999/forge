@@ -9,6 +9,8 @@ description: Initialize or open a Forge workspace. Point it at any folder — it
 
 Set up a Forge workspace by scanning an existing folder structure. Works with any layout — Forge detects git repos, infers roles, and auto-detects languages. Only asks what it cannot figure out itself.
 
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+
 ## Usage
 
 ```

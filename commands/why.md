@@ -9,6 +9,8 @@ The user’s argument is a **decision ID** (e.g. **`D20260410-001`**) or a **sea
 
 Output: provenance chain — who decided → when → why → alternatives → what it blocked or unblocked → linked decisions — under **`~/forge/brain/`**.
 
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+
 **Forge plugin scope:** Brain read; **`brain-why`** skill only.
 
 **vs `/forge`:** Lookup only, not delivery. Full E2E: **`commands/forge.md`**.

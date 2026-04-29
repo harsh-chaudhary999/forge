@@ -2,7 +2,7 @@
 name: forge-glossary
 description: "WHEN: You encounter an unfamiliar Forge term and need its canonical definition."
 type: reference
-version: 1.0.2
+version: 1.0.3
 preamble-tier: 1
 triggers:
   - "what does X mean"
@@ -25,6 +25,16 @@ Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the
 **Definition:** The host-specific mechanism that gathers a human answer without advancing until answered — canonical skill tool **`AskUserQuestion`** (see **`allowed-tools`**); **Cursor** maps to **`AskQuestion`**; hosts **without** that tool use **numbered choices in chat + stop**. Full host table: **`using-forge`** **Blocking interactive prompts**. Applies to **every** Forge-supported IDE, not one vendor.
 
 **Cross-References:** **`using-forge`** (**Interactive human input**, **Stage-local questioning**).
+
+### One-step horizon (horizon narration)
+
+**Definition:** In **assistant dialogue** (not static README/commands), name **only** the **immediate** next prerequisite, artifact, or skill — or a downstream step when the **current** question truly depends on it, or when the human asked “what comes next.” Do **not** preemptively enumerate full pipelines (CSV → eval → merge → …) during intake, QA interrogation, tech-plan elicitation, or other **upstream** gates.
+
+**Usage Context:** Reduces confusion when the user is mid-interrogation and the model front-loads later phases. Complements **Stage-local questioning** in **`using-forge`**.
+
+**What It's NOT:** Not a ban on **documentation** — `README.md`, `commands/forge.md`, and brain templates may list full order. Not “never mention eval” — only **don’t** mention it **before** the user is on that gate without cause.
+
+**Cross-References:** **`using-forge`** (**Horizon narration**, **Multi-question elicitation** item 5). Canonical doc: **`docs/forge-one-step-horizon.md`**.
 
 ---
 

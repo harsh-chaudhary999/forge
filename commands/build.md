@@ -11,6 +11,8 @@ This command assumes **approved tech plans** and that **orchestration gates** fo
 Do NOT ship production feature code that bypasses **`conductor-orchestrate` State 4b** when the task is under **full `/forge`** or when **`forge_qa_csv_before_eval: true`** — implementer must refuse; back up to **`qa-manual-test-cases-from-prd`**, **`eval-translate-english`**, or **`forge-tdd`** RED as needed.
 </HARD-GATE>
 
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+
 **Forge plugin scope:** Worktrees and brain paths per **`worktree-per-project-per-task`**; this repo’s skills only.
 
 **vs `/forge`:** **`/build`** is execution for **implementation** only. Full pipeline (including State 4b QA CSV first on **`/forge`**): **`commands/forge.md`**.

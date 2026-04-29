@@ -13,6 +13,8 @@ The council invokes the four surface reasoning skills (backend, web, app, infra)
 Do NOT write per-repo **tech plans** or start **State 4b** inside this command unless the user explicitly asks — council’s output is **`shared-dev-spec.md`** (and related contract artifacts), not implementation.
 </HARD-GATE>
 
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+
 **Forge plugin scope:** Brain under **`~/forge/brain/`**; skills from this repo’s **`skills/`**.
 
 **vs `/forge`:** **`/council`** is a **partial** slice. Full E2E is **`/forge`** — see **`commands/forge.md`**.

@@ -13,8 +13,10 @@ The intake process locks the PRD under **`~/forge/brain/prds/<task-id>/`** as **
 Do NOT claim intake is complete without **concrete** `prd-locked.md` sections (product, goal, success, **repos + registry**, contracts, timeline, rollback, metrics) and, when UI is in scope, the **verbatim** design source-of-truth from **Q9** in an assistant message plus **`design_intake_anchor`** in the lock. Do NOT jump to **`/council`** or implementation in the same turn unless the user explicitly asks — this command’s scope is intake through lock.
 </HARD-GATE>
 
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
+
 **Forge plugin scope:** Use skills and brain paths from **this** Forge repo only; brain root is **`~/forge/brain/`**.
 
-**vs `/forge`:** **`/intake`** is a **partial** slice. Full E2E (intake → … → QA CSV → eval → merge → dream) is **`/forge`** — see **`commands/forge.md`**.
+**vs `/forge`:** **`/intake`** is a **partial** slice. Full E2E is **`/forge`** — see **`commands/forge.md`**. In **live chat**, do not narrate the full downstream chain each turn — **`docs/forge-one-step-horizon.md`**.
 
 **Session style:** Prefer **planning-style**. See **`docs/platforms/session-modes-forge.md`**.

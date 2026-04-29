@@ -2,7 +2,7 @@
 name: using-forge
 description: "Bootstrap skill — inlined by session-start hook for every Forge-supported host (Claude Code, Cursor, Gemini CLI, JetBrains AI, Codex, Copilot CLI, IDX, Antigravity, OpenCode, etc.)"
 type: rigid
-version: 1.0.9
+version: 1.0.12
 preamble-tier: 4
 triggers:
   - "how to use forge"
@@ -48,6 +48,7 @@ Rigid skills declare the canonical tool name **`AskUserQuestion`** in **`allowed
 - Any **multi-step fork** (continue vs run prerequisite vs waive) presented **only** as prose + “tell me in chat” — **invalid**. Replace with **one** blocking prompt whose options encode those forks (or **numbered list** + stop).
 - **Questions only in brain files** or only in a UI surface the user might miss — the **transcript** must show what was asked (**chat-visible**), then the interactive affordance.
 - **Rhetorical** “let me know” buried in paragraphs — if an answer changes behavior, it must be **blocking** and **structured**.
+- **Horizon narration** — naming **later** pipeline stages (**eval YAML**, **manual CSV**, **council**, **merge**, **dream**, **P4.4**, whole **`/forge`** chain, …) **when they are not** the **immediate** next dependency for what you are doing **now**. That confuses humans (“why are we talking about eval while I’m on Q2?”). **Allowed:** (a) name **only** the **single next** prerequisite or artifact the user must satisfy next; (b) cite a downstream step **only** when the **current** question directly depends on it (rare); (c) if the user **asks** “what happens after.” **Forbidden:** preemptive runbooks in chat **during** intake / QA interrogation / tech-plan rounds unless the skill explicitly requires that disclosure. **Repo-wide standard:** **`docs/forge-one-step-horizon.md`**.
 
 **Required in the same assistant turn as any runbook text:**
 
@@ -66,10 +67,11 @@ Use this **whenever** the human must answer **more than one** distinct thing bef
 
 **How (dialogue mechanics — skill-agnostic):**
 
-1. **One primary topic per assistant message** when multiple questions remain — not a whole questionnaire in one turn, unless the skill explicitly allows a single bundled prompt for inseparable sub-parts.
+1. **One primary dimension per assistant message** when multiple questions remain — not Q1–Q8 in one turn. **A single dimension may include a long structured checklist** (e.g. **`qa-prd-analysis` Q1** full test-type menu) — that is still **one** topic; do **not** collapse it to presets-only **without** showing the full menu when the canonical skill template is a checklist (**see `qa-prd-analysis` Q1 HARD-GATE**).
 2. **Blocking interactive** for discrete forks: **`AskUserQuestion`** / **`AskQuestion`** / **numbered 1–N + stop** per **Blocking interactive prompts** above.
 3. **Reconcile after each reply:** if the answer **already settles** a later planned prompt, **skip** it and **state** *skipped — covered by …*; if the answer **surfaces new doubts**, ask **those** before advancing a rigid checklist.
 4. **Forbidden:** dumping **all** prompts for a phase in one message **plus** a **second** unrelated meta-prompt in the same turn; **prose-only** “reply with all answers”; **questions only** in brain files or tool payloads the user never saw in chat.
+5. **No downstream roadmap in dialogue:** While eliciting answers for **this** phase, **do not** enumerate later phases (“then **`qa-write-scenarios`**, then **`eval/`**, then merge …”). Same rule as **Stage-local questioning** — **one-step horizon** for the human unless they asked for the big picture.
 
 This pattern is **not** QA-specific — it applies on **every** Forge-supported IDE.
 
@@ -77,7 +79,7 @@ This pattern is **not** QA-specific — it applies on **every** Forge-supported 
 
 **Implements** **Multi-question elicitation** for **coverage** dimensions (templates **Q1–Q8**). **Canonical detail:** `skills/qa-prd-analysis/SKILL.md` **Step 0.5**.
 
-- Same **where / how** as above; plus **forbidden** in this phase: full Q1–Q8 wall in one message; “single bulk / approve all” shortcuts; **CSV / eval-YAML-only waiver** choices (**wrong gate** — use **`qa-write-scenarios`** / **`qa-manual-test-cases-from-prd`** **after** `qa-analysis.md`).
+- Same **where / how** as above; plus **forbidden** in this phase: full Q1–Q8 wall in one message; “single bulk / approve all” shortcuts; **CSV / eval-YAML-only waiver** choices (**wrong gate** — use **`qa-write-scenarios`** / **`qa-manual-test-cases-from-prd`** **after** `qa-analysis.md`). **Q1** must show the **full** test-type checklist (not preset-only **Full/Lean** — see **`qa-prd-analysis`** Q1 **HARD-GATE**).
 
 **Downstream references** to “Step 0.5” or “real interrogation” mean: **`qa-analysis.md`** after **Multi-question elicitation** completed for coverage — **`qa-write-scenarios`**, **`qa-manual-test-cases-from-prd`**, **`qa-pipeline-orchestrate`**, **`conductor-orchestrate`**, **`eval-scenario-format`**.
 
@@ -106,6 +108,8 @@ This applies to **every** Forge phase (intake, council, tech plans, QA, eval, PR
 4. **Same rule for waivers and exceptions:** Do not use a **blocking interactive prompt** about waiving or reordering **downstream** gates while **upstream** gates are still open — secure the **current** stage first; only then discuss exceptions relevant to the **next** stage.
 
 **Why:** The user should not be interrogated about Phase **N+k** while Phase **N** prerequisites are pending. Maintain **respect** for sequential process: one coherent stage at a time.
+
+5. **Speak only the immediate next dependency.** In **assistant messages** (not static README/docs), **do not** mention downstream process steps unless **(i)** they are the **very next** artifact/skill after the current step, **(ii)** the **current** prompt cannot be answered without naming them, or **(iii)** the user explicitly asked what comes later. Listing **`eval/*.yaml`**, CSV waivers, merge order, PR set, etc. **before** the user is on that gate **confuses** and reads like pressure — **forbidden**.
 
 **Multi-question elicitation** is the **project-standard envelope** for **any** sequence of human answers; skills add **what** to ask and **exceptions** (e.g. **`intake-interrogate` Q9** verbatim blockquote). Skipping **transcript-visible** questioning invalidates those gates.
 

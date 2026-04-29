@@ -3,7 +3,7 @@ name: qa-pipeline-orchestrate
 description: "WHEN: A standalone QA run is needed against named feature branches and a target environment — independent of the full /forge delivery pipeline. Chains: brain read → scenario generation → branch prep → stack-up → multi-surface exec → verdict."
 type: rigid
 requires: [brain-read, qa-prd-analysis, qa-write-scenarios, qa-branch-env-prep, eval-product-stack-up, eval-coordinate-multi-surface, eval-judge]
-version: 1.0.7
+version: 1.0.8
 preamble-tier: 3
 triggers:
   - "run QA pipeline"
@@ -24,7 +24,7 @@ Standalone QA pipeline that runs from brain artifacts (PRD + tech plans) through
 
 ## Human input (all hosts)
 
-This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**, **Multi-question elicitation**, and **Stage-local questioning**; scenario ordering rules in **`qa-write-scenarios`** **Step −1**.
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**, **Multi-question elicitation**, and **Stage-local questioning**; scenario ordering rules in **`qa-write-scenarios`** **Step −1**. Dialogue norm (**do not** restate the full QA→CSV→eval chain each message): **`docs/forge-one-step-horizon.md`**.
 
 **Entry points:**
 - `/qa` — full pipeline (write scenarios + branch prep + execute + judge)
@@ -79,7 +79,7 @@ Before reporting pipeline complete:
 
 ## Cross-References
 
-- **`using-forge`** — **Stage-local questioning** (all phases): prompts must unblock **only** the current stage.
+- **`using-forge`** — **Stage-local questioning** (all phases): prompts must unblock **only** the current stage. **Assistant chat:** **`docs/forge-one-step-horizon.md`** (**one-step horizon**).
 - **`qa-write-scenarios` Step −1** — QA→eval **prerequisite order** before QA-P2 or any **blocking interactive prompt** about CSV/evYAML: **`prd-locked.md`** → **`qa-prd-analysis`** → **`manual-test-cases.csv`** or documented waiver — never invert.
 - **`qa-prd-analysis`** — must run before this skill (unless reusing existing scenarios) to produce `qa/qa-analysis.md` which feeds QA-P2. Interrogation follows **`using-forge`** **Multi-question elicitation** (coverage Step 0.5 — not a one-shot Q1–Q8 wall).
 - **`qa-write-scenarios`** — invoked at QA-P2 to generate eval YAML from brain artifacts and `qa-analysis.md`.

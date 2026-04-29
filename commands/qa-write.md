@@ -27,7 +27,7 @@ Stops after writing scenarios to brain. No branch checkout. No execution. No sta
 ## Usage
 
 ```
-/qa-write <task-id>                                   # full interrogation + all types + all surfaces
+/qa-write <task-id>                                   # qa-prd-analysis Step 0.5 (one dimension/turn; Q1 = full test-type menu per skill) + all types + all surfaces
 /qa-write <task-id> --surface web,api                 # limit to specific surfaces
 /qa-write <task-id> --type smoke,regression           # limit to specific test types
 /qa-write <task-id> --type all                        # all types (comprehensive)
@@ -115,6 +115,8 @@ Or run **`/qa <task-id>`** to generate + execute in one command.
 Do NOT skip `qa-prd-analysis` — scenario generation without surface analysis produces shallow, non-traceable scenarios that fail at runtime or give false confidence.
 Do NOT bulk-generate eval YAML without an approved **`manual-test-cases.csv`** baseline (or documented waiver in **`qa-analysis.md`**) — see **`qa-write-scenarios`** Step 0.0.
 </HARD-GATE>
+
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
 
 **Forge plugin scope:** Skills from `skills/`; brain from `~/forge/brain/`.
 

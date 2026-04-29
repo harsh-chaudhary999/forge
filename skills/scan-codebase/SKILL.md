@@ -148,7 +148,7 @@ codebase/
 
 | Entry | Purpose |
 |-------|---------|
-| `python3 tools/forge_scan.py …` | Prepends `tools/` on `sys.path` and runs **`scan_forge.cli`** (Forge repo root) |
+| `python3 tools/forge_scan.py …` | Prepends `tools/` on `sys.path` and runs **`scan_forge.cli`** (implementation: **`tools/scan/forge_scan.py`**; root file is a shim) |
 | `PYTHONPATH=tools python3 -m scan_forge …` | Same CLI when `tools/` is already on `PYTHONPATH` |
 
 **Requirements:** Python 3.9+, **GNU grep** and **cksum** on `PATH` (pattern inventory and stable method IDs). Optional: `pip install -r tools/scan_forge/requirements.txt` (adds **PyYAML**) for reliable YAML OpenAPI parsing and full `openapi-schema-digest` coverage.

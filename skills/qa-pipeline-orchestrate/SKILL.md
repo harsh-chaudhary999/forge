@@ -251,6 +251,8 @@ Invoke `eval-coordinate-multi-surface` with:
 - Surface filter from `--surface` flag (default: all surfaces present in scenario files)
 - Env variables sourced from `.eval-env`
 
+**Hotfix narrow scope:** If **`qa/qa-analysis.md`** YAML lists **`hotfix_surfaces: [api, web]`** (set during **`qa-prd-analysis`** for urgent patches), run only scenarios whose **`surface`** matches that set; log others as **`SKIP (hotfix scope)`** — do not treat as pass.
+
 The coordinator chains drivers in scenario order:
 1. Web scenarios → `eval-driver-web-cdp`
 2. API scenarios → `eval-driver-api-http`
@@ -260,7 +262,7 @@ The coordinator chains drivers in scenario order:
 6. Android scenarios → `eval-driver-android-adb`
 7. iOS scenarios → `eval-driver-ios-xctest`
 
-**HARD-GATE:** Every scenario in the YAML must be attempted. No scenario is silently skipped unless its `requires_device: true` and `DEVICE_ID` is absent from `.eval-env` — that scenario gets `SKIP` status, not silent omission.
+**HARD-GATE:** Every in-scope scenario must be attempted. No scenario is silently skipped unless its `requires_device: true` and `DEVICE_ID` is absent from `.eval-env` — that scenario gets `SKIP` status, not silent omission. (**Hotfix scope** reduces what “in-scope” means — see above.)
 
 Log:
 ```
@@ -295,7 +297,27 @@ Write the QA run report:
 REPORT=~/forge/brain/prds/<task-id>/qa/qa-run-report-<YYYYMMDD-HHMMSS>.md
 ```
 
+Before writing, capture reproducibility pins (shell or note inline):
+
+```bash
+git -C ~/forge/brain rev-parse HEAD   # brain_git_sha for manifest
+# Record FORGE_TASK_ID / FORGE_PRD_TASK_ID from env if set
+```
+
+If a **previous** `qa-run-report-*.md` exists for this task and **the same scenario IDs** failed in both runs → set **`flake_suspected: true`** in YAML frontmatter below (same RED twice — likely infra flake; still record verdict RED).
+
+If verdict **RED** and Jira MCP is configured: after **`self-heal-triage`**, optionally batch **`createJiraIssue`** per failing scenario (link keys in **Failures**). One path only — do not duplicate Slack + Jira + chat without filing IDs in this report.
+
 ```markdown
+---
+task_id: <task-id>
+run_at: <ISO8601>
+verdict: GREEN | RED | YELLOW
+brain_git_sha: <git -C ~/forge/brain rev-parse HEAD>
+forge_task_id_env: <FORGE_TASK_ID or empty>
+flake_suspected: false | true
+---
+
 # QA Run Report
 
 **task_id:** <task-id>

@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - "scripts/install.sh"
+      - "scripts/forge-doctor.sh"
+      - "tools/forge_evidence_bundle.py"
       - "hooks/session-start"
       - "hooks/hooks.json"
       - ".claude/hooks/session-start.cjs"
@@ -31,6 +33,8 @@ on:
   pull_request:
     paths:
       - "scripts/install.sh"
+      - "scripts/forge-doctor.sh"
+      - "tools/forge_evidence_bundle.py"
       - "hooks/session-start"
       - "hooks/hooks.json"
       - ".claude/hooks/session-start.cjs"
@@ -64,6 +68,12 @@ jobs:
 
       - name: Install script bash syntax
         run: bash -n scripts/install.sh
+
+      - name: forge-doctor script bash syntax
+        run: bash -n scripts/forge-doctor.sh
+
+      - name: forge_evidence_bundle.py syntax
+        run: python3 -m py_compile tools/forge_evidence_bundle.py
 
       - name: Stage marker unit tests
         run: node .claude/hooks/test-forge-stage-detect.cjs

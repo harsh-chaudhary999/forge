@@ -2,7 +2,7 @@
 
 > Plug-and-play multi-repo product orchestration for AI-assisted delivery. Takes a PRD and drives it through locked scope, negotiated contracts, tech plans, TDD implementation, multi-surface eval, review, and coordinated PRs — with a **git-backed brain** as the system of record.
 
-Forge ships a feature across **multiple repos** without embedding a runtime framework in your product code: **skills** (markdown + YAML), **subagents**, **hooks**, and **commands** encode process. **Full skill catalog** under `skills/` (count: `bash scripts/count-skills.sh`), **4 subagents**, **20 slash commands**. Works with **Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Copilot CLI, OpenCode, JetBrains AI** (see [Platform Setup](#platform-setup)).
+Forge ships a feature across **multiple repos** without embedding a runtime framework in your product code: **skills** (markdown + YAML), **subagents**, **hooks**, and **commands** encode process. **Full skill catalog** under `skills/` (count: `bash scripts/count-skills.sh`), **4 subagents**, **21 slash commands**. Works with **Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Copilot CLI, OpenCode, JetBrains AI** (see [Platform Setup](#platform-setup)).
 
 **`/forge`** (`commands/forge.md`) is the **full end-to-end** entrypoint: same phases as **`conductor-orchestrate`**, including **mandatory** State 4b **manual QA CSV** (`qa-prd-analysis` → `qa-manual-test-cases-from-prd` → approved `qa/manual-test-cases.csv` → `[P4.0-QA-CSV]`) **before** `[P4.0-EVAL-YAML]`, then eval YAML, TDD RED, design ingest when applicable, dispatch, reviews, **P4.4 eval**, self-heal, PR set, dream/brain. Other slash commands are **partial slices** — see [Commands reference](#commands-reference) and [Orchestration model](#orchestration-model-automation-vs-approvals).
 
@@ -466,6 +466,8 @@ Each file under **`commands/`** has YAML **`name:`** + **`description:`**, optio
 | **`/qa`** | **Standalone QA pipeline** — brain load → scenario generation (all test types) → branch checkout → stack-up → multi-surface exec → verdict. Independent of `/forge`. |
 | **`/qa-write`** | **Partial** — generate eval YAML scenarios from PRD + tech plans (`qa-prd-analysis` → `qa-write-scenarios`). Supports `--type` and `--surface` flags. |
 | **`/qa-run`** | **Partial** — execute existing scenarios against named branches + env (`qa-branch-env-prep` → stack-up → drivers → `eval-judge`). |
+| **`/doctor`** | **Meta** — run **`scripts/forge-doctor.sh`**: plugin layout + Claude hooks symlink + **`settings.json`** forge hook counts + Cursor **`forge.mdc`** freshness. |
+| **`/evidence-bundle`** | **Utility** — **`tools/forge_evidence_bundle.py`**: tar.gz + manifest for **`prds/<task-id>/`** (audit handoff). |
 
 ---
 
@@ -485,7 +487,7 @@ forge/
 │   ├── eval-scenario-format/
 │   └── …
 ├── agents/                 # 4 subagent definitions (*.md)
-├── commands/               # 20 slash-command docs (*.md)
+├── commands/               # 21 slash-command docs (*.md)
 ├── hooks/                  # Hook manifests (hooks.json, hooks-cursor.json) + session-start shim
 ├── .claude/hooks/          # Claude Code + repo git hooks: *.cjs (session-start, pre-tool-use, …)
 ├── tools/                  # scan_forge, verify_forge_task.py, forge_adjacency_scan.py — see tools/README.md

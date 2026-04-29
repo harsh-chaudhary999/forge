@@ -45,7 +45,7 @@ Re-running **`install.sh --platform claude-code`** refreshes the plugin cache an
 | Codebase scan (`forge_scan.py`) | **`install.sh --platform claude-code`** copies **`tools/`** into the plugin cache — **`python3 ~/.claude/plugins/cache/forge-plugin/forge/<version>/tools/forge_scan.py`** when not using a Forge git checkout as cwd |
 | Agents (4) | Full support via Agent tool |
 | Hooks | SessionStart injects `using-forge` bootstrap |
-| Commands (20) | All slash commands available — see `commands/` |
+| Commands (21) | All slash commands available — see `commands/` |
 | Brain | Full read/write to `~/forge/brain/` |
 | Worktrees | Full git worktree isolation |
 

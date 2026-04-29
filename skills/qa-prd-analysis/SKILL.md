@@ -482,6 +482,8 @@ feature_class: new | existing_change
 test_types: [smoke, positive, negative, boundary, edge_case, regression, security, accessibility]
 surfaces: [web, api, android, ios, db, cache]
 coverage_depth: comprehensive
+# optional urgent patch scope (omit normally):
+# hotfix_surfaces: [api, web]
 ---
 ```
 

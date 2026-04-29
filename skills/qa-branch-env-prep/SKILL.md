@@ -150,7 +150,7 @@ How do you want to run these tests?
      You give me: BASE_URL + branch names (traceability only — no local checkout).
 ```
 
-Record the answer as `run_mode: url-only | branch-local | branch-code-validate | branch-tracking`.
+Record the answer as `run_mode: url-only | branch-local | branch-code-validate | branch-tracking`. (**Hotfix** is not a separate mode — use **`branch-local`** or **`branch-code-validate`** and list **`hotfix_surfaces`** in **`qa-analysis.md`** so QA-P5 runs a narrowed surface set.)
 
 **For `url-only`:** Skip Steps 2–4. Proceed directly to Step 5 (write `.eval-env`).
 

@@ -313,7 +313,7 @@ You have the Forge plugin installed. Forge skills, agents, and commands are avai
 
 The Forge plugin is installed at: ~/.cursor/plugins/local/forge
 
-Key commands: /forge /workspace /intake /council /plan /build /eval /heal /review /dream /forge-status — standalone QA pipeline: /qa /qa-write /qa-run — full slash-command list: plugin `commands/` (20 commands; see README).
+Key commands: /forge /workspace /intake /council /plan /build /eval /heal /review /dream /forge-status — standalone QA pipeline: /qa /qa-write /qa-run — full slash-command list: plugin `commands/` (21 commands; see README). Utilities: /doctor /evidence-bundle.
 
 Scanner (class/method stubs, full scan pipeline): python3 ~/.cursor/plugins/local/forge/tools/forge_scan.py --help
 

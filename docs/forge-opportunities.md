@@ -2,6 +2,8 @@
 
 Internal-facing backlog of **discipline**, **process**, and **feature** gaps that show up in AI-assisted delivery tools broadly — not a commitment to ship, but a sane prioritization lens for Forge.
 
+**Shipped lean implementations:** **`scripts/forge-doctor.sh`** + **`/doctor`**, **`tools/forge_evidence_bundle.py`** + **`/evidence-bundle`**, QA report pins + **`flake_suspected`** + hotfix surface filter + **`qa_track`** doc + idempotent **`settings.json`** hook install (see git history). Deeper items (TMS export, `forge doctor` in CI beyond `bash -n`, evidence bundle in hosted CI) remain optional.
+
 ## Discipline & audit
 
 | Gap (market pattern) | Why it hurts | Forge-shaped direction |

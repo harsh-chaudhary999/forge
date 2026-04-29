@@ -30,6 +30,8 @@ Surface error often misidentifies root cause. A "DB connection error" might orig
 
 The error type you see is the symptom, not the diagnosis.
 
+If the latest **`qa-run-report-*.md`** has YAML **`flake_suspected: true`** (same scenario IDs failed on consecutive runs), treat **flake** as a **leading** hypothesis — still verify evidence; do not downgrade triage rigor.
+
 **Enforcement — MUST Do All:**
 - MUST trace the error back 3+ layers (where did DB error originate?)
 - MUST check application logs for pre-DB errors (timeout, pool exhaustion)

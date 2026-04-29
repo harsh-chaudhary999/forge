@@ -86,11 +86,11 @@ That creates `~/.cursor/plugins/local/forge` and `~/.cursor/rules/forge.mdc` eve
 
 ### QA / intake questions never appear in the chat thread
 
-Forge skills (e.g. **`qa-prd-analysis`** Step 0.5, **`intake-interrogate`** Q9) require the **full interrogation text** in the **assistant message** first, then optional **`AskQuestion`**. **Cursor does not** run Claude Code’s **`prompt-submit`** hook (`hooks-cursor.json` `_note`), so you do **not** get automatic per-prompt reminders to ask — only **session-start** injects **`using-forge`**.
+**Multi-question elicitation** (all skills — **`skills/using-forge/SKILL.md`**): questions **transcript-visible** in assistant markdown; **one primary topic per message** when multiple answers are needed; **`AskQuestion`** / **numbered options + stop** for discrete forks; **reconcile** after replies. **`intake-interrogate` Q9** adds a verbatim design blockquote; **`qa-prd-analysis`** applies the same envelope to coverage **Q1–Q8**. **Cursor does not** run Claude Code’s **`prompt-submit`** hook (`hooks-cursor.json` `_note`) — only **session-start** injects **`using-forge`**.
 
 If the model skips straight to brain files or a modal:
 
-1. **User nudge (copy-paste):** *Run `skills/qa-prd-analysis/SKILL.md` Step 0.5 HARD-GATE: paste complete Q1–Q7 in this thread in markdown, then stop for my answers. Do not put questions only in `qa-analysis.md`.*
+1. **User nudge (copy-paste):** *Follow **`using-forge`** **Multi-question elicitation** and the active skill HARD-GATE — show each question in chat, one primary topic per turn when applicable; do not write only to brain.*
 2. **Agent:** Follow **`.cursor/rules/forge.mdc`** — **Chat-visible interrogation** section.
 3. **Verify install:** `bash scripts/verify-forge-plugin-install.sh --platform cursor` so **`~/.cursor/rules/forge.mdc`** matches the repo (stale global rules = weaker reminders).
 

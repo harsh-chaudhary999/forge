@@ -2,7 +2,7 @@
 name: using-forge
 description: "Bootstrap skill — inlined by session-start hook for every Forge-supported host (Claude Code, Cursor, Gemini CLI, JetBrains AI, Codex, Copilot CLI, IDX, Antigravity, OpenCode, etc.)"
 type: rigid
-version: 1.0.7
+version: 1.0.9
 preamble-tier: 4
 triggers:
   - "how to use forge"
@@ -40,7 +40,7 @@ Rigid skills declare the canonical tool name **`AskUserQuestion`** in **`allowed
 
 1. Prefer the host’s **blocking interactive prompt** (`AskUserQuestion`, `AskQuestion`, or host-native equivalent) with explicit options when the skill allows or the decision fits discrete choices.
 2. If none: **numbered options** in the assistant message **plus** **stop and wait**.
-3. When a skill requires **full question text in chat first** (e.g. **`qa-prd-analysis`** Step 0.5, **`intake-interrogate`** Q9): paste that text **in the thread**, **then** the blocking prompt / numbered follow-up as the skill says.
+3. When more than one human answer is needed across a workflow phase, follow **Multi-question elicitation** below (skill-specific **what** to ask stays in each **`SKILL.md`**). **Exceptions:** verbatim one-shot gates (**`intake-interrogate` Q9** blockquote — still **chat-visible** before relying on **`AskQuestion`** alone).
 
 **Forbidden as the *only* way to decide:**
 
@@ -56,7 +56,30 @@ Rigid skills declare the canonical tool name **`AskUserQuestion`** in **`allowed
 
 **Allowed:** Explanatory prose **together with** the interactive step (context + blocking prompt / numbered list in the **same** turn). Playbooks in docs/commands stay valid; **agents** still must surface **live** decisions interactively — commands describe workflow; **sessions** must still offer **buttons or numbered choices**.
 
-This is **not** YAML-, QA-, or **host-specific** — it applies to **intake**, **council**, **tech plans**, **routing**, and **any** human gate on **every** Forge-supported IDE.
+### Multi-question elicitation — project standard (where + how; all skills)
+
+Use this **whenever** the human must answer **more than one** distinct thing before an artifact can be locked — intake doubts, council forks, tech-plan **Section 0.1** rounds, QA coverage (**`qa-prd-analysis`**), CSV sample approvals, branch/env choices, etc. **Skill files** define **what** to ask; **this section** defines **where** it appears and **how** the dialogue runs.
+
+**Where (visibility):**
+
+- **Transcript-first:** the **assistant message** (markdown) must show **what** is being asked **before** or **with** the interactive affordance — not only a modal, not only `~/forge/brain/` (**chat-visible**). Auditable approval lives in the thread; brain files are the durable record **after** that.
+
+**How (dialogue mechanics — skill-agnostic):**
+
+1. **One primary topic per assistant message** when multiple questions remain — not a whole questionnaire in one turn, unless the skill explicitly allows a single bundled prompt for inseparable sub-parts.
+2. **Blocking interactive** for discrete forks: **`AskUserQuestion`** / **`AskQuestion`** / **numbered 1–N + stop** per **Blocking interactive prompts** above.
+3. **Reconcile after each reply:** if the answer **already settles** a later planned prompt, **skip** it and **state** *skipped — covered by …*; if the answer **surfaces new doubts**, ask **those** before advancing a rigid checklist.
+4. **Forbidden:** dumping **all** prompts for a phase in one message **plus** a **second** unrelated meta-prompt in the same turn; **prose-only** “reply with all answers”; **questions only** in brain files or tool payloads the user never saw in chat.
+
+This pattern is **not** QA-specific — it applies on **every** Forge-supported IDE.
+
+### QA PRD analysis (`qa-prd-analysis` Step 0.5) — specialization
+
+**Implements** **Multi-question elicitation** for **coverage** dimensions (templates **Q1–Q8**). **Canonical detail:** `skills/qa-prd-analysis/SKILL.md` **Step 0.5**.
+
+- Same **where / how** as above; plus **forbidden** in this phase: full Q1–Q8 wall in one message; “single bulk / approve all” shortcuts; **CSV / eval-YAML-only waiver** choices (**wrong gate** — use **`qa-write-scenarios`** / **`qa-manual-test-cases-from-prd`** **after** `qa-analysis.md`).
+
+**Downstream references** to “Step 0.5” or “real interrogation” mean: **`qa-analysis.md`** after **Multi-question elicitation** completed for coverage — **`qa-write-scenarios`**, **`qa-manual-test-cases-from-prd`**, **`qa-pipeline-orchestrate`**, **`conductor-orchestrate`**, **`eval-scenario-format`**.
 
 ## The 1% Rule
 
@@ -66,7 +89,7 @@ If there's even a 1% chance a Forge skill might apply, you absolutely must invok
 
 Forge **automates** repeatable work: structured artifacts under **`~/forge/brain/`**, eval YAML shape, scans, verification CLIs, coordinated phases. It **does not** grant permission to **guess** scope, design authority, waivers, prioritization, or “confirmed” interrogation answers.
 
-**Needle-moving decisions** — anything that would change what ships, what is tested, what is locked, or what the human thinks they approved — require an **explicit human turn** via **blocking interactive prompts** (host mapping above) or **numbered list + wait** — see **Interactive human input** above. Examples: intake locks, council conflict resolution, **`qa-prd-analysis`** Q1–Q8 (visible in thread), **`eval_yaml_without_manual_csv_baseline`** plus verbatim approval quote, cutting surfaces or test types, signing off samples/count for **`manual-test-cases.csv`**.
+**Needle-moving decisions** — anything that would change what ships, what is tested, what is locked, or what the human thinks they approved — require an **explicit human turn** via **blocking interactive prompts** (host mapping above) or **numbered list + wait** — see **Interactive human input** and **Multi-question elicitation** above. Examples: intake locks, council conflict resolution, **`qa-prd-analysis`** Step 0.5 (**Multi-question elicitation** for Q1–Q8 — see **`qa-prd-analysis`**), **`eval_yaml_without_manual_csv_baseline`** plus verbatim approval quote, cutting surfaces or test types, signing off samples/count for **`manual-test-cases.csv`**.
 
 **Forbidden:** Filling frontmatter or brain files with “confirmed,” waivers, or design sources **inferred** from Confluence/PRD/Figma metadata **without** the user having answered or approved in this workflow. **Verbose automation without that loop is worse than slow manual review** — it ships false confidence.
 
@@ -84,7 +107,7 @@ This applies to **every** Forge phase (intake, council, tech plans, QA, eval, PR
 
 **Why:** The user should not be interrogated about Phase **N+k** while Phase **N** prerequisites are pending. Maintain **respect** for sequential process: one coherent stage at a time.
 
-Skills that say **paste questions in chat first** are defining that loop on purpose; skipping them invalidates the gate.
+**Multi-question elicitation** is the **project-standard envelope** for **any** sequence of human answers; skills add **what** to ask and **exceptions** (e.g. **`intake-interrogate` Q9** verbatim blockquote). Skipping **transcript-visible** questioning invalidates those gates.
 
 ### Coupling, prerequisites, and alternatives (what breaks vs what helps)
 

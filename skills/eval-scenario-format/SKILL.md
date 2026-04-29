@@ -17,7 +17,7 @@ allowed-tools:
 
 # Eval Scenario Format
 
-**Related (manual QA backlog):** For **atomic manual test cases** in CSV (PRD → spreadsheet / TMS import), use **`qa-manual-test-cases-from-prd`** after **`qa-prd-analysis`**. This skill defines **YAML for automated eval drivers** only.
+**Related (manual QA backlog):** For **atomic manual test cases** in CSV (PRD → spreadsheet / TMS import), use **`qa-manual-test-cases-from-prd`** after **`qa-prd-analysis`** (**`using-forge`** **Multi-question elicitation** / Step 0.5). This skill defines **YAML for automated eval drivers** only.
 
 ## Anti-Pattern Preamble: Why Scenario Authors Write Broken Scenarios
 

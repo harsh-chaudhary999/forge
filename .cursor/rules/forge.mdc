@@ -23,15 +23,17 @@ Any **doubt, question, confirmation, or choice** that needs a human answer — i
 
 **Invalid:** A **“What to do next”** markdown section (intake → qa-analysis → CSV → `/qa-write`) that ends with *“reply with task-id / confirm you started intake”* **without** **`AskQuestion`** or **numbered options in the same message** — that fails **interactive human input**. Always append **`AskQuestion`** or **numbered choices** for the **first** real fork (e.g. have **`prd-locked`**? run **`/intake`** vs paste PRD vs stop).
 
-## Chat-visible interrogation (QA, intake, any “questions in thread” HARD-GATE)
+## Chat-visible questioning & multi-question elicitation
 
-Some Forge skills require the **full question text** to appear in the **assistant message** (markdown), **not** only inside the blocking prompt UI, **not** only in a file write, **not** only in a modal body the user never scrolls past. Examples: **`qa-prd-analysis`** Step 0.5 (**paste complete Q1–Q7 blocks first**), **`intake-interrogate`** Q9 verbatim blockquote.
+**Project standard (all skills):** **`skills/using-forge/SKILL.md`** → **Multi-question elicitation** — **transcript-first** (questions visible in assistant markdown, not only modal/brain), **one primary topic per message** when multiple answers are needed, **blocking** **`AskQuestion`** / **numbered options + stop** for discrete forks, **reconcile** after each reply. Applies to intake, planning judgment rounds, QA analysis, CSV approvals, env choices — not only one skill.
 
-**In Cursor you MUST:** (1) Output those blocks in plain assistant markdown in the **same turn** before **`AskQuestion`**. (2) Then call **`AskQuestion`** if appropriate. Skipping (1) invalidates the gate — the transcript shows nothing the user was asked.
+**Examples:** **`intake-interrogate` Q9** — **verbatim** design blockquote in thread. **`qa-prd-analysis` Step 0.5** — same **Multi-question elicitation** pattern applied to coverage **Q1–Q8** (see **`qa-prd-analysis`** + **`using-forge`** **QA PRD analysis**). **Forbidden:** full questionnaire dump + unrelated meta-prompt in one turn; brain-only “confirmed” without thread.
 
-**Why this breaks more often in Cursor than in some other hosts:** `hooks/hooks-cursor.json` documents that Cursor has **no** `UserPromptSubmit`-style hook; Forge cannot reinject “next gate / ask Q1–Q7” on **every** user message. Only **session-start** runs. So nothing apart from **this rule + the skill text** forces the model to show questions — **you** must follow the skill literally.
+**In Cursor you MUST:** output chat-visible text so the transcript shows what was asked; then **`AskQuestion`** when choices are discrete.
 
-**If the user says questions never appeared:** Re-run the phase and paste this into the prompt: *“Follow `skills/qa-prd-analysis/SKILL.md` Step 0.5 HARD-GATE — print Q1–Q7 in full in chat, then wait for answers; do not write only to brain.”*
+**Why this breaks more often in Cursor:** no per-message reinjection hook — only **session-start** loads **`using-forge`**.
+
+**If the user says questions never appeared:** re-run the phase per **`using-forge`** **Multi-question elicitation** and the active skill’s HARD-GATE; do not write only to brain.
 
 ## Automation ≠ assumption
 

@@ -3,7 +3,7 @@ name: qa-write-scenarios
 description: "WHEN: qa-prd-analysis is complete and you need to write the maximum possible number of executable eval YAML scenarios — one per test type × surface × scenario variant. No gaps. No shortcuts."
 type: rigid
 requires: [brain-read, qa-prd-analysis, eval-scenario-format]
-version: 2.4.4
+version: 2.4.5
 preamble-tier: 3
 triggers:
   - "write eval scenarios"
@@ -27,7 +27,7 @@ Generates the **maximum possible number of executable eval YAML scenarios** from
 
 ## Human input (all hosts)
 
-**`AskUserQuestion`** in **`allowed-tools`** is canonical; map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** on every IDE. **Step −1** governs *when* to prompt; **`using-forge`** governs *how* (blocking prompt vs numbered list). See **`using-forge`** **Interactive human input** and **Stage-local questioning**.
+**`AskUserQuestion`** in **`allowed-tools`** is canonical; map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** on every IDE. **Step −1** governs *when* to prompt; **`using-forge`** governs *how* (**Interactive human input**, **Multi-question elicitation** for sequences, **Stage-local questioning**).
 
 ## Anti-Pattern Preamble
 
@@ -44,7 +44,7 @@ Generates the **maximum possible number of executable eval YAML scenarios** from
 | "I'll generate eval YAML before manual CSV — PRD is enough" | **Automation without an approved human baseline is orphan automation.** You cannot faithfully prioritize coverage or trace YAML rows to acceptance IDs until **`manual-test-cases.csv`** exists (skill **`qa-manual-test-cases-from-prd`** through approval). YAML then maps journeys to those rows where applicable. |
 | "`qa-analysis.md` + CSV is enough — I won't re-open tech plans or contracts" | **`qa-analysis.md` prioritizes types/surfaces; concrete routes, payloads, cache keys, and error codes live in shared-dev-spec, tech-plans, and contracts.** Shallow YAML repeats generic steps. Use the same primary-source bundle as **`qa-manual-test-cases-from-prd`** Step 1b (see Step 0.1 below). |
 | "I'll drop a Python/bash generator in `eval/` to emit YAML" | **`eval/` is only for driver-readable `*.yaml` (and manifests).** Generators like `_generate_scenarios.py` are not part of Forge, confuse CI/review, and usually produce **`preconditions: []`** and weak UI coverage. Author YAML directly (or use a **repo-local** `tools/` script **outside** `eval/` if you must codegen). **Never** commit `eval/_generate*.py` without team agreement — prefer deleting after one-off use. |
-| "Prerequisites are missing — I'll open with a blocking prompt about eval YAML / CSV waiver" | **Violates dependency order.** The **first** interaction must not be the **last** gate (automation-only waiver). Walk **forward** from **`prd-locked.md`** → **`qa-prd-analysis`** (chat interrogation) → **`manual-test-cases.csv`** (or waiver **after** PRD+QA exist). See **Step −1** below. |
+| "Prerequisites are missing — I'll open with a blocking prompt about eval YAML / CSV waiver" | **Violates dependency order.** The **first** interaction must not be the **last** gate (automation-only waiver). Walk **forward** from **`prd-locked.md`** → **`qa-prd-analysis`** (**sequential interactive** Step 0.5 per **`using-forge`** / **`qa-prd-analysis`**) → **`manual-test-cases.csv`** (or waiver **after** PRD+QA exist). See **Step −1** below. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -72,7 +72,7 @@ A LOW COUNT IS A BUG IN THIS SKILL — TREAT IT AS A FAILURE, NOT A FEATURE.
 | Order | Gate | Primary fix if missing | Alternatives if user can’t / won’t run the primary (still need human approval) |
 |------:|------|------------------------|--------------------------------------------------------------------------------|
 | 1 | **`~/forge/brain/prds/<task-id>/prd-locked.md`** | **`/intake`** (or **`intake-interrogate`**) to produce lock | User **pastes** PRD/wiki excerpt in chat → assistant **drafts** `prd-locked.md` → user **reviews** → **Write** to brain. **Or** user confirms copying lock from another **`prds/<task-id>/`** when scope is the **same**. **Not valid:** YAML or QA prompts **without** any on-disk `prd-locked` after explicit approval path. |
-| 2 | **`qa/qa-analysis.md`** from **`qa-prd-analysis`** with Step 0.5 interrogation completed in chat | Run **`qa-prd-analysis`** (Q1–Q8 visible in thread per skill) | User answers interrogation **in thread**; assistant writes **`qa-analysis.md`** consistent with **`qa-prd-analysis`** HARD-GATEs (no fake “confirmed”). **Not valid:** skipping chat-visible Q blocks where the skill requires them. |
+| 2 | **`qa/qa-analysis.md`** from **`qa-prd-analysis`** with Step 0.5 interrogation completed in chat | Run **`qa-prd-analysis`** (**`using-forge`** **Multi-question elicitation** for Q1–Q8 — one topic per turn, reconcile; see **QA PRD analysis** in **`using-forge`**) | User answers **turn-by-turn** in thread; dimensions may be **subsumed** + logged per skill. Assistant writes **`qa-analysis.md`** consistent with HARD-GATEs (no fake “confirmed”). **Not valid:** skipping chat-visible interrogation, or dumping full Q1–Q8 + meta-modal in one turn. |
 | 3 | **`qa/manual-test-cases.csv`** with ≥1 data row **or** valid waiver (**`csv_baseline_waiver_user_quote`** after explicit approval) | **`qa-manual-test-cases-from-prd`** through approvals | Documented **YAML-before-CSV waiver** in **`qa-analysis.md`** with verbatim quote **only after** 1–2 satisfied — **Step 0.0** in this skill. |
 
 **Not prerequisites for this skill chain:** Council, **`shared-dev-spec.md`**, tech plans — use them when present for **better targets**; they do **not** replace gate **1–3**.
@@ -103,7 +103,7 @@ Before invoking this skill, verify:
 
 - [ ] **`qa-manual-test-cases-from-prd`** completed and **`qa/manual-test-cases.csv`** has ≥1 data row — **or** documented waiver in **`qa-analysis.md`** (see Red Flags)
 - [ ] `qa-prd-analysis` has been run and `qa/qa-analysis.md` exists in brain
-- [ ] `qa-analysis.md` reflects **real interrogation** (**qa-prd-analysis** Step 0.5 in chat) — not agent-self-confirmed defaults; if **`eval_yaml_without_manual_csv_baseline`**, **`csv_baseline_waiver_user_quote`** present per Step 0.0
+- [ ] `qa-analysis.md` reflects **real interrogation** (**qa-prd-analysis** Step 0.5: **sequential adaptive** in chat per **`using-forge`**) — not agent-self-confirmed defaults; if **`eval_yaml_without_manual_csv_baseline`**, **`csv_baseline_waiver_user_quote`** present per Step 0.0
 - [ ] `qa-analysis.md` contains `test_types`, `surfaces`, `coverage_depth`, and feature priorities **as actually confirmed in chat**
 - [ ] `prd-locked.md` exists for the task — no PRD = no valid scenario generation
 - [ ] All tech plans exist in `brain/prds/<task-id>/tech-plans/` (scenarios without concrete routes/schemas will have placeholder targets)

@@ -339,7 +339,7 @@ Ensure **consensus** across all repos (no conflicting contracts).
 
 ### State 4b: Eval scenarios + RED tests (HARD-GATE before implementation)
 
-**Agent prerequisite order (same as State 4b steps 0→1):** **`qa-write-scenarios` Step −1** — **`prd-locked.md`** → **`qa-prd-analysis`** (interrogation in chat + **`qa-analysis.md`**) → **`qa-manual-test-cases-from-prd`** / approved CSV or valid waiver → **then** **`eval/*.yaml`**. Do **not** use a **blocking interactive prompt** about CSV/evYAML waivers while **`prd-locked`** or completed **`qa-analysis.md`** is missing (“last gate first”).
+**Agent prerequisite order (same as State 4b steps 0→1):** **`qa-write-scenarios` Step −1** — **`prd-locked.md`** → **`qa-prd-analysis`** (**`using-forge`** **Multi-question elicitation** for coverage, Step 0.5 + **`qa-analysis.md`**) → **`qa-manual-test-cases-from-prd`** / approved CSV or valid waiver → **then** **`eval/*.yaml`**. Do **not** use a **blocking interactive prompt** about CSV/evYAML waivers while **`prd-locked`** or completed **`qa-analysis.md`** is missing (“last gate first”).
 
 **ENTRY:** All tech plans written; **`tech-plan-self-review` PASS** per repo; **`[TECH-PLAN-XALIGN]`** **PASS** or **N/A**; **`[TECH-PLAN-HUMAN]`** with **`APPROVED`** or **`WAIVED`**; **`tech-plans/HUMAN_SIGNOFF.md`** on disk matching that log; `shared-dev-spec.md` locked.  
 **ACTION:**

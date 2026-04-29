@@ -3,7 +3,7 @@ name: intake-interrogate
 description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Confidence-first: pre-fill from PRD + product.md; variable number of user turns — stop as soon as mandatory lock fields are concrete and doubts are cleared (no fixed question count; two answers can resolve many latent doubts). Q4 registry + Q9 design gates unchanged when they apply; **Q10 implementation closure** (VCS reference, authoritative delivery boundary, implementation stack) when the ambiguity gate in Q10 applies."
 type: rigid
 requires: [brain-write]
-version: 1.0.2
+version: 1.0.3
 preamble-tier: 2
 triggers:
   - "interrogate PRD"
@@ -21,7 +21,7 @@ allowed-tools:
 
 ## Human input (all hosts)
 
-**`AskUserQuestion`** in **`allowed-tools`** is the canonical tool name (Claude Code + lint). **Every IDE** maps it per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** — not prose-only questions. The **Questioning Protocol** below defines *what* to elicit; *how* to deliver choices is always a **blocking interactive prompt** (or **numbered options + stop** on hosts without the tool). See **`using-forge`** **Interactive human input**.
+**`AskUserQuestion`** in **`allowed-tools`** is the canonical tool name (Claude Code + lint). **Every IDE** maps it per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** — not prose-only questions. The **Questioning Protocol** below defines *what* to elicit; *how* to run multi-turn elicitation follows **`using-forge`** **Multi-question elicitation** (**transcript-first**, **one primary topic per message** when asking distinct things, **reconcile** after replies — aligns with confidence-first and **Anti-Pattern** “one question at a time”). **Q9** verbatim blockquote remains a **chat-visible** one-shot per this skill. See **`using-forge`** **Interactive human input**.
 
 ## Anti-Pattern Preamble
 

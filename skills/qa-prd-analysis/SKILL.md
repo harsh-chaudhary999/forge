@@ -3,7 +3,7 @@ name: qa-prd-analysis
 description: "WHEN: Before generating QA test cases from a PRD. Loads ALL brain artifacts first (PRD, tech plans, scan, contracts, product topology), then runs a structured interrogation to lock test types, surfaces, coverage depth, and all open ambiguities before a single scenario is written."
 type: rigid
 requires: [brain-read]
-version: 2.1.6
+version: 2.1.9
 preamble-tier: 3
 triggers:
   - "analyze PRD for QA"
@@ -23,7 +23,7 @@ allowed-tools:
 
 ## Human input (all hosts)
 
-**`AskUserQuestion`** in **`allowed-tools`** is canonical; map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** on every IDE. **Step 0.5** defines chat-visible interrogation **then** blocking prompts — see **`using-forge`** **Interactive human input**.
+**`AskUserQuestion`** in **`allowed-tools`** is canonical; map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** on every IDE. **Step 0.5** applies **`using-forge`** **Multi-question elicitation** to coverage templates **Q1–Q8** (see **`using-forge`** **QA PRD analysis** specialization). **One primary topic per assistant turn**; after each answer **reconcile**. **Never** a full Q1–Q8 wall **plus** a meta-prompt in the **same** turn.
 
 **HARD-GATE:** ALL brain artifacts must be loaded BEFORE asking the user any question. Questions asked without brain context are generic and waste the user's time. Brain-loaded questions are specific, informed, and resolve real ambiguities.
 
@@ -47,7 +47,10 @@ allowed-tools:
 | "I'll skip the brain load — I remember the PRD" | Memory is not a brain artifact. The scan, contracts, and tech plans change the picture every time. Load fresh. |
 | "Figma is in frontmatter / PRD — I don't need to ask about design in QA interrogation" | **UI test quality needs traceability from PRD to what testers assert** — but if **planning / intake / tech plans / design/** already documented PRD↔screen↔fixture mapping, **QA must inherit and cite those artifacts**, not duplicate a second full mapping workshop. Use Q8 to **confirm + fill gaps only**. |
 | "QA must rebuild the whole PRD→design matrix from zero every time" | **Violates reuse.** Council, tech plans, `shared-dev-spec`, `prd-locked` design fields, and `design/` exist precisely so downstream phases do not re-specify. Q8 is **verify completeness for test authoring**, not replace planning. |
-| "I'll write `qa-analysis.md` with Q1–Q8 marked confirmed from PRD alone — user wasn't available" | **Invalid.** Step 0.5 requires the **full interrogation pasted in chat** and real answers or explicit risk-accept. Frontmatter **`test_types` / `surfaces`** copied from defaults without a user turn is **not** confirmation — downstream YAML will claim false legitimacy. |
+| "I'll write `qa-analysis.md` with Q1–Q8 marked confirmed from PRD alone — user wasn't available" | **Invalid.** Step 0.5 requires interrogation **completed in chat** (**sequential / adaptive** per this skill) with real answers or explicit risk-accept. Frontmatter **`test_types` / `surfaces`** copied from defaults without a user turn is **not** confirmation — downstream YAML will claim false legitimacy. |
+| "I'll paste the entire Q1–Q8 in one message **and** append **`AskQuestion`** *How should we proceed…* with options that overlap Q3/Q4 or bundle **CSV/YAML waiver**" | **Invalid UX + wrong gate.** One **primary** interaction model per turn; **waivers** belong to **`qa-write-scenarios`** / **`qa-manual-test-cases-from-prd`**, not **`qa-prd-analysis`**. **Sequential** turns only — never wall + unrelated modal. |
+| "I'll offer **single bulk**, **approve recommendations**, or **hybrid** so the user can skip the back-and-forth" | **Invalid for Step 0.5.** Interrogation is **mandatorily sequential and interactive** — no menu to bypass dialogue. Speed is not a substitute for doubt closure. |
+| "I must ask Q2 verbatim even though Q1 already fixed surfaces and depth" | **Invalid.** **Adaptive reconciliation** — skip or shorten template prompts when already answered; ask **net-new** doubts instead. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -74,7 +77,7 @@ Before asking the first question (Step 0.5):
 Before marking this skill complete:
 
 - [ ] Minimum **Q1–Q7** answered (or risk-accepted); **Q8** answered when **web**, **android**, or **ios** is in confirmed surfaces — or explicitly **N/A** with reason if UI truly out of scope
-- [ ] **Interrogation actually happened in chat** — Q1–Q7 (+ **Q8 when Web/Android/iOS**, including **design source of truth** / reuse vs gap-fill) were **pasted in an assistant message** and the user replied (or explicitly risk-accepted items). **Do not** publish **`qa-analysis.md`** that says "confirmed" for interrogation items based only on agent inference from Confluence/PRD without that thread (**Step 0.5 HARD-GATE**).
+- [ ] **Interrogation actually happened in chat** — Q1–Q7 (+ **Q8 when Web/Android/iOS**, including **design source of truth** / reuse vs gap-fill) were **resolved turn-by-turn** (template skipped when subsumed — **document in thread**). User replied to each asked topic (or explicitly risk-accepted). **Do not** publish **`qa-analysis.md`** that says "confirmed" for interrogation items based only on agent inference from Confluence/PRD without that thread (**Step 0.5 HARD-GATE**).
 - [ ] **Design / Q8:** If **web**, **android**, or **ios** in surfaces, **`design_source` in frontmatter is only valid after** the user has **seen Q8** (short reuse form or full workshop) **in chat** — not pre-filled from PRD/Figma fields alone.
 - [ ] `qa-analysis.md` written to `brain/prds/<task-id>/qa/qa-analysis.md`
 - [ ] `test_types`, `surfaces`, and `coverage_depth` fields present in `qa-analysis.md` frontmatter; **when UI in scope:** frontmatter or body records **`design_source`** (Figma key / brain path / MCP_INGEST) and **PRD→component mapping** summary (Step 1 expansion)
@@ -112,9 +115,10 @@ This skill may invoke MCP tools when configured:
 ```
 LOAD BRAIN FIRST. ASK QUESTIONS SECOND. WRITE ANALYSIS THIRD.
 NO QUESTION IS ASKED UNTIL EVERY AVAILABLE BRAIN ARTIFACT IS READ.
+STEP 0.5: ONE INTERACTIVE TURN PER QUESTION (OR ONE FOCUSED DOUBT). AFTER EACH ANSWER — RECONCILE: SKIP REDUNDANT TEMPLATE PROMPTS; CHASE NEW DOUBTS BEFORE THE NEXT DEFAULT Q.
 NO TEST CASE IS AUTHORED UNTIL EVERY OPEN QUESTION IS ANSWERED OR EXPLICITLY RISK-ACCEPTED.
-Q1–Q7 ALWAYS; Q8 WHEN WEB/ANDROID/IOS — **REUSE** PLANNING/DESIGN ARTIFACTS WHEN PRESENT (CITE PATHS); FULL WORKSHOP ONLY FOR GAPS OR MISSING MAPPING; ELSE RECORD N/A.
-7 (PLUS Q8 WHEN UI) IS THE MINIMUM — NOT THE MAXIMUM. KEEP ASKING UNTIL ZERO AMBIGUITIES REMAIN.
+ALL DIMENSIONS IN Q1–Q7 MUST BE RESOLVED (OR SUBSUMED + LOGGED); Q8 WHEN WEB/ANDROID/IOS — **REUSE** PLANNING/DESIGN ARTIFACTS WHEN PRESENT (CITE PATHS); FULL WORKSHOP ONLY FOR GAPS OR MISSING MAPPING; ELSE RECORD N/A.
+KEEP ASKING UNTIL ZERO AMBIGUITIES REMAIN — NOT UNTIL YOU'VE ASKED EXACTLY EIGHT MESSAGES.
 20-30 SCENARIOS IS A FAILURE. EXHAUSTIVE COVERAGE IS THE ONLY ACCEPTABLE STANDARD.
 ```
 
@@ -126,7 +130,9 @@ Q1–Q7 ALWAYS; Q8 WHEN WEB/ANDROID/IOS — **REUSE** PLANNING/DESIGN ARTIFACTS 
 - **Test type selection not recorded in qa-analysis.md** — STOP. Downstream skills must know which types were selected to generate the right scenarios.
 - **Surface selection not explicit** — STOP. "Web" and "mobile" are not the same surface. Both must be called out if both are in scope.
 - **Analysis written only in chat** — STOP. Write to brain. Chat is ephemeral.
-- **Questions only in `qa-analysis.md` or only via a blocking prompt UI with no pasted text in the assistant message** — STOP. User must see Q1–Q7 **and, when Web/Android/iOS in scope, Q8 (design / PRD↔UI)** in the visible reply — same turn, before any modal (**Step 0.5 HARD-GATE — Questions visible in chat**).
+- **Questions only in `qa-analysis.md` or only via a blocking prompt UI with no pasted text in the assistant message** — STOP. User must see each interrogation topic **in the visible thread** before “confirmed” analysis — **one topic per turn** (plus adaptive follow-ups); **forbidden:** modal-only with no chat text (**Step 0.5 HARD-GATE — Questions visible in chat**).
+- **Full Q1–Q8 wall in one message, or “single bulk / approve all” shortcuts** — STOP. Step 0.5 is **sequential interactive** only; **no** dump of all templates, **no** opt-out of turn-by-turn dialogue.
+- **Full Q1–Q8 wall + a second meta `AskQuestion` (*How should we proceed…*) in the same turn** — STOP. Overloads the human and makes the modal incoherent (**Step 0.5**).
 - **`design_source` / Figma / `figma_file_key` filled in `qa-analysis.md` frontmatter or body but the user never saw Q8 in chat** — STOP. Copying keys from **`prd-locked.md`** or Confluence **does not** replace the **Q8** question: the human must still **confirm** authoritative design source, reuse path, or **N/A** in thread.
 - **Web/app in scope but neither inherited mapping citations nor Q8 gap-fill recorded** — STOP. Either planning already owns PRD↔UI traceability (cite it) or Q8 must supply it.
 - **`qa-analysis.md` claims Q1–Q8 "confirmed" but there was no Step 0.5 chat turn** — STOP. Analysis is **invalid** for downstream **`qa-write-scenarios`** strict gates; re-run interrogation or mark body **`PROVISIONAL — interrogation not completed in chat`** and do not treat frontmatter as user-approved.
@@ -192,19 +198,39 @@ After reading, build an internal summary:
 
 Using the brain context from Step 0, run a structured interrogation. Every question is informed by what was just read. Do not ask questions the brain already answers — **especially** do not re-elicit PRD↔design mapping that is **already written** in tech plans, shared spec, or `design/`; **cite it and ask for confirmation or deltas only**.
 
-**HARD-GATE — Questions visible in chat:** The human must **see the full interrogation in the chat transcript**. In the **same assistant turn** where you ask anything:
+### HARD-GATE — Chat transcript before `qa-analysis.md`
 
-1. **Paste the complete Q1–Q7 blocks** and, **when Web and/or Android and/or iOS appears in Q2 or product.md**, **Q8** — either the **full Q8 template** below **or**, when Step 0 shows **existing PRD↔design mapping** in tech plans / spec / `design/`, paste the shorter **Q8 reuse path** (inherited paths + confirm/gaps only). If the run is **API/DB-only**, paste Q8 with the single-line answer line pre-filled as **N/A — no UI surfaces** (still visible in thread).
-2. **Then** you may use a **blocking interactive prompt** — canonical **`AskUserQuestion`** per skill **`allowed-tools`**; map per host (**`using-forge`** **Blocking interactive prompts**, e.g. Cursor **`AskQuestion`**) — but **never** as a substitute for (1). If the UI only shows a modal, the user still gets the full text above it in the message.
-3. **Never** put questions only in `qa-analysis.md`, only inside a tool call, or only in a file write — chat-first, brain second.
+The human must **see Q1–Q7 and Q8 (when UI in scope)** in the **chat thread** and answer (or risk-accept) before you write **`qa-analysis.md`** with interrogation **confirmed**. **Never** “confirm” from PRD inference alone. **Chat first, brain file second.**
 
-**Ask ALL of the following in a single message — do not drip questions one at a time. Q1–Q7 are always mandatory; Q8 is mandatory whenever any user-visible UI surface is in scope. After the user answers, review those answers alongside your brain analysis and ask any additional questions that arise — in a single follow-up message. Keep asking until zero ambiguities remain. There is no upper question limit.**
+### HARD-GATE — Sequential interactive interrogation (mandatory)
+
+**How the dialogue runs**
+
+1. **One assistant message ≈ one topic** — usually **one** of Q1–Q8 at a time, using the templates below. Use **`AskUserQuestion`** / **`AskQuestion`** / **numbered options + stop** per **`using-forge`** wherever the human picks among discrete options. **Do not** paste the full Q1–Q8 menu in a single turn.
+
+2. **Optional opener** — You may send **one** short line of context after Step 0 (e.g. “Brain loaded for `<task-id>`; starting coverage interrogation.”) **without** any fork like “how do you want to answer?” **There is no user choice** between bulk vs sequential — sequential is **required**.
+
+3. **After every user reply — reconcile (adaptive)**  
+   - **Skip** the next template question if the answer **already resolves** that dimension (e.g. “full regression + all surfaces + exhaustive” may subsume **Q3** depth). In chat, state explicitly: *Skipped Q3 — covered by Q1/Q2 answers: …*  
+   - **Insert** tailored questions for **new doubts** the reply surfaced (security edge, env constraint, design gap) **before** mechanically advancing to the next default label — **zero ambiguities** beats **checking every box**.  
+   - If brain artifacts already answered a dimension (e.g. surfaces in **`product.md`**), **confirm in one short interactive prompt** rather than re-reading the entire Q2 wall verbatim.
+
+4. **Coverage obligation** — Every **dimension** represented by Q1–Q7 must be **resolved or risk-accepted** in the transcript; **Q8** when Web/Android/iOS is in scope (or **N/A** with reason). Dimensions may be satisfied **without** asking the corresponding template if subsumed — **must** still appear in **`qa-analysis.md`** with *source: user reply Q1* or *subsumed by …*.
+
+**Forbidden**
+
+- Pasting **full** Q1–Q8 in one message, or offering **single bulk / approve-all-recommendations / hybrid** flows — **not allowed**.  
+- A **second** blocking prompt in the same turn that **duplicates** coverage choices or bundles **CSV/YAML waiver** (that belongs to **`qa-write-scenarios`** / **`qa-manual-test-cases-from-prd`** after `qa-analysis.md`).
+
+**After** all dimensions are closed: if brain vs answers still disagree, **one** short clarification turn is OK — still **not** a full template dump.
+
+**Never** put questions only in `qa-analysis.md`, only inside a tool call, or only in a file write — chat-first, brain second.
 
 ---
 
 ### Q1 — Test Types (mandatory)
 
-Show the full menu with brain-informed recommendations:
+Ask as the **first** interrogation turn after Step 0 (after optional one-line context). **Only** this section’s content in that turn — then **wait**. Show the menu with brain-informed recommendations:
 
 ```
 Which test types do you want for this QA run?
@@ -383,9 +409,9 @@ If Figma MCP or design files are unavailable: record **CONTEXT_GAP** and the min
 
 ---
 
-**Wait for answers before proceeding to Step 1. After the user replies, review all answers against your brain analysis and identify any new ambiguities the answers surfaced. If any exist, ask them all in one follow-up message. Repeat until no ambiguities remain. Only then proceed to Step 1.**
+**Wait until every dimension** for Q1–Q7 (+ Q8 when UI in scope) is **resolved or explicitly risk-accepted**, using **sequential turns** and **adaptive skips/substitutions** as above, before proceeding to Step 1. After **each** reply, reconcile; chase **new doubts** before advancing the default Q sequence.
 
-Record all Q&A verbatim in the output artifact. Do not proceed on partial answers — ask again for any unanswered item. There is no question limit: every open ambiguity must be resolved before a single scenario is written.
+Record all Q&A verbatim in the output artifact (including *skipped — subsumed by …*). Do not proceed on partial answers — ask again for any unanswered item. There is no upper limit on **tailored** follow-up questions: **zero ambiguities** is the stop condition, not “asked Q8 verbatim.”
 
 ---
 
@@ -394,10 +420,10 @@ Record all Q&A verbatim in the output artifact. Do not proceed on partial answer
 After interrogation answers are received:
 
 1. Record product name / feature name, version or slice, in-scope vs out-of-scope.
-2. Record confirmed test types (from Q1 answers).
-3. Record confirmed surfaces (from Q2 answers).
-4. Record coverage depth (from Q3).
-5. Record feature priorities (from Q4).
+2. Record confirmed test types (from Q1 or from adaptive reconciliation — cite thread).
+3. Record confirmed surfaces (from Q2 / confirmation — cite thread).
+4. Record coverage depth (from Q3 **or** from subsuming answers — cite *subsumed by Q…*).
+5. Record feature priorities (from Q4 **or** equivalent tailored answers).
 6. When UI surfaces confirmed: record **`design_source`** and the **PRD → component → precondition** matrix in `qa-analysis.md` — **either** citations to existing planning/design docs **plus** any Q8 gap-fill **or** the full Q8 matrix when none existed upstream.
 
 ---

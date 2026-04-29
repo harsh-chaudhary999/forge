@@ -3,7 +3,7 @@ name: qa-pipeline-orchestrate
 description: "WHEN: A standalone QA run is needed against named feature branches and a target environment — independent of the full /forge delivery pipeline. Chains: brain read → scenario generation → branch prep → stack-up → multi-surface exec → verdict."
 type: rigid
 requires: [brain-read, qa-prd-analysis, qa-write-scenarios, qa-branch-env-prep, eval-product-stack-up, eval-coordinate-multi-surface, eval-judge]
-version: 1.0.6
+version: 1.0.7
 preamble-tier: 3
 triggers:
   - "run QA pipeline"
@@ -24,7 +24,7 @@ Standalone QA pipeline that runs from brain artifacts (PRD + tech plans) through
 
 ## Human input (all hosts)
 
-This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input** and **Stage-local questioning**; scenario ordering rules in **`qa-write-scenarios`** **Step −1**.
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**, **Multi-question elicitation**, and **Stage-local questioning**; scenario ordering rules in **`qa-write-scenarios`** **Step −1**.
 
 **Entry points:**
 - `/qa` — full pipeline (write scenarios + branch prep + execute + judge)
@@ -41,7 +41,7 @@ This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for 
 | "I'll run only the web surface for a full-stack feature" | A web GREEN with a broken API write is still a broken feature. Multi-surface is not optional for full-stack changes. |
 | "The QA run failed but I'll fix it manually and not re-run" | A manual fix without a re-run produces no evidence. The verdict must come from an automated run, not a claim. |
 | "I don't need to write results to brain — I can see them in the terminal" | Terminal output is ephemeral. Brain artifacts are auditable across sessions, teams, and CI runs. |
-| "`/qa` invoked — I'll use a blocking prompt about eval/CSV waiver before checking brain" | **Violates stage-local questioning** (`using-forge`) **and** **`qa-write-scenarios` Step −1`**: **`prd-locked`** → **`qa-prd-analysis`** → **`manual-test-cases.csv`** (or valid waiver) → **then** QA-P2 eval YAML. Read brain **first**; surface the **first missing** artifact — never a **blocking interactive prompt** about downstream QA/evYAML choices before upstream prerequisites exist. |
+| "`/qa` invoked — I'll use a blocking prompt about eval/CSV waiver before checking brain" | **Violates stage-local questioning** (`using-forge`) **and** **`qa-write-scenarios` Step −1`**: **`prd-locked`** → **`qa-prd-analysis`** (**sequential adaptive** Step 0.5 per **`using-forge`**) → **`manual-test-cases.csv`** (or valid waiver) → **then** QA-P2 eval YAML. Read brain **first**; surface the **first missing** artifact — never a **blocking interactive prompt** about downstream QA/evYAML choices before upstream prerequisites exist. |
 | "I'll output **What to do next** runbook prose (intake → qa-analysis → CSV → qa-write) and end with *reply with task-id…* only — no **`AskQuestion`** / numbered list" | **Violates `using-forge` Interactive human input.** Same message must include **`AskQuestion`** or **numbered options + stop** for the **first** fork — never runbook-only. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
@@ -81,7 +81,7 @@ Before reporting pipeline complete:
 
 - **`using-forge`** — **Stage-local questioning** (all phases): prompts must unblock **only** the current stage.
 - **`qa-write-scenarios` Step −1** — QA→eval **prerequisite order** before QA-P2 or any **blocking interactive prompt** about CSV/evYAML: **`prd-locked.md`** → **`qa-prd-analysis`** → **`manual-test-cases.csv`** or documented waiver — never invert.
-- **`qa-prd-analysis`** — must run before this skill (unless reusing existing scenarios) to produce `qa/qa-analysis.md` which feeds QA-P2.
+- **`qa-prd-analysis`** — must run before this skill (unless reusing existing scenarios) to produce `qa/qa-analysis.md` which feeds QA-P2. Interrogation follows **`using-forge`** **Multi-question elicitation** (coverage Step 0.5 — not a one-shot Q1–Q8 wall).
 - **`qa-write-scenarios`** — invoked at QA-P2 to generate eval YAML from brain artifacts and `qa-analysis.md`.
 - **`qa-branch-env-prep`** — invoked at QA-P3 to check out feature branches and write `.eval-env`.
 - **`eval-product-stack-up`** — invoked at QA-P4 to start local services in dependency order.
@@ -144,7 +144,7 @@ Each phase logs a gate line to `~/forge/brain/prds/<task-id>/qa-pipeline.log`.
 
 ## Phase QA-P1 — Load Brain Artifacts
 
-**Before QA-P2:** Satisfy **`qa-write-scenarios` Step −1** — if **`prd-locked.md`** missing, **BLOCK** (user runs **`/intake`**); if **`qa/qa-analysis.md`** missing or interrogation not done in chat, run **`qa-prd-analysis`** first; if CSV baseline missing and no valid waiver, **`qa-manual-test-cases-from-prd`** before generating **`eval/*.yaml`**. Do not prompt the user about downstream waivers until upstream steps exist.
+**Before QA-P2:** Satisfy **`qa-write-scenarios` Step −1** — if **`prd-locked.md`** missing, **BLOCK** (user runs **`/intake`**); if **`qa/qa-analysis.md`** missing or Step 0.5 **sequential interrogation** not completed in chat (**`using-forge`** **QA PRD analysis**), run **`qa-prd-analysis`** first; if CSV baseline missing and no valid waiver, **`qa-manual-test-cases-from-prd`** before generating **`eval/*.yaml`**. Do not prompt the user about downstream waivers until upstream steps exist.
 
 ```bash
 BRAIN=~/forge/brain
@@ -174,7 +174,7 @@ Log:
 
 **Order:** Same as **`qa-write-scenarios` Step −1** — never a **blocking interactive prompt** about YAML-before-CSV while **`prd-locked`** or **`qa-analysis.md`** (post-interrogation) is absent.
 
-Invoke `qa-prd-analysis` first (reads PRD, maps surfaces, writes `qa/qa-analysis.md` to brain).
+Invoke `qa-prd-analysis` first (**sequential interactive** Step 0.5; reads PRD, maps surfaces, writes `qa/qa-analysis.md` to brain).
 Complete **`qa-manual-test-cases-from-prd`** so **`qa/manual-test-cases.csv`** has ≥1 approved data row — **unless** `qa-analysis.md` frontmatter waives (see **`qa-write-scenarios`** Step 0.0).
 Then invoke `qa-write-scenarios` (reads qa-analysis.md + tech plans + CSV baseline, writes `eval/*.yaml`).
 

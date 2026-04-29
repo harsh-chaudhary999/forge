@@ -2,7 +2,7 @@
 name: forge-skill-anatomy
 description: "WHEN: You are writing or reviewing a Forge skill and need the canonical template, rigor checklist, or CSO guidelines."
 type: reference
-version: 2.0.1
+version: 2.0.2
 preamble-tier: 1
 triggers:
   - "writing a new skill"
@@ -71,6 +71,7 @@ If **`AskUserQuestion`** appears in **`allowed-tools`**, the skill body **must**
 1. States that **`AskUserQuestion`** is **canonical** for Claude Code + **`tools/lint_skill_allowed_tools.py`** — **do not** rename per IDE in **`SKILL.md`**.
 2. Points to **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** for the **full host table** (Cursor **`AskQuestion`**; CLIs / editors without the tool: **numbered options + stop**).
 3. Points to **`using-forge`** **Interactive human input** for prose vs structured blocking choices.
+4. If the skill elicits **multiple** human answers in sequence, points to **`using-forge`** **Multi-question elicitation** (transcript-first, one primary topic per turn when applicable, reconcile) — unless the skill documents a deliberate exception.
 
 Gate and interrogation skills should **also** ensure chat-visible question text where **`using-forge`** or the skill already requires it — this section does not replace those HARD-GATEs.
 

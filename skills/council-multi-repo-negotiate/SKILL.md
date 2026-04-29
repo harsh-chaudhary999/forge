@@ -3,7 +3,7 @@ name: council-multi-repo-negotiate
 description: "WHEN: A locked PRD needs to be negotiated across all surfaces before implementation begins. Invokes all 4 surface reasoning skills, all 5 contract skills, resolves conflicts, outputs locked shared-dev-spec.md."
 type: rigid
 requires: [brain-read, reasoning-as-backend, reasoning-as-web-frontend, reasoning-as-app-frontend, reasoning-as-infra, contract-api-rest, contract-event-bus, contract-cache, contract-schema-db, contract-search]
-version: 1.0.1
+version: 1.0.2
 preamble-tier: 3
 triggers:
   - "negotiate across repos"
@@ -19,7 +19,7 @@ allowed-tools:
 
 ## Human input (all hosts)
 
-This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**.
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). When multiple human decisions or conflict forks remain, follow **`using-forge`** **Multi-question elicitation** (**transcript-visible**, **one primary topic per message**, **reconcile** after replies). See **`using-forge`** **Interactive human input**.
 
 ## Anti-Pattern Preamble
 

@@ -202,9 +202,9 @@ Shared roots: both can use **`qa-prd-analysis`** and **`qa-analysis.md`**; stand
 
 **Stage-local questioning (all phases):** Ask only what unblocks the **current** Forge stage — not merge strategy, council detail, tech-plan approval, eval, or QA automation — while upstream prerequisites are still missing or the task **has not started**. Canonical norm: **`skills/using-forge/SKILL.md`** → **Stage-local questioning**.
 
-**Interactive human input:** Whenever the human must answer (task-id, doubt, waiver, “what next”), agents use **blocking interactive prompts** — canonical **`AskUserQuestion`** in skills; **every IDE** maps per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (e.g. Cursor **`AskQuestion`**; hosts without the tool: **numbered choices + stop**). Not prose-only playbooks. **`skills/using-forge/SKILL.md`** → **Interactive human input**.
+**Interactive human input:** Whenever the human must answer (task-id, doubt, waiver, “what next”), agents use **blocking interactive prompts** — canonical **`AskUserQuestion`** in skills; **every IDE** maps per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (e.g. Cursor **`AskQuestion`**; hosts without the tool: **numbered choices + stop**). Not prose-only playbooks. **`skills/using-forge/SKILL.md`** → **Interactive human input**. **Sequences of questions** (intake, planning rounds, QA analysis, …): same doc → **Multi-question elicitation** (**transcript-first**, one primary topic per turn when multiple answers are needed, reconcile after replies).
 
-**Prerequisite order — QA → eval YAML (when relevant):** **`prd-locked.md`** → **`qa-prd-analysis`** (chat interrogation + **`qa-analysis.md`**) → **`qa-manual-test-cases-from-prd`** + approved **`manual-test-cases.csv`** (or documented waiver) → **then** **`eval/*.yaml`**. **`skills/qa-write-scenarios/SKILL.md`** **Step −1**. Do not prompt about downstream QA/evYAML waivers while **intake** or **QA analysis** is still missing.
+**Prerequisite order — QA → eval YAML (when relevant):** **`prd-locked.md`** → **`qa-prd-analysis`** (**Multi-question elicitation** for coverage, Step 0.5 + **`qa-analysis.md`** — see **`skills/using-forge/SKILL.md`**) → **`qa-manual-test-cases-from-prd`** + approved **`manual-test-cases.csv`** (or documented waiver) → **then** **`eval/*.yaml`**. **`skills/qa-write-scenarios/SKILL.md`** **Step −1**. Do not prompt about downstream QA/evYAML waivers while **intake** or **QA analysis** is still missing.
 
 **Coupling vs optional depth:** The QA→YAML chain **requires** those brain files — **not** full **`/forge`**, Council, or tech plans (those **improve** contracts and targets). If **`/intake`** isn’t run, **`prd-locked.md`** can still be produced by **paste → draft → human approve** (see **`using-forge`** **Coupling, prerequisites, and alternatives** and **`qa-write-scenarios`** Step −1 alternatives column).
 
@@ -212,7 +212,7 @@ Shared roots: both can use **`qa-prd-analysis`** and **`qa-analysis.md`**; stand
 
 | Skill | Role |
 |---|---|
-| **`qa-prd-analysis`** | Structured PRD analysis → **`~/forge/brain/prds/<task-id>/qa/qa-analysis.md`** before bulk CSV work. |
+| **`qa-prd-analysis`** | Structured PRD analysis → **`~/forge/brain/prds/<task-id>/qa/qa-analysis.md`**; Step 0.5 = **`using-forge`** **Multi-question elicitation** for Q1–Q8 (see **QA PRD analysis** specialization in **`using-forge`**). |
 | **`qa-manual-test-cases-from-prd`** | Atomic **CSV**, Step 3 + Step 7 approvals, estimation, reuse/deprecation, final report. **HARD-GATE:** no production CSV rows before sample approval; no final report before count approval. |
 
 **Product policy** — edit **`~/forge/brain/products/<slug>/product.md`** (create with **`/workspace`**; there is **no** bundled `forge-product.md` template in-repo):

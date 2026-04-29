@@ -10,6 +10,7 @@ triggers:
   - "start forge session"
 allowed-tools:
   - Bash
+  - AskUserQuestion
 ---
 
 # Using Forge

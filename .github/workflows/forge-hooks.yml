@@ -3,6 +3,7 @@ name: forge-hooks
 on:
   push:
     paths:
+      - "scripts/install.sh"
       - "hooks/session-start"
       - "hooks/hooks.json"
       - ".claude/hooks/session-start.cjs"
@@ -29,6 +30,7 @@ on:
       - ".github/workflows/forge-hooks.yml"
   pull_request:
     paths:
+      - "scripts/install.sh"
       - "hooks/session-start"
       - "hooks/hooks.json"
       - ".claude/hooks/session-start.cjs"
@@ -59,6 +61,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install script bash syntax
+        run: bash -n scripts/install.sh
 
       - name: Stage marker unit tests
         run: node .claude/hooks/test-forge-stage-detect.cjs

@@ -15,7 +15,7 @@ Forge ships a feature across **multiple repos** without embedding a runtime fram
 - [How Forge works](#how-forge-works)
 - [Delivery gates (Phase 4)](#delivery-gates-phase-4)
 - [Design & UI](#design--ui)
-- [QA & test artifacts](#qa--test-artifacts)
+- [QA & test artifacts](#qa--test-artifacts) (delivery vs standalone **`/qa`** — see subsection inside)
 - [Codebase knowledge & file targeting](#codebase-knowledge--file-targeting)
 - [Service topology](#service-topology)
 - [What makes it different](#what-makes-it-different)
@@ -87,6 +87,8 @@ cd ~/forge && git pull && bash scripts/install.sh
 ```
 
 Omit flags to refresh **every** host `install.sh` auto-detects; or pass **`--platform`** once per editor you actually use. Supported names: **`cursor`**, **`claude-code`**, **`opencode`**, **`antigravity`**, **`codex`**, **`gemini-cli`**, **`jetbrains`**, **`copilot-cli`** (see `bash scripts/install.sh --help`).
+
+**Always re-run `install.sh` after `git pull`** if skills, commands, or hooks changed. Pulling alone updates **`~/forge`** on disk but **does not** refresh IDE-facing installs: **Cursor** global rules (**`~/.cursor/rules/forge.mdc`**) and **Claude Code** hook registration (**`~/.claude/settings.json`**, plugin cache under **`~/.claude/plugins/cache/`**) only update when the installer runs again. Otherwise you may see **stale command lists**, old **`PreToolUse`** matchers, or missing **`prompt-submit`** behavior until you reinstall.
 
 **After `git pull`, host-specific refresh:**
 
@@ -185,6 +187,17 @@ Forge uses **three** linked layers. None replaces the others:
 | **1. Manual QA CSV** | **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** | **Acceptance inventory**: atomic rows for humans / TMS (**8 columns** + optional **`Source`** per **`qa-manual-test-cases-from-prd`**). **Not** a list of unit-test methods — rows are verifiable **user/API-visible** outcomes (**`Web`**, **`Android`**, **`API`**, etc.). |
 | **2. Eval YAML** | **`~/forge/brain/prds/<task-id>/eval/*.yaml`** | **Machine-runnable** scenarios for **P4.4** (**`eval-scenario-format`**, **`eval-translate-english`**, drivers: web CDP, API HTTP, DB, cache, search, mobile, …). This is Forge’s **E2E / multi-surface execution** spec. **Does not** require Gherkin in your product repo. |
 | **3. Repo automated tests** | Your repos (worktrees) | **`forge-tdd`**: **RED → GREEN → refactor**. Can be **unit**, **integration**, or **BDD** (Cucumber, etc.) — whatever the repo runs in CI. **First** failing tests that encode the **tech plan** (and **CSV `Id`s`** when CSV exists), **then** production code. |
+
+### Delivery path (manual QA CSV + `/forge`) vs standalone QA (`/qa`)
+
+Use **both** when they solve different jobs:
+
+| Track | Entrypoints | Best for |
+|---|---|---|
+| **Delivery / conductor** | **`/forge`**, **`/eval`**, State **4b**: **`qa-prd-analysis`** → **`qa-manual-test-cases-from-prd`** → approved **`manual-test-cases.csv`** → **`[P4.0-QA-CSV]`**, then eval YAML and the rest of implementation + PR flow | Shipping a feature **through** the full Forge pipeline: human-signable CSV rows, traceability to **`/forge`**, merge order, brain **`conductor.log`**. |
+| **Standalone QA** | **`/qa`**, **`/qa-write`**, **`/qa-run`**, skills **`qa-pipeline-orchestrate`**, **`qa-branch-env-prep`**, … | Verifying **named feature branches** and environments **without** running the full build/dispatch path — e.g. QA on a branch before review, regression against staging, **`branch-code-validate`** mode. Writes **`qa-pipeline.log`** and **`qa-run-report-*.md`** under the task. |
+
+Shared roots: both can use **`qa-prd-analysis`** and **`qa-analysis.md`**; standalone QA emphasizes **`eval/*.yaml`** generation via **`qa-write-scenarios`** and multi-surface exec **outside** **`conductor-orchestrate`**. Prefer **`/qa`** or **`/qa-run`** when you only need “prove this branch / environment.” Prefer **`/forge`** State **4b** when you need **signed CSV + conductor gates** before dispatch.
 
 **Rigid skills for CSV path:**
 
@@ -579,6 +592,14 @@ Check YAML frontmatter on any skill that fails to load.
 1. Confirm **`product.md`** has **`start`** + **`health`** (or **`deploy_doc`**) per service.
 2. Run **`/heal`** with logs from **`~/forge/brain/prds/<task-id>/`** (or product’s eval paths).
 3. Re-run **`/scan`** if the codebase map is stale.
+
+### Claude Code: duplicate `PreToolUse` / hooks not updating
+
+**`install.sh`** merges Forge hooks into **`~/.claude/settings.json`** without removing older Forge entries. After several Forge upgrades, you may see **multiple `PreToolUse` blocks** with different **`matcher`** strings (e.g. older installs missing **`AskUserQuestion`**). **Fix:** edit **`settings.json`** and keep **one** Forge **`PreToolUse`** entry whose **`matcher`** matches the current **`hooks/hooks.json`** in this repo; remove duplicate Forge hook arrays for that event. Then **`bash scripts/install.sh --platform claude-code`** again so **`~/.claude/plugins/cache/`** matches your **`~/forge`** checkout.
+
+### Cursor: stale global rules or missing slash-command hints
+
+**`~/.cursor/rules/forge.mdc`** is **written by `install.sh`**, not by **`git pull`**. After upgrading Forge, run **`bash scripts/install.sh --platform cursor`** so **`forge.mdc`** and **`~/.cursor/plugins/local/forge/`** match your checkout. Restart Cursor. See **[`docs/platforms/cursor.md`](docs/platforms/cursor.md)**.
 
 ### Uninstall
 

@@ -35,6 +35,8 @@ cd ~/forge && git pull && bash scripts/install.sh --platform claude-code
 
 Start a **new Claude Code session** after skills or hooks change. **How to notice upstream changes** (GitHub Watch, Releases, team comms) is the same for every editor — see **[README Section 4 — Keeping Forge updated](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
 
+Re-running **`install.sh --platform claude-code`** refreshes the plugin cache and merges hook entries into **`~/.claude/settings.json`**. If you see **duplicate `PreToolUse`** entries after many upgrades, see **[README — Troubleshooting](../../README.md#troubleshooting)** (subsection **Claude Code: duplicate PreToolUse**).
+
 ## Available Features
 
 | Feature | Status |

@@ -32,6 +32,8 @@ cd ~/forge && git pull && bash scripts/install.sh --platform cursor
 
 Restart **Cursor** when skills or hooks change. **Discovery** of new Forge versions (Watch, Releases, etc.) is editor-agnostic — see **[README Section 4](../../README.md#4-keeping-forge-updated-how-you-hear-about-changes)**.
 
+Re-running **`install.sh --platform cursor`** refreshes **`~/.cursor/plugins/local/forge/`** (skills, commands, tools) and regenerates global **`~/.cursor/rules/forge.mdc`** (command hints including **`/qa`** / **`/qa-write`** / **`/qa-run`**). **`git pull` alone does not** update those paths.
+
 ## Available Features
 
 | Feature | Status |
@@ -44,6 +46,8 @@ Restart **Cursor** when skills or hooks change. **Discovery** of new Forge versi
 | Brain | Full read/write |
 | Worktrees | Full isolation |
 | `.cursorrules` | Project-level AI context |
+
+**Standalone QA (slash commands):** **`/qa`** (full pipeline), **`/qa-write`** (scenarios only), **`/qa-run`** (execute existing YAML) — same skills as in-repo **`commands/qa.md`**, **`qa-write.md`**, **`qa-run.md`**. See **[README — QA & test artifacts](../../README.md#qa--test-artifacts)** (subsection **Delivery path vs standalone `/qa`**). Cursor does **not** inject per-prompt gate hints (no `UserPromptSubmit` hook); rely on skills + **`using-forge`** at session start.
 
 ## How It Works
 

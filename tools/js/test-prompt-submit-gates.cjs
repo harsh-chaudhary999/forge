@@ -6,7 +6,7 @@
  * .claude/hooks/prompt-submit-gates.cjs (same module used by prompt-submit.cjs).
  *
  * Run:
- *   node tools/test-prompt-submit-gates.cjs
+ *   node tools/js/test-prompt-submit-gates.cjs
  *
  * Exits 0 on pass, 1 on any failure.
  */
@@ -18,7 +18,9 @@ const path = require('path');
 const {
   resolveNextGate,
   resolveQAPipelineGate,
-} = require(path.join(__dirname, '../.claude/hooks/prompt-submit-gates.cjs'));
+} = require(
+  path.join(__dirname, '..', '..', '.claude', 'hooks', 'prompt-submit-gates.cjs')
+);
 
 let passed = 0;
 let failed = 0;

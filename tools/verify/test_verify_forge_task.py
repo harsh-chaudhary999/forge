@@ -3,6 +3,7 @@
 
 Run from repo root:
   python3 -m unittest discover -s tools -p 'test_verify_forge_task.py' -v
+  (tests live under tools/verify/, tools/dev/, etc.; discover recurses)
 """
 
 from __future__ import annotations

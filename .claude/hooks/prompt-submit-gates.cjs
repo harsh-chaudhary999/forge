@@ -4,7 +4,7 @@
  *
  * Pure gate-resolution logic shared by:
  *   - prompt-submit.cjs (Claude Code UserPromptSubmit hook)
- *   - tools/test-prompt-submit-gates.cjs (CI regression tests)
+ *   - tools/js/test-prompt-submit-gates.cjs (CI regression tests)
  *
  * No process.exit, no I/O — safe to require() from tests.
  */

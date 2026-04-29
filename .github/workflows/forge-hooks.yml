@@ -5,7 +5,6 @@ on:
     paths:
       - "scripts/install.sh"
       - "scripts/forge-doctor.sh"
-      - "tools/forge_evidence_bundle.py"
       - "hooks/session-start"
       - "hooks/hooks.json"
       - ".claude/hooks/session-start.cjs"
@@ -15,26 +14,18 @@ on:
       - ".claude/hooks/prompt-submit-gates.cjs"
       - ".claude/hooks/forge-stage-detect.cjs"
       - ".claude/hooks/test-forge-stage-detect.cjs"
-      - "tools/test-prompt-submit-gates.cjs"
-      - "tools/verify_forge_task.py"
-      - "tools/eval_yaml_stdlib.py"
-      - "tools/test_verify_forge_task.py"
-      - "tools/test_eval_yaml_stdlib.py"
-      - "tools/forge_drift_check.py"
-      - "tools/phase_ledger.py"
-      - "tools/shared_spec_policy.py"
-      - "tools/shared_spec_checklist.json"
-      - "tools/append_phase_ledger.py"
-      - "tools/lint_skill_allowed_tools.py"
-      - "tools/skill-tool-policy.json"
-      - "tools/test_phase_ledger.py"
-      - "tools/requirements-verify.txt"
+      - "tools/**/*.py"
+      - "tools/verify/**"
+      - "tools/scan/**"
+      - "tools/dev/**"
+      - "tools/ops/**"
+      - "tools/js/**"
+      - "tools/scan_forge/**"
       - ".github/workflows/forge-hooks.yml"
   pull_request:
     paths:
       - "scripts/install.sh"
       - "scripts/forge-doctor.sh"
-      - "tools/forge_evidence_bundle.py"
       - "hooks/session-start"
       - "hooks/hooks.json"
       - ".claude/hooks/session-start.cjs"
@@ -44,20 +35,13 @@ on:
       - ".claude/hooks/prompt-submit-gates.cjs"
       - ".claude/hooks/forge-stage-detect.cjs"
       - ".claude/hooks/test-forge-stage-detect.cjs"
-      - "tools/test-prompt-submit-gates.cjs"
-      - "tools/verify_forge_task.py"
-      - "tools/eval_yaml_stdlib.py"
-      - "tools/test_verify_forge_task.py"
-      - "tools/test_eval_yaml_stdlib.py"
-      - "tools/forge_drift_check.py"
-      - "tools/phase_ledger.py"
-      - "tools/shared_spec_policy.py"
-      - "tools/shared_spec_checklist.json"
-      - "tools/append_phase_ledger.py"
-      - "tools/lint_skill_allowed_tools.py"
-      - "tools/skill-tool-policy.json"
-      - "tools/test_phase_ledger.py"
-      - "tools/requirements-verify.txt"
+      - "tools/**/*.py"
+      - "tools/verify/**"
+      - "tools/scan/**"
+      - "tools/dev/**"
+      - "tools/ops/**"
+      - "tools/js/**"
+      - "tools/scan_forge/**"
       - ".github/workflows/forge-hooks.yml"
 
 jobs:
@@ -73,13 +57,13 @@ jobs:
         run: bash -n scripts/forge-doctor.sh
 
       - name: forge_evidence_bundle.py syntax
-        run: python3 -m py_compile tools/forge_evidence_bundle.py
+        run: python3 -m py_compile tools/ops/forge_evidence_bundle.py
 
       - name: Stage marker unit tests
         run: node .claude/hooks/test-forge-stage-detect.cjs
 
       - name: Prompt submit gate resolution tests
-        run: node tools/test-prompt-submit-gates.cjs
+        run: node tools/js/test-prompt-submit-gates.cjs
 
       - name: Load prompt-submit gates module (syntax)
         run: node --check .claude/hooks/prompt-submit-gates.cjs
@@ -106,10 +90,13 @@ jobs:
           python-version: "3.11"
 
       - name: Install PyYAML (eval scenario validation tests)
-        run: pip install -r tools/requirements-verify.txt
+        run: pip install -r tools/verify/requirements-verify.txt
 
       - name: verify_forge_task + eval stdlib unit tests
-        run: python3 -m unittest discover -s tools -p "test_*.py" -v
+        run: |
+          set -e
+          python3 -m unittest discover -s tools/verify -p "test_*.py" -v
+          python3 -m unittest discover -s tools/dev -p "test_*.py" -v
 
   lint-skills-allowed-tools:
     runs-on: ubuntu-latest
@@ -121,9 +108,9 @@ jobs:
           python-version: "3.11"
 
       - name: rigid skills must declare allowed-tools
-        run: python3 tools/lint_skill_allowed_tools.py
+        run: python3 tools/dev/lint_skill_allowed_tools.py
 
       - name: skill-tool-policy.json matches lint (no drift)
         run: |
-          python3 tools/lint_skill_allowed_tools.py --write-policy /tmp/skill-tool-policy.json
-          diff -u tools/skill-tool-policy.json /tmp/skill-tool-policy.json
+          python3 tools/dev/lint_skill_allowed_tools.py --write-policy /tmp/skill-tool-policy.json
+          diff -u tools/dev/skill-tool-policy.json /tmp/skill-tool-policy.json

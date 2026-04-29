@@ -2,29 +2,40 @@
 
 Small, repo-local utilities shipped with Forge. The main maintained package here is **`scan_forge/`** — the scan-codebase pipeline (inventory → brain stubs → cross-repo heuristics).
 
-## Layout
+## Directory layout
 
-| Path | Purpose |
-|------|---------|
-| [`scan_forge/`](scan_forge/) | Python package: phases 1, 3.5, 4, 5, 56, 57, CLI; smoke data is generated at runtime by `verify_smoke.py` — see **[`scan_forge/README.md`](scan_forge/README.md)** for phase map and module guide |
-| [`verify_scan_outputs.py`](verify_scan_outputs.py) | Standalone check: same rules as `scan_forge.verify_brain_codebase` (required files + non-empty `modules/` when `source_files` > 0). **`forge_scan.py` runs verify automatically** (3 retries) after writing `index.md`; set **`FORGE_SCAN_SKIP_VERIFY=1`** only for emergency triage |
-| [`forge_scan.py`](forge_scan.py) | CLI entry: prepends `tools/` on `sys.path` and runs `scan_forge.cli` |
-| `scan_forge/scan_state.py` | Incremental scan state (changed-path report + `.forge_scan_file_state.json` with per-role heads and tracked blob SHAs) |
-| [`verify_forge_task.py`](verify_forge_task.py) | **Machine gate:** eval YAML (**`--validate-eval-yaml`** — PyYAML if installed else [`eval_yaml_stdlib.py`](eval_yaml_stdlib.py)), `conductor.log` order, QA/design gates, optional **`--check-prd-sections`**, **`--require-conductor-timestamps`**, **`--strict-single-task-brain`**, **`--strict-tech-plans`**, **`--strict-0c-inventory`**, shared-spec + phase-ledger flags, gates dir auto-fallback ([doc](../docs/forge-task-verification.md)) |
-| [`verify_tech_plans.py`](verify_tech_plans.py) | **Tech plan structure:** canonical Section **1b** headings, **`### 1b.2a` after** wire maps, **`REVIEW_PASS`** requires FORGE-GATE HTML comments — standalone or via **`verify_forge_task.py --strict-tech-plans`**; add **`--strict-0c-inventory`** for GAP + multi-source citation rails |
-| [`forge_drift_check.py`](forge_drift_check.py) | **Drift:** `prd-locked.md` **Success Criteria** bullets vs `eval/*` + QA CSV text (**stdlib**; optional **`--strict`**) |
-| [`eval_yaml_stdlib.py`](eval_yaml_stdlib.py) | Best-effort eval scenario shape without PyYAML (imported by verify script) |
-| [`phase_ledger.py`](phase_ledger.py) / [`append_phase_ledger.py`](append_phase_ledger.py) | Append-only **`phase-ledger.jsonl`** with per-file **SHA256** (editor-agnostic) |
-| [`shared_spec_policy.py`](shared_spec_policy.py) + [`shared_spec_checklist.json`](shared_spec_checklist.json) | **`verify_forge_task.py --check-shared-spec`** |
-| [`lint_skill_allowed_tools.py`](lint_skill_allowed_tools.py) | CI: rigid **`allowed-tools`**; **`--write-policy`** → [`skill-tool-policy.json`](skill-tool-policy.json) for hosts that can consume it |
-| [`forge_graph_query.py`](forge_graph_query.py) | **Ad-hoc queries** on **`graph.json`** from a completed scan: `summary`, `neighbors <node_id>`, `search <substring>` — stdlib only |
-| [`forge_codebase_search.py`](forge_codebase_search.py) | Local BM25 search (SQLite FTS5) across scan artifacts (`modules/`, `index.md`, `SCAN_SUMMARY.md`, automap, doc index) |
+| Directory | Purpose |
+|-----------|---------|
+| **[`scan_forge/`](scan_forge/)** | Python package: phases 1, 3.5, 4, 5, 56, 57, CLI; smoke data is generated at runtime by `verify_smoke.py` — see **[`scan_forge/README.md`](scan_forge/README.md)** for phase map and module guide. |
+| **[`verify/`](verify/)** | Machine verification: task/brain gates (`verify_forge_task.py`, `verify_tech_plans.py`, `verify_scan_outputs.py`, eval YAML helpers, drift, shared-spec, phase ledger, `requirements-verify.txt`, unit tests). |
+| **[`scan/`](scan/)** | Scan **CLI and helpers** (not the `scan_forge` package): `forge_scan.py`, `forge_codebase_search.py`, `forge_graph_query.py`, `forge_adjacency_scan.py`, `scan_bench.py`, `adjacency-seed-patterns.txt`. |
+| **[`dev/`](dev/)** | Maintainer tooling: `lint_skill_allowed_tools.py`, `skill-tool-policy.json`, tests. |
+| **[`ops/`](ops/)** | Operator utilities: `forge_evidence_bundle.py`, `brain_restore_deleted.py`. |
+| **[`js/`](js/)** | Node regression tests (e.g. `test-prompt-submit-gates.cjs`). |
+
+**Stable CLI paths:** Thin **`tools/<name>.py`** shims at the repo `tools/` root forward to the grouped implementation (so **`python3 tools/verify_forge_task.py`** and docs stay unchanged). Prefer shims for everyday use; open **`verify/`**, **`scan/`**, etc. when editing source.
+
+## Tool reference
+
+| Entry (shim → impl) | Purpose |
+|----------------------|---------|
+| [`forge_scan.py`](forge_scan.py) → [`scan/forge_scan.py`](scan/forge_scan.py) | CLI entry: prepends `tools/` on `sys.path` and runs `scan_forge.cli` |
+| [`verify_scan_outputs.py`](verify_scan_outputs.py) → [`verify/verify_scan_outputs.py`](verify/verify_scan_outputs.py) | Standalone check: same rules as `scan_forge.verify_brain_codebase`. **`forge_scan.py` runs verify automatically** (3 retries) after writing `index.md`; set **`FORGE_SCAN_SKIP_VERIFY=1`** only for emergency triage |
+| [`verify_forge_task.py`](verify_forge_task.py) → [`verify/verify_forge_task.py`](verify/verify_forge_task.py) | **Machine gate:** eval YAML (`--validate-eval-yaml`), `conductor.log` order, QA/design gates, optional tech-plan / shared-spec / phase-ledger flags — see **[`docs/forge-task-verification.md`](../docs/forge-task-verification.md)** |
+| [`verify_tech_plans.py`](verify_tech_plans.py) → [`verify/verify_tech_plans.py`](verify/verify_tech_plans.py) | **Tech plan structure:** canonical Section **1b** headings, **`### 1b.2a` after** wire maps, **`REVIEW_PASS`** FORGE-GATE comments |
+| [`forge_drift_check.py`](forge_drift_check.py) → [`verify/forge_drift_check.py`](verify/forge_drift_check.py) | **Drift:** `prd-locked.md` **Success Criteria** vs `eval/*` + QA CSV (**stdlib**; optional **`--strict`**) |
+| [`verify/eval_yaml_stdlib.py`](verify/eval_yaml_stdlib.py) | Best-effort eval scenario shape without PyYAML (imported by `verify_forge_task`; no top-level shim) |
+| [`append_phase_ledger.py`](append_phase_ledger.py) → [`verify/append_phase_ledger.py`](verify/append_phase_ledger.py), [`verify/phase_ledger.py`](verify/phase_ledger.py) | Append-only **`phase-ledger.jsonl`** with per-file **SHA256** |
+| [`verify/shared_spec_policy.py`](verify/shared_spec_policy.py) + [`verify/shared_spec_checklist.json`](verify/shared_spec_checklist.json) | **`verify_forge_task.py --check-shared-spec`** |
+| [`lint_skill_allowed_tools.py`](lint_skill_allowed_tools.py) → [`dev/lint_skill_allowed_tools.py`](dev/lint_skill_allowed_tools.py) | CI: rigid **`allowed-tools`**; **`--write-policy`** → [`dev/skill-tool-policy.json`](dev/skill-tool-policy.json) (**`pre-tool-use.cjs`** loads `tools/dev/skill-tool-policy.json`, with legacy fallback `tools/skill-tool-policy.json`) |
+| [`forge_graph_query.py`](forge_graph_query.py) → [`scan/forge_graph_query.py`](scan/forge_graph_query.py) | **Ad-hoc queries** on **`graph.json`**: `summary`, `neighbors`, `search` — stdlib only |
+| [`forge_codebase_search.py`](forge_codebase_search.py) → [`scan/forge_codebase_search.py`](scan/forge_codebase_search.py) | Local BM25 search (SQLite FTS5) across scan artifacts |
 | `scan_forge/query_repl.py` | SQL helper for `forge_scan_edges.sqlite` (generated from `graph.json`) |
-| [`scan_bench.py`](scan_bench.py) | Synthetic benchmark harness: full vs incremental runtime, changed-file detection, and explicit gate booleans (`--output-json`, `--output-md`) |
+| [`scan_bench.py`](scan_bench.py) → [`scan/scan_bench.py`](scan/scan_bench.py) | Synthetic benchmark harness (full vs incremental, gate booleans) |
 | `scan_forge/HARDENING_GATES.md` | Ship gates for precision, smoke coverage, import-depth confidence, and benchmark reporting |
-| [`forge_adjacency_scan.py`](forge_adjacency_scan.py) | **Optional** pre-Council scan — **`docs/adjacency-and-cohorts.md`**. Appends `discovery-adjacency.md` using **`rg`** + org patterns (`adjacency-seed-patterns.txt` or `--patterns`). |
-| [`check_frozen_spec.py`](check_frozen_spec.py) | **Pre-freeze lint:** fails if `TBD` or `TODO` appears outside code fences in `shared-dev-spec.md` |
-| [`brain_restore_deleted.py`](brain_restore_deleted.py) | **Recovery utility:** restores brain files deleted from git history (`--help` for usage) |
+| [`forge_adjacency_scan.py`](forge_adjacency_scan.py) → [`scan/forge_adjacency_scan.py`](scan/forge_adjacency_scan.py) | **Optional** pre-Council — **`docs/adjacency-and-cohorts.md`**. **`adjacency-seed-patterns.txt`** lives next to the script under **`scan/`**. |
+| [`check_frozen_spec.py`](check_frozen_spec.py) → [`verify/check_frozen_spec.py`](verify/check_frozen_spec.py) | **Pre-freeze lint:** `TBD` / `TODO` outside fences in `shared-dev-spec.md` |
+| [`brain_restore_deleted.py`](brain_restore_deleted.py) → [`ops/brain_restore_deleted.py`](ops/brain_restore_deleted.py) | **Recovery:** restore brain files deleted from disk but still in the git index |
 
 There is **no** separate throwaway “temp” tree under `tools/`; scan run artifacts are always created in a directory you pass as **`--run-dir`** (or a process temp dir), not committed here.
 
@@ -34,7 +45,7 @@ From the **Forge repo root**:
 
 ```bash
 python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain
-# stricter (PyYAML): pip install -r tools/requirements-verify.txt
+# stricter (PyYAML): pip install -r tools/verify/requirements-verify.txt
 python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain --require-log --validate-eval-yaml
 ```
 
@@ -45,15 +56,13 @@ See **[`docs/forge-task-verification.md`](../docs/forge-task-verification.md)** 
 ```bash
 python3 tools/verify_tech_plans.py --help
 
-# Check all tech plans for a task (pass the tech-plans/ directory):
 python3 tools/verify_tech_plans.py ~/forge/brain/prds/<task-id>/tech-plans/
 
-# Or via verify_forge_task.py (combines eval + tech-plan checks in one pass):
 python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain --strict-tech-plans
 python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain --strict-0c-inventory
 ```
 
-Checks performed: canonical Section 1b headings present, `### 1b.2a` placed **after** wire-map sections (Section 1b.5 / `#### 1b.5b`), and any `Tech plan status: REVIEW_PASS` file contains both `<!-- FORGE-GATE:… -->` HTML comment markers in Section 1c. With **`--strict-0c-inventory`**, **`REVIEW_PASS`** plans also fail on inventory rows whose last column is **`GAP`**, and on **prd-locked-only** inventories when Confluence mirror, **touchpoints/*.md**, or populated **QA CSV** exist (substring rules — see [doc](../docs/forge-task-verification.md)).
+Checks performed: canonical Section 1b headings present, `### 1b.2a` placed **after** wire-map sections, and any `Tech plan status: REVIEW_PASS` file contains both `<!-- FORGE-GATE:… -->` HTML comment markers in Section 1c. With **`--strict-0c-inventory`**, **`REVIEW_PASS`** plans also fail on inventory **GAP** rows and **prd-locked-only** inventories when Confluence mirror, **touchpoints/**, or populated **QA CSV** exist (substring rules — see [doc](../docs/forge-task-verification.md)).
 
 ## Verifying merged plugin `skills/` layout (all IDEs that copy the tree)
 

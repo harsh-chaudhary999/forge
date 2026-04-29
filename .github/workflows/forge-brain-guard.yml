@@ -1,6 +1,6 @@
 # Optional template: copy or adapt into your *brain* repository CI.
 # This workflow lives in the Forge repo as a reference; brain repos often
-# checkout Forge (sparse) or vendor tools/verify_forge_task.py.
+# checkout Forge (sparse) or vendor tools/verify/ (verify_forge_task.py, etc.).
 #
 # Required repo/organization variable: FORGE_TASK_ID (e.g. add-2fa).
 # Optional repo/org variables (exported via env: below — the shell reads env, not ${{ vars.* }}):
@@ -48,14 +48,14 @@ jobs:
           repository: ${{ vars.FORGE_TOOLS_REPO }}
           path: forge
           sparse-checkout: |
-            tools/verify_forge_task.py
-            tools/eval_yaml_stdlib.py
-            tools/phase_ledger.py
-            tools/shared_spec_policy.py
-            tools/shared_spec_checklist.json
-            tools/requirements-verify.txt
-            tools/forge_drift_check.py
-            tools/verify_tech_plans.py
+            tools/verify/verify_forge_task.py
+            tools/verify/eval_yaml_stdlib.py
+            tools/verify/phase_ledger.py
+            tools/verify/shared_spec_policy.py
+            tools/verify/shared_spec_checklist.json
+            tools/verify/requirements-verify.txt
+            tools/verify/forge_drift_check.py
+            tools/verify/verify_tech_plans.py
           sparse-checkout-cone-mode: false
 
       - uses: actions/setup-python@v5
@@ -63,7 +63,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install verify extras (eval YAML schema)
-        run: pip install -r forge/tools/requirements-verify.txt
+        run: pip install -r forge/tools/verify/requirements-verify.txt
 
       - name: Verify Forge task
         env:
@@ -96,7 +96,7 @@ jobs:
           if [ "${FORGE_VALIDATE_PHASE_LEDGER:-}" = "true" ]; then EXTRA="${EXTRA} --validate-phase-ledger"; fi
           if [ "${FORGE_REQUIRE_PHASE_LEDGER:-}" = "true" ]; then EXTRA="${EXTRA} --require-phase-ledger"; fi
           if [ "${FORGE_PHASE_LEDGER_VERIFY_HASHES:-}" = "true" ]; then EXTRA="${EXTRA} --phase-ledger-verify-hashes"; fi
-          python3 forge/tools/verify_forge_task.py \
+          python3 forge/tools/verify/verify_forge_task.py \
             --brain "${GITHUB_WORKSPACE}" \
             --task-id "${FORGE_TASK_ID}" \
             --require-log \
@@ -104,7 +104,7 @@ jobs:
             ${EXTRA}
           DRIFT_EXTRA=""
           if [ "${FORGE_DRIFT_STRICT:-}" = "true" ]; then DRIFT_EXTRA="--strict"; fi
-          python3 forge/tools/forge_drift_check.py \
+          python3 forge/tools/verify/forge_drift_check.py \
             --brain "${GITHUB_WORKSPACE}" \
             --task-id "${FORGE_TASK_ID}" \
             ${DRIFT_EXTRA}

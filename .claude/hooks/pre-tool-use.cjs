@@ -32,10 +32,11 @@
  * no canary file expected). Use only on trusted local machines; default is secure.
  *
  * FORGE_ROOT — optional absolute path to Forge repo root; defaults to two levels
- * above this hook (…/forge). Used to load tools/skill-tool-policy.json when present.
+ * above this hook (…/forge). Used to load tools/dev/skill-tool-policy.json
+ * (fallback: tools/skill-tool-policy.json) when present.
  *
  * Skill gate: when ~/.forge/.active-skill contains a skill name, allowed-tools are
- * taken from tools/skill-tool-policy.json if that file exists; else parsed from
+ * taken from the policy JSON if that file exists; else parsed from
  * skills/<name>/SKILL.md. Wire PreToolUse in hooks/hooks.json for each tool name
  * you want enforced (see matcher alternation there).
  */
@@ -168,21 +169,26 @@ if (process.env.FORGE_ROOT) {
 }
 
 function resolveSkillAllowedTools(skillKey, skillFilePath, skillContent) {
-  const policyPath = path.join(forgeRoot, 'tools', 'skill-tool-policy.json');
-  try {
-    if (fs.existsSync(policyPath)) {
-      const policy = JSON.parse(fs.readFileSync(policyPath, 'utf-8'));
-      const entry = policy.skills && policy.skills[skillKey];
-      if (entry && Array.isArray(entry.allowed_tools) && entry.allowed_tools.length > 0) {
-        return {
-          allowedTools: entry.allowed_tools,
-          isHardGate: !!entry.hard_gate,
-          source: 'skill-tool-policy.json',
-        };
+  const policyCandidates = [
+    path.join(forgeRoot, 'tools', 'dev', 'skill-tool-policy.json'),
+    path.join(forgeRoot, 'tools', 'skill-tool-policy.json'),
+  ];
+  for (const policyPath of policyCandidates) {
+    try {
+      if (fs.existsSync(policyPath)) {
+        const policy = JSON.parse(fs.readFileSync(policyPath, 'utf-8'));
+        const entry = policy.skills && policy.skills[skillKey];
+        if (entry && Array.isArray(entry.allowed_tools) && entry.allowed_tools.length > 0) {
+          return {
+            allowedTools: entry.allowed_tools,
+            isHardGate: !!entry.hard_gate,
+            source: 'skill-tool-policy.json',
+          };
+        }
       }
+    } catch (_) {
+      // try next path or fall through to SKILL.md
     }
-  } catch (_) {
-    // fall through to SKILL.md
   }
   if (!fs.existsSync(skillFilePath)) {
     return { allowedTools: [], isHardGate: false, source: null };

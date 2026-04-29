@@ -1,27 +1,9 @@
 #!/usr/bin/env python3
-"""Forge scan-codebase CLI — Python entry only (no shell wrapper).
-
-Adds ``tools/`` to ``sys.path`` and delegates to ``scan_forge.cli:main``.
-
-  python3 tools/forge_scan.py --brain-codebase … --repos backend:./api …
-
-Equivalent: ``PYTHONPATH=tools python3 -m scan_forge …``
-"""
-
+"""Shim: forwards to ``tools/scan/forge_scan.py`` (grouped layout; see tools/README.md)."""
 from __future__ import annotations
 
-import sys
+import runpy
 from pathlib import Path
 
-
-def main() -> None:
-    tools = Path(__file__).resolve().parent
-    if str(tools) not in sys.path:
-        sys.path.insert(0, str(tools))
-    from scan_forge.cli import main as run
-
-    run()
-
-
-if __name__ == "__main__":
-    main()
+_IMPL = Path(__file__).resolve().parent / "scan/forge_scan.py"
+runpy.run_path(str(_IMPL), run_name="__main__")

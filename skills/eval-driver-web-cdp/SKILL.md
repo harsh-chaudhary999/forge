@@ -53,13 +53,13 @@ If you notice any of these, STOP and do not proceed:
 
 ## Host implementation choice (CDP, Playwright, Puppeteer, MCP)
 
-**MUST ask the human** how web UI eval should run **before** treating any stack as decided:
+**MUST** elicit with a **blocking interactive prompt** per **`using-forge`** how web UI eval should run **before** treating any stack as decided — **`AskQuestion`** / **numbered 1–3** + **stop**, not prose-only *which stack?*:
 
 1. **Raw CDP** — WebSocket client / `chrome-remote-interface` / minimal driver (matches the API shape in this skill).
 2. **Playwright or Puppeteer** — running on the **operator’s machine or CI** against the **product** browser (allowed for **product eval**; D5 still forbids **LangChain-style** orchestration **inside Forge’s shipped plugin code**).
 3. **Browser MCP** — IDE or host exposes MCP tools (navigate, snapshot, click). When available, the operator may prefer MCP over a custom CDP script. **Confirm** tool names, auth, timeouts, and what artifacts **`eval-judge`** needs.
 
-If **both** MCP and a local CDP path exist, **do not assume** — **ask which to use** and record the choice (e.g. in `brain/prds/<task-id>/` notes) so runs are reproducible.
+If **both** MCP and a local CDP path exist, **do not assume** — same **blocking interactive** fork (**MCP** vs **local CDP**) and record the choice (e.g. in `brain/prds/<task-id>/` notes) so runs are reproducible.
 
 ## Overview
 

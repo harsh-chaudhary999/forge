@@ -352,7 +352,7 @@ Test environment details (I'll use these to write concrete test data into scenar
 
 **Skip only if** confirmed surfaces are exclusively API/DB/cache/events/search with **no** user-visible UI for this feature — state **N/A** in chat and in `qa-analysis.md`.
 
-**Reuse-first (do this before the full questionnaire):** If **planning / development already produced** PRD↔UI traceability — e.g. **tech plans** with screens and testids, **`shared-dev-spec.md`** user-visible behaviors, **`prd-locked.md`** design/Q9 fields, **`design/MCP_INGEST.md`** or Figma refs — then **Q8 is not a greenfield mapping exercise**. You **summarize what exists** (brain paths + section titles), list **only gaps** (missing component for a PRD bullet, unknown fixture, conflicting testid), and ask the user to **confirm or patch those gaps**. Paste this **short form** in chat when reuse applies:
+**Reuse-first (do this before the full questionnaire):** If **planning / development already produced** PRD↔UI traceability — e.g. **tech plans** with screens and testids, **`shared-dev-spec.md`** user-visible behaviors, **`prd-locked.md`** design/Q9 fields, **`design/MCP_INGEST.md`** or Figma refs — then **Q8 is not a greenfield mapping exercise**. You **summarize what exists** (brain paths + section titles), list **only gaps** (missing component for a PRD bullet, unknown fixture, conflicting testid), and elicit **confirm or patch** for those gaps with **blocking interactive prompts** per **`using-forge`** when the gap is a **discrete** choice. Paste this **short form** in chat when reuse applies:
 
 ```
 Q8 — Inherited PRD ↔ design mapping (confirm / gap-fill)

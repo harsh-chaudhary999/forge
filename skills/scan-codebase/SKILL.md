@@ -1334,7 +1334,7 @@ Does SCAN.json exist?
 3. For Phase 3 enrichment on very large repos (1000+ hub candidates): process in batches — read the first batch of hub files, write their brain nodes, then continue with the next batch. No file is skipped, just done in multiple passes.
 4. Add `"monorepo": true` flag to SCAN.json
 
-**Escalation:** NEEDS_CONTEXT — ask which subdirectory to focus on if repo has >3000 files and user wants deep enrichment on a specific area
+**Escalation:** NEEDS_CONTEXT — use a **blocking interactive prompt** per **`using-forge`** (e.g. **numbered** candidate subdirectory paths + **stop**) if repo has >3000 files and the user wants deep enrichment on a specific area — not prose-only *which subdir?* with no same-turn choices
 
 ---
 

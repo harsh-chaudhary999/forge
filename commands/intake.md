@@ -5,7 +5,7 @@ description: "Partial slice — PRD intake only. Invoke forge-intake-gate and in
 
 Invoke the **`forge-intake-gate`** skill, then **`intake-interrogate`**, to run **PRD intake only** for this task.
 
-If the user provided a PRD or description after this command, use it as the initial PRD input. If no PRD was provided, ask the user to describe what they want to build.
+If the user provided a PRD or description after this command, use it as the initial PRD input. If no PRD was provided, elicit one in chat (open-ended: goals, paste, or path to a doc). **Discrete forks** (task-id, product slug, confirm scope) must use a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** — **`AskQuestion`** / **`AskUserQuestion`** / **numbered options + stop** — not a runbook-only *reply with…* with no same-turn choices.
 
 The intake process locks the PRD under **`~/forge/brain/prds/<task-id>/`** as **`prd-locked.md`**: **variable** number of user turns — confidence-first; **stop** when mandatory lock fields are concrete (no fixed “eight questions” quota). When web, app, or user-visible UI is in scope, **Q9 design / UI** is mandatory per **`intake-interrogate`**.
 

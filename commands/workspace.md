@@ -35,7 +35,7 @@ Set up a Forge workspace by scanning an existing folder structure. Works with an
 ls ~/forge/brain/products/ 2>/dev/null
 ```
 
-If workspaces exist, show them and ask: **"Set up a new workspace or open an existing one?"**
+If workspaces exist, show them and use a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** — e.g. **`AskQuestion`** or **numbered options** (new workspace / open existing `<slug>`) + **stop** — not only a bare sentence with no clickable or numbered choices.
 
 ---
 
@@ -83,8 +83,7 @@ Apply this mapping automatically — no need to ask if the name is unambiguous:
 | `shared`, `common`, `lib`, `packages`, `sdk` | `shared` |
 | `infra`, `devops`, `deploy`, `k8s`, `terraform` | `infra` |
 
-If the folder name is ambiguous (e.g. `src`, `code`, `main`), ask once:
-**"What role does `<folder-name>` play — backend, web, mobile, shared, or infra?"**
+If the folder name is ambiguous (e.g. `src`, `code`, `main`), use a **blocking interactive prompt** per **`using-forge`** for role — **`AskQuestion`** or **numbered list** of the five roles + **stop** — for **`<folder-name>`**.
 
 ---
 
@@ -123,7 +122,7 @@ For **each** detected repo (before writing Step 5 `product.md`):
 
 Optionally copy explicit `start`, `stop`, `health`, `port` into `product.md` **only when** they are unambiguous from the doc; otherwise leave them blank — `deploy_doc` is still the source of truth.
 
-**If not sufficient:** **STOP** before Step 5 and ask the user **for that repo** (one message can cover all repos in a small table):
+**If not sufficient:** **STOP** before Step 5 and use a **blocking interactive prompt** per **`using-forge`** for each repo (one message can cover all repos in a small table). Present **A** vs **B** via **`AskQuestion`** or **numbered 1–2** + **stop**; then collect the path or paste — not only prose *provide A or B* with no same-turn fork.
 
 - **A)** Path **relative to repo root** to the file that contains deploy / local run steps (Forge will use this for stack-up and eval prep), **or**
 - **B)** Paste the lines to store as `start`, optional `stop`, `health`, optional `port` in `product.md`.
@@ -136,11 +135,11 @@ There is **no “skip deploy” path** — you cannot run a meaningful **`eval-p
 
 ### Step 4 — Ask only what cannot be detected
 
-After scan, ask **only** what is missing and cannot be inferred:
+After scan, elicit **only** what is missing and cannot be inferred, using **blocking interactive prompts** per **`using-forge`** where the answer is a **finite choice** (confirm inferred name → yes/no or pick from list):
 
 1. **Product name** — if not obvious from folder name or repo names
-   - e.g. `jh` → ask "What is the product name? What should we call this workspace?"
-   - e.g. `my-startup-backend` → infer "my-startup", confirm
+   - e.g. `jh` → prompt with **AskQuestion** or **numbered options** for name candidates + **stop**
+   - e.g. `my-startup-backend` → infer "my-startup", then **confirm** with a one-tap/numbered confirm
 
 2. **Role clarification** — only for ambiguous folder names (see Step 2)
 

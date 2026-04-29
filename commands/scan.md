@@ -28,8 +28,8 @@ Build a codebase knowledge graph for the Forge brain. Works on any existing repo
 **If no slug given:**
 - Check if a workspace is open (look for `~/forge/brain/products/*/product.md`)
 - If exactly one workspace exists → use it
-- If multiple exist → list them and ask which
-- If none exist → ask: "No workspace found. Run `/workspace` first to set one up."
+- If multiple exist → list them and use a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (**`AskQuestion`** / **numbered slugs + stop**)
+- If none exist → use a **blocking interactive prompt** to choose: e.g. run **`/workspace`** now vs provide path — not only prose *Run `/workspace` first* with no same-turn choices
 
 **If slug given:**
 - Read `~/forge/brain/products/<slug>/product.md`

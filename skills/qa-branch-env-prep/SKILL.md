@@ -131,7 +131,7 @@ FOR BRANCH-CODE-VALIDATE: RECORD RAW TEST OUTPUT TO BRAIN — "TESTS PASSED" IN 
 
 ## Step 0 — Determine Run Mode
 
-**HARD-GATE:** Ask the user this question before reading product.md or doing anything else:
+**HARD-GATE:** Ask the user this question before reading product.md or doing anything else. Present **A–D** via **`AskQuestion`** / **`AskUserQuestion`** or **numbered 1–4** + **stop** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** — not runbook-only prose.
 
 ```
 How do you want to run these tests?
@@ -319,7 +319,7 @@ fi
 1. Check `test_commands` in the input config (explicit override)
 2. Else read `product.md` for the repo's `test_command` field in the Projects section
 3. Else detect from repo structure: `package.json` → `npm test`, `pytest.ini`/`setup.py` → `pytest`, `go.mod` → `go test ./...`, `pom.xml` → `mvn test`, `build.gradle` → `./gradlew test`
-4. If still unknown: STOP. Ask the user what command to run. Never guess.
+4. If still unknown: STOP. Use a **blocking interactive prompt** per **`using-forge`** — paste **`product.md`** `test_command`, pick from numbered detector guesses, or free-text **one** command — **never guess** without confirmation.
 
 **Record results per repo:**
 

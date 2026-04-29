@@ -3,7 +3,7 @@ name: qa-write-scenarios
 description: "WHEN: qa-prd-analysis is complete and you need to write the maximum possible number of executable eval YAML scenarios — one per test type × surface × scenario variant. No gaps. No shortcuts."
 type: rigid
 requires: [brain-read, qa-prd-analysis, eval-scenario-format]
-version: 2.4.3
+version: 2.4.4
 preamble-tier: 3
 triggers:
   - "write eval scenarios"
@@ -67,11 +67,15 @@ A LOW COUNT IS A BUG IN THIS SKILL — TREAT IT AS A FAILURE, NOT A FEATURE.
 
 **Run checks in this order.** Address **only the first failing step** in your **first** reply — do **not** bundle “eval cannot emit until everything exists — how proceed?” and do **not** lead with a **blocking prompt** about CSV waiver / YAML-only when upstream artifacts are absent.
 
-| Order | Gate | If missing |
-|------:|------|------------|
-| 1 | **`~/forge/brain/prds/<task-id>/prd-locked.md`** | Tell user: run **`/intake`** (or equivalent) to lock PRD. **STOP.** No QA/eval prompts. |
-| 2 | **`qa/qa-analysis.md`** from **`qa-prd-analysis`** with Step 0.5 interrogation completed in chat | Tell user: run **`qa-prd-analysis`** — paste Q1–Q8 in thread first. **STOP.** |
-| 3 | **`qa/manual-test-cases.csv`** with ≥1 data row **or** valid waiver (**`csv_baseline_waiver_user_quote`** after explicit approval) | Offer **`qa-manual-test-cases-from-prd`** **or** (only now) a **blocking interactive prompt** on YAML-before-CSV with warning — **not** before 1–2 pass. |
+**Human expectation:** If gate **N** is missing, say what gate **N** is and offer **primary fix + alternatives** (below) — not only “run `/intake`” as if no other path existed.
+
+| Order | Gate | Primary fix if missing | Alternatives if user can’t / won’t run the primary (still need human approval) |
+|------:|------|------------------------|--------------------------------------------------------------------------------|
+| 1 | **`~/forge/brain/prds/<task-id>/prd-locked.md`** | **`/intake`** (or **`intake-interrogate`**) to produce lock | User **pastes** PRD/wiki excerpt in chat → assistant **drafts** `prd-locked.md` → user **reviews** → **Write** to brain. **Or** user confirms copying lock from another **`prds/<task-id>/`** when scope is the **same**. **Not valid:** YAML or QA prompts **without** any on-disk `prd-locked` after explicit approval path. |
+| 2 | **`qa/qa-analysis.md`** from **`qa-prd-analysis`** with Step 0.5 interrogation completed in chat | Run **`qa-prd-analysis`** (Q1–Q8 visible in thread per skill) | User answers interrogation **in thread**; assistant writes **`qa-analysis.md`** consistent with **`qa-prd-analysis`** HARD-GATEs (no fake “confirmed”). **Not valid:** skipping chat-visible Q blocks where the skill requires them. |
+| 3 | **`qa/manual-test-cases.csv`** with ≥1 data row **or** valid waiver (**`csv_baseline_waiver_user_quote`** after explicit approval) | **`qa-manual-test-cases-from-prd`** through approvals | Documented **YAML-before-CSV waiver** in **`qa-analysis.md`** with verbatim quote **only after** 1–2 satisfied — **Step 0.0** in this skill. |
+
+**Not prerequisites for this skill chain:** Council, **`shared-dev-spec.md`**, tech plans — use them when present for **better targets**; they do **not** replace gate **1–3**.
 
 **Forbidden opening:** *“Forge cannot emit `eval/*.yaml` until prd-locked + QA interrogation + manual CSV (or waiver) exist. How should we proceed?”* when **1 or 2** is missing — that asks the user to decide **downstream** tradeoffs before **upstream** work exists. Replace with: *“Missing `<first artifact>` — do `<first skill/command>` first.”*
 

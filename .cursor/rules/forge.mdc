@@ -21,6 +21,8 @@ If `AskQuestion` is not available or a call fails, present the same choices as a
 
 Any **doubt, question, confirmation, or choice** that needs a human answer — including **task-id**, **next step**, **waiver**, **priority** — must use a **blocking interactive prompt** or **numbered list + stop**, not prose-only *“reply if…”* walls. In Cursor that is usually **`AskQuestion`**. Full norm: **`using-forge`** → **Interactive human input** (applies to Gemini CLI, JetBrains, Codex, etc., with host mapping in that skill).
 
+**Invalid:** A **“What to do next”** markdown section (intake → qa-analysis → CSV → `/qa-write`) that ends with *“reply with task-id / confirm you started intake”* **without** **`AskQuestion`** or **numbered options in the same message** — that fails **interactive human input**. Always append **`AskQuestion`** or **numbered choices** for the **first** real fork (e.g. have **`prd-locked`**? run **`/intake`** vs paste PRD vs stop).
+
 ## Chat-visible interrogation (QA, intake, any “questions in thread” HARD-GATE)
 
 Some Forge skills require the **full question text** to appear in the **assistant message** (markdown), **not** only inside the blocking prompt UI, **not** only in a file write, **not** only in a modal body the user never scrolls past. Examples: **`qa-prd-analysis`** Step 0.5 (**paste complete Q1–Q7 blocks first**), **`intake-interrogate`** Q9 verbatim blockquote.

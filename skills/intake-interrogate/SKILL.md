@@ -61,7 +61,7 @@ If you notice any of these, STOP and do not proceed:
 
 - **Any question is answered with "TBD" or "we'll figure it out later"** — Unanswered questions become undiscovered requirements. STOP. Get the answer now or the PRD cannot be locked.
 - **Agent fires multiple unrelated open-ended questions in one message** — Shallow answers. STOP. **Allowed:** one numbered **Confirm / Correct** list for **pre-filled, high-confidence** fields only. **Not allowed:** several vague questions in one dump.
-- **Product slug is not found in `~/forge/brain/products/`** — PRD references an unregistered product. STOP. Register the product or ask the user to provide forge-product.md before proceeding.
+- **Product slug is not found in `~/forge/brain/products/`** — PRD references an unregistered product. STOP. Register the product (e.g. run **`/workspace`**) or use a **blocking interactive prompt** per **`using-forge`** to obtain **`product.md`** / brain registration before proceeding.
 - **Success criteria is stated in vague terms ("fast", "good UX", "reliable")** — Unmeasurable criteria cannot be evaluated. STOP. Get specific, testable criteria (e.g., "< 200ms p99 latency") before locking.
 - **Rollback plan is "just redeploy the old version"** — Not a real rollback plan for schema changes, cache migrations, or event stream additions. STOP. Get a concrete rollback procedure.
 - **User dismisses a dimension as "not relevant" without evidence** — STOP. Verify against PRD + `product.md`: if the dimension truly does not apply, record **`N/A`** with a **one-line scope reason** in `prd-locked.md`. If it **does** apply, ask the **specific doubt** (why it matters for contracts, rollback, or eval).

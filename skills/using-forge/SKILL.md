@@ -2,7 +2,7 @@
 name: using-forge
 description: "Bootstrap skill — inlined by session-start hook for every Forge-supported host (Claude Code, Cursor, Gemini CLI, JetBrains AI, Codex, Copilot CLI, IDX, Antigravity, OpenCode, etc.)"
 type: rigid
-version: 1.0.5
+version: 1.0.7
 preamble-tier: 4
 triggers:
   - "how to use forge"
@@ -44,11 +44,17 @@ Rigid skills declare the canonical tool name **`AskUserQuestion`** in **`allowed
 
 **Forbidden as the *only* way to decide:**
 
-- Long **“what to do next”** or **playbook** prose that ends with *“reply with task-id / confirm …”* **without** a **blocking interactive prompt** or **numbered list** the user can answer in one shot.
+- Long **“What to do next”** / **runbook** sections (e.g. *pick task-id → /intake → qa-prd-analysis → CSV → /qa-write → …*) that end with *“if you reply with task-id / confirm you’ve started intake…”* **without** a same-turn **blocking interactive prompt** or **numbered list** the user can click or answer in one step. **That is not interactive** — it is documentation disguised as a question. The user did not get **`AskQuestion`**, **`AskUserQuestion`**, or **numbered options + stop**.
+- Any **multi-step fork** (continue vs run prerequisite vs waive) presented **only** as prose + “tell me in chat” — **invalid**. Replace with **one** blocking prompt whose options encode those forks (or **numbered list** + stop).
 - **Questions only in brain files** or only in a UI surface the user might miss — the **transcript** must show what was asked (**chat-visible**), then the interactive affordance.
 - **Rhetorical** “let me know” buried in paragraphs — if an answer changes behavior, it must be **blocking** and **structured**.
 
-**Allowed:** Explanatory prose **together with** the interactive step (context + blocking prompt / numbered list in the **same** turn). Playbooks in docs/commands stay valid; **agents** still must surface **live** decisions interactively.
+**Required in the same assistant turn as any runbook text:**
+
+1. Right after the shortest necessary context, **`AskQuestion`** / **`AskUserQuestion`** **or** **1–N numbered options** for the **immediate** decision (e.g. *task-id known?* / *run `/intake` vs paste PRD for draft lock?* / *stop*).
+2. **Wait** — do not imply the user must free-form reply unless the skill explicitly requires free text **after** a structured choice.
+
+**Allowed:** Explanatory prose **together with** the interactive step (context + blocking prompt / numbered list in the **same** turn). Playbooks in docs/commands stay valid; **agents** still must surface **live** decisions interactively — commands describe workflow; **sessions** must still offer **buttons or numbered choices**.
 
 This is **not** YAML-, QA-, or **host-specific** — it applies to **intake**, **council**, **tech plans**, **routing**, and **any** human gate on **every** Forge-supported IDE.
 
@@ -79,6 +85,20 @@ This applies to **every** Forge phase (intake, council, tech plans, QA, eval, PR
 **Why:** The user should not be interrogated about Phase **N+k** while Phase **N** prerequisites are pending. Maintain **respect** for sequential process: one coherent stage at a time.
 
 Skills that say **paste questions in chat first** are defining that loop on purpose; skipping them invalidates the gate.
+
+### Coupling, prerequisites, and alternatives (what breaks vs what helps)
+
+This is **not** “everything depends on everything.” Separate **hard prerequisites** from **quality boosters**.
+
+| Relationship | Meaning |
+|--------------|---------|
+| **Tightly coupled (hard for automation)** | Anything that must live **on disk under `~/forge/brain/`** for skills and subagents to read — especially **`prd-locked.md`**, **`qa/qa-analysis.md`**, and **`manual-test-cases.csv`** (or documented waiver) **before** bulk **`eval/*.yaml`** per **`qa-write-scenarios`** **Step −1**. Chat and external wiki URLs **alone** are not substitutes; **brain files are the transport layer.** |
+| **Loosely coupled (recommended, not Step −1 blockers for `/qa-write`)** | **Council**, **`shared-dev-spec.md`**, **tech plans** — they make scenarios **precise** (routes, contracts, task IDs) but are **not** required to *start* the QA analysis → CSV → YAML chain if **`prd-locked`** + **`qa-prd-analysis`** can run. |
+| **Full pipeline only** | **`/forge`**, **State 4b ordering**, **merge** — orthogonal to “I only want scenarios in brain this week.” |
+
+**When the human can’t or won’t run the “primary” step (e.g. `/intake`):** do **not** treat the pipeline as all-or-nothing. Use a **blocking interactive prompt** to pick an **alternative** that still produces a real brain artifact with **human approval** — e.g. user **pastes** PRD/wiki sections → you **draft** **`prd-locked.md`** for review → user confirms → **Write** to brain. Or user **confirms** copying a prior task’s lock if scope is identical. **Invalid:** inventing `prd-locked` without a human-visible approval path, or claiming “wiki is enough” with **no** file under **`prds/<task-id>/`**.
+
+**Auto-chaining** one command into the next (run intake, then auto-run QA) is **not** default — the human chooses commands — but **recommending** the next prerequisite after confirmation **is** correct.
 
 ## Instruction Priority
 

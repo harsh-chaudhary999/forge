@@ -206,6 +206,8 @@ Shared roots: both can use **`qa-prd-analysis`** and **`qa-analysis.md`**; stand
 
 **Prerequisite order — QA → eval YAML (when relevant):** **`prd-locked.md`** → **`qa-prd-analysis`** (chat interrogation + **`qa-analysis.md`**) → **`qa-manual-test-cases-from-prd`** + approved **`manual-test-cases.csv`** (or documented waiver) → **then** **`eval/*.yaml`**. **`skills/qa-write-scenarios/SKILL.md`** **Step −1**. Do not prompt about downstream QA/evYAML waivers while **intake** or **QA analysis** is still missing.
 
+**Coupling vs optional depth:** The QA→YAML chain **requires** those brain files — **not** full **`/forge`**, Council, or tech plans (those **improve** contracts and targets). If **`/intake`** isn’t run, **`prd-locked.md`** can still be produced by **paste → draft → human approve** (see **`using-forge`** **Coupling, prerequisites, and alternatives** and **`qa-write-scenarios`** Step −1 alternatives column).
+
 **Rigid skills for CSV path:**
 
 | Skill | Role |

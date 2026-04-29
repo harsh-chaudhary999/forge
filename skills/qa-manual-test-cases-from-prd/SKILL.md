@@ -146,7 +146,7 @@ Optional ninth column (recommended):
 2. Ingest `<EXISTING_TESTS>` (MCP or file); index summaries for reuse and gaps.
 3. Ingest `<KB_PATH>` if present; note rules not stated in the PRD.
 4. Synthesize: gaps, reuse, deprecated candidates, conflicts.
-5. **MANDATORY:** Ask the user **all** clarifying questions; get verbatim answers.
+5. **MANDATORY:** Ask the user **all** clarifying questions; get verbatim answers. For **discrete** clarifications (yes/no, pick scope, approve assumption), use **blocking interactive prompts** per **`skills/using-forge`** (**`AskQuestion`** / **numbered options + stop**); open-ended follow-ups may be plain chat after those forks resolve.
 6. **MANDATORY:** Confirm **new feature vs change to existing** — quote the user.
 
 ### Step 1b — Full requirement context reload (HARD-GATE before Step 5)

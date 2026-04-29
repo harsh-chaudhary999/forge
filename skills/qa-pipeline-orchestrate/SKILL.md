@@ -3,7 +3,7 @@ name: qa-pipeline-orchestrate
 description: "WHEN: A standalone QA run is needed against named feature branches and a target environment — independent of the full /forge delivery pipeline. Chains: brain read → scenario generation → branch prep → stack-up → multi-surface exec → verdict."
 type: rigid
 requires: [brain-read, qa-prd-analysis, qa-write-scenarios, qa-branch-env-prep, eval-product-stack-up, eval-coordinate-multi-surface, eval-judge]
-version: 1.0.5
+version: 1.0.6
 preamble-tier: 3
 triggers:
   - "run QA pipeline"
@@ -42,6 +42,7 @@ This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for 
 | "The QA run failed but I'll fix it manually and not re-run" | A manual fix without a re-run produces no evidence. The verdict must come from an automated run, not a claim. |
 | "I don't need to write results to brain — I can see them in the terminal" | Terminal output is ephemeral. Brain artifacts are auditable across sessions, teams, and CI runs. |
 | "`/qa` invoked — I'll use a blocking prompt about eval/CSV waiver before checking brain" | **Violates stage-local questioning** (`using-forge`) **and** **`qa-write-scenarios` Step −1`**: **`prd-locked`** → **`qa-prd-analysis`** → **`manual-test-cases.csv`** (or valid waiver) → **then** QA-P2 eval YAML. Read brain **first**; surface the **first missing** artifact — never a **blocking interactive prompt** about downstream QA/evYAML choices before upstream prerequisites exist. |
+| "I'll output **What to do next** runbook prose (intake → qa-analysis → CSV → qa-write) and end with *reply with task-id…* only — no **`AskQuestion`** / numbered list" | **Violates `using-forge` Interactive human input.** Same message must include **`AskQuestion`** or **numbered options + stop** for the **first** fork — never runbook-only. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -192,7 +193,7 @@ Log:
 
 ## Phase QA-P3 — Branch Checkout and Env Prep
 
-Invoke `qa-branch-env-prep`. It will first ask the user to select a run mode:
+Invoke `qa-branch-env-prep`. It will first prompt for a run mode using **blocking interactive prompts** per **`using-forge`** (see that skill **Step 0** — **`AskQuestion`** / **numbered A–D** + **stop**), not prose-only *pick a mode*:
 
 | Run mode | What happens next |
 |---|---|

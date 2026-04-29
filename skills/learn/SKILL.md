@@ -51,8 +51,7 @@ This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for 
 
 ### Step 1 — Determine category and insight
 
-If invoked as bare `/learn`, ask the user:
-> "What's the category? (pattern / gotcha / process) And what's the insight in one sentence?"
+If invoked as bare `/learn`, use a **blocking interactive prompt** per **`using-forge`** — e.g. **`AskQuestion`** with options **pattern | gotcha | process**, then a follow-up for one-sentence insight (or a single multi-field prompt if the host supports it). **Do not** rely on prose-only *what’s the category and insight?* with no **AskQuestion** / **numbered options** in the **same** turn.
 
 If invoked as `/learn "<category>: <insight>"`, parse directly — no prompting.
 

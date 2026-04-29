@@ -65,9 +65,19 @@ Stops after writing scenarios to brain. No branch checkout. No execution. No sta
 
 ## Prerequisites
 
-**Dependency order (agents — read first, all IDEs):** **`prd-locked.md`** → **`qa-prd-analysis`** (chat interrogation, **`qa-analysis.md`**) → **`qa/manual-test-cases.csv`** approved **or** documented waiver → **then** **`qa-write-scenarios`**. Do **not** use a **blocking interactive prompt** (**`AskUserQuestion`** / host mapping in **`using-forge`**) about **eval YAML / CSV waiver** as the **first** turn when **`prd-locked`** or **`qa-analysis`** is missing — fix **step 1** then **step 2** first. See **`qa-write-scenarios`** **Step −1** and **`using-forge`** **Blocking interactive prompts**.
+**What is tightly vs loosely coupled**
 
-- **`~/forge/brain/prds/<task-id>/prd-locked.md`** — locked PRD (run `/intake` first)
+| Required on disk (order matters) | Optional but improves scenario precision |
+|----------------------------------|------------------------------------------|
+| **`prd-locked.md`** → **`qa-analysis.md`** → **`manual-test-cases.csv`** (or waiver) → **`qa-write-scenarios`** | **`shared-dev-spec.md`**, **tech plans**, **contracts** — not mandatory to *start* QA authoring; use when they exist so selectors/routes aren’t guessed |
+
+Standalone **`/qa-write`** does **not** require **`/forge`**, **Council**, or **tech planning** — only the brain artifacts above.
+
+**If you don’t want to run `/intake`:** you still need **`prd-locked.md`** under **`~/forge/brain/prds/<task-id>/`** somehow — e.g. paste PRD/wiki content and have the assistant **draft** the lock file for you to approve, or copy a lock from another task **only if** scope matches. Wiki-only links without a brain file don’t satisfy automation gates.
+
+**Dependency order (agents — read first, all IDEs):** **`prd-locked.md`** → **`qa-prd-analysis`** (chat interrogation, **`qa-analysis.md`**) → **`qa/manual-test-cases.csv`** approved **or** documented waiver → **then** **`qa-write-scenarios`**. Do **not** use a **blocking interactive prompt** (**`AskUserQuestion`** / host mapping in **`using-forge`**) about **eval YAML / CSV waiver** as the **first** turn when **`prd-locked`** or **`qa-analysis`** is missing — fix **step 1** then **step 2** first. See **`qa-write-scenarios`** **Step −1**, **`using-forge`** **Blocking interactive prompts**, and **`using-forge`** **Coupling, prerequisites, and alternatives**.
+
+- **`~/forge/brain/prds/<task-id>/prd-locked.md`** — locked PRD (**`/intake`** is the default path; alternatives in **`qa-write-scenarios`** Step −1 table)
 - **`~/forge/brain/prds/<task-id>/qa/qa-analysis.md`** — from **`qa-prd-analysis`** with Q1–Q8 addressed in chat (not agent-only “confirmed”)
 - **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** — ≥1 approved data row from **`qa-manual-test-cases-from-prd`**, **or** waiver frontmatter in **`qa-analysis.md`** (see **`qa-write-scenarios`** Step 0.0 + **`csv_baseline_waiver_user_quote`**)
 - **`~/forge/brain/prds/<task-id>/tech-plans/`** — per-repo tech plans recommended (run `/plan` first); minimal scenario generation is possible from PRD alone but targets will be less precise

@@ -32,9 +32,9 @@ brain artifacts (PRD + tech plans)
 
 ## Prerequisites
 
-Same **forward order** as **`/qa-write`**: **`prd-locked`** → **`qa-prd-analysis`** → **`manual-test-cases.csv`** (or valid waiver) before treating scenario generation as grounded — see **`qa-write-scenarios`** **Step −1**. Do not open with eval/CSV waiver prompts when upstream artifacts are missing.
+Same **forward order** as **`/qa-write`**: **`prd-locked`** → **`qa-prd-analysis`** → **`manual-test-cases.csv`** (or valid waiver) before treating scenario generation as grounded — see **`qa-write-scenarios`** **Step −1**. Council / tech plans **help** but are **not** Step −1 gates. If **`/intake`** isn’t used, see **`commands/qa-write.md`** and **`using-forge`** **Coupling, prerequisites, and alternatives**. Do not open with eval/CSV waiver prompts when upstream artifacts are missing.
 
-- **`~/forge/brain/prds/<task-id>/prd-locked.md`** — locked PRD (run `/intake` first)
+- **`~/forge/brain/prds/<task-id>/prd-locked.md`** — locked PRD (**`/intake`** default; alternatives in **`qa-write-scenarios`** Step −1)
 - **`~/forge/brain/products/<slug>/product.md`** — product topology with repo paths
 - For local mode: services must be startable via the `start` commands in `product.md`
 - For Android: ADB connected device or emulator (`adb devices`)

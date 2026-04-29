@@ -33,6 +33,10 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const {
+  forgeBrainSearchPaths,
+  findMostRecentConductorLog,
+} = require(path.join(__dirname, 'forge-stage-detect.cjs'));
 
 function log(message) {
   if (process.env.FORGE_HOOKS_DEBUG === '1') {
@@ -52,34 +56,6 @@ const GATE_PATTERNS = {
   SPEC_FROZEN:  /\[P3-SPEC-FROZEN\]/,
   PRD_LOCKED:   /\[P1-PRD-LOCKED\]/,
 };
-
-/**
- * Finds the most recently modified conductor.log in the brain prds/ directory.
- */
-function findMostRecentConductorLog(brainPath) {
-  const prdsDir = path.join(brainPath, 'prds');
-  if (!fs.existsSync(prdsDir)) return null;
-
-  let mostRecentLog = null;
-  let mostRecentMtime = 0;
-
-  try {
-    const taskDirs = fs.readdirSync(prdsDir);
-    for (const taskDir of taskDirs) {
-      const logPath = path.join(prdsDir, taskDir, 'conductor.log');
-      if (!fs.existsSync(logPath)) continue;
-      try {
-        const stat = fs.statSync(logPath);
-        if (stat.mtimeMs > mostRecentMtime) {
-          mostRecentMtime = stat.mtimeMs;
-          mostRecentLog = logPath;
-        }
-      } catch (_) {}
-    }
-  } catch (_) {}
-
-  return mostRecentLog;
-}
 
 /**
  * Determines the next gate message based on conductor.log content.
@@ -120,26 +96,6 @@ function resolveNextGate(logContent) {
   }
 
   return null; // early stages or unrecognized state — no specific next-gate
-}
-
-/**
- * Attempts to read conductor.log and resolve a next-gate message.
- * Returns the next-gate string or null if unavailable.
- */
-function forgeBrainSearchPaths() {
-  const out = [];
-  const seen = new Set();
-  for (const key of ['FORGE_BRAIN', 'FORGE_BRAIN_PATH']) {
-    const s = process.env[key] && String(process.env[key]).trim();
-    if (!s) continue;
-    const abs = path.resolve(s);
-    if (!seen.has(abs)) {
-      seen.add(abs);
-      out.push(abs);
-    }
-  }
-  out.push(path.join(os.homedir(), 'forge', 'brain'));
-  return out;
 }
 
 function tryGetNextGate() {

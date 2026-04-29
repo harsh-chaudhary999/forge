@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
  * Forge conductor.log → stage stub name (intake | council | build | eval | pr).
+ * Also exports brain path helpers shared by session-start.cjs and prompt-submit.cjs.
  * Used by session-start.cjs in this directory; run test-forge-stage-detect.cjs to verify.
  *
  * Rule: take the LAST [P…] phase marker in the log (document order), then map it.
@@ -8,6 +9,10 @@
  */
 
 'use strict';
+
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
 /** @returns {string|null} e.g. "[P4.1-DISPATCH]" or null */
 function findLastPhaseMarker(logContent) {
@@ -55,8 +60,55 @@ function detectStageFromLogContent(logContent) {
   return markerToStage(marker);
 }
 
+/**
+ * Returns candidate brain root paths, checked in order:
+ * FORGE_BRAIN env → FORGE_BRAIN_PATH env → ~/forge/brain.
+ * @returns {string[]}
+ */
+function forgeBrainSearchPaths() {
+  const out = [];
+  const seen = new Set();
+  for (const key of ['FORGE_BRAIN', 'FORGE_BRAIN_PATH']) {
+    const s = process.env[key] && String(process.env[key]).trim();
+    if (!s) continue;
+    const abs = path.resolve(s);
+    if (!seen.has(abs)) { seen.add(abs); out.push(abs); }
+  }
+  out.push(path.join(os.homedir(), 'forge', 'brain'));
+  return out;
+}
+
+/**
+ * Returns the path of the most recently modified conductor.log under
+ * brainPath/prds/*, or null if none found.
+ * @param {string} brainPath
+ * @returns {string|null}
+ */
+function findMostRecentConductorLog(brainPath) {
+  const prdsDir = path.join(brainPath, 'prds');
+  if (!fs.existsSync(prdsDir)) return null;
+  let mostRecentLog = null;
+  let mostRecentMtime = 0;
+  try {
+    for (const taskDir of fs.readdirSync(prdsDir)) {
+      const logPath = path.join(prdsDir, taskDir, 'conductor.log');
+      if (!fs.existsSync(logPath)) continue;
+      try {
+        const stat = fs.statSync(logPath);
+        if (stat.mtimeMs > mostRecentMtime) {
+          mostRecentMtime = stat.mtimeMs;
+          mostRecentLog = logPath;
+        }
+      } catch (_) {}
+    }
+  } catch (_) {}
+  return mostRecentLog;
+}
+
 module.exports = {
   findLastPhaseMarker,
   markerToStage,
   detectStageFromLogContent,
+  forgeBrainSearchPaths,
+  findMostRecentConductorLog,
 };

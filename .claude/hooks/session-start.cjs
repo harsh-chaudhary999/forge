@@ -60,6 +60,8 @@ const crypto = require('crypto');
 const {
   detectStageFromLogContent,
   findLastPhaseMarker,
+  forgeBrainSearchPaths,
+  findMostRecentConductorLog,
 } = require(path.join(__dirname, 'forge-stage-detect.cjs'));
 
 // Configuration
@@ -146,38 +148,6 @@ function countTaskConductorLogs(brainPath) {
 }
 
 /**
- * Most recently modified conductor.log under brain/prds (each task subdir).
- */
-function findMostRecentConductorLog(brainPath) {
-  const prdsDir = path.join(brainPath, 'prds');
-  if (!fs.existsSync(prdsDir)) return null;
-
-  let mostRecentLog = null;
-  let mostRecentMtime = 0;
-
-  try {
-    const taskDirs = fs.readdirSync(prdsDir);
-    for (const taskDir of taskDirs) {
-      const logPath = path.join(prdsDir, taskDir, 'conductor.log');
-      if (!fs.existsSync(logPath)) continue;
-      try {
-        const stat = fs.statSync(logPath);
-        if (stat.mtimeMs > mostRecentMtime) {
-          mostRecentMtime = stat.mtimeMs;
-          mostRecentLog = logPath;
-        }
-      } catch (_) {
-        // skip unreadable stat
-      }
-    }
-  } catch (_) {
-    return null;
-  }
-
-  return mostRecentLog;
-}
-
-/**
  * Resolves conductor.log: FORGE_TASK_ID / FORGE_PRD_TASK_ID first, else mtime.
  */
 function resolveConductorLogPath(brainPath) {
@@ -215,26 +185,6 @@ function resolveConductorLogPath(brainPath) {
     log(`conductor.log selection: mtime fallback → ${fallback}`);
   }
   return fallback;
-}
-
-/**
- * Attempts to detect the current pipeline stage from brain files.
- * Returns stage name or null if detection is not possible.
- */
-function forgeBrainSearchPaths() {
-  const out = [];
-  const seen = new Set();
-  for (const key of ['FORGE_BRAIN', 'FORGE_BRAIN_PATH']) {
-    const s = process.env[key] && String(process.env[key]).trim();
-    if (!s) continue;
-    const abs = path.resolve(s);
-    if (!seen.has(abs)) {
-      seen.add(abs);
-      out.push(abs);
-    }
-  }
-  out.push(path.join(os.homedir(), 'forge', 'brain'));
-  return out;
 }
 
 function tryDetectStage() {

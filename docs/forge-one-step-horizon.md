@@ -17,6 +17,18 @@ In **chat**, name **only**:
 - Preemptively enumerate pipelines (“then CSV, then `eval/*.yaml`, then `/qa-run`, then merge …”) while eliciting intake, QA interrogation, tech-plan rounds, or any **earlier** gate.
 - Use “big picture” runbooks **every turn** to motivate coverage questions — full order belongs in **README**, **commands**, and this doc, **not** repeated in dialogue.
 
+## Elicitation mode — no command tutorial (question-forward)
+
+**Use:** The human is mid-flow (e.g. finishing **`prd-locked`**, answering **Q9**, or one **Step 0.5** coverage dimension). **Your job in that turn is to get the answer** — not to re-teach what **`/qa-write`**, **`/forge`**, or **`qa-write-scenarios`** “actually does,” which **gates** are “still open,” or that **eval YAML** is not on disk yet.
+
+**Forbidden in the same message as a simple confirm / single question:**
+
+- Pasting or paraphrasing **`commands/qa-write.md`** (or any command) as a **preface** to “So eval YAML isn’t written yet…”
+- **Status essays** (“gates 2–3 open”) unless the user **asked** *where are we?* / *what’s blocking?*
+- **Pipeline micro-lectures** before “Confirm or correct: …”
+
+**Allowed:** Minimal context **only** if the question cannot be stated without it (e.g. one line: *we need this for `design_intake_anchor`.*). If the user wants the full map, they open **`README`**, **`commands/`**, or ask *what does `/qa-write` do?*
+
 ## YAML-before-manual-CSV waiver (where it belongs)
 
 Instructions about **`csv_baseline_waiver_user_quote`**, “say so explicitly in your own words,” or YAML-before-CSV waivers belong **only** in **`skills/qa-write-scenarios/SKILL.md`** **Step 0.0** — when **`qa-write-scenarios`** is invoked and **`manual-test-cases.csv`** is missing **and** you must STOP or offer the waiver **`AskQuestion`** path.

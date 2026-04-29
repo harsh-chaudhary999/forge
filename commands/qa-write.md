@@ -118,6 +118,8 @@ Do NOT bulk-generate eval YAML without an approved **`manual-test-cases.csv`** b
 
 **Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** (**`using-forge`** **Horizon narration**) — in dialogue, only the **immediate** next prerequisite unless the user asks what comes later or the current step truly depends on a downstream artifact.
 
+**When eliciting an answer** (not when the user opened this file to read it): do **not** repeat this command’s pipeline diagram or “what `/qa-write` does” around a simple confirm — **question-forward** — see **`docs/forge-one-step-horizon.md`** **Elicitation mode — no command tutorial**.
+
 **Forge plugin scope:** Skills from `skills/`; brain from `~/forge/brain/`.
 
 **vs `/qa`:** `/qa-write` is scenario authoring only. Full pipeline (branch checkout + execution + verdict): `/qa`.

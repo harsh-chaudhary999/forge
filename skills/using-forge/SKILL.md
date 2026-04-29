@@ -2,7 +2,7 @@
 name: using-forge
 description: "Bootstrap skill — inlined by session-start hook for every Forge-supported host (Claude Code, Cursor, Gemini CLI, JetBrains AI, Codex, Copilot CLI, IDX, Antigravity, OpenCode, etc.)"
 type: rigid
-version: 1.0.14
+version: 1.0.15
 preamble-tier: 4
 triggers:
   - "how to use forge"
@@ -73,6 +73,7 @@ Use this **whenever** the human must answer **more than one** distinct thing bef
 4. **Forbidden:** dumping **all** prompts for a phase in one message **plus** a **second** unrelated meta-prompt in the same turn; **prose-only** “reply with all answers”; **questions only** in brain files or tool payloads the user never saw in chat.
 5. **No downstream roadmap in dialogue:** While eliciting answers for **this** phase, **do not** enumerate later phases (“then **`qa-write-scenarios`**, then **`eval/`**, then merge …”). Same rule as **Stage-local questioning** — **one-step horizon** for the human unless they asked for the big picture.
 6. **No bundled intake / fake single-turn:** Do **not** use **one** **`AskQuestion`** (e.g. task-id **A vs B**) as the **only** blocking affordance while demanding **other** free-text answers in the **same** message for **`intake-interrogate`** Q9 (design authority), net-new vs reuse, Figma locks, etc. **Each** discrete fork needs **its own** turn with **`AskQuestion`** / **numbered options + stop**, or **strict sequential** follow-ups after the user replies — not a prose *“Reply with (a) and (b)…”* wall. **Do not** append **QA→CSV→eval** copy or **YAML-before-CSV waiver** script to intake messages — see **`docs/forge-one-step-horizon.md`** **Bundled intake turns** and **YAML-before-manual-CSV waiver**.
+7. **Question-forward elicitation:** When the **purpose** of the message is to obtain **one** human answer (Q9, design confirm, a single **Step 0.5** dimension, etc.), **do not** prefix with a tutorial on what **`/qa-write`**, **`/forge`**, or related **commands** do, which **gates** are open, or that **eval `*.yaml`** is not written yet. The user is in flow; **commands/** and **README** are for reference when they choose to read them. **Exception:** user asked for status or “what’s blocking.” **Norm:** **`docs/forge-one-step-horizon.md`** **Elicitation mode — no command tutorial**.
 
 This pattern is **not** QA-specific — it applies on **every** Forge-supported IDE.
 

@@ -2,7 +2,7 @@
 name: forge-glossary
 description: "WHEN: You encounter an unfamiliar Forge term and need its canonical definition."
 type: reference
-version: 1.0.4
+version: 1.0.5
 preamble-tier: 1
 triggers:
   - "what does X mean"
@@ -43,6 +43,12 @@ Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the
 **Usage Context:** Violates **`using-forge`** **Multi-question elicitation** item **6**. Correct shape: **sequence** task-id → Q9 verbatim turn → remaining doubts **one primary topic per message**.
 
 **Cross-References:** **`docs/forge-one-step-horizon.md`** **Bundled intake turns**; **`commands/intake.md`**; **`intake-interrogate`**.
+
+### Question-forward elicitation (no command tutorial mid-answer)
+
+**Definition:** In **live chat**, when the next message’s **job** is to get **one** human answer (Q9, design confirm, a single coverage dimension, …), the assistant **does not** prefix with what slash **commands** do, which **gates** are open, or that **eval YAML** is not written — unless the user **asked** for status. Reference material stays in **`commands/`** and **README**.
+
+**Cross-References:** **`using-forge`** **Multi-question elicitation** item **7**; **`docs/forge-one-step-horizon.md`** **Elicitation mode — no command tutorial**.
 
 ---
 

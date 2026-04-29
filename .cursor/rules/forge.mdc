@@ -31,6 +31,8 @@ Any **doubt, question, confirmation, or choice** that needs a human answer — i
 
 **Forbidden bundle:** **One** **`AskQuestion`** (e.g. task-id) **plus** a prose wall demanding Q9 / design / Figma answers **and** downstream QA→YAML / waiver text **in the same message** — use **sequential turns** or **blocking** per fork (**`using-forge`** item **6**; **`docs/forge-one-step-horizon.md`** **Bundled intake turns**).
 
+**Question-forward:** When eliciting **one** answer (Q9, design confirm, …), do **not** lead with a **`/qa-write`** / gate-status essay — **`docs/forge-one-step-horizon.md`** **Elicitation mode**; **`using-forge`** item **7**.
+
 **In Cursor you MUST:** output chat-visible text so the transcript shows what was asked; then **`AskQuestion`** when choices are discrete.
 
 **Why this breaks more often in Cursor:** no per-message reinjection hook — only **session-start** loads **`using-forge`**.

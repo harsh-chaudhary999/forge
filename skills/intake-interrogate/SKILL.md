@@ -13,6 +13,7 @@ triggers:
 allowed-tools:
   - Bash
   - Write
+  - AskUserQuestion
 ---
 
 # Intake Interrogation — PRD Lock
@@ -80,6 +81,12 @@ If you notice any of these, STOP and do not proceed:
 6. **Lock to brain:** Write `prd-locked.md` only when **no mandatory field is TBD**.
 
 7. **No fixed question count (MUST):** User-visible **turns** are **not** capped at eight and **not** padded to look thorough. You may need **more** turns when many doubts remain, or **fewer** when the user’s answers (or confirms) **collapse** many open items at once — e.g. **two** replies that resolve what looked like **ten** latent issues. **Stop eliciting** as soon as: (a) every **mandatory** field in `prd-locked.md` is concrete, and (b) you have **no remaining low-confidence gaps** on anything that would change contracts, repos, rollback, metrics, security, or design implementability. **Do not** ask “extra” questions once (a) and (b) hold. **Additional stop gate when Q9 applies:** (c) the **verbatim design source-of-truth blockquote** has already appeared in **this** intake thread. If (a)(b) are true but (c) is false, you are **not done** — send one message that includes the blockquote + confirm/correct, then finalize.
+
+## Questioning Protocol
+
+**Use `AskUserQuestion` for every elicited field** — not plain text. One tool call per question turn. Structure: present 2–4 concrete options that cover the realistic answer space; the tool automatically appends an "Other / custom" option for free text. For open-ended fields with no bounded option set (e.g. Q2 goal sentence, Q3 success criteria), still call `AskUserQuestion` with the most common shapes as options so the user can navigate rather than type from scratch.
+
+Never ask multiple fields in a single `AskUserQuestion` call unless the fields are tightly coupled (e.g. confirm + tighten). Batch only when the second field’s options depend on the first field’s answer being already resolved.
 
 ## Rhythm (supports confidence-first)
 

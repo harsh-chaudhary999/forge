@@ -12,6 +12,7 @@ allowed-tools:
   - Bash
   - Read
   - Write
+  - AskUserQuestion
 ---
 # Council Gate (HARD-GATE)
 

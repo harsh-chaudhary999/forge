@@ -3,7 +3,7 @@ name: qa-pipeline-orchestrate
 description: "WHEN: A standalone QA run is needed against named feature branches and a target environment — independent of the full /forge delivery pipeline. Chains: brain read → scenario generation → branch prep → stack-up → multi-surface exec → verdict."
 type: rigid
 requires: [brain-read, qa-prd-analysis, qa-write-scenarios, qa-branch-env-prep, eval-product-stack-up, eval-coordinate-multi-surface, eval-judge]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "run QA pipeline"
@@ -163,10 +163,12 @@ Log:
 **Skip this phase if:** `/qa-run` was invoked AND `eval/*.yaml` already exist in brain.
 
 Invoke `qa-prd-analysis` first (reads PRD, maps surfaces, writes `qa/qa-analysis.md` to brain).
-Then invoke `qa-write-scenarios` (reads qa-analysis.md + tech plans, writes `eval/*.yaml`).
+Complete **`qa-manual-test-cases-from-prd`** so **`qa/manual-test-cases.csv`** has ≥1 approved data row — **unless** `qa-analysis.md` frontmatter waives (see **`qa-write-scenarios`** Step 0.0).
+Then invoke `qa-write-scenarios` (reads qa-analysis.md + tech plans + CSV baseline, writes `eval/*.yaml`).
 
 **HARD-GATE:** Do not advance to QA-P3 until:
 - `~/forge/brain/prds/<task-id>/qa/qa-analysis.md` exists
+- **`qa/manual-test-cases.csv` baseline satisfied** (data rows **or** waiver per **`qa-write-scenarios`**) before treating QA-P2 scenario generation as complete
 - `~/forge/brain/prds/<task-id>/eval/` contains at least one `.yaml` file
 - `~/forge/brain/prds/<task-id>/qa/scenarios-manifest.md` exists
 

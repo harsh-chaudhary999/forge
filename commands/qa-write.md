@@ -9,13 +9,14 @@ description: "Partial slice — generate executable eval YAML scenarios from a l
 
 **Manual baseline (`qa/manual-test-cases.csv`)** comes from the skills **`qa-prd-analysis`** → **`qa-manual-test-cases-from-prd`** (through sample + count approval). That CSV is the human acceptance inventory; **this command does not create it.** Name is historical: `/qa-write` means **write automation scenarios**, not “write all QA artifacts.”
 
-Invoke **`qa-prd-analysis`** then **`qa-write-scenarios`** to produce **executable eval scenarios** for a task.
+Invoke **`qa-prd-analysis`** → **`qa-manual-test-cases-from-prd`** (approved **`manual-test-cases.csv`**) → **`qa-write-scenarios`** to produce **executable eval scenarios** for a task. **`qa-write-scenarios`** **refuses** without an approved CSV baseline **unless** **`qa-analysis.md`** documents the waiver keys described in that skill (`eval_yaml_without_manual_csv_baseline`, `csv_baseline_waiver_reason`).
 
 ## What this does
 
 ```
 prd-locked.md + tech-plans + shared-dev-spec
   → qa-prd-analysis (surface map, coverage gaps, clarifications)
+  → qa-manual-test-cases-from-prd → qa/manual-test-cases.csv (approved manual baseline)
   → qa-write-scenarios (eval YAML per surface: web / API / Android / iOS / DB / cache)
   → brain/prds/<task-id>/eval/*.yaml
   → brain/prds/<task-id>/qa/scenarios-manifest.md
@@ -65,6 +66,7 @@ Stops after writing scenarios to brain. No branch checkout. No execution. No sta
 ## Prerequisites
 
 - **`~/forge/brain/prds/<task-id>/prd-locked.md`** — locked PRD (run `/intake` first)
+- **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** — ≥1 approved data row from **`qa-manual-test-cases-from-prd`**, **or** waiver frontmatter in **`qa-analysis.md`** (see **`qa-write-scenarios`** Step 0.0)
 - **`~/forge/brain/prds/<task-id>/tech-plans/`** — per-repo tech plans recommended (run `/plan` first); minimal scenario generation is possible from PRD alone but targets will be less precise
 
 ## What gets written to brain
@@ -98,6 +100,7 @@ Or run **`/qa <task-id>`** to generate + execute in one command.
 
 <HARD-GATE>
 Do NOT skip `qa-prd-analysis` — scenario generation without surface analysis produces shallow, non-traceable scenarios that fail at runtime or give false confidence.
+Do NOT bulk-generate eval YAML without an approved **`manual-test-cases.csv`** baseline (or documented waiver in **`qa-analysis.md`**) — see **`qa-write-scenarios`** Step 0.0.
 </HARD-GATE>
 
 **Forge plugin scope:** Skills from `skills/`; brain from `~/forge/brain/`.

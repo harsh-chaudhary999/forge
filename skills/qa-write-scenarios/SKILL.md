@@ -3,7 +3,7 @@ name: qa-write-scenarios
 description: "WHEN: qa-prd-analysis is complete and you need to write the maximum possible number of executable eval YAML scenarios — one per test type × surface × scenario variant. No gaps. No shortcuts."
 type: rigid
 requires: [brain-read, qa-prd-analysis, eval-scenario-format]
-version: 2.0.0
+version: 2.1.0
 preamble-tier: 3
 triggers:
   - "write eval scenarios"
@@ -37,21 +37,25 @@ Generates the **maximum possible number of executable eval YAML scenarios** from
 | "I'll skip the count audit at the end" | The count audit is the proof that no type was silently omitted. Skip it and you ship gaps. |
 | "Existing eval YAML is close enough, I'll add a few" | Read the existing files first. If test types are missing, add full sets — not a few patches. |
 | "I'll write scenarios from memory" | Memory drifts from the PRD. Read prd-locked.md, tech-plans, and qa-analysis.md fresh on every invocation. |
+| "I'll generate eval YAML before manual CSV — PRD is enough" | **Automation without an approved human baseline is orphan automation.** You cannot faithfully prioritize coverage or trace YAML rows to acceptance IDs until **`manual-test-cases.csv`** exists (skill **`qa-manual-test-cases-from-prd`** through approval). YAML then maps journeys to those rows where applicable. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
 ## Iron Law
 
 ```
+MANUAL BASELINE FIRST: APPROVED manual-test-cases.csv (qa-manual-test-cases-from-prd) BEFORE bulk eval YAML UNLESS qa-analysis.md RECORDS AN EXPLICIT WAIVER (eval_yaml_without_manual_csv_baseline).
 EVERY CONFIRMED TEST TYPE FROM qa-analysis.md GETS ITS OWN SCENARIO SET.
 EVERY CONFIRMED SURFACE GETS ITS OWN SCENARIO FILE.
 EVERY SCENARIO HAS EXACTLY ONE ASSERTION — NO MULTI-ASSERTION MEGA-SCENARIOS.
+WHERE CSV ROW IDS EXIST, REFERENCE THEM IN SCENARIO METADATA / COMMENTS FOR TRACEABILITY.
 THE FINAL COUNT MUST BE AUDITED AGAINST THE COVERAGE MATRIX BEFORE COMMIT.
 A LOW COUNT IS A BUG IN THIS SKILL — TREAT IT AS A FAILURE, NOT A FEATURE.
 ```
 
 ## Red Flags — STOP
 
+- **`manual-test-cases.csv` missing or has no data rows** (only header / empty) — STOP. Run **`qa-manual-test-cases-from-prd`** through Step 7 approval first — unless **`qa/qa-analysis.md` YAML frontmatter** contains **`eval_yaml_without_manual_csv_baseline: true`** with a one-line **`csv_baseline_waiver_reason:`** (user explicitly accepted orphan automation in chat after warning).
 - **`qa-analysis.md` absent from brain** — STOP. Run `qa-prd-analysis` first.
 - **Test types from Q1 not listed in `qa-analysis.md`** — STOP. The selection must be written before generation.
 - **Scenario has no `test_type` field** — STOP. Every scenario must declare its type for filtering and reporting.
@@ -66,6 +70,7 @@ A LOW COUNT IS A BUG IN THIS SKILL — TREAT IT AS A FAILURE, NOT A FEATURE.
 
 Before invoking this skill, verify:
 
+- [ ] **`qa-manual-test-cases-from-prd`** completed and **`qa/manual-test-cases.csv`** has ≥1 data row — **or** documented waiver in **`qa-analysis.md`** (see Red Flags)
 - [ ] `qa-prd-analysis` has been run and `qa/qa-analysis.md` exists in brain
 - [ ] `qa-analysis.md` contains confirmed `test_types`, `surfaces`, `coverage_depth`, and feature priorities
 - [ ] `prd-locked.md` exists for the task — no PRD = no valid scenario generation
@@ -91,6 +96,7 @@ Before marking this skill complete:
 - [ ] Coverage matrix written and all cells non-zero for confirmed types
 - [ ] `scenarios-manifest.md` written and committed to brain
 - [ ] `[QA-SCENARIOS]` gate line logged to `qa-pipeline.log` with total count
+- [ ] If **`manual-test-cases.csv`** exists: scenarios reference CSV **`Id`** in YAML comments or metadata where a row maps 1:1 to a journey
 - [ ] If MCP TMS (Jira/Xray/TestRail) was used: test cases pushed to TMS and links recorded in manifest
 
 ---
@@ -98,6 +104,7 @@ Before marking this skill complete:
 ## Cross-References
 
 - **`qa-prd-analysis`** — writes `qa/qa-analysis.md` that this skill reads to determine which test types, surfaces, and feature areas are in scope. Must run before this skill.
+- **`qa-manual-test-cases-from-prd`** — produces **`manual-test-cases.csv`** (QA engineering baseline). **Must complete before this skill** unless waiver recorded in **`qa-analysis.md`** — eval YAML should trace to CSV **`Id`** columns where applicable.
 - **`eval-scenario-format`** — canonical YAML schema every scenario file produced here must follow. Read it before writing the first file.
 - **`qa-pipeline-orchestrate`** — the orchestrator that invokes this skill as phase QA-P2. Results feed directly into QA-P5 multi-surface execution.
 - **`eval-coordinate-multi-surface`** — downstream consumer: reads the YAML files this skill writes and dispatches them to surface-specific drivers.
@@ -129,6 +136,9 @@ BRAIN=~/forge/brain/prds/<task-id>
 cat "$BRAIN/prd-locked.md"
 cat "$BRAIN/qa/qa-analysis.md"
 
+# Manual QA baseline — REQUIRED unless qa-analysis.md waives (see Red Flags)
+cat "$BRAIN/qa/manual-test-cases.csv" 2>/dev/null
+
 # Strongly recommended — scenarios without these have placeholder targets
 for f in "$BRAIN/tech-plans/"*.md; do echo "=== $f ===" && cat "$f"; done
 cat "$BRAIN/shared-dev-spec.md" 2>/dev/null
@@ -136,6 +146,21 @@ cat "$BRAIN/shared-dev-spec.md" 2>/dev/null
 # Check existing eval YAML
 ls "$BRAIN/eval/" 2>/dev/null && echo "EXISTING SCENARIOS — diff before adding"
 ```
+
+### Step 0.0 — Manual baseline gate (HARD-GATE)
+
+**Intent:** Eval YAML is **not** a substitute for an approved manual case inventory. PRD + `qa-analysis.md` drive **what** to automate; **`manual-test-cases.csv`** is the **numbered acceptance baseline** you trace YAML rows to.
+
+1. Read YAML frontmatter at the top of **`qa/qa-analysis.md`** (if present).
+2. **Pass** if **either**:
+   - **`eval_yaml_without_manual_csv_baseline: true`** **and** **`csv_baseline_waiver_reason:`** is a non-empty one-line string (user explicitly accepted generating automation without an approved CSV after warning), **or**
+   - **`qa/manual-test-cases.csv`** exists **and** contains **≥1 line after the header row** (non-empty data row).
+
+3. **Fail (STOP)** if neither condition holds:
+   - Tell the user to complete **`qa-manual-test-cases-from-prd`** through Step 7 approval so **`manual-test-cases.csv`** exists with data rows, **or**
+   - If they insist on YAML-only, record waiver in **`qa-analysis.md` frontmatter** (both keys above) after **AskUserQuestion** / human confirmation — then re-invoke this skill.
+
+**Concrete check (evidence before proceeding):** From repo root or brain path, `wc -l` / `Read` on **`manual-test-cases.csv`** and confirm data rows, **or** show the waiver keys from **`qa-analysis.md`**.
 
 From `qa-analysis.md`, extract and record:
 - `test_types: [...]` — the confirmed list from Q1

@@ -3,6 +3,12 @@ name: qa-write
 description: "Partial slice — generate executable eval YAML scenarios from a locked PRD and tech plans. Produces brain/prds/<task-id>/eval/*.yaml covering all in-scope surfaces. Does not execute scenarios (use /qa-run for that)."
 ---
 
+## What `/qa-write` is — and what it is not
+
+**Eval YAML (`eval/*.yaml`)** is only for **automated execution**: Forge’s multi-surface drivers (browser, API, DB, cache, …), **`/qa-run`**, **`/qa`**, and machine gates that read **`eval/`**. It is **not** your manual QA backlog or TMS export.
+
+**Manual baseline (`qa/manual-test-cases.csv`)** comes from the skills **`qa-prd-analysis`** → **`qa-manual-test-cases-from-prd`** (through sample + count approval). That CSV is the human acceptance inventory; **this command does not create it.** Name is historical: `/qa-write` means **write automation scenarios**, not “write all QA artifacts.”
+
 Invoke **`qa-prd-analysis`** then **`qa-write-scenarios`** to produce **executable eval scenarios** for a task.
 
 ## What this does

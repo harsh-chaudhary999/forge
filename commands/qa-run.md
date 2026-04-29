@@ -3,6 +3,8 @@ name: qa-run
 description: "Partial slice — execute existing eval scenarios against named feature branches and a target environment. Requires eval/*.yaml already in brain (run /qa-write first). Chains: branch checkout → env config → stack-up → multi-surface drivers → verdict."
 ---
 
+**Input is `eval/*.yaml` only** (automation). Does not read **`manual-test-cases.csv`**.
+
 Invoke **`qa-pipeline-orchestrate`** starting at **Phase QA-P3** (branch prep) to execute eval scenarios that already exist in brain.
 
 ## What this does

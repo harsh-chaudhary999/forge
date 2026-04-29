@@ -42,9 +42,11 @@ brain artifacts (PRD + tech plans)
 
 | Command | What it runs |
 |---|---|
-| `/qa` | Full pipeline: write scenarios + branch prep + execute + judge |
-| `/qa-write` | Scenario generation only (stops after writing `eval/*.yaml` to brain) |
-| `/qa-run` | Execution only (requires existing `eval/*.yaml` in brain) |
+| `/qa` | Full pipeline: write **eval YAML** + branch prep + execute + judge |
+| `/qa-write` | **Eval YAML only** (`eval/*.yaml` for automated drivers). Does **not** write `manual-test-cases.csv` — that skill path is **`qa-manual-test-cases-from-prd`** after **`qa-prd-analysis`**. |
+| `/qa-run` | Execution only (requires existing **`eval/*.yaml`** — e.g. after `/qa-write`) |
+
+**YAML vs CSV:** **`eval/*.yaml`** = machine-runnable checks. **`qa/manual-test-cases.csv`** = manual/TMS baseline from **`qa-manual-test-cases-from-prd`** — not produced by `/qa` or `/qa-write`.
 
 ## Pass `entrypoint = full (/qa)` to `qa-pipeline-orchestrate`
 

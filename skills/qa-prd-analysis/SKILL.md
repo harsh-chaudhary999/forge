@@ -11,6 +11,7 @@ triggers:
   - "QA requirements analysis"
 allowed-tools:
   - Write
+  - AskUserQuestion
 ---
 
 # QA PRD Analysis

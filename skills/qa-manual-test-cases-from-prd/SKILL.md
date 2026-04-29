@@ -13,6 +13,7 @@ triggers:
 allowed-tools:
   - Bash
   - Write
+  - AskUserQuestion
 ---
 
 # Manual QA Test Cases from PRD (CSV)

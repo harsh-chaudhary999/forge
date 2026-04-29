@@ -14,6 +14,7 @@ allowed-tools:
   - Bash
   - Edit
   - Write
+  - AskUserQuestion
 ---
 
 # Conductor Orchestrate — Master State Machine

@@ -11,6 +11,7 @@ triggers:
   - "validate PRD"
 allowed-tools:
   - Bash
+  - AskUserQuestion
 ---
 # Intake Gate (HARD-GATE)
 

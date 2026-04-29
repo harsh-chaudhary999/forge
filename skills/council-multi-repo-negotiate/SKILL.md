@@ -12,6 +12,7 @@ triggers:
 allowed-tools:
   - Bash
   - Write
+  - AskUserQuestion
 ---
 
 # Council Multi-Repo Negotiate

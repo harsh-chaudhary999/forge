@@ -2,7 +2,7 @@
 name: forge-glossary
 description: "WHEN: You encounter an unfamiliar Forge term and need its canonical definition."
 type: reference
-version: 1.0.3
+version: 1.0.4
 preamble-tier: 1
 triggers:
   - "what does X mean"
@@ -35,6 +35,14 @@ Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the
 **What It's NOT:** Not a ban on **documentation** — `README.md`, `commands/forge.md`, and brain templates may list full order. Not “never mention eval” — only **don’t** mention it **before** the user is on that gate without cause.
 
 **Cross-References:** **`using-forge`** (**Horizon narration**, **Multi-question elicitation** item 5). Canonical doc: **`docs/forge-one-step-horizon.md`**.
+
+### Bundled intake (fake single-turn)
+
+**Definition:** One assistant message uses **one** **blocking interactive** affordance (e.g. **`AskQuestion`** for **task-id** only) while treating **other** mandatory intake choices — **`intake-interrogate`** Q9 design source-of-truth, net-new vs reuse, Figma vs brain paths — as **prose** *“also answer…”* without their own **blocking** turn. Often bundled with **downstream roadmap** or **YAML-before-CSV waiver** copy (**wrong phase**).
+
+**Usage Context:** Violates **`using-forge`** **Multi-question elicitation** item **6**. Correct shape: **sequence** task-id → Q9 verbatim turn → remaining doubts **one primary topic per message**.
+
+**Cross-References:** **`docs/forge-one-step-horizon.md`** **Bundled intake turns**; **`commands/intake.md`**; **`intake-interrogate`**.
 
 ---
 

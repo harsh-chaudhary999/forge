@@ -2,7 +2,7 @@
 name: using-forge
 description: "Bootstrap skill — inlined by session-start hook for every Forge-supported host (Claude Code, Cursor, Gemini CLI, JetBrains AI, Codex, Copilot CLI, IDX, Antigravity, OpenCode, etc.)"
 type: rigid
-version: 1.0.12
+version: 1.0.14
 preamble-tier: 4
 triggers:
   - "how to use forge"
@@ -72,6 +72,7 @@ Use this **whenever** the human must answer **more than one** distinct thing bef
 3. **Reconcile after each reply:** if the answer **already settles** a later planned prompt, **skip** it and **state** *skipped — covered by …*; if the answer **surfaces new doubts**, ask **those** before advancing a rigid checklist.
 4. **Forbidden:** dumping **all** prompts for a phase in one message **plus** a **second** unrelated meta-prompt in the same turn; **prose-only** “reply with all answers”; **questions only** in brain files or tool payloads the user never saw in chat.
 5. **No downstream roadmap in dialogue:** While eliciting answers for **this** phase, **do not** enumerate later phases (“then **`qa-write-scenarios`**, then **`eval/`**, then merge …”). Same rule as **Stage-local questioning** — **one-step horizon** for the human unless they asked for the big picture.
+6. **No bundled intake / fake single-turn:** Do **not** use **one** **`AskQuestion`** (e.g. task-id **A vs B**) as the **only** blocking affordance while demanding **other** free-text answers in the **same** message for **`intake-interrogate`** Q9 (design authority), net-new vs reuse, Figma locks, etc. **Each** discrete fork needs **its own** turn with **`AskQuestion`** / **numbered options + stop**, or **strict sequential** follow-ups after the user replies — not a prose *“Reply with (a) and (b)…”* wall. **Do not** append **QA→CSV→eval** copy or **YAML-before-CSV waiver** script to intake messages — see **`docs/forge-one-step-horizon.md`** **Bundled intake turns** and **YAML-before-manual-CSV waiver**.
 
 This pattern is **not** QA-specific — it applies on **every** Forge-supported IDE.
 
@@ -91,7 +92,7 @@ If there's even a 1% chance a Forge skill might apply, you absolutely must invok
 
 Forge **automates** repeatable work: structured artifacts under **`~/forge/brain/`**, eval YAML shape, scans, verification CLIs, coordinated phases. It **does not** grant permission to **guess** scope, design authority, waivers, prioritization, or “confirmed” interrogation answers.
 
-**Needle-moving decisions** — anything that would change what ships, what is tested, what is locked, or what the human thinks they approved — require an **explicit human turn** via **blocking interactive prompts** (host mapping above) or **numbered list + wait** — see **Interactive human input** and **Multi-question elicitation** above. Examples: intake locks, council conflict resolution, **`qa-prd-analysis`** Step 0.5 (**Multi-question elicitation** for Q1–Q8 — see **`qa-prd-analysis`**), **`eval_yaml_without_manual_csv_baseline`** plus verbatim approval quote, cutting surfaces or test types, signing off samples/count for **`manual-test-cases.csv`**.
+**Needle-moving decisions** — anything that would change what ships, what is tested, what is locked, or what the human thinks they approved — require an **explicit human turn** via **blocking interactive prompts** (host mapping above) or **numbered list + wait** — see **Interactive human input** and **Multi-question elicitation** above. Examples: intake locks, council conflict resolution, **`qa-prd-analysis`** Step 0.5 (**Multi-question elicitation** for Q1–Q8 — see **`qa-prd-analysis`**), cutting surfaces or test types, signing off samples/count for **`manual-test-cases.csv`**. **YAML-before-manual-CSV** waiver (**verbatim quote** in **`qa-analysis.md`**): **`qa-write-scenarios`** **Step 0.0** **only** — **never** paste that waiver script during **`qa-prd-analysis`** coverage rounds (**`docs/forge-one-step-horizon.md`**).
 
 **Forbidden:** Filling frontmatter or brain files with “confirmed,” waivers, or design sources **inferred** from Confluence/PRD/Figma metadata **without** the user having answered or approved in this workflow. **Verbose automation without that loop is worse than slow manual review** — it ships false confidence.
 

@@ -17,6 +17,28 @@ In **chat**, name **only**:
 - Preemptively enumerate pipelines (“then CSV, then `eval/*.yaml`, then `/qa-run`, then merge …”) while eliciting intake, QA interrogation, tech-plan rounds, or any **earlier** gate.
 - Use “big picture” runbooks **every turn** to motivate coverage questions — full order belongs in **README**, **commands**, and this doc, **not** repeated in dialogue.
 
+## YAML-before-manual-CSV waiver (where it belongs)
+
+Instructions about **`csv_baseline_waiver_user_quote`**, “say so explicitly in your own words,” or YAML-before-CSV waivers belong **only** in **`skills/qa-write-scenarios/SKILL.md`** **Step 0.0** — when **`qa-write-scenarios`** is invoked and **`manual-test-cases.csv`** is missing **and** you must STOP or offer the waiver **`AskQuestion`** path.
+
+**Forbidden in assistant chat:**
+
+- Repeating that waiver script during **`qa-prd-analysis`** Step 0.5 (Q1–Q8 coverage interrogation).
+- “Reminder” paragraphs about recording waiver keys in **`qa-analysis.md`** while the human is still answering coverage questions — **`qa-analysis.md`** must exist first; waiver wording is **scenario-generation** gate, not **coverage elicitation**.
+
+## Bundled intake turns (fake “one prompt”)
+
+**Problem:** One message presents **one** structured prompt (**`AskQuestion`** / numbered choices for **task-id** only) while burying **other mandatory decisions** in prose: **Q9 design source-of-truth** (verbatim blockquote answer), net-new vs reuse, Figma **`figma_file_key` / node IDs**, ownership — plus optional **downstream roadmap** and **YAML-before-CSV waiver** copy.
+
+That violates **`skills/using-forge/SKILL.md`** **Multi-question elicitation** (one primary dimension per message with **blocking** affordances for discrete forks; **no** prose-only *reply with (a)(b)…* for needle-moving fields).
+
+**Required instead:**
+
+- **Sequence:** resolve **task-id** (or confirm slug) **→** **then** show **`intake-interrogate`** Q9 **verbatim blockquote** and collect design authority **→** **then** remaining open doubts **one turn at a time** (or a single **Confirm/Correct** batch only where **`intake-interrogate`** allows pre-fill).
+- **Do not** attach **QA→CSV→eval** narration or **CSV waiver** script to intake turns — wrong phase (**YAML-before-CSV** waiver lives in **`qa-write-scenarios`** Step 0.0 only).
+
+Same anti-bundle rule applies to **any** phase: one **`AskQuestion`** must not stand in for multiple unrelated needle-moving decisions hidden in the same message’s prose.
+
 ## Relation to command files
 
 Slash command markdown under `commands/` may describe **full** flows and comparisons (`/forge` vs `/intake`, etc.). That is **reference material**. When **guiding** the user step-by-step in the same session, still follow the **one-step horizon** above.

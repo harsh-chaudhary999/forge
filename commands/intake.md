@@ -7,6 +7,8 @@ Invoke the **`forge-intake-gate`** skill, then **`intake-interrogate`**, to run 
 
 If the user provided a PRD or description after this command, use it as the initial PRD input. If no PRD was provided, elicit one in chat (open-ended: goals, paste, or path to a doc). **Discrete forks** (task-id, product slug, confirm scope) must use a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** — **`AskQuestion`** / **`AskUserQuestion`** / **numbered options + stop** — not a runbook-only *reply with…* with no same-turn choices.
 
+**No bundled turns:** Do **not** pair **one** **`AskQuestion`** (e.g. task-id only) with a **prose wall** that simultaneously demands Q9 design authority, Figma vs brain-path locks, net-new vs reuse, **and** downstream QA→YAML roadmap — each distinct intake decision gets **its own** structured or sequential turn (**`using-forge`** **Multi-question elicitation** item **6**; **`docs/forge-one-step-horizon.md`** **Bundled intake turns**).
+
 The intake process locks the PRD under **`~/forge/brain/prds/<task-id>/`** as **`prd-locked.md`**: **variable** number of user turns — confidence-first; **stop** when mandatory lock fields are concrete (no fixed “eight questions” quota). When web, app, or user-visible UI is in scope, **Q9 design / UI** is mandatory per **`intake-interrogate`**.
 
 <HARD-GATE>

@@ -29,6 +29,8 @@ Any **doubt, question, confirmation, or choice** that needs a human answer — i
 
 **Examples:** **`intake-interrogate` Q9** — **verbatim** design blockquote in thread. **`qa-prd-analysis` Step 0.5** — same **Multi-question elicitation** pattern applied to coverage **Q1–Q8** (see **`qa-prd-analysis`** + **`using-forge`** **QA PRD analysis**). **Forbidden:** full questionnaire dump + unrelated meta-prompt in one turn; brain-only “confirmed” without thread.
 
+**Forbidden bundle:** **One** **`AskQuestion`** (e.g. task-id) **plus** a prose wall demanding Q9 / design / Figma answers **and** downstream QA→YAML / waiver text **in the same message** — use **sequential turns** or **blocking** per fork (**`using-forge`** item **6**; **`docs/forge-one-step-horizon.md`** **Bundled intake turns**).
+
 **In Cursor you MUST:** output chat-visible text so the transcript shows what was asked; then **`AskQuestion`** when choices are discrete.
 
 **Why this breaks more often in Cursor:** no per-message reinjection hook — only **session-start** loads **`using-forge`**.

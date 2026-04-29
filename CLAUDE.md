@@ -30,6 +30,7 @@ requires: [other-skill-name]
 - **`/tmp` is only for data files, never for scripts.** Intermediate data files (e.g. scan output, temp lists) are acceptable. Executable scripts written to `/tmp` are not.
 - **Blocking interactive prompts (every supported IDE):** Skills name **`AskUserQuestion`** in **`allowed-tools`**; hosts map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor → **`AskQuestion`**; CLIs / editors without the tool → **numbered choices + stop**). Human answers must not be prose-only “reply if…” without that structure.
 - **Assistant dialogue — one-step horizon:** In **chat**, do **not** enumerate later pipeline stages (eval, merge, PR set, …) unless they are the **immediate** next prerequisite, the **current** prompt requires naming them, or the user asked for the roadmap. Canonical: **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** (**Horizon narration**, **Stage-local questioning**). Static docs (**README**, **`commands/`**) may still list full dependency order.
+- **No bundled intake:** Do **not** combine **one** structured prompt (e.g. task-id) with mandatory **prose** answers for **other** intake locks (Q9 design source-of-truth, Figma vs paths, …) **plus** downstream QA pipeline copy in the **same** message — **`docs/forge-one-step-horizon.md`** **Bundled intake turns**; **`using-forge`** **Multi-question elicitation** item **6**.
 
 ## Written artifacts — precision (scans, plans, QA, eval, code, tests)
 

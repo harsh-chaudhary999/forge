@@ -3,7 +3,7 @@ name: qa-prd-analysis
 description: "WHEN: Before generating QA test cases from a PRD. Loads ALL brain artifacts first (PRD, tech plans, scan, contracts, product topology), then runs a structured interrogation to lock test types, surfaces, coverage depth, and all open ambiguities before a single scenario is written."
 type: rigid
 requires: [brain-read]
-version: 2.2.2
+version: 2.2.3
 preamble-tier: 3
 triggers:
   - "analyze PRD for QA"
@@ -30,6 +30,8 @@ allowed-tools:
 **HARD-GATE:** PRD analysis + interrogation answers must be written to brain before bulk scenario generation (`qa-write-scenarios`) proceeds. Chat-only analysis is not valid.
 
 **Upstream of eval YAML:** **`qa-write-scenarios`** **Step −1** defines forward order: **`prd-locked.md`** → **this skill** (`qa-analysis.md` + chat interrogation) → **`qa-manual-test-cases-from-prd`** / CSV or waiver → **then** eval YAML. Agents must **not** ask users about **CSV/evYAML waivers** before **`prd-locked`** exists or before Step 0.5 ran in chat.
+
+**Forbidden during Step 0.5 (Q1–Q8):** Scripted copy about **YAML before manual CSV**, **`csv_baseline_waiver_user_quote`**, “say so explicitly in your own words,” or **Forge** forbidding agent paraphrase — that is **`qa-write-scenarios`** **Step 0.0** only (scenario authoring gate after **`qa-analysis.md`** exists). Do **not** paste waiver boilerplate during coverage interrogation.
 
 ---
 

@@ -43,6 +43,7 @@ Forge is a plug-and-play multi-repo product orchestration plugin. It takes a PRD
 | "~60+ services / files — close enough" | **Not close enough.** Need **what / where / how** per item or slice (paths, commands, commits) — not aggregate scale alone. |
 | "This file / list is huge (5k–8k lines) — I'll extract a sample or skip the rest" | **BLOCKED** unless the **skill itself** explicitly allows sampling. Volume is **not** discretionary relief from instructions. Full export / full read / full write as required, or **BLOCKED** with what you tried. |
 | "I'll narrate the full Forge pipeline (CSV, eval, merge, …) in every chat turn so the user sees the big picture" | **Confuses humans upstream of those gates.** In **assistant dialogue**, follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** **Horizon narration** — **one-step horizon** (immediate next prerequisite only) unless the user asked what comes next or the current question **depends** on a downstream artifact. Full order stays in **README** / **commands/**. |
+| "One **`AskQuestion`** for task-id + prose for everything else (Q9, design, waiver) in the same message is efficient" | **Invalid.** Bundled intake / fake single-turn — **`using-forge`** **Multi-question elicitation** item **6** + **`docs/forge-one-step-horizon.md`** **Bundled intake turns**. Needle-moving forks need **blocking** or **sequential** turns, not one modal + free-text wall. |
 
 ## Skill Format
 

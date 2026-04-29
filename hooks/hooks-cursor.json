@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "_note": "Cursor does not have a UserPromptSubmit hook equivalent. The forge-gate injection (HARD-GATE reminders + QA next-gate hints) that runs on every prompt in Claude Code via .claude/hooks/prompt-submit.cjs is NOT available in Cursor sessions. Forge skill execution and HARD-GATEs still apply — they are enforced by the agent reading using-forge/SKILL.md on session start. See docs/platforms/ for Cursor-specific tool aliases (AskUserQuestion → AskQuestion, etc.).",
   "hooks": {
     "sessionStart": [
       {

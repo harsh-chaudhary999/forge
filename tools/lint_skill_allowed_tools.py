@@ -40,6 +40,7 @@ KNOWN_TOOLS = frozenset(
         "WebSearch",
         "Task",
         "AskQuestion",
+        "AskUserQuestion",
         "SwitchMode",
         "GenerateImage",
         "Delete",
@@ -51,6 +52,10 @@ KNOWN_TOOLS = frozenset(
         "CodebaseSearch",
         "NotebookEdit",
         "AwaitShell",
+        # MCP wildcard — skills use "mcp__*" to allow any mcp__<server>__<tool> call.
+        # The hook supports glob suffix: entries ending in "*" match as prefix.
+        "mcp__*",
+        # Legacy names kept for backwards compat if any skill still uses them.
         "ListMcpResources",
         "call_mcp_tool",
         "fetch_mcp_resource",

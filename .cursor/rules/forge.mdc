@@ -1,0 +1,14 @@
+---
+description: Forge plugin — Cursor host mapping for skills and blocking prompts
+alwaysApply: true
+---
+
+# Forge in Cursor
+
+## `AskUserQuestion` → `AskQuestion`
+
+Forge skills (under `skills/`) name the blocking multiple-choice tool **`AskUserQuestion`** in body text and in `allowed-tools` (Claude Code + repo lint). **In Cursor sessions, use `AskQuestion`** with the same title, text, and options a skill would pass to `AskUserQuestion` — same semantics, same one-question-per-turn rules when a skill says so.
+
+If `AskQuestion` is not available or a call fails, present the same choices as a **numbered list** in the assistant message, **stop**, and wait for the user. Do not skip skill gates that depend on a human answer.
+
+**Do not** mass-rename `AskUserQuestion` in `SKILL.md` files; keep skills canonical for other hosts and CI. This rule is the Cursor alias.

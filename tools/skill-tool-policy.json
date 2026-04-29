@@ -560,12 +560,52 @@
       "path": "qa-manual-test-cases-from-prd/SKILL.md",
       "type": "rigid"
     },
+    "qa-branch-env-prep": {
+      "allowed_tools": [
+        "Bash",
+        "Read",
+        "Write",
+        "AskUserQuestion",
+        "mcp__*"
+      ],
+      "hard_gate": false,
+      "path": "qa-branch-env-prep/SKILL.md",
+      "type": "rigid"
+    },
+    "qa-pipeline-orchestrate": {
+      "allowed_tools": [
+        "Bash",
+        "Read",
+        "Write",
+        "AskUserQuestion",
+        "mcp__*"
+      ],
+      "hard_gate": false,
+      "path": "qa-pipeline-orchestrate/SKILL.md",
+      "type": "rigid"
+    },
     "qa-prd-analysis": {
       "allowed_tools": [
-        "Write"
+        "Bash",
+        "Read",
+        "Write",
+        "AskUserQuestion",
+        "mcp__*"
       ],
       "hard_gate": false,
       "path": "qa-prd-analysis/SKILL.md",
+      "type": "rigid"
+    },
+    "qa-write-scenarios": {
+      "allowed_tools": [
+        "Bash",
+        "Read",
+        "Write",
+        "AskUserQuestion",
+        "mcp__*"
+      ],
+      "hard_gate": false,
+      "path": "qa-write-scenarios/SKILL.md",
       "type": "rigid"
     },
     "reasoning-as-app-frontend": {

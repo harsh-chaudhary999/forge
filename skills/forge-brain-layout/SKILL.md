@@ -40,7 +40,7 @@ Before any vector or FTS index ships, prefer **YAML frontmatter** on new decisio
 │       ├── planning-doubts.md             # Optional overflow for long Q&A during tech planning (summary still belongs in each tech-plans/*.md Section 0)
 │       ├── delivery-plan.md               # Optional: program / rollout meta — NOT frozen for implementer isolation; may evolve until GA
 │       ├── design/                        # REQUIRED for net-new UI: exports, MCP_INGEST.md, README (see intake Q9 + conductor P4.0b)
-│       ├── qa/                            # Optional: PRD_ANALYSIS.md, manual-test-cases.csv, TEST_SUITE_REPORT.md (see qa-prd-analysis, qa-manual-test-cases-from-prd)
+│       ├── qa/                            # Optional: qa-analysis.md, manual-test-cases.csv, scenarios-manifest.md, branch-env-manifest.md, TEST_SUITE_REPORT.md (see qa-prd-analysis, qa-manual-test-cases-from-prd, qa-write-scenarios)
 │       ├── tech-plans/
 │       │   ├── HUMAN_SIGNOFF.md            # After agent self-review + XALIGN: human approval / feedback / waiver before State 4b (see docs/tech-plan-human-signoff.template.md)
 │       │   └── <repo-name>.md

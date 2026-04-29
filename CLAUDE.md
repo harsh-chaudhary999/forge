@@ -59,7 +59,7 @@ requires: [other-skill-name]
 |---|---|
 | Skills (full catalog) | `skills/` — count: `bash scripts/count-skills.sh` from repo root |
 | Agents (4) | `agents/` |
-| Commands (17) | `commands/` |
+| Commands (20) | `commands/` |
 | Hook manifests + `hooks/session-start` shim | `hooks/` |
 | Claude / git hook scripts (`.cjs`) | `.claude/hooks/` |
 | Brain (decisions) | `brain/` |

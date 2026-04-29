@@ -131,7 +131,7 @@ Optional ninth column (recommended):
 
 ### Step 1 — Comprehensive analysis and clarification
 
-**HARD-GATE:** Complete or refresh **`qa-prd-analysis`**; attach `PRD_ANALYSIS.md` as the ground truth.
+**HARD-GATE:** Complete or refresh **`qa-prd-analysis`**; attach `qa-analysis.md` (`~/forge/brain/prds/<task-id>/qa/qa-analysis.md`) as the ground truth.
 
 1. Summarize PRD scope from `<PRD_SOURCE>`.
 2. Ingest `<EXISTING_TESTS>` (MCP or file); index summaries for reuse and gaps.

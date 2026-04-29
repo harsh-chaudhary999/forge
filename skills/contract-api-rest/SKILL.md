@@ -868,7 +868,7 @@ Use this checklist when designing a new API:
 
 ### REST API Contract: Authentication & User Management
 
-**Project:** JobHai Recruiter Platform
+**Project:** ShopApp Recruiter Platform
 **Version:** v2.0
 **Launch Date:** 2026-01-15
 **Sunset Date:** v1 endpoint sunset 2027-01-15
@@ -1384,7 +1384,7 @@ Link: </v2/auth/login>; rel="successor-version"
 
 **Mitigation:**
 - Require namespaced idempotency keys: `{service}-{product}-{timestamp}-{uuid}`
-  - Example: `payment-jobhai-1610702400-abc123def456`
+  - Example: `payment-shopapp-1610702400-abc123def456`
   - Prevents cross-product collisions
 - Document in contract: "Idempotency keys must include product prefix"
 - Validate prefix in implementation: if missing or wrong product, reject

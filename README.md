@@ -2,7 +2,7 @@
 
 > Plug-and-play multi-repo product orchestration for AI-assisted delivery. Takes a PRD and drives it through locked scope, negotiated contracts, tech plans, TDD implementation, multi-surface eval, review, and coordinated PRs — with a **git-backed brain** as the system of record.
 
-Forge ships a feature across **multiple repos** without embedding a runtime framework in your product code: **skills** (markdown + YAML), **subagents**, **hooks**, and **commands** encode process. **Full skill catalog** under `skills/` (count: `bash scripts/count-skills.sh`), **4 subagents**, **17 slash commands**. Works with **Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Copilot CLI, OpenCode, JetBrains AI** (see [Platform Setup](#platform-setup)).
+Forge ships a feature across **multiple repos** without embedding a runtime framework in your product code: **skills** (markdown + YAML), **subagents**, **hooks**, and **commands** encode process. **Full skill catalog** under `skills/` (count: `bash scripts/count-skills.sh`), **4 subagents**, **20 slash commands**. Works with **Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Copilot CLI, OpenCode, JetBrains AI** (see [Platform Setup](#platform-setup)).
 
 **`/forge`** (`commands/forge.md`) is the **full end-to-end** entrypoint: same phases as **`conductor-orchestrate`**, including **mandatory** State 4b **manual QA CSV** (`qa-prd-analysis` → `qa-manual-test-cases-from-prd` → approved `qa/manual-test-cases.csv` → `[P4.0-QA-CSV]`) **before** `[P4.0-EVAL-YAML]`, then eval YAML, TDD RED, design ingest when applicable, dispatch, reviews, **P4.4 eval**, self-heal, PR set, dream/brain. Other slash commands are **partial slices** — see [Commands reference](#commands-reference) and [Orchestration model](#orchestration-model-automation-vs-approvals).
 
@@ -190,7 +190,7 @@ Forge uses **three** linked layers. None replaces the others:
 
 | Skill | Role |
 |---|---|
-| **`qa-prd-analysis`** | Structured PRD analysis → **`~/forge/brain/prds/<task-id>/qa/PRD_ANALYSIS.md`** before bulk CSV work. |
+| **`qa-prd-analysis`** | Structured PRD analysis → **`~/forge/brain/prds/<task-id>/qa/qa-analysis.md`** before bulk CSV work. |
 | **`qa-manual-test-cases-from-prd`** | Atomic **CSV**, Step 3 + Step 7 approvals, estimation, reuse/deprecation, final report. **HARD-GATE:** no production CSV rows before sample approval; no final report before count approval. |
 
 **Product policy** — edit **`~/forge/brain/products/<slug>/product.md`** (create with **`/workspace`**; there is **no** bundled `forge-product.md` template in-repo):
@@ -449,6 +449,9 @@ Each file under **`commands/`** has YAML **`name:`** + **`description:`**, optio
 | **`/forge-status`** | Read-only brain / plugin snapshot. |
 | **`/forge-test`** | **Meta** — **`forge-self-test`** on **bundled seed** product (validates **this** repo), **not** your product’s **`/forge`**. |
 | **`/forge-install`** | Show install paths for supported IDEs. |
+| **`/qa`** | **Standalone QA pipeline** — brain load → scenario generation (all test types) → branch checkout → stack-up → multi-surface exec → verdict. Independent of `/forge`. |
+| **`/qa-write`** | **Partial** — generate eval YAML scenarios from PRD + tech plans (`qa-prd-analysis` → `qa-write-scenarios`). Supports `--type` and `--surface` flags. |
+| **`/qa-run`** | **Partial** — execute existing scenarios against named branches + env (`qa-branch-env-prep` → stack-up → drivers → `eval-judge`). |
 
 ---
 
@@ -468,7 +471,7 @@ forge/
 │   ├── eval-scenario-format/
 │   └── …
 ├── agents/                 # 4 subagent definitions (*.md)
-├── commands/               # 17 slash-command docs (*.md)
+├── commands/               # 20 slash-command docs (*.md)
 ├── hooks/                  # Hook manifests (hooks.json, hooks-cursor.json) + session-start shim
 ├── .claude/hooks/          # Claude Code + repo git hooks: *.cjs (session-start, pre-tool-use, …)
 ├── tools/                  # scan_forge, verify_forge_task.py, forge_adjacency_scan.py — see tools/README.md
@@ -525,7 +528,7 @@ Two common layouts coexist:
    | `cross-repo-automap.md` | All cross-repo edges with provenance labels + unresolved section |
    | `repo-docs/` | Enriched Markdown + OpenAPI snapshots; `SEARCH_INDEX.md`, `INDEX.md`, `index.json` |
 
-2. **`~/forge/brain/prds/<task-id>/`** — **task** artifacts: **`prd-locked.md`**, **`shared-dev-spec.md`**, **`tech-plans/`**, **`eval/`**, **`qa/`** (`PRD_ANALYSIS.md`, **`manual-test-cases.csv`**, reports), **`design/`** (exports, MCP ingest notes), **`council/`** (or team-specific **`reasoning/`** for surface write-ups), eval verdicts, **`conductor.log`** (recommended), etc.
+2. **`~/forge/brain/prds/<task-id>/`** — **task** artifacts: **`prd-locked.md`**, **`shared-dev-spec.md`**, **`tech-plans/`**, **`eval/`**, **`qa/`** (`qa-analysis.md`, **`manual-test-cases.csv`**, `scenarios-manifest.md`, `branch-env-manifest.md`, reports), **`design/`** (exports, MCP ingest notes), **`council/`** (or team-specific **`reasoning/`** for surface write-ups), eval verdicts, **`conductor.log`** (recommended), etc.
 
 The brain should be a **git repo** so history and provenance are preserved.
 

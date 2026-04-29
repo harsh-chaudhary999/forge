@@ -19,6 +19,10 @@ allowed-tools:
 
 This skill is auto-loaded by the session-start hook. Do not manually invoke it as a task skill; treat it as baseline session policy context.
 
+## Blocking questions (host mapping)
+
+Skills name the blocking multiple-choice tool **`AskUserQuestion`** (Claude Code, `allowed-tools` policy, CI). **In Cursor,** use **`AskQuestion`** with the same prompt and options. If that tool is missing, use the same choices as a **numbered list** in chat and wait. Project **`.cursor/rules/forge.mdc`** repeats the Cursor mapping — **do not** fork every skill to rename the tool in prose.
+
 ## The 1% Rule
 
 If there's even a 1% chance a Forge skill might apply, you absolutely must invoke it. This is not negotiable.
@@ -295,7 +299,7 @@ WHEN THERE IS A 1% CHANCE A SKILL APPLIES, INVOKE IT BEFORE ANY RESPONSE. PROCES
 - **Brain:** `~/forge/brain/` (git repo, source of truth)
 - **Product config:** `~/forge/brain/products/<slug>/product.md` (repos, roles, infra)
 - **Codebase scan:** `~/forge/brain/products/<slug>/codebase/` (module map, patterns, API surface)
-- **Manual QA from PRD:** `~/forge/brain/prds/<task-id>/qa/` — `PRD_ANALYSIS.md`, `manual-test-cases.csv` (`qa-prd-analysis`, `qa-manual-test-cases-from-prd`)
+- **Manual QA from PRD:** `~/forge/brain/prds/<task-id>/qa/` — `qa-analysis.md` (brain-loaded analysis + test type / surface / coverage lock), `manual-test-cases.csv` (`qa-prd-analysis` → `qa-manual-test-cases-from-prd`), `scenarios-manifest.md` (coverage matrix), `branch-env-manifest.md` (branch SHAs + env), `qa-run-report-<ts>.md` (verdict + failures) — full standalone QA pipeline via `/qa`, `/qa-write`, `/qa-run`
 - **Skills:** `~/.claude/skills/<skill-name>/SKILL.md`
 - **Subagents:** `~/.claude/agents/<agent-name>.md`
 

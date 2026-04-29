@@ -47,20 +47,90 @@ function log(message) {
 // ==================== Gate Detection ====================
 
 const GATE_PATTERNS = {
-  QA_CSV:       /\[P4\.0-QA-CSV\].*approved=yes/,
-  EVAL_YAML:    /\[P4\.0-EVAL-YAML\]/,
-  TDD_RED:      /\[P4\.0-TDD-RED\]/,
-  DISPATCH:     /\[P4\.1-DISPATCH\]/,
-  EVAL_GREEN:   /\[P4\.4-EVAL-GREEN\]/,
-  PR_MERGED:    /\[P5[.-]/,
-  SPEC_FROZEN:  /\[P3-SPEC-FROZEN\]/,
-  PRD_LOCKED:   /\[P1-PRD-LOCKED\]/,
+  QA_CSV:           /\[P4\.0-QA-CSV\].*approved=yes/,
+  EVAL_YAML:        /\[P4\.0-EVAL-YAML\]/,
+  TDD_RED:          /\[P4\.0-TDD-RED\]/,
+  DISPATCH:         /\[P4\.1-DISPATCH\]/,
+  EVAL_GREEN:       /\[P4\.4-EVAL-GREEN\]/,
+  PR_MERGED:        /\[P5[.-]/,
+  SPEC_FROZEN:      /\[P3-SPEC-FROZEN\]/,
+  PRD_LOCKED:       /\[P1-PRD-LOCKED\]/,
+  // Standalone QA pipeline gates (qa-pipeline.log)
+  QA_P7_REPORT:       /\[QA-P7-REPORT\]/,
+  QA_P6_VERDICT:      /\[QA-P6-VERDICT\]/,
+  QA_P5_EXEC:         /\[QA-P5-EXEC\]/,
+  QA_P4_STACK:        /\[QA-P4-STACK\]/,
+  QA_CODE_VALIDATE:   /\[QA-CODE-VALIDATE\]/,
+  QA_BRANCH_ENV:      /\[QA-BRANCH-ENV\]/,
+  QA_P2_SCENARIOS:    /\[QA-P2-SCENARIOS\]/,
+  QA_P1_LOAD:         /\[QA-P1-LOAD\]/,
 };
 
 /**
  * Determines the next gate message based on conductor.log content.
  * Returns a string or null if no specific next-gate applies.
  */
+/**
+ * Reads qa-pipeline.log from a brain task directory and resolves the QA phase state.
+ * Returns a next-gate string if a QA pipeline is in flight, or null if complete/not started.
+ *
+ * NOTE: This function receives log content already scoped to a specific task log.
+ * The scoping logic is in findMostRecentQAPipelineLog (FORGE_TASK_ID → mtime fallback).
+ */
+function resolveQAPipelineGate(logContent) {
+  const has = (pattern) => pattern.test(logContent);
+
+  // QA pipeline fully done
+  if (has(GATE_PATTERNS.QA_P7_REPORT)) return null;
+
+  // Verdict rendered — write report
+  if (has(GATE_PATTERNS.QA_P6_VERDICT)) {
+    const verdictMatch = logContent.match(/\[QA-P6-VERDICT\][^\n]*verdict=(\w+)/);
+    const verdict = verdictMatch ? verdictMatch[1] : '?';
+    if (verdict === 'RED') {
+      return `QA NEXT GATE: Verdict is RED — invoke self-heal-triage to classify failure, fix the issue, then re-run /qa-run. Do NOT report success without a GREEN re-run.`;
+    }
+    return `QA NEXT GATE: Verdict=${verdict} — write QA run report to brain (qa/qa-run-report-<ts>.md) and log [QA-P7-REPORT].`;
+  }
+
+  // Execution started — need verdict
+  if (has(GATE_PATTERNS.QA_P5_EXEC)) {
+    return `QA NEXT GATE: Execution in progress — invoke eval-judge to produce GREEN/RED/YELLOW verdict, then log [QA-P6-VERDICT].`;
+  }
+
+  // Stack up done — start execution
+  if (has(GATE_PATTERNS.QA_P4_STACK)) {
+    return `QA NEXT GATE: Stack is up — invoke eval-coordinate-multi-surface with scenario files from brain/prds/<task-id>/eval/ and log [QA-P5-EXEC].`;
+  }
+
+  // Code validate complete — go straight to verdict (skip P4/P5)
+  if (has(GATE_PATTERNS.QA_CODE_VALIDATE)) {
+    const failMatch = logContent.match(/\[QA-CODE-VALIDATE\][^\n]*fail=(\d+)/);
+    const failCount = failMatch ? parseInt(failMatch[1], 10) : null;
+    if (failCount !== null && failCount > 0) {
+      return `QA NEXT GATE (branch-code-validate): ${failCount} repo(s) failed tests — invoke eval-judge with test output, render RED verdict, then invoke self-heal-triage. Log [QA-P6-VERDICT].`;
+    }
+    return `QA NEXT GATE (branch-code-validate): All repos passed — invoke eval-judge to render GREEN verdict, then log [QA-P6-VERDICT] and write report.`;
+  }
+
+  // Branch/env ready — stack up (or skip based on run mode)
+  if (has(GATE_PATTERNS.QA_BRANCH_ENV)) {
+    return `QA NEXT GATE: Branch/env ready — for branch-local: invoke eval-product-stack-up and log [QA-P4-STACK]. For url-only/branch-tracking: go directly to QA-P5. For branch-code-validate: [QA-CODE-VALIDATE] should already be logged.`;
+  }
+
+  // Scenarios written — branch/env prep
+  if (has(GATE_PATTERNS.QA_P2_SCENARIOS)) {
+    return `QA NEXT GATE: Scenarios written — invoke qa-branch-env-prep (ask run mode: url-only / branch-local / branch-tracking), then log [QA-BRANCH-ENV].`;
+  }
+
+  // Brain loaded — generate scenarios
+  if (has(GATE_PATTERNS.QA_P1_LOAD)) {
+    return `QA NEXT GATE: Brain loaded — invoke qa-prd-analysis → qa-write-scenarios to generate eval YAML, then log [QA-P2-SCENARIOS].`;
+  }
+
+  return null;
+}
+
 function resolveNextGate(logContent) {
   const has = (pattern) => pattern.test(logContent);
 
@@ -98,20 +168,76 @@ function resolveNextGate(logContent) {
   return null; // early stages or unrecognized state — no specific next-gate
 }
 
+/**
+ * Finds the relevant qa-pipeline.log for the current session.
+ *
+ * Scoping strategy (matches session-start.cjs conductor log selection):
+ *   1. If FORGE_TASK_ID or FORGE_PRD_TASK_ID is set and brain/prds/<id>/qa-pipeline.log
+ *      exists → use that file (recommended when multiple tasks exist).
+ *   2. Else → fall back to the most recently modified qa-pipeline.log under prds/ (mtime
+ *      heuristic). WARNING: with concurrent QA runs this can pick the wrong task.
+ *      Set FORGE_TASK_ID in your shell to make injection deterministic.
+ *
+ * Returns the resolved log path, or null if none found.
+ */
+function findMostRecentQAPipelineLog(brainPath) {
+  const prdsDir = path.join(brainPath, 'prds');
+  if (!fs.existsSync(prdsDir)) return null;
+
+  // Prefer task-scoped log when env provides a task ID
+  const envTaskId = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
+  if (envTaskId) {
+    const scopedLog = path.join(prdsDir, envTaskId, 'qa-pipeline.log');
+    if (fs.existsSync(scopedLog)) {
+      log(`QA pipeline log: scoped by FORGE_TASK_ID=${envTaskId}`);
+      return scopedLog;
+    }
+  }
+
+  // mtime fallback — ambiguous when multiple tasks have active QA runs
+  let best = null;
+  try {
+    for (const taskId of fs.readdirSync(prdsDir)) {
+      const logPath = path.join(prdsDir, taskId, 'qa-pipeline.log');
+      if (!fs.existsSync(logPath)) continue;
+      const mtime = fs.statSync(logPath).mtimeMs;
+      if (!best || mtime > best.mtime) best = { path: logPath, mtime };
+    }
+  } catch (e) {
+    log(`QA pipeline log scan error: ${e.message}`);
+  }
+  if (best) log(`QA pipeline log: mtime fallback → ${best.path} (set FORGE_TASK_ID for deterministic scoping)`);
+  return best ? best.path : null;
+}
+
 function tryGetNextGate() {
   const brainCandidates = forgeBrainSearchPaths();
 
   for (const brainPath of brainCandidates) {
     if (!fs.existsSync(brainPath)) continue;
 
+    // Check conductor.log first (main pipeline)
     const logPath = findMostRecentConductorLog(brainPath);
-    if (!logPath) continue;
+    if (logPath) {
+      try {
+        const logContent = fs.readFileSync(logPath, 'utf-8');
+        const gate = resolveNextGate(logContent);
+        if (gate) return gate;
+      } catch (e) {
+        log(`Failed to read conductor.log: ${e.message}`);
+      }
+    }
 
-    try {
-      const logContent = fs.readFileSync(logPath, 'utf-8');
-      return resolveNextGate(logContent);
-    } catch (e) {
-      log(`Failed to read conductor.log: ${e.message}`);
+    // Check qa-pipeline.log (standalone QA pipeline)
+    const qaLogPath = findMostRecentQAPipelineLog(brainPath);
+    if (qaLogPath) {
+      try {
+        const qaLogContent = fs.readFileSync(qaLogPath, 'utf-8');
+        const qaGate = resolveQAPipelineGate(qaLogContent);
+        if (qaGate) return qaGate;
+      } catch (e) {
+        log(`Failed to read qa-pipeline.log: ${e.message}`);
+      }
     }
   }
 

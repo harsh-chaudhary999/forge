@@ -148,27 +148,35 @@ install_claude_code() {
     }
 
     // Register hooks with absolute paths — no \${CLAUDE_PLUGIN_ROOT} required.
+    // Replace-in-place: remove prior Forge plugin hook entries for each event, then add
+    // the current ones. Prevents duplicate SessionStart / UserPromptSubmit / PreToolUse
+    // blocks when users upgrade Forge repeatedly (old logic only skipped identical command strings).
     if (!data.hooks) data.hooks = {};
     const hooksDir = '${plugin_dir}/.claude/hooks';
 
-    const addHook = (event, entry) => {
-      if (!data.hooks[event]) data.hooks[event] = [];
-      const cmd = (entry.hooks || [])[0]?.command || '';
-      if (!data.hooks[event].some(h => (h.hooks || []).some(c => c.command === cmd))) {
-        data.hooks[event].push(entry);
-      }
+    const isForgePluginHookEntry = (entry) => {
+      const hooks = entry.hooks || [];
+      return hooks.some(
+        (h) => h && typeof h.command === 'string' && h.command.includes('forge-plugin')
+      );
     };
 
-    addHook('SessionStart', {
+    const replaceForgeHook = (event, entry) => {
+      if (!data.hooks[event]) data.hooks[event] = [];
+      data.hooks[event] = data.hooks[event].filter((e) => !isForgePluginHookEntry(e));
+      data.hooks[event].push(entry);
+    };
+
+    replaceForgeHook('SessionStart', {
       matcher: 'startup|clear|compact',
       hooks: [{type: 'command', command: 'node \"' + hooksDir + '/session-start.cjs\"', async: false}]
     });
 
-    addHook('UserPromptSubmit', {
+    replaceForgeHook('UserPromptSubmit', {
       hooks: [{type: 'command', command: 'node \"' + hooksDir + '/prompt-submit.cjs\"', async: false}]
     });
 
-    addHook('PreToolUse', {
+    replaceForgeHook('PreToolUse', {
       matcher: 'Bash|Read|Write|Edit|StrReplace|Grep|Glob|SemanticSearch|CodebaseSearch|WebFetch|WebSearch|Task|Delete|ReadLints|EditNotebook|NotebookEdit|TodoWrite|Shell|GenerateImage|AskQuestion|AskUserQuestion|SwitchMode|AwaitShell|call_mcp_tool|fetch_mcp_resource|ListMcpResources',
       hooks: [{type: 'command', command: 'node \"' + hooksDir + '/pre-tool-use.cjs\"', async: false}]
     });

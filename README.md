@@ -30,6 +30,7 @@ Forge ships a feature across **multiple repos** without embedding a runtime fram
 - [Orchestration model (automation vs approvals)](#orchestration-model-automation-vs-approvals)
 - [Troubleshooting](#troubleshooting)
 - [Requirements & license](#requirements--license)
+- [Opportunity backlog (market-shaped gaps)](docs/forge-opportunities.md) — internal prioritization lens, not a public roadmap commitment
 
 ---
 
@@ -595,7 +596,9 @@ Check YAML frontmatter on any skill that fails to load.
 
 ### Claude Code: duplicate `PreToolUse` / hooks not updating
 
-**`install.sh`** merges Forge hooks into **`~/.claude/settings.json`** without removing older Forge entries. After several Forge upgrades, you may see **multiple `PreToolUse` blocks** with different **`matcher`** strings (e.g. older installs missing **`AskUserQuestion`**). **Fix:** edit **`settings.json`** and keep **one** Forge **`PreToolUse`** entry whose **`matcher`** matches the current **`hooks/hooks.json`** in this repo; remove duplicate Forge hook arrays for that event. Then **`bash scripts/install.sh --platform claude-code`** again so **`~/.claude/plugins/cache/`** matches your **`~/forge`** checkout.
+**Current behavior:** **`bash scripts/install.sh --platform claude-code`** **removes** prior Forge plugin hook entries from **`~/.claude/settings.json`** for **`SessionStart`**, **`UserPromptSubmit`**, and **`PreToolUse`** (anything whose hook **`command`** includes **`forge-plugin`**), then registers **one** set pointing at the cache copy under **`~/.claude/plugins/cache/forge-plugin/`**. Re-running install after **`git pull`** should **not** accumulate duplicate Forge matchers.
+
+**If you still see duplicates** (e.g. legacy edits or forks that used a path without **`forge-plugin`**): edit **`~/.claude/settings.json`** manually and delete stray Forge entries, then reinstall.
 
 ### Cursor: stale global rules or missing slash-command hints
 

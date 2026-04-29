@@ -19,6 +19,10 @@ cd ~/forge && bash scripts/install.sh --platform jetbrains
 # Prints the manual instructions above
 ```
 
+## Blocking interactive prompts
+
+JetBrains AI may not map 1:1 to Claude Code’s **`AskUserQuestion`**. When eliciting human choices, use **numbered options in chat + wait**, or the IDE’s native confirmation UI — same semantics as **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (all Forge hosts).
+
 ## Verification
 
 Open the project in your JetBrains IDE. The AI assistant should follow Forge guidelines when working in the project. Ask it about Forge rules to verify.

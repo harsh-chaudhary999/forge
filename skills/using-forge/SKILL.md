@@ -1,8 +1,8 @@
 ---
 name: using-forge
-description: "Bootstrap skill — inlined by session-start hook for all Claude Code sessions"
+description: "Bootstrap skill — inlined by session-start hook for every Forge-supported host (Claude Code, Cursor, Gemini CLI, JetBrains AI, Codex, Copilot CLI, IDX, Antigravity, OpenCode, etc.)"
 type: rigid
-version: 1.0.3
+version: 1.0.5
 preamble-tier: 4
 triggers:
   - "how to use forge"
@@ -19,9 +19,38 @@ allowed-tools:
 
 This skill is auto-loaded by the session-start hook. Do not manually invoke it as a task skill; treat it as baseline session policy context.
 
-## Blocking questions (host mapping)
+## Blocking interactive prompts (host mapping — all IDEs)
 
-Skills name the blocking multiple-choice tool **`AskUserQuestion`** (Claude Code, `allowed-tools` policy, CI). **In Cursor,** use **`AskQuestion`** with the same prompt and options. If that tool is missing, use the same choices as a **numbered list** in chat and wait. Project **`.cursor/rules/forge.mdc`** repeats the Cursor mapping — **do not** fork every skill to rename the tool in prose.
+Rigid skills declare the canonical tool name **`AskUserQuestion`** in **`allowed-tools`** (Claude Code policy + repo lint). **Semantics are host-agnostic:** every supported Forge IDE must obtain human answers through a **blocking interactive prompt** — never prose-only handoffs.
+
+| Host / surface | Use this for discrete choices |
+|----------------|-------------------------------|
+| **Claude Code** | **`AskUserQuestion`** (matches skill `allowed-tools`) |
+| **Cursor** | **`AskQuestion`** — same payload as `AskUserQuestion`; project **`.cursor/rules/forge.mdc`** documents the alias (**do not** mass-rename skills) |
+| **Gemini CLI, OpenAI Codex, GitHub Copilot CLI, Google Antigravity, JetBrains AI, Project IDX, OpenCode,** and other hosts **without** a named blocking tool | **Numbered options** in the assistant message **plus stop and wait** — identical semantics to a blocking prompt |
+| **Any host** when the blocking UI is unavailable | Same **numbered list** fallback |
+
+**Do not** fork **SKILL.md** files per IDE to rename **`AskUserQuestion`** in prose — hosts map at runtime per this table.
+
+### Interactive human input — project standard (all hosts, all doubts / choices)
+
+**Whenever** the workflow needs something only the human can supply — **question, doubt, confirmation, prioritization, naming (`task-id`), waiver, branch strategy, “what next,” or any fork in the road** — deliver it **interactively** per **Blocking interactive prompts** above, not only as narrative.
+
+**Required pattern:**
+
+1. Prefer the host’s **blocking interactive prompt** (`AskUserQuestion`, `AskQuestion`, or host-native equivalent) with explicit options when the skill allows or the decision fits discrete choices.
+2. If none: **numbered options** in the assistant message **plus** **stop and wait**.
+3. When a skill requires **full question text in chat first** (e.g. **`qa-prd-analysis`** Step 0.5, **`intake-interrogate`** Q9): paste that text **in the thread**, **then** the blocking prompt / numbered follow-up as the skill says.
+
+**Forbidden as the *only* way to decide:**
+
+- Long **“what to do next”** or **playbook** prose that ends with *“reply with task-id / confirm …”* **without** a **blocking interactive prompt** or **numbered list** the user can answer in one shot.
+- **Questions only in brain files** or only in a UI surface the user might miss — the **transcript** must show what was asked (**chat-visible**), then the interactive affordance.
+- **Rhetorical** “let me know” buried in paragraphs — if an answer changes behavior, it must be **blocking** and **structured**.
+
+**Allowed:** Explanatory prose **together with** the interactive step (context + blocking prompt / numbered list in the **same** turn). Playbooks in docs/commands stay valid; **agents** still must surface **live** decisions interactively.
+
+This is **not** YAML-, QA-, or **host-specific** — it applies to **intake**, **council**, **tech plans**, **routing**, and **any** human gate on **every** Forge-supported IDE.
 
 ## The 1% Rule
 
@@ -31,7 +60,7 @@ If there's even a 1% chance a Forge skill might apply, you absolutely must invok
 
 Forge **automates** repeatable work: structured artifacts under **`~/forge/brain/`**, eval YAML shape, scans, verification CLIs, coordinated phases. It **does not** grant permission to **guess** scope, design authority, waivers, prioritization, or “confirmed” interrogation answers.
 
-**Needle-moving decisions** — anything that would change what ships, what is tested, what is locked, or what the human thinks they approved — require an **explicit human turn**: **`AskUserQuestion`** / **`AskQuestion`**, or the same choices as a **numbered list** in chat **then stop and wait**. Examples: intake locks, council conflict resolution, **`qa-prd-analysis`** Q1–Q8 (visible in thread), **`eval_yaml_without_manual_csv_baseline`** plus verbatim approval quote, cutting surfaces or test types, signing off samples/count for **`manual-test-cases.csv`**.
+**Needle-moving decisions** — anything that would change what ships, what is tested, what is locked, or what the human thinks they approved — require an **explicit human turn** via **blocking interactive prompts** (host mapping above) or **numbered list + wait** — see **Interactive human input** above. Examples: intake locks, council conflict resolution, **`qa-prd-analysis`** Q1–Q8 (visible in thread), **`eval_yaml_without_manual_csv_baseline`** plus verbatim approval quote, cutting surfaces or test types, signing off samples/count for **`manual-test-cases.csv`**.
 
 **Forbidden:** Filling frontmatter or brain files with “confirmed,” waivers, or design sources **inferred** from Confluence/PRD/Figma metadata **without** the user having answered or approved in this workflow. **Verbose automation without that loop is worse than slow manual review** — it ships false confidence.
 
@@ -39,13 +68,13 @@ Forge **automates** repeatable work: structured artifacts under **`~/forge/brain
 
 This applies to **every** Forge phase (intake, council, tech plans, QA, eval, PR set, …), not only automation artifacts.
 
-1. **Know where you are.** Before **`AskQuestion`** or heavy prompting, infer the task’s **current stage**: brain paths (`prd-locked.md`, `shared-dev-spec.md`, `tech-plans/`, `qa/`, `eval/`, `conductor.log` tail). If there is **no** started task or **no** lock yet, you are **not** in downstream phases — treat later topics as **out of scope** until prerequisites exist.
+1. **Know where you are.** Before any **blocking interactive prompt** or heavy prompting, infer the task’s **current stage**: brain paths (`prd-locked.md`, `shared-dev-spec.md`, `tech-plans/`, `qa/`, `eval/`, `conductor.log` tail). If there is **no** started task or **no** lock yet, you are **not** in downstream phases — treat later topics as **out of scope** until prerequisites exist.
 
 2. **Ask only what unblocks *this* stage.** Questions must be **stage-relevant**: they resolve ambiguity or supply inputs needed to **start or finish the phase you are actually in** (or the single **next** prerequisite in documented order). **Forbidden:** Opening with choices about **later** pipeline stages — merge order, eval drivers, council contract picks, tech-plan sign-off, QA CSV sample approval, design ingest — while upstream work is **still missing** or the pipeline **has not started**. That wastes the user’s time and signals you ignored dependency order.
 
 3. **First gap wins.** If several prerequisites are missing, surface and fix the **earliest** failure in dependency order (per **`conductor-orchestrate`**, the active skill, or **`qa-write-scenarios`** **Step −1** for the QA→eval slice). Do not **jump ahead** to “how should we proceed on step 5?” when steps **1–4** are not satisfied.
 
-4. **Same rule for waivers and exceptions:** Do not **`AskQuestion`** about waiving or reordering **downstream** gates while **upstream** gates are still open — secure the **current** stage first; only then discuss exceptions relevant to the **next** stage.
+4. **Same rule for waivers and exceptions:** Do not use a **blocking interactive prompt** about waiving or reordering **downstream** gates while **upstream** gates are still open — secure the **current** stage first; only then discuss exceptions relevant to the **next** stage.
 
 **Why:** The user should not be interrogated about Phase **N+k** while Phase **N** prerequisites are pending. Maintain **respect** for sequential process: one coherent stage at a time.
 

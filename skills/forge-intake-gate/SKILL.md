@@ -2,7 +2,7 @@
 name: forge-intake-gate
 description: "WHEN: A new PRD arrives for implementation. HARD-GATE: Every PRD goes through intake-interrogate; mandatory **lock fields** in prd-locked.md must be satisfied (confidence-first questioning allowed). Q9 design/UI lock mandatory when web, app, or user-visible UI is in scope. No skipping intake, no exceptions, no \"trivial\" PRDs."
 type: rigid
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "intake gate"
@@ -14,6 +14,10 @@ allowed-tools:
   - AskUserQuestion
 ---
 # Intake Gate (HARD-GATE)
+
+## Human input (all hosts)
+
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. **Every Forge-supported IDE** maps it to a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (e.g. Cursor **`AskQuestion`**; CLIs / editors without the tool: **numbered options in chat + stop**). Actual intake questioning runs through **`intake-interrogate`**, which inherits the same host mapping. See **`using-forge`** **Interactive human input**.
 
 **Rule:** Every single PRD must pass through intake-interrogate skill. No exceptions.
 

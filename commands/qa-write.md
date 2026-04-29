@@ -65,7 +65,7 @@ Stops after writing scenarios to brain. No branch checkout. No execution. No sta
 
 ## Prerequisites
 
-**Dependency order (agents — read first):** **`prd-locked.md`** → **`qa-prd-analysis`** (chat interrogation, **`qa-analysis.md`**) → **`qa/manual-test-cases.csv`** approved **or** documented waiver → **then** **`qa-write-scenarios`**. Do **not** ask the user “how to proceed” on **eval YAML / CSV waiver** as the **first** question when **`prd-locked`** or **`qa-analysis`** is missing — fix **step 1** then **step 2** first. See **`qa-write-scenarios`** **Step −1**.
+**Dependency order (agents — read first, all IDEs):** **`prd-locked.md`** → **`qa-prd-analysis`** (chat interrogation, **`qa-analysis.md`**) → **`qa/manual-test-cases.csv`** approved **or** documented waiver → **then** **`qa-write-scenarios`**. Do **not** use a **blocking interactive prompt** (**`AskUserQuestion`** / host mapping in **`using-forge`**) about **eval YAML / CSV waiver** as the **first** turn when **`prd-locked`** or **`qa-analysis`** is missing — fix **step 1** then **step 2** first. See **`qa-write-scenarios`** **Step −1** and **`using-forge`** **Blocking interactive prompts**.
 
 - **`~/forge/brain/prds/<task-id>/prd-locked.md`** — locked PRD (run `/intake` first)
 - **`~/forge/brain/prds/<task-id>/qa/qa-analysis.md`** — from **`qa-prd-analysis`** with Q1–Q8 addressed in chat (not agent-only “confirmed”)

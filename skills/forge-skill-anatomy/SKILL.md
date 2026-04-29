@@ -2,7 +2,7 @@
 name: forge-skill-anatomy
 description: "WHEN: You are writing or reviewing a Forge skill and need the canonical template, rigor checklist, or CSO guidelines."
 type: reference
-version: 2.0.0
+version: 2.0.1
 preamble-tier: 1
 triggers:
   - "writing a new skill"
@@ -63,6 +63,16 @@ Four optional fields for all new skills. Existing skills do not need to be updat
 | `triggers` | Optional | string list | Natural-language phrases that strongly suggest this skill should be invoked. Informational in the current implementation — helps skill authors document intent. |
 | `allowed-tools` | Optional | string list | Tools this skill is permitted to use. Documents intent; not enforced at runtime currently. |
 | `hooks` | Optional | object | Declares which `PreToolUse` enforcement checks this skill activates. Values correspond to named checks in `pre-tool-use.cjs` (`freeze-scope-check`, `destructive-command-check`). Purely declarative — hooks run automatically when their preconditions are met, but this field documents which ones are relevant to the skill's safety contract. |
+
+### Human input (`AskUserQuestion` in `allowed-tools`)
+
+If **`AskUserQuestion`** appears in **`allowed-tools`**, the skill body **must** include a short **Human input (all hosts)** section (after the title is fine) that:
+
+1. States that **`AskUserQuestion`** is **canonical** for Claude Code + **`tools/lint_skill_allowed_tools.py`** — **do not** rename per IDE in **`SKILL.md`**.
+2. Points to **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** for the **full host table** (Cursor **`AskQuestion`**; CLIs / editors without the tool: **numbered options + stop**).
+3. Points to **`using-forge`** **Interactive human input** for prose vs structured blocking choices.
+
+Gate and interrogation skills should **also** ensure chat-visible question text where **`using-forge`** or the skill already requires it — this section does not replace those HARD-GATEs.
 
 ### Preamble Tier Guide
 

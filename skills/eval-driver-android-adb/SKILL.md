@@ -3,7 +3,7 @@ name: eval-driver-android-adb
 description: "WHEN: Eval scenario requires Android app interaction or assertion. Eval driver for Android via ADB + UIAutomator. Functions: connect(device_id), launch(package), tap(target), type(text), swipe(direction), assert_element(target), screenshot(), disconnect()."
 type: rigid
 requires: [eval-scenario-format]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "eval on Android"
@@ -21,6 +21,10 @@ allowed-tools:
 **Phase 3.4: Eval Driver for Android via ADB + UIAutomator**
 
 This skill provides a complete Android mobile app automation driver using Android Debug Bridge (ADB) and UIAutomator. It enables programmatic interaction with Android devices and emulators for eval scenarios, testing, and automation.
+
+## Human input (all hosts)
+
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input** (e.g. Appium MCP vs ADB per **CLAUDE.md** D5).
 
 ## Overview
 

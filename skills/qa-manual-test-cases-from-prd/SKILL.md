@@ -3,7 +3,7 @@ name: qa-manual-test-cases-from-prd
 description: "WHEN: You need atomic manual QA test cases in CSV from a PRD plus optional existing suite and knowledge base, with estimation, reuse/deprecation tracking, review, and a final report — any product, any TMS."
 type: rigid
 requires: [qa-prd-analysis, brain-read, brain-write]
-version: 1.3.0
+version: 1.3.2
 preamble-tier: 3
 triggers:
   - "generate test cases"
@@ -18,6 +18,10 @@ allowed-tools:
 ---
 
 # Manual QA Test Cases from PRD (CSV)
+
+## Human input (all hosts)
+
+**`AskUserQuestion`** in **`allowed-tools`** is canonical; map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** on every IDE (sample/count approvals, branch choices). See **`using-forge`** **Interactive human input**.
 
 **HARD-GATE:** Do not append production CSV rows until **Step 3 (samples) is approved**; do not ship the final report until **Step 7 (count) is approved**. When **`forge_qa_csv_before_eval: true`**, do not author **`eval/*.yaml`** or start feature **TDD** until this skill’s CSV path is approved and logged per **`conductor-orchestrate`**.
 
@@ -43,7 +47,7 @@ Approved manual test cases are **acceptance inventory**: they define *what* must
 
 **Anti-pattern:** Writing eval YAML or TDD tests **only** from prose tech plans while ignoring an in-flight QA CSV for the same task — you will double-specify and drift.
 
-**Prerequisite order (agents):** This skill is **step 3** of **`qa-write-scenarios` Step −1** (`prd-locked` → **`qa-prd-analysis`** → **this CSV / waiver** → eval YAML). **Do not** open with **AskQuestion** about YAML-before-CSV or eval paths while **`prd-locked.md`** or valid **`qa-analysis.md`** (post–Step 0.5 chat) is missing.
+**Prerequisite order (agents):** This skill is **step 3** of **`qa-write-scenarios` Step −1** (`prd-locked` → **`qa-prd-analysis`** → **this CSV / waiver** → eval YAML). **Do not** open with a **blocking interactive prompt** (**`AskUserQuestion`** / host equivalent per **`using-forge`**) about YAML-before-CSV or eval paths while **`prd-locked.md`** or valid **`qa-analysis.md`** (post–Step 0.5 chat) is missing.
 
 ## Anti-Pattern Preamble
 

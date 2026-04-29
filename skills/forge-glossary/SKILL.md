@@ -2,7 +2,7 @@
 name: forge-glossary
 description: "WHEN: You encounter an unfamiliar Forge term and need its canonical definition."
 type: reference
-version: 1.0.0
+version: 1.0.2
 preamble-tier: 1
 triggers:
   - "what does X mean"
@@ -15,6 +15,18 @@ allowed-tools:
   - AskUserQuestion
 ---
 # Forge Glossary
+
+## Human input (all hosts)
+
+Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the same **host mapping** as all rigid skills — **`skills/using-forge/SKILL.md`** **Blocking interactive prompts**. See the term **Blocking interactive prompt** below.
+
+### Blocking interactive prompt
+
+**Definition:** The host-specific mechanism that gathers a human answer without advancing until answered — canonical skill tool **`AskUserQuestion`** (see **`allowed-tools`**); **Cursor** maps to **`AskQuestion`**; hosts **without** that tool use **numbered choices in chat + stop**. Full host table: **`using-forge`** **Blocking interactive prompts**. Applies to **every** Forge-supported IDE, not one vendor.
+
+**Cross-References:** **`using-forge`** (**Interactive human input**, **Stage-local questioning**).
+
+---
 
 ## Pipeline Stages
 

@@ -3,7 +3,7 @@ name: brain-recall
 description: "WHEN: You are about to make a decision and need to check if prior art or past learnings exist. Recall decisions, patterns, and gotchas from the brain before proceeding."
 type: rigid
 requires: [brain-read]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 2
 triggers:
   - "search brain"
@@ -18,6 +18,10 @@ allowed-tools:
 ---
 
 # Brain Recall Skill
+
+## Human input (all hosts)
+
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**.
 
 ## Anti-Pattern Preamble
 

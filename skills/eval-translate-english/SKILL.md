@@ -3,7 +3,7 @@ name: eval-translate-english
 description: "WHEN: A user journey is described in English and must be converted into executable eval YAML. Input: plain English flow. Output: executable YAML scenario with driver actions, targets, and expected results."
 type: rigid
 requires: [brain-read]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "translate to eval"
@@ -18,6 +18,10 @@ allowed-tools:
 # eval-translate-english
 
 Convert plain English descriptions of user journeys and scenarios into executable YAML evaluation scenarios. Enables non-technical stakeholders to define test scenarios without needing to understand YAML syntax or eval driver APIs.
+
+## Human input (all hosts)
+
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**.
 
 ## Red Flags — STOP
 

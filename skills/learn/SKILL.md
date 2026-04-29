@@ -2,7 +2,7 @@
 name: learn
 description: "WHEN: You've discovered something worth capturing — a pattern, a gotcha, a process improvement — and want to preserve it so future sessions can benefit. Invoke at end of session or when asked to 'save this insight', 'capture learning', 'log lesson'."
 type: flexible
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 2
 triggers:
   - "what did we learn"
@@ -19,6 +19,10 @@ allowed-tools:
 # learn
 
 Writes session learnings to brain so future sessions benefit. Unlike `brain-write` (formal decisions), `learn` captures soft knowledge: patterns, gotchas, process improvements.
+
+## Human input (all hosts)
+
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**.
 
 ## Anti-Pattern Preamble
 

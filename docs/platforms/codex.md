@@ -16,6 +16,10 @@ codex  # Start Codex in the Forge directory
 
 No install script needed.
 
+## Blocking interactive prompts
+
+Codex may not expose **`AskUserQuestion`**. Use **numbered options in the assistant message + stop and wait** — same semantics as **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (all Forge hosts).
+
 ## Verification
 
 Start a Codex session in the Forge directory. The `AGENTS.md` content should be displayed as context. Verify by asking Codex about Forge rules.

@@ -3,7 +3,7 @@ name: eval-product-stack-up
 description: "WHEN: Eval is about to run and the full product stack must be brought up first. Reads forge-product.md, starts services in dependency order, runs health checks, confirms stack is ready for eval scenarios."
 type: rigid
 requires: [brain-read]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 4
 triggers:
   - "bring up the stack"
@@ -20,6 +20,10 @@ allowed-tools:
 # Eval Product Stack Up
 
 Orchestrates startup of the product stack for evaluation. Reads product topology from product.md, starts only the infrastructure and services that are **configured** in the product file, validates health checks, and reports readiness.
+
+## Human input (all hosts)
+
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**.
 
 **Infrastructure is optional.** If no infra (DB, Redis, Kafka, Elasticsearch) is configured in product.md, stack-up skips infra startup and runs eval against services only. Eval scenarios that require unconfigured infra are automatically skipped and marked N/A — they do not cause an eval failure.
 

@@ -18,6 +18,10 @@ git clone https://github.com/<YOUR_GITHUB_ORG_OR_USERNAME>/forge ~/forge
 cd ~/forge && bash scripts/install.sh --platform copilot-cli
 ```
 
+## Blocking interactive prompts
+
+Copilot CLI may not expose **`AskUserQuestion`**. Use **numbered options in the assistant message + stop and wait** — same semantics as **`skills/using-forge/SKILL.md`** **Blocking interactive prompts**.
+
 ## Verification
 
 Start a Copilot CLI session in the Forge directory. The `using-forge` bootstrap should be injected as context.

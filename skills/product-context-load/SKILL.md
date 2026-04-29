@@ -3,7 +3,7 @@ name: product-context-load
 description: "WHEN: You have a locked PRD and need to validate the target product exists, load its topology, and list affected projects."
 type: rigid
 requires: [brain-read]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 2
 triggers:
   - "load product context"
@@ -17,6 +17,10 @@ allowed-tools:
 ---
 
 # Product Context Load
+
+## Human input (all hosts)
+
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**.
 
 ## Anti-Pattern Preamble
 

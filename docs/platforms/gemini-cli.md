@@ -16,6 +16,10 @@ gemini  # Start Gemini CLI in the Forge directory
 
 Opening the clone as the project is enough for discovery mode. For **`gemini extensions link` / `update forge`**, run **`bash scripts/install.sh --platform gemini-cli`** once from the clone so the CLI knows where Forge lives.
 
+## Blocking interactive prompts
+
+Gemini CLI may not expose a dedicated **`AskUserQuestion`** tool. Use **numbered options in the assistant message + stop and wait** — same semantics as **`using-forge`** **Blocking interactive prompts** (all hosts). Do not rely on prose-only “reply with your choice…” without structured choices.
+
 ## Verification
 
 Start Gemini CLI in the Forge directory. The extension loads `GEMINI.md` which points to `skills/using-forge/SKILL.md`.

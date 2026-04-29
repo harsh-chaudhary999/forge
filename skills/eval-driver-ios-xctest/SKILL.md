@@ -3,7 +3,7 @@ name: eval-driver-ios-xctest
 description: "WHEN: Eval scenario specifies driver=ios-xctest. Eval driver for iOS via XCTest + xcrun simctl. Functions: connect(simulator_id), launch(bundle_id), tap(target), type(text), swipe(direction, element), assert_element(target), screenshot(), disconnect()."
 type: rigid
 requires: [eval-scenario-format]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "eval on iOS"
@@ -20,6 +20,10 @@ allowed-tools:
 **Phase 3.4: Eval Driver for iOS via XCTest + xcrun simctl**
 
 This skill provides a complete iOS app automation driver using XCTest UI Testing framework and `xcrun simctl` for simulator control. It enables programmatic interaction with iOS simulators and devices for eval scenarios.
+
+## Human input (all hosts)
+
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input** (e.g. Appium MCP vs XCTest per **CLAUDE.md** D5).
 
 ## Optional: Appium MCP vs XCTest (host choice)
 

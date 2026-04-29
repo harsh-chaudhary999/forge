@@ -202,6 +202,8 @@ Shared roots: both can use **`qa-prd-analysis`** and **`qa-analysis.md`**; stand
 
 **Stage-local questioning (all phases):** Ask only what unblocks the **current** Forge stage — not merge strategy, council detail, tech-plan approval, eval, or QA automation — while upstream prerequisites are still missing or the task **has not started**. Canonical norm: **`skills/using-forge/SKILL.md`** → **Stage-local questioning**.
 
+**Interactive human input:** Whenever the human must answer (task-id, doubt, waiver, “what next”), agents use **blocking interactive prompts** — canonical **`AskUserQuestion`** in skills; **every IDE** maps per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (e.g. Cursor **`AskQuestion`**; hosts without the tool: **numbered choices + stop**). Not prose-only playbooks. **`skills/using-forge/SKILL.md`** → **Interactive human input**.
+
 **Prerequisite order — QA → eval YAML (when relevant):** **`prd-locked.md`** → **`qa-prd-analysis`** (chat interrogation + **`qa-analysis.md`**) → **`qa-manual-test-cases-from-prd`** + approved **`manual-test-cases.csv`** (or documented waiver) → **then** **`eval/*.yaml`**. **`skills/qa-write-scenarios/SKILL.md`** **Step −1**. Do not prompt about downstream QA/evYAML waivers while **intake** or **QA analysis** is still missing.
 
 **Rigid skills for CSV path:**

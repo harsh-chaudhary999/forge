@@ -2,7 +2,7 @@
 name: forge-eval-gate
 description: "WHEN: Implementation is complete and PRs are ready to merge. HARD-GATE: Nothing merges without eval passing. E2E product eval is the final gate."
 type: rigid
-version: 1.0.2
+version: 1.0.3
 preamble-tier: 4
 triggers:
   - "eval gate"
@@ -28,7 +28,7 @@ allowed-tools:
 | "We can defer eval to post-merge, do it in staging" | Once merged, the bug is in main. Eval is pre-merge only. Post-merge eval is incident response, not quality control. |
 | "Conductor / agent stopped after implement or review — eval was never run" | **Orchestration is incomplete.** `conductor-orchestrate` **must** enter **P4.4** (`eval-product-stack-up` + drivers) after reviews unless the human **logs an explicit task ABORT**. Partial runs are not shippable. |
 | "We skipped writing `eval/*.yaml` and went straight to implementation" | **Invalid orchestration.** **State 4b** requires **`[P4.0-EVAL-YAML]`** with **≥1** file under `~/forge/brain/prds/<task-id>/eval/` **before** P4.1. No eval scenarios → P4.4 has nothing faithful to run; you only have ad-hoc manual checks. **CI:** wire **`tools/verify_forge_task.py`** (`docs/forge-task-verification.md`) so this state fails the merge, not just the session. |
-| "We led the session with AskQuestion about a downstream gate before upstream prerequisites existed" | **Inverted order — violates `using-forge` Stage-local questioning.** Examples: eval/CSV waiver before **`prd-locked`** or **`qa-analysis`**; merge strategy before council; tech-plan approval before plans exist. Fix the **first** missing prerequisite for the **current** phase only. **`qa-write-scenarios` Step −1** applies to the QA→eval slice. |
+| "We led the session with a blocking interactive prompt about a downstream gate before upstream prerequisites existed" | **Inverted order — violates `using-forge` Stage-local questioning.** Examples: eval/CSV waiver before **`prd-locked`** or **`qa-analysis`**; merge strategy before council; tech-plan approval before plans exist. Fix the **first** missing prerequisite for the **current** phase only. **`qa-write-scenarios` Step −1** applies to the QA→eval slice. |
 | "Eval passed but nobody checked against approved QA CSV" | When **`forge_qa_csv_before_eval: true`**, GREEN eval should **exercise the same journeys** as **`qa/manual-test-cases.csv`** (IDs referenced in YAML). Otherwise “passing eval” is not proof the signed acceptance set ran. |
 | "The performance test results look good from the code, we don't need eval" | Code metrics don't equal runtime behavior. Network latency, contention, GC pauses all appear at runtime, not in code. |
 | "Eval caught a flaky test, we can just remove the flaky test" | A flaky test is a symptom of real behavior. Removing the test hides the problem. Fix the underlying flakiness. |

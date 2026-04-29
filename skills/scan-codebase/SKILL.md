@@ -3,7 +3,7 @@ name: scan-codebase
 description: "WHEN: You need to map an existing codebase into the Forge brain — building an Obsidian-format knowledge graph of module relationships, architecture patterns, API surface, and documented edge cases. Invoked automatically after /workspace init and manually via /scan."
 type: rigid
 requires: [brain-write]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 2
 triggers:
   - "scan the codebase"
@@ -20,6 +20,10 @@ allowed-tools:
 
 Map an existing repository into the Forge brain as an interconnected Obsidian knowledge graph.
 Produces `~/forge/brain/products/<slug>/codebase/` — readable by humans, queryable by agents.
+
+## Human input (all hosts)
+
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**.
 
 ### Downstream handoff (E2E, novice-friendly)
 

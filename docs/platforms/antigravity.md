@@ -24,6 +24,10 @@ bash scripts/install.sh --platform antigravity
 # Symlinks skills to ~/.gemini/antigravity/skills/forge/
 ```
 
+## Blocking interactive prompts
+
+Use the host’s blocking UI if present; otherwise **numbered options in chat + stop** — same semantics as **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (all Forge hosts).
+
 ## Verification
 
 Open the Forge directory in Antigravity. Skills should be listed in the agent's available capabilities. Try invoking:

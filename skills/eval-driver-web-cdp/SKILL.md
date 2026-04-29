@@ -3,7 +3,7 @@ name: eval-driver-web-cdp
 description: "WHEN: Eval scenario requires web UI interaction or assertion. Automates browser via Chrome DevTools Protocol. Functions: launch(), navigate(), interact(click/type/scroll), screenshot(), getDOM(), teardown()."
 type: rigid
 requires: [brain-read, eval-scenario-format]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "eval web UI"
@@ -19,6 +19,10 @@ allowed-tools:
 # Eval Driver: Web UI via Chrome DevTools Protocol (CDP)
 
 Automates browser interactions and state inspection using Chrome DevTools Protocol. Provides a programmatic interface for launching headless Chrome, navigating URLs, interacting with UI elements, capturing screenshots, and extracting DOM state.
+
+## Human input (all hosts)
+
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input** (e.g. when choosing Appium MCP vs local CDP per **CLAUDE.md** D5).
 
 ## Anti-Pattern Preamble
 

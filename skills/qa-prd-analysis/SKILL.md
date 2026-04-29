@@ -3,7 +3,7 @@ name: qa-prd-analysis
 description: "WHEN: Before generating QA test cases from a PRD. Loads ALL brain artifacts first (PRD, tech plans, scan, contracts, product topology), then runs a structured interrogation to lock test types, surfaces, coverage depth, and all open ambiguities before a single scenario is written."
 type: rigid
 requires: [brain-read]
-version: 2.1.4
+version: 2.1.6
 preamble-tier: 3
 triggers:
   - "analyze PRD for QA"
@@ -20,6 +20,10 @@ allowed-tools:
 ---
 
 # QA PRD Analysis
+
+## Human input (all hosts)
+
+**`AskUserQuestion`** in **`allowed-tools`** is canonical; map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** on every IDE. **Step 0.5** defines chat-visible interrogation **then** blocking prompts — see **`using-forge`** **Interactive human input**.
 
 **HARD-GATE:** ALL brain artifacts must be loaded BEFORE asking the user any question. Questions asked without brain context are generic and waste the user's time. Brain-loaded questions are specific, informed, and resolve real ambiguities.
 
@@ -122,7 +126,7 @@ Q1–Q7 ALWAYS; Q8 WHEN WEB/ANDROID/IOS — **REUSE** PLANNING/DESIGN ARTIFACTS 
 - **Test type selection not recorded in qa-analysis.md** — STOP. Downstream skills must know which types were selected to generate the right scenarios.
 - **Surface selection not explicit** — STOP. "Web" and "mobile" are not the same surface. Both must be called out if both are in scope.
 - **Analysis written only in chat** — STOP. Write to brain. Chat is ephemeral.
-- **Questions only in `qa-analysis.md` or only via AskQuestion modal with no pasted text in the assistant message** — STOP. User must see Q1–Q7 **and, when Web/Android/iOS in scope, Q8 (design / PRD↔UI)** in the visible reply — same turn, before any modal (**Step 0.5 HARD-GATE — Questions visible in chat**).
+- **Questions only in `qa-analysis.md` or only via a blocking prompt UI with no pasted text in the assistant message** — STOP. User must see Q1–Q7 **and, when Web/Android/iOS in scope, Q8 (design / PRD↔UI)** in the visible reply — same turn, before any modal (**Step 0.5 HARD-GATE — Questions visible in chat**).
 - **`design_source` / Figma / `figma_file_key` filled in `qa-analysis.md` frontmatter or body but the user never saw Q8 in chat** — STOP. Copying keys from **`prd-locked.md`** or Confluence **does not** replace the **Q8** question: the human must still **confirm** authoritative design source, reuse path, or **N/A** in thread.
 - **Web/app in scope but neither inherited mapping citations nor Q8 gap-fill recorded** — STOP. Either planning already owns PRD↔UI traceability (cite it) or Q8 must supply it.
 - **`qa-analysis.md` claims Q1–Q8 "confirmed" but there was no Step 0.5 chat turn** — STOP. Analysis is **invalid** for downstream **`qa-write-scenarios`** strict gates; re-run interrogation or mark body **`PROVISIONAL — interrogation not completed in chat`** and do not treat frontmatter as user-approved.
@@ -191,7 +195,7 @@ Using the brain context from Step 0, run a structured interrogation. Every quest
 **HARD-GATE — Questions visible in chat:** The human must **see the full interrogation in the chat transcript**. In the **same assistant turn** where you ask anything:
 
 1. **Paste the complete Q1–Q7 blocks** and, **when Web and/or Android and/or iOS appears in Q2 or product.md**, **Q8** — either the **full Q8 template** below **or**, when Step 0 shows **existing PRD↔design mapping** in tech plans / spec / `design/`, paste the shorter **Q8 reuse path** (inherited paths + confirm/gaps only). If the run is **API/DB-only**, paste Q8 with the single-line answer line pre-filled as **N/A — no UI surfaces** (still visible in thread).
-2. **Then** you may use **`AskUserQuestion`** / **`AskQuestion`** (Cursor) for structured answers — but **never** as a substitute for (1). If the UI only shows a modal, the user still gets the full text above it in the message.
+2. **Then** you may use a **blocking interactive prompt** — canonical **`AskUserQuestion`** per skill **`allowed-tools`**; map per host (**`using-forge`** **Blocking interactive prompts**, e.g. Cursor **`AskQuestion`**) — but **never** as a substitute for (1). If the UI only shows a modal, the user still gets the full text above it in the message.
 3. **Never** put questions only in `qa-analysis.md`, only inside a tool call, or only in a file write — chat-first, brain second.
 
 **Ask ALL of the following in a single message — do not drip questions one at a time. Q1–Q7 are always mandatory; Q8 is mandatory whenever any user-visible UI surface is in scope. After the user answers, review those answers alongside your brain analysis and ask any additional questions that arise — in a single follow-up message. Keep asking until zero ambiguities remain. There is no upper question limit.**

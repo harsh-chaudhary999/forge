@@ -3,7 +3,7 @@ name: intake-interrogate
 description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Confidence-first: pre-fill from PRD + product.md; variable number of user turns — stop as soon as mandatory lock fields are concrete and doubts are cleared (no fixed question count; two answers can resolve many latent doubts). Q4 registry + Q9 design gates unchanged when they apply; **Q10 implementation closure** (VCS reference, authoritative delivery boundary, implementation stack) when the ambiguity gate in Q10 applies."
 type: rigid
 requires: [brain-write]
-version: 1.0.0
+version: 1.0.2
 preamble-tier: 2
 triggers:
   - "interrogate PRD"
@@ -18,6 +18,10 @@ allowed-tools:
 ---
 
 # Intake Interrogation — PRD Lock
+
+## Human input (all hosts)
+
+**`AskUserQuestion`** in **`allowed-tools`** is the canonical tool name (Claude Code + lint). **Every IDE** maps it per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** — not prose-only questions. The **Questioning Protocol** below defines *what* to elicit; *how* to deliver choices is always a **blocking interactive prompt** (or **numbered options + stop** on hosts without the tool). See **`using-forge`** **Interactive human input**.
 
 ## Anti-Pattern Preamble
 
@@ -85,9 +89,9 @@ If you notice any of these, STOP and do not proceed:
 
 ## Questioning Protocol
 
-**Use `AskUserQuestion` for every elicited field** — not plain text. One tool call per question turn. Structure: present 2–4 concrete options that cover the realistic answer space; the tool automatically appends an "Other / custom" option for free text. For open-ended fields with no bounded option set (e.g. Q2 goal sentence, Q3 success criteria), still call `AskUserQuestion` with the most common shapes as options so the user can navigate rather than type from scratch.
+**Use a blocking interactive prompt for every elicited field** — canonical tool name in skills is **`AskUserQuestion`**; map per host (**`using-forge`** **Blocking interactive prompts** — Cursor: **`AskQuestion`**; CLIs / hosts without the tool: **numbered options + stop**). Not plain prose-only questions. One blocking turn per question. Structure: present 2–4 concrete options that cover the realistic answer space; Claude Code’s tool appends an "Other / custom" option for free text. For open-ended fields with no bounded option set (e.g. Q2 goal sentence, Q3 success criteria), still use the blocking prompt with the most common shapes as options so the user can navigate rather than type from scratch.
 
-Never ask multiple fields in a single `AskUserQuestion` call unless the fields are tightly coupled (e.g. confirm + tighten). Batch only when the second field’s options depend on the first field’s answer being already resolved.
+Never ask multiple fields in a single blocking prompt unless the fields are tightly coupled (e.g. confirm + tighten). Batch only when the second field’s options depend on the first field’s answer being already resolved.
 
 ## Rhythm (supports confidence-first)
 

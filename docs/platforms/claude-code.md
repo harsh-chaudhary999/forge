@@ -18,6 +18,10 @@ git clone https://github.com/<YOUR_GITHUB_ORG_OR_USERNAME>/forge ~/forge
 cd ~/forge && bash scripts/install.sh --platform claude-code
 ```
 
+## Blocking interactive prompts
+
+Claude Code natively supports **`AskUserQuestion`** — the canonical name in Forge **`SKILL.md`** **`allowed-tools`**. Same semantics as **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** for every host.
+
 ## Verification
 
 Start a new Claude Code session. You should see Forge context injected (the `using-forge` skill). Run:

@@ -17,6 +17,10 @@ Forge is **host-agnostic**: the same pipeline runs in Cursor, Claude Code, Antig
 
 Forge gates (State 4b, `eval/*.yaml`, TDD, etc.) apply **regardless** of host session style.
 
+### Blocking interactive prompts (same on every host)
+
+Human-needed answers (intake, QA, waivers, confirmations) must use **blocking interactive prompts** — not prose-only “reply with…”. Canonical skill tool name is **`AskUserQuestion`**; **each IDE maps** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor → **`AskQuestion`**; Gemini CLI, Codex, JetBrains, etc. → numbered options + wait when no tool exists). This is **not** Claude- or Cursor-specific.
+
 ---
 
 ## How to apply this on your host

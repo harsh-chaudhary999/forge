@@ -3,7 +3,7 @@ name: qa-prd-analysis
 description: "WHEN: Before generating QA test cases from a PRD. Loads ALL brain artifacts first (PRD, tech plans, scan, contracts, product topology), then runs a structured interrogation to lock test types, surfaces, coverage depth, and all open ambiguities before a single scenario is written."
 type: rigid
 requires: [brain-read]
-version: 2.0.0
+version: 2.0.1
 preamble-tier: 3
 triggers:
   - "analyze PRD for QA"
@@ -114,6 +114,7 @@ NO TEST CASE IS AUTHORED UNTIL EVERY OPEN QUESTION IS ANSWERED OR EXPLICITLY RIS
 - **Test type selection not recorded in qa-analysis.md** — STOP. Downstream skills must know which types were selected to generate the right scenarios.
 - **Surface selection not explicit** — STOP. "Web" and "mobile" are not the same surface. Both must be called out if both are in scope.
 - **Analysis written only in chat** — STOP. Write to brain. Chat is ephemeral.
+- **Questions only in `qa-analysis.md` or only via AskQuestion modal with no pasted text in the assistant message** — STOP. User must see Q1–Q7 in the visible reply (**Step 0.5 HARD-GATE — Questions visible in chat**).
 
 ---
 
@@ -170,6 +171,12 @@ After reading, build an internal summary:
 ## Step 0.5 — QA Session Interrogation
 
 Using the brain context from Step 0, run a structured interrogation. Every question is informed by what was just read. Do not ask questions the brain already answers.
+
+**HARD-GATE — Questions visible in chat:** The human must **see the full interrogation in the chat transcript**. In the **same assistant turn** where you ask anything:
+
+1. **Paste the complete Q1–Q7 blocks** (headings + bullets + checkboxes / options as written below) **in normal assistant markdown** — the thread must read clearly without opening `qa-analysis.md` or the brain.
+2. **Then** you may use **`AskUserQuestion`** / **`AskQuestion`** (Cursor) for structured answers — but **never** as a substitute for (1). If the UI only shows a modal, the user still gets the full text above it in the message.
+3. **Never** put questions only in `qa-analysis.md`, only inside a tool call, or only in a file write — chat-first, brain second.
 
 **Ask ALL of the following in a single message — do not drip questions one at a time. These 7 questions are the mandatory minimum. After the user answers, review those answers alongside your brain analysis and ask any additional questions that arise — in a single follow-up message. Keep asking until zero ambiguities remain. There is no upper question limit.**
 
@@ -487,7 +494,7 @@ coverage_depth: comprehensive
 ---
 ```
 
-Body: Executive summary (10 bullets) + all sections from Steps 1–6 + interrogation Q&A verbatim.
+Body: Executive summary (10 bullets) + all sections from Steps 1–6 + interrogation Q&A verbatim (must match what was already shown and answered in **chat** per Step 0.5).
 
 Commit to brain:
 ```bash

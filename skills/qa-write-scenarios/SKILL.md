@@ -3,7 +3,7 @@ name: qa-write-scenarios
 description: "WHEN: qa-prd-analysis is complete and you need to write the maximum possible number of executable eval YAML scenarios — one per test type × surface × scenario variant. No gaps. No shortcuts."
 type: rigid
 requires: [brain-read, qa-prd-analysis, eval-scenario-format]
-version: 2.3.0
+version: 2.3.1
 preamble-tier: 3
 triggers:
   - "write eval scenarios"
@@ -46,7 +46,7 @@ Generates the **maximum possible number of executable eval YAML scenarios** from
 ## Iron Law
 
 ```
-MANUAL BASELINE FIRST: APPROVED manual-test-cases.csv (qa-manual-test-cases-from-prd) BEFORE bulk eval YAML UNLESS qa-analysis.md RECORDS AN EXPLICIT WAIVER (eval_yaml_without_manual_csv_baseline).
+MANUAL BASELINE FIRST: APPROVED manual-test-cases.csv (qa-manual-test-cases-from-prd) BEFORE bulk eval YAML UNLESS qa-analysis.md RECORDS WAIVER KEYS PLUS VERBATIM USER QUOTE (csv_baseline_waiver_user_quote) — NO AGENT-ONLY PARAPHRASE.
 EVERY CONFIRMED TEST TYPE FROM qa-analysis.md GETS ITS OWN SCENARIO SET.
 EVERY CONFIRMED SURFACE GETS ITS OWN SCENARIO FILE.
 EVERY SCENARIO HAS EXACTLY ONE ASSERTION — NO MULTI-ASSERTION MEGA-SCENARIOS.
@@ -58,7 +58,8 @@ A LOW COUNT IS A BUG IN THIS SKILL — TREAT IT AS A FAILURE, NOT A FEATURE.
 
 ## Red Flags — STOP
 
-- **`manual-test-cases.csv` missing or has no data rows** (only header / empty) — STOP. Run **`qa-manual-test-cases-from-prd`** through Step 7 approval first — unless **`qa/qa-analysis.md` YAML frontmatter** contains **`eval_yaml_without_manual_csv_baseline: true`** with a one-line **`csv_baseline_waiver_reason:`** (user explicitly accepted orphan automation in chat after warning).
+- **`manual-test-cases.csv` missing or has no data rows** (only header / empty) — STOP. Run **`qa-manual-test-cases-from-prd`** through Step 7 approval first — unless CSV waiver is **valid** (next bullet).
+- **Invalid CSV baseline waiver** — **`eval_yaml_without_manual_csv_baseline: true`** is **not** satisfied by the agent paraphrasing "user wanted automation only." **Valid only if** **`csv_baseline_waiver_user_quote:`** in frontmatter contains a **verbatim substring** from the **user's message** in this thread approving YAML-before-CSV, **or** the assistant logs the exact **`AskQuestion` / `AskUserQuestion`** option the user chose. Otherwise STOP — complete manual CSV first or get explicit chat approval and **then** record both keys + quote.
 - **Scenario targets invented without tech-plan / contract / CSV grounding** — STOP. Complete **Step 0.1** or record **`CONTEXT_GAP`** in **`qa/scenarios-manifest.md`**.
 - **`qa-analysis.md` absent from brain** — STOP. Run `qa-prd-analysis` first.
 - **Test types from Q1 not listed in `qa-analysis.md`** — STOP. The selection must be written before generation.
@@ -76,7 +77,8 @@ Before invoking this skill, verify:
 
 - [ ] **`qa-manual-test-cases-from-prd`** completed and **`qa/manual-test-cases.csv`** has ≥1 data row — **or** documented waiver in **`qa-analysis.md`** (see Red Flags)
 - [ ] `qa-prd-analysis` has been run and `qa/qa-analysis.md` exists in brain
-- [ ] `qa-analysis.md` contains confirmed `test_types`, `surfaces`, `coverage_depth`, and feature priorities
+- [ ] `qa-analysis.md` reflects **real interrogation** (**qa-prd-analysis** Step 0.5 in chat) — not agent-self-confirmed defaults; if **`eval_yaml_without_manual_csv_baseline`**, **`csv_baseline_waiver_user_quote`** present per Step 0.0
+- [ ] `qa-analysis.md` contains `test_types`, `surfaces`, `coverage_depth`, and feature priorities **as actually confirmed in chat**
 - [ ] `prd-locked.md` exists for the task — no PRD = no valid scenario generation
 - [ ] All tech plans exist in `brain/prds/<task-id>/tech-plans/` (scenarios without concrete routes/schemas will have placeholder targets)
 - [ ] You know the task_id and product slug before starting
@@ -163,14 +165,16 @@ ls "$BRAIN/eval/" 2>/dev/null && echo "EXISTING SCENARIOS — diff before adding
 
 1. Read YAML frontmatter at the top of **`qa/qa-analysis.md`** (if present).
 2. **Pass** if **either**:
-   - **`eval_yaml_without_manual_csv_baseline: true`** **and** **`csv_baseline_waiver_reason:`** is a non-empty one-line string (user explicitly accepted generating automation without an approved CSV after warning), **or**
+   - **`eval_yaml_without_manual_csv_baseline: true`** **and** **`csv_baseline_waiver_reason:`** is non-empty **and** **`csv_baseline_waiver_user_quote:`** matches verbatim text from the user's approval message **or** from the blocking prompt option text — **not** agent-authored paraphrase alone, **or**
    - **`qa/manual-test-cases.csv`** exists **and** contains **≥1 line after the header row** (non-empty data row).
 
 3. **Fail (STOP)** if neither condition holds:
    - Tell the user to complete **`qa-manual-test-cases-from-prd`** through Step 7 approval so **`manual-test-cases.csv`** exists with data rows, **or**
-   - If they insist on YAML-only, record waiver in **`qa-analysis.md` frontmatter** (both keys above) after **AskUserQuestion** / human confirmation — then re-invoke this skill.
+   - If they insist on YAML-only, use **`AskQuestion`** with explicit YAML-before-CSV warning options; after approval, record **`eval_yaml_without_manual_csv_baseline: true`**, **`csv_baseline_waiver_reason:`**, and **`csv_baseline_waiver_user_quote:`** (verbatim) in **`qa-analysis.md` frontmatter** — then re-invoke this skill.
 
-**Concrete check (evidence before proceeding):** From repo root or brain path, `wc -l` / `Read` on **`manual-test-cases.csv`** and confirm data rows, **or** show the waiver keys from **`qa-analysis.md`**.
+**Concrete check (evidence before proceeding):** `wc -l` / `Read` on **`manual-test-cases.csv`**, **or** frontmatter shows all three waiver keys with a **user-origin** quote field.
+
+**Ordering truth:** If **`eval_yaml_without_manual_csv_baseline`** was set without valid evidence, **YAML before manual CSV** is a **process violation** — fix brain metadata or run **`qa-manual-test-cases-from-prd`** first; do not treat generated YAML as aligned with an approved human baseline.
 
 ### Step 0.1 — Ground scenarios in primary sources (HARD-GATE)
 

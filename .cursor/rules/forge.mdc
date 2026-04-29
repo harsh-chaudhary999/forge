@@ -24,3 +24,7 @@ Some Forge skills require the **full question text** to appear in the **assistan
 **Why this breaks more often in Cursor than in Claude Code:** `hooks/hooks-cursor.json` documents that Cursor has **no** `UserPromptSubmit`-style hook; Forge cannot reinject “next gate / ask Q1–Q7” on **every** user message. Only **session-start** runs. So nothing apart from **this rule + the skill text** forces the model to show questions — **you** must follow the skill literally.
 
 **If the user says questions never appeared:** Re-run the phase and paste this into the prompt: *“Follow `skills/qa-prd-analysis/SKILL.md` Step 0.5 HARD-GATE — print Q1–Q7 in full in chat, then wait for answers; do not write only to brain.”*
+
+## Automation ≠ assumption
+
+Forge **automates artifacts and pipelines** — not **decisions**. At every **needle-moving** step (scope, design authority, QA interrogation, CSV/eval ordering waivers, prioritization), use **`AskQuestion`** or **numbered choices in chat** and **wait**. Do **not** infer “confirmed” answers or waiver frontmatter from docs alone; see **`using-forge`** section **Automation ≠ assumption / human loop at needle-moving decisions**.

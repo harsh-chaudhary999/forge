@@ -3,7 +3,7 @@ name: qa-prd-analysis
 description: "WHEN: Before generating QA test cases from a PRD. Loads ALL brain artifacts first (PRD, tech plans, scan, contracts, product topology), then runs a structured interrogation to lock test types, surfaces, coverage depth, and all open ambiguities before a single scenario is written."
 type: rigid
 requires: [brain-read]
-version: 2.1.1
+version: 2.1.3
 preamble-tier: 3
 triggers:
   - "analyze PRD for QA"
@@ -41,6 +41,7 @@ allowed-tools:
 | "I'll skip the brain load — I remember the PRD" | Memory is not a brain artifact. The scan, contracts, and tech plans change the picture every time. Load fresh. |
 | "Figma is in frontmatter / PRD — I don't need to ask about design in QA interrogation" | **UI test quality needs traceability from PRD to what testers assert** — but if **planning / intake / tech plans / design/** already documented PRD↔screen↔fixture mapping, **QA must inherit and cite those artifacts**, not duplicate a second full mapping workshop. Use Q8 to **confirm + fill gaps only**. |
 | "QA must rebuild the whole PRD→design matrix from zero every time" | **Violates reuse.** Council, tech plans, `shared-dev-spec`, `prd-locked` design fields, and `design/` exist precisely so downstream phases do not re-specify. Q8 is **verify completeness for test authoring**, not replace planning. |
+| "I'll write `qa-analysis.md` with Q1–Q8 marked confirmed from PRD alone — user wasn't available" | **Invalid.** Step 0.5 requires the **full interrogation pasted in chat** and real answers or explicit risk-accept. Frontmatter **`test_types` / `surfaces`** copied from defaults without a user turn is **not** confirmation — downstream YAML will claim false legitimacy. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -67,6 +68,8 @@ Before asking the first question (Step 0.5):
 Before marking this skill complete:
 
 - [ ] Minimum **Q1–Q7** answered (or risk-accepted); **Q8** answered when **web**, **android**, or **ios** is in confirmed surfaces — or explicitly **N/A** with reason if UI truly out of scope
+- [ ] **Interrogation actually happened in chat** — Q1–Q7 (+ **Q8 when Web/Android/iOS**, including **design source of truth** / reuse vs gap-fill) were **pasted in an assistant message** and the user replied (or explicitly risk-accepted items). **Do not** publish **`qa-analysis.md`** that says "confirmed" for interrogation items based only on agent inference from Confluence/PRD without that thread (**Step 0.5 HARD-GATE**).
+- [ ] **Design / Q8:** If **web**, **android**, or **ios** in surfaces, **`design_source` in frontmatter is only valid after** the user has **seen Q8** (short reuse form or full workshop) **in chat** — not pre-filled from PRD/Figma fields alone.
 - [ ] `qa-analysis.md` written to `brain/prds/<task-id>/qa/qa-analysis.md`
 - [ ] `test_types`, `surfaces`, and `coverage_depth` fields present in `qa-analysis.md` frontmatter; **when UI in scope:** frontmatter or body records **`design_source`** (Figma key / brain path / MCP_INGEST) and **PRD→component mapping** summary (Step 1 expansion)
 - [ ] Coverage map per test type written in `qa-analysis.md` body (Step 6)
@@ -117,8 +120,10 @@ Q1–Q7 ALWAYS; Q8 WHEN WEB/ANDROID/IOS — **REUSE** PLANNING/DESIGN ARTIFACTS 
 - **Test type selection not recorded in qa-analysis.md** — STOP. Downstream skills must know which types were selected to generate the right scenarios.
 - **Surface selection not explicit** — STOP. "Web" and "mobile" are not the same surface. Both must be called out if both are in scope.
 - **Analysis written only in chat** — STOP. Write to brain. Chat is ephemeral.
-- **Questions only in `qa-analysis.md` or only via AskQuestion modal with no pasted text in the assistant message** — STOP. User must see Q1–Q7 in the visible reply (**Step 0.5 HARD-GATE — Questions visible in chat**).
+- **Questions only in `qa-analysis.md` or only via AskQuestion modal with no pasted text in the assistant message** — STOP. User must see Q1–Q7 **and, when Web/Android/iOS in scope, Q8 (design / PRD↔UI)** in the visible reply — same turn, before any modal (**Step 0.5 HARD-GATE — Questions visible in chat**).
+- **`design_source` / Figma / `figma_file_key` filled in `qa-analysis.md` frontmatter or body but the user never saw Q8 in chat** — STOP. Copying keys from **`prd-locked.md`** or Confluence **does not** replace the **Q8** question: the human must still **confirm** authoritative design source, reuse path, or **N/A** in thread.
 - **Web/app in scope but neither inherited mapping citations nor Q8 gap-fill recorded** — STOP. Either planning already owns PRD↔UI traceability (cite it) or Q8 must supply it.
+- **`qa-analysis.md` claims Q1–Q8 "confirmed" but there was no Step 0.5 chat turn** — STOP. Analysis is **invalid** for downstream **`qa-write-scenarios`** strict gates; re-run interrogation or mark body **`PROVISIONAL — interrogation not completed in chat`** and do not treat frontmatter as user-approved.
 
 ---
 

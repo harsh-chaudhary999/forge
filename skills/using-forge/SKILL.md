@@ -2,7 +2,7 @@
 name: using-forge
 description: "Bootstrap skill — inlined by session-start hook for all Claude Code sessions"
 type: rigid
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 4
 triggers:
   - "how to use forge"
@@ -26,6 +26,16 @@ Skills name the blocking multiple-choice tool **`AskUserQuestion`** (Claude Code
 ## The 1% Rule
 
 If there's even a 1% chance a Forge skill might apply, you absolutely must invoke it. This is not negotiable.
+
+## Automation ≠ assumption / human loop at needle-moving decisions
+
+Forge **automates** repeatable work: structured artifacts under **`~/forge/brain/`**, eval YAML shape, scans, verification CLIs, coordinated phases. It **does not** grant permission to **guess** scope, design authority, waivers, prioritization, or “confirmed” interrogation answers.
+
+**Needle-moving decisions** — anything that would change what ships, what is tested, what is locked, or what the human thinks they approved — require an **explicit human turn**: **`AskUserQuestion`** / **`AskQuestion`**, or the same choices as a **numbered list** in chat **then stop and wait**. Examples: intake locks, council conflict resolution, **`qa-prd-analysis`** Q1–Q8 (visible in thread), **`eval_yaml_without_manual_csv_baseline`** plus verbatim approval quote, cutting surfaces or test types, signing off samples/count for **`manual-test-cases.csv`**.
+
+**Forbidden:** Filling frontmatter or brain files with “confirmed,” waivers, or design sources **inferred** from Confluence/PRD/Figma metadata **without** the user having answered or approved in this workflow. **Verbose automation without that loop is worse than slow manual review** — it ships false confidence.
+
+Skills that say **paste questions in chat first** are defining that loop on purpose; skipping them invalidates the gate.
 
 ## Instruction Priority
 

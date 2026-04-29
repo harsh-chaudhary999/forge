@@ -40,7 +40,7 @@ Restart **Cursor** when skills or hooks change. **Discovery** of new Forge versi
 | Codebase scan (`forge_scan.py`) | **`install.sh --platform cursor`** copies **`tools/`** into **`~/.cursor/plugins/local/forge/tools/`** — run **`python3 ~/.cursor/plugins/local/forge/tools/forge_scan.py`** when the workspace is not the Forge repo |
 | Agents (4) | Full support |
 | Hooks | SessionStart via `hooks-cursor.json` |
-| Commands (17) | All slash commands available |
+| Commands (20) | All slash commands available — see `commands/` (invocation depends on host; see below) |
 | Brain | Full read/write |
 | Worktrees | Full isolation |
 | `.cursorrules` | Project-level AI context |

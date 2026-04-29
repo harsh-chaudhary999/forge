@@ -8,8 +8,11 @@ on:
       - ".claude/hooks/session-start.cjs"
       - ".claude/hooks/pre-tool-use.cjs"
       - ".claude/hooks/post-commit.cjs"
+      - ".claude/hooks/prompt-submit.cjs"
+      - ".claude/hooks/prompt-submit-gates.cjs"
       - ".claude/hooks/forge-stage-detect.cjs"
       - ".claude/hooks/test-forge-stage-detect.cjs"
+      - "tools/test-prompt-submit-gates.cjs"
       - "tools/verify_forge_task.py"
       - "tools/eval_yaml_stdlib.py"
       - "tools/test_verify_forge_task.py"
@@ -31,8 +34,11 @@ on:
       - ".claude/hooks/session-start.cjs"
       - ".claude/hooks/pre-tool-use.cjs"
       - ".claude/hooks/post-commit.cjs"
+      - ".claude/hooks/prompt-submit.cjs"
+      - ".claude/hooks/prompt-submit-gates.cjs"
       - ".claude/hooks/forge-stage-detect.cjs"
       - ".claude/hooks/test-forge-stage-detect.cjs"
+      - "tools/test-prompt-submit-gates.cjs"
       - "tools/verify_forge_task.py"
       - "tools/eval_yaml_stdlib.py"
       - "tools/test_verify_forge_task.py"
@@ -56,6 +62,15 @@ jobs:
 
       - name: Stage marker unit tests
         run: node .claude/hooks/test-forge-stage-detect.cjs
+
+      - name: Prompt submit gate resolution tests
+        run: node tools/test-prompt-submit-gates.cjs
+
+      - name: Load prompt-submit gates module (syntax)
+        run: node --check .claude/hooks/prompt-submit-gates.cjs
+
+      - name: Load prompt-submit hook (syntax)
+        run: node --check .claude/hooks/prompt-submit.cjs
 
       - name: Load session-start hook (syntax)
         run: node --check .claude/hooks/session-start.cjs

@@ -43,7 +43,7 @@ Start a **new Claude Code session** after skills or hooks change. **How to notic
 | Codebase scan (`forge_scan.py`) | **`install.sh --platform claude-code`** copies **`tools/`** into the plugin cache — **`python3 ~/.claude/plugins/cache/forge-plugin/forge/<version>/tools/forge_scan.py`** when not using a Forge git checkout as cwd |
 | Agents (4) | Full support via Agent tool |
 | Hooks | SessionStart injects `using-forge` bootstrap |
-| Commands (17) | All slash commands available |
+| Commands (20) | All slash commands available — see `commands/` |
 | Brain | Full read/write to `~/forge/brain/` |
 | Worktrees | Full git worktree isolation |
 

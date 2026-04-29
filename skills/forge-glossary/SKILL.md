@@ -12,6 +12,7 @@ triggers:
 allowed-tools:
   - Bash
   - Read
+  - AskUserQuestion
 ---
 # Forge Glossary
 

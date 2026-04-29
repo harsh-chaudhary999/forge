@@ -12,6 +12,7 @@ triggers:
 allowed-tools:
   - Bash
   - Read
+  - AskUserQuestion
 ---
 
 # eval-driver-android-adb Skill

@@ -13,6 +13,7 @@ allowed-tools:
   - Bash
   - Read
   - Write
+  - AskUserQuestion
 ---
 
 # Scan Codebase

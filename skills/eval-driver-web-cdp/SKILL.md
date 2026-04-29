@@ -12,6 +12,7 @@ triggers:
   - "web UI eval"
 allowed-tools:
   - Bash
+  - AskUserQuestion
 ---
 
 # Eval Driver: Web UI via Chrome DevTools Protocol (CDP)

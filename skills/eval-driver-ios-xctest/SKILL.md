@@ -11,6 +11,7 @@ triggers:
   - "run iOS eval"
 allowed-tools:
   - Bash
+  - AskUserQuestion
 ---
 
 # eval-driver-ios-xctest Skill

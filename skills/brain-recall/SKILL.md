@@ -14,6 +14,7 @@ allowed-tools:
   - Bash
   - Read
   - Write
+  - AskUserQuestion
 ---
 
 # Brain Recall Skill

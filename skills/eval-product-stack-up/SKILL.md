@@ -14,6 +14,7 @@ allowed-tools:
   - Edit
   - Read
   - Write
+  - AskUserQuestion
 ---
 
 # Eval Product Stack Up

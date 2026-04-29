@@ -3,7 +3,7 @@ name: qa-write-scenarios
 description: "WHEN: qa-prd-analysis is complete and you need to write the maximum possible number of executable eval YAML scenarios — one per test type × surface × scenario variant. No gaps. No shortcuts."
 type: rigid
 requires: [brain-read, qa-prd-analysis, eval-scenario-format]
-version: 2.3.1
+version: 2.4.1
 preamble-tier: 3
 triggers:
   - "write eval scenarios"
@@ -40,6 +40,7 @@ Generates the **maximum possible number of executable eval YAML scenarios** from
 | "I'll generate eval YAML before manual CSV — PRD is enough" | **Automation without an approved human baseline is orphan automation.** You cannot faithfully prioritize coverage or trace YAML rows to acceptance IDs until **`manual-test-cases.csv`** exists (skill **`qa-manual-test-cases-from-prd`** through approval). YAML then maps journeys to those rows where applicable. |
 | "`qa-analysis.md` + CSV is enough — I won't re-open tech plans or contracts" | **`qa-analysis.md` prioritizes types/surfaces; concrete routes, payloads, cache keys, and error codes live in shared-dev-spec, tech-plans, and contracts.** Shallow YAML repeats generic steps. Use the same primary-source bundle as **`qa-manual-test-cases-from-prd`** Step 1b (see Step 0.1 below). |
 | "I'll drop a Python/bash generator in `eval/` to emit YAML" | **`eval/` is only for driver-readable `*.yaml` (and manifests).** Generators like `_generate_scenarios.py` are not part of Forge, confuse CI/review, and usually produce **`preconditions: []`** and weak UI coverage. Author YAML directly (or use a **repo-local** `tools/` script **outside** `eval/` if you must codegen). **Never** commit `eval/_generate*.py` without team agreement — prefer deleting after one-off use. |
+| "Prerequisites are missing — I'll open with AskQuestion about eval YAML / CSV waiver" | **Violates dependency order.** The **first** interaction must not be the **last** gate (automation-only waiver). Walk **forward** from **`prd-locked.md`** → **`qa-prd-analysis`** (chat interrogation) → **`manual-test-cases.csv`** (or waiver **after** PRD+QA exist). See **Step −1** below. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -56,9 +57,26 @@ THE FINAL COUNT MUST BE AUDITED AGAINST THE COVERAGE MATRIX BEFORE COMMIT.
 A LOW COUNT IS A BUG IN THIS SKILL — TREAT IT AS A FAILURE, NOT A FEATURE.
 ```
 
+## Step −1 — Prerequisite order before any AskQuestion (HARD-GATE)
+
+**General rule (all phases):** This is the **QA → eval YAML** slice of **`using-forge`** **Stage-local questioning** — ask only what unblocks the **current** stage; never front-load **`AskQuestion`** about **later** pipeline steps while **earlier** prerequisites are missing (same discipline applies to intake, council, tech plans, merge, …).
+
+**Run checks in this order.** Address **only the first failing step** in your **first** reply — do **not** bundle “eval cannot emit until everything exists — how proceed?” and do **not** lead with **`AskQuestion`** about CSV waiver / YAML-only when upstream artifacts are absent.
+
+| Order | Gate | If missing |
+|------:|------|------------|
+| 1 | **`~/forge/brain/prds/<task-id>/prd-locked.md`** | Tell user: run **`/intake`** (or equivalent) to lock PRD. **STOP.** No QA/eval prompts. |
+| 2 | **`qa/qa-analysis.md`** from **`qa-prd-analysis`** with Step 0.5 interrogation completed in chat | Tell user: run **`qa-prd-analysis`** — paste Q1–Q8 in thread first. **STOP.** |
+| 3 | **`qa/manual-test-cases.csv`** with ≥1 data row **or** valid waiver (**`csv_baseline_waiver_user_quote`** after explicit approval) | Offer **`qa-manual-test-cases-from-prd`** **or** (only now) **`AskQuestion`** on YAML-before-CSV with warning — **not** before 1–2 pass. |
+
+**Forbidden opening:** *“Forge cannot emit `eval/*.yaml` until prd-locked + QA interrogation + manual CSV (or waiver) exist. How should we proceed?”* when **1 or 2** is missing — that asks the user to decide **downstream** tradeoffs before **upstream** work exists. Replace with: *“Missing `<first artifact>` — do `<first skill/command>` first.”*
+
+---
+
 ## Red Flags — STOP
 
-- **`manual-test-cases.csv` missing or has no data rows** (only header / empty) — STOP. Run **`qa-manual-test-cases-from-prd`** through Step 7 approval first — unless CSV waiver is **valid** (next bullet).
+- **Opening with CSV/evYAML waiver `AskQuestion` while `prd-locked.md` or `qa-analysis.md` is missing** — STOP. Execute **Step −1** order.
+- **`manual-test-cases.csv` missing or has no data rows** (only header / empty) — STOP. Run **`qa-manual-test-cases-from-prd`** through Step 7 approval first — unless CSV waiver is **valid** (next bullet) **and** steps 1–2 above satisfied.
 - **Invalid CSV baseline waiver** — **`eval_yaml_without_manual_csv_baseline: true`** is **not** satisfied by the agent paraphrasing "user wanted automation only." **Valid only if** **`csv_baseline_waiver_user_quote:`** in frontmatter contains a **verbatim substring** from the **user's message** in this thread approving YAML-before-CSV, **or** the assistant logs the exact **`AskQuestion` / `AskUserQuestion`** option the user chose. Otherwise STOP — complete manual CSV first or get explicit chat approval and **then** record both keys + quote.
 - **Scenario targets invented without tech-plan / contract / CSV grounding** — STOP. Complete **Step 0.1** or record **`CONTEXT_GAP`** in **`qa/scenarios-manifest.md`**.
 - **`qa-analysis.md` absent from brain** — STOP. Run `qa-prd-analysis` first.

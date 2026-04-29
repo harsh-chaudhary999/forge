@@ -3,7 +3,7 @@ name: qa-prd-analysis
 description: "WHEN: Before generating QA test cases from a PRD. Loads ALL brain artifacts first (PRD, tech plans, scan, contracts, product topology), then runs a structured interrogation to lock test types, surfaces, coverage depth, and all open ambiguities before a single scenario is written."
 type: rigid
 requires: [brain-read]
-version: 2.1.3
+version: 2.1.4
 preamble-tier: 3
 triggers:
   - "analyze PRD for QA"
@@ -24,6 +24,8 @@ allowed-tools:
 **HARD-GATE:** ALL brain artifacts must be loaded BEFORE asking the user any question. Questions asked without brain context are generic and waste the user's time. Brain-loaded questions are specific, informed, and resolve real ambiguities.
 
 **HARD-GATE:** PRD analysis + interrogation answers must be written to brain before bulk scenario generation (`qa-write-scenarios`) proceeds. Chat-only analysis is not valid.
+
+**Upstream of eval YAML:** **`qa-write-scenarios`** **Step −1** defines forward order: **`prd-locked.md`** → **this skill** (`qa-analysis.md` + chat interrogation) → **`qa-manual-test-cases-from-prd`** / CSV or waiver → **then** eval YAML. Agents must **not** ask users about **CSV/evYAML waivers** before **`prd-locked`** exists or before Step 0.5 ran in chat.
 
 ---
 
@@ -81,7 +83,7 @@ Before marking this skill complete:
 ## Cross-References
 
 - **`brain-read`** — prerequisite skill; ensures product topology, PRD, tech plans, and SCAN.json are loaded before this analysis begins.
-- **`qa-write-scenarios`** — downstream skill; consumes `qa-analysis.md` written here to generate the maximum-count eval YAML scenario set.
+- **`qa-write-scenarios`** — downstream skill; consumes `qa-analysis.md` written here to generate the maximum-count eval YAML scenario set. **Prerequisite order:** see **`qa-write-scenarios`** **Step −1** (never prompt eval/CSV waiver before **`prd-locked`** + this interrogation).
 - **`qa-pipeline-orchestrate`** — the orchestrator that invokes this skill at QA-P2 (scenario generation phase).
 - **`eval-scenario-format`** — the canonical YAML schema that the coverage plan in Step 6 must anticipate (scenario IDs, test_type fields, surface routing).
 

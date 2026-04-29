@@ -65,8 +65,11 @@ Stops after writing scenarios to brain. No branch checkout. No execution. No sta
 
 ## Prerequisites
 
+**Dependency order (agents — read first):** **`prd-locked.md`** → **`qa-prd-analysis`** (chat interrogation, **`qa-analysis.md`**) → **`qa/manual-test-cases.csv`** approved **or** documented waiver → **then** **`qa-write-scenarios`**. Do **not** ask the user “how to proceed” on **eval YAML / CSV waiver** as the **first** question when **`prd-locked`** or **`qa-analysis`** is missing — fix **step 1** then **step 2** first. See **`qa-write-scenarios`** **Step −1**.
+
 - **`~/forge/brain/prds/<task-id>/prd-locked.md`** — locked PRD (run `/intake` first)
-- **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** — ≥1 approved data row from **`qa-manual-test-cases-from-prd`**, **or** waiver frontmatter in **`qa-analysis.md`** (see **`qa-write-scenarios`** Step 0.0)
+- **`~/forge/brain/prds/<task-id>/qa/qa-analysis.md`** — from **`qa-prd-analysis`** with Q1–Q8 addressed in chat (not agent-only “confirmed”)
+- **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** — ≥1 approved data row from **`qa-manual-test-cases-from-prd`**, **or** waiver frontmatter in **`qa-analysis.md`** (see **`qa-write-scenarios`** Step 0.0 + **`csv_baseline_waiver_user_quote`**)
 - **`~/forge/brain/prds/<task-id>/tech-plans/`** — per-repo tech plans recommended (run `/plan` first); minimal scenario generation is possible from PRD alone but targets will be less precise
 
 ## What gets written to brain

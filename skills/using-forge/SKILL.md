@@ -2,7 +2,7 @@
 name: using-forge
 description: "Bootstrap skill — inlined by session-start hook for all Claude Code sessions"
 type: rigid
-version: 1.0.1
+version: 1.0.3
 preamble-tier: 4
 triggers:
   - "how to use forge"
@@ -34,6 +34,20 @@ Forge **automates** repeatable work: structured artifacts under **`~/forge/brain
 **Needle-moving decisions** — anything that would change what ships, what is tested, what is locked, or what the human thinks they approved — require an **explicit human turn**: **`AskUserQuestion`** / **`AskQuestion`**, or the same choices as a **numbered list** in chat **then stop and wait**. Examples: intake locks, council conflict resolution, **`qa-prd-analysis`** Q1–Q8 (visible in thread), **`eval_yaml_without_manual_csv_baseline`** plus verbatim approval quote, cutting surfaces or test types, signing off samples/count for **`manual-test-cases.csv`**.
 
 **Forbidden:** Filling frontmatter or brain files with “confirmed,” waivers, or design sources **inferred** from Confluence/PRD/Figma metadata **without** the user having answered or approved in this workflow. **Verbose automation without that loop is worse than slow manual review** — it ships false confidence.
+
+### Stage-local questioning — respect process order (not YAML-specific)
+
+This applies to **every** Forge phase (intake, council, tech plans, QA, eval, PR set, …), not only automation artifacts.
+
+1. **Know where you are.** Before **`AskQuestion`** or heavy prompting, infer the task’s **current stage**: brain paths (`prd-locked.md`, `shared-dev-spec.md`, `tech-plans/`, `qa/`, `eval/`, `conductor.log` tail). If there is **no** started task or **no** lock yet, you are **not** in downstream phases — treat later topics as **out of scope** until prerequisites exist.
+
+2. **Ask only what unblocks *this* stage.** Questions must be **stage-relevant**: they resolve ambiguity or supply inputs needed to **start or finish the phase you are actually in** (or the single **next** prerequisite in documented order). **Forbidden:** Opening with choices about **later** pipeline stages — merge order, eval drivers, council contract picks, tech-plan sign-off, QA CSV sample approval, design ingest — while upstream work is **still missing** or the pipeline **has not started**. That wastes the user’s time and signals you ignored dependency order.
+
+3. **First gap wins.** If several prerequisites are missing, surface and fix the **earliest** failure in dependency order (per **`conductor-orchestrate`**, the active skill, or **`qa-write-scenarios`** **Step −1** for the QA→eval slice). Do not **jump ahead** to “how should we proceed on step 5?” when steps **1–4** are not satisfied.
+
+4. **Same rule for waivers and exceptions:** Do not **`AskQuestion`** about waiving or reordering **downstream** gates while **upstream** gates are still open — secure the **current** stage first; only then discuss exceptions relevant to the **next** stage.
+
+**Why:** The user should not be interrogated about Phase **N+k** while Phase **N** prerequisites are pending. Maintain **respect** for sequential process: one coherent stage at a time.
 
 Skills that say **paste questions in chat first** are defining that loop on purpose; skipping them invalidates the gate.
 

@@ -3,7 +3,7 @@ name: conductor-orchestrate
 description: "WHEN: PRD is locked. You are the master state machine orchestrating the entire forge workflow. Routes the task through all phases, tracks state, manages escalations, and coordinates subagents."
 type: rigid
 requires: [intake-interrogate, product-context-load, brain-read, brain-write, forge-worktree-gate, council-multi-repo-negotiate, spec-freeze, tech-plan-write-per-project, qa-manual-test-cases-from-prd, forge-tdd, eval-product-stack-up, eval-coordinate-multi-surface, forge-eval-gate, pr-set-coordinate, dream-retrospect-post-pr]
-version: 1.0.0
+version: 1.0.2
 preamble-tier: 4
 triggers:
   - "start the pipeline"
@@ -39,6 +39,7 @@ allowed-tools:
 | "`forge_qa_csv_before_eval: true` but we'll add the CSV after eval YAML" | Defeats the point: **RED** and **eval** must align to the **same** signed acceptance rows. CSV comes **first** when the flag is set. |
 | "`/forge` but we'll skip CSV because `product.md` never set the flag" | **`commands/forge.md` (`/forge`) = full pipeline:** State 4b **mandates** **`qa-prd-analysis`** + **`qa-manual-test-cases-from-prd`** and **`[P4.0-QA-CSV]`** before **`[P4.0-EVAL-YAML]`** — same as **`forge_qa_csv_before_eval: true`**. Persist **`forge_qa_csv_before_eval: true`** in **`product.md`** if it was missing or false. |
 | "Council can start without `[DISCOVERY]` — we'll grep branches during build" | **State 2.5** exists so **greenfield vs existing in-repo work** (topic branches, tags, open change requests) is resolved **before** contracts are negotiated. Skipping it repeats “two definitions of done.” STOP. Log **`[DISCOVERY]`** or an explicit skip per State 2.5 rules. |
+| "I'll AskQuestion about merge order / P4.4 eval / tech-plan sign-off / QA CSV while PRD isn't locked or discovery isn't done" | **Violates stage-local questioning** (`using-forge`). Prompts must unblock **only** the **current** authorized phase. Surface the **first** missing prerequisite; do not burn the user's attention on hypothetical downstream choices. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -333,6 +334,9 @@ Ensure **consensus** across all repos (no conflicting contracts).
 ```
 
 ### State 4b: Eval scenarios + RED tests (HARD-GATE before implementation)
+
+**Agent prerequisite order (same as State 4b steps 0→1):** **`qa-write-scenarios` Step −1** — **`prd-locked.md`** → **`qa-prd-analysis`** (interrogation in chat + **`qa-analysis.md`**) → **`qa-manual-test-cases-from-prd`** / approved CSV or valid waiver → **then** **`eval/*.yaml`**. Do **not** **`AskQuestion`** about CSV/evYAML waivers while **`prd-locked`** or completed **`qa-analysis.md`** is missing (“last gate first”).
+
 **ENTRY:** All tech plans written; **`tech-plan-self-review` PASS** per repo; **`[TECH-PLAN-XALIGN]`** **PASS** or **N/A**; **`[TECH-PLAN-HUMAN]`** with **`APPROVED`** or **`WAIVED`**; **`tech-plans/HUMAN_SIGNOFF.md`** on disk matching that log; `shared-dev-spec.md` locked.  
 **ACTION:**
   0. **Manual QA CSV (acceptance inventory — before eval YAML and before feature TDD):**

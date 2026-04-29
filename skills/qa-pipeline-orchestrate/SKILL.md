@@ -3,7 +3,7 @@ name: qa-pipeline-orchestrate
 description: "WHEN: A standalone QA run is needed against named feature branches and a target environment — independent of the full /forge delivery pipeline. Chains: brain read → scenario generation → branch prep → stack-up → multi-surface exec → verdict."
 type: rigid
 requires: [brain-read, qa-prd-analysis, qa-write-scenarios, qa-branch-env-prep, eval-product-stack-up, eval-coordinate-multi-surface, eval-judge]
-version: 1.0.1
+version: 1.0.3
 preamble-tier: 3
 triggers:
   - "run QA pipeline"
@@ -37,6 +37,7 @@ Standalone QA pipeline that runs from brain artifacts (PRD + tech plans) through
 | "I'll run only the web surface for a full-stack feature" | A web GREEN with a broken API write is still a broken feature. Multi-surface is not optional for full-stack changes. |
 | "The QA run failed but I'll fix it manually and not re-run" | A manual fix without a re-run produces no evidence. The verdict must come from an automated run, not a claim. |
 | "I don't need to write results to brain — I can see them in the terminal" | Terminal output is ephemeral. Brain artifacts are auditable across sessions, teams, and CI runs. |
+| "`/qa` invoked — I'll AskQuestion about eval/CSV waiver before checking brain" | **Violates stage-local questioning** (`using-forge`) **and** **`qa-write-scenarios` Step −1`**: **`prd-locked`** → **`qa-prd-analysis`** → **`manual-test-cases.csv`** (or valid waiver) → **then** QA-P2 eval YAML. Read brain **first**; surface the **first missing** artifact — never **`AskQuestion`** about downstream QA/evYAML choices before upstream prerequisites exist. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -73,6 +74,8 @@ Before reporting pipeline complete:
 
 ## Cross-References
 
+- **`using-forge`** — **Stage-local questioning** (all phases): prompts must unblock **only** the current stage.
+- **`qa-write-scenarios` Step −1** — QA→eval **prerequisite order** before QA-P2 or any **`AskQuestion`** about CSV/evYAML: **`prd-locked.md`** → **`qa-prd-analysis`** → **`manual-test-cases.csv`** or documented waiver — never invert.
 - **`qa-prd-analysis`** — must run before this skill (unless reusing existing scenarios) to produce `qa/qa-analysis.md` which feeds QA-P2.
 - **`qa-write-scenarios`** — invoked at QA-P2 to generate eval YAML from brain artifacts and `qa-analysis.md`.
 - **`qa-branch-env-prep`** — invoked at QA-P3 to check out feature branches and write `.eval-env`.
@@ -136,6 +139,8 @@ Each phase logs a gate line to `~/forge/brain/prds/<task-id>/qa-pipeline.log`.
 
 ## Phase QA-P1 — Load Brain Artifacts
 
+**Before QA-P2:** Satisfy **`qa-write-scenarios` Step −1** — if **`prd-locked.md`** missing, **BLOCK** (user runs **`/intake`**); if **`qa/qa-analysis.md`** missing or interrogation not done in chat, run **`qa-prd-analysis`** first; if CSV baseline missing and no valid waiver, **`qa-manual-test-cases-from-prd`** before generating **`eval/*.yaml`**. Do not prompt the user about downstream waivers until upstream steps exist.
+
 ```bash
 BRAIN=~/forge/brain
 TASK=<task-id>
@@ -161,6 +166,8 @@ Log:
 ## Phase QA-P2 — Generate Eval Scenarios
 
 **Skip this phase if:** `/qa-run` was invoked AND `eval/*.yaml` already exist in brain.
+
+**Order:** Same as **`qa-write-scenarios` Step −1** — never **`AskQuestion`** about YAML-before-CSV while **`prd-locked`** or **`qa-analysis.md`** (post-interrogation) is absent.
 
 Invoke `qa-prd-analysis` first (reads PRD, maps surfaces, writes `qa/qa-analysis.md` to brain).
 Complete **`qa-manual-test-cases-from-prd`** so **`qa/manual-test-cases.csv`** has ≥1 approved data row — **unless** `qa-analysis.md` frontmatter waives (see **`qa-write-scenarios`** Step 0.0).

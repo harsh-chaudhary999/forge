@@ -3,7 +3,7 @@ name: qa-manual-test-cases-from-prd
 description: "WHEN: You need atomic manual QA test cases in CSV from a PRD plus optional existing suite and knowledge base, with estimation, reuse/deprecation tracking, review, and a final report — any product, any TMS."
 type: rigid
 requires: [qa-prd-analysis, brain-read, brain-write]
-version: 1.2.0
+version: 1.3.0
 preamble-tier: 3
 triggers:
   - "generate test cases"
@@ -43,6 +43,8 @@ Approved manual test cases are **acceptance inventory**: they define *what* must
 
 **Anti-pattern:** Writing eval YAML or TDD tests **only** from prose tech plans while ignoring an in-flight QA CSV for the same task — you will double-specify and drift.
 
+**Prerequisite order (agents):** This skill is **step 3** of **`qa-write-scenarios` Step −1** (`prd-locked` → **`qa-prd-analysis`** → **this CSV / waiver** → eval YAML). **Do not** open with **AskQuestion** about YAML-before-CSV or eval paths while **`prd-locked.md`** or valid **`qa-analysis.md`** (post–Step 0.5 chat) is missing.
+
 ## Anti-Pattern Preamble
 
 | Rationalization | Why It Fails |
@@ -56,6 +58,7 @@ Approved manual test cases are **acceptance inventory**: they define *what* must
 | "Step 7 count review is bureaucratic" | Estimation vs actual drift catches systematic under-coverage; skipping it ships silent gaps. |
 | "We'll publish the CSV after developers start" | When **`forge_qa_csv_before_eval: true`**, the CSV is **before** eval YAML and **before** TDD feature work — late CSV means rework and eval that does not match what RED asserted. |
 | "`qa-analysis.md` is enough — I don't need prd-locked / tech plans / contracts again" | **`qa-analysis.md` is an index and interrogation record, not a substitute for primary sources.** Rows must trace to **prd-locked**, **shared-dev-spec**, **tech-plans**, and **contracts** where those contain the actual acceptance rules, routes, and edge cases. Re-load the full task bundle before Step 5 (see Step 1b). |
+| "User hasn't locked PRD — I'll ask about eval YAML / waiver anyway" | **Violates Step −1.** Fix **`prd-locked`** (**`/intake`**) and **`qa-prd-analysis`** first; this skill comes **after** those. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 

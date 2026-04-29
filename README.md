@@ -200,6 +200,10 @@ Use **both** when they solve different jobs:
 
 Shared roots: both can use **`qa-prd-analysis`** and **`qa-analysis.md`**; standalone QA emphasizes **`eval/*.yaml`** generation via **`qa-write-scenarios`** and multi-surface exec **outside** **`conductor-orchestrate`**. Prefer **`/qa`** or **`/qa-run`** when you only need “prove this branch / environment.” Prefer **`/forge`** State **4b** when you need **signed CSV + conductor gates** before dispatch.
 
+**Stage-local questioning (all phases):** Ask only what unblocks the **current** Forge stage — not merge strategy, council detail, tech-plan approval, eval, or QA automation — while upstream prerequisites are still missing or the task **has not started**. Canonical norm: **`skills/using-forge/SKILL.md`** → **Stage-local questioning**.
+
+**Prerequisite order — QA → eval YAML (when relevant):** **`prd-locked.md`** → **`qa-prd-analysis`** (chat interrogation + **`qa-analysis.md`**) → **`qa-manual-test-cases-from-prd`** + approved **`manual-test-cases.csv`** (or documented waiver) → **then** **`eval/*.yaml`**. **`skills/qa-write-scenarios/SKILL.md`** **Step −1**. Do not prompt about downstream QA/evYAML waivers while **intake** or **QA analysis** is still missing.
+
 **Rigid skills for CSV path:**
 
 | Skill | Role |

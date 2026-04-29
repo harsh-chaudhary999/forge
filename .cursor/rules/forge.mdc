@@ -28,3 +28,7 @@ Some Forge skills require the **full question text** to appear in the **assistan
 ## Automation ≠ assumption
 
 Forge **automates artifacts and pipelines** — not **decisions**. At every **needle-moving** step (scope, design authority, QA interrogation, CSV/eval ordering waivers, prioritization), use **`AskQuestion`** or **numbered choices in chat** and **wait**. Do **not** infer “confirmed” answers or waiver frontmatter from docs alone; see **`using-forge`** section **Automation ≠ assumption / human loop at needle-moving decisions**.
+
+**Stage-local questioning — respect process order:** Ask only what unblocks the **current** Forge stage (or the **next** prerequisite in dependency order). **Do not** open with **`AskQuestion`** about **later** phases — merge, eval harness, council contracts, tech-plan approval, QA CSV, design ingest, PR strategy — when the pipeline **has not reached** that stage or **upstream** prerequisites are still missing (no task brain, no **`prd-locked`**, no locked spec, etc.). Fix the **first** gap first; **never** front-load downstream gates. Full norm in **`using-forge`** → **Stage-local questioning**.
+
+**QA→eval slice (when applicable):** If **`prd-locked`** or **`qa-analysis`** is missing, **do not** ask about **eval YAML or CSV waiver** first — intake → **`qa-prd-analysis`** → manual CSV (or waiver) → then YAML. See **`qa-write-scenarios`** **Step −1**.

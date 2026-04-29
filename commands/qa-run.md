@@ -44,6 +44,7 @@ existing eval/*.yaml in brain
 
 ## Prerequisites
 
+- **`qa-write-scenarios` Step −1** satisfied **before** `/qa-write`: **`prd-locked.md`**, **`qa-prd-analysis`** + **`qa-analysis.md`**, then **`manual-test-cases.csv`** or documented waiver where policy requires — see **`skills/qa-write-scenarios/SKILL.md`**. `/qa-run` assumes upstream authoring order was respected.
 - **`~/forge/brain/prds/<task-id>/eval/*.yaml`** — scenarios must exist (run `/qa-write` first)
 - **`~/forge/brain/products/<slug>/product.md`** — for repo paths and service start commands
 - For Android: `adb devices` shows connected device or running emulator

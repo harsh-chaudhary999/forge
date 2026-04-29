@@ -13,6 +13,7 @@ triggers:
 allowed-tools:
   - Bash
   - AskUserQuestion
+  - mcp__*
 ---
 
 # Eval Driver: Web UI via Chrome DevTools Protocol (CDP)

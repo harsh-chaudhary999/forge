@@ -13,6 +13,7 @@ allowed-tools:
   - Bash
   - Read
   - AskUserQuestion
+  - mcp__*
 ---
 
 # eval-driver-android-adb Skill

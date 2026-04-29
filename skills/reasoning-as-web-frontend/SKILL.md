@@ -12,6 +12,7 @@ triggers:
 allowed-tools:
   - Bash
   - Edit
+  - mcp__*
 ---
 
 # Reasoning as Web Frontend

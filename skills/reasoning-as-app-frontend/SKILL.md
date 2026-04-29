@@ -12,6 +12,7 @@ triggers:
 allowed-tools:
   - Edit
   - Write
+  - mcp__*
 ---
 
 # Reasoning as App Frontend

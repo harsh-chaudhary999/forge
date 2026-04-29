@@ -14,6 +14,7 @@ allowed-tools:
   - Bash
   - Write
   - AskUserQuestion
+  - mcp__*
 ---
 
 # Manual QA Test Cases from PRD (CSV)

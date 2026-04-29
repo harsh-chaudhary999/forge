@@ -14,6 +14,7 @@ allowed-tools:
   - Bash
   - Write
   - AskUserQuestion
+  - mcp__*
 ---
 
 # Intake Interrogation — PRD Lock

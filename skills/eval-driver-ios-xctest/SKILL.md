@@ -12,6 +12,7 @@ triggers:
 allowed-tools:
   - Bash
   - AskUserQuestion
+  - mcp__*
 ---
 
 # eval-driver-ios-xctest Skill

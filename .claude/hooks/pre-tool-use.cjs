@@ -229,7 +229,10 @@ if (activeSkill) {
     skillFile,
     skillContent,
   );
-  if (allowedTools.length > 0 && !allowedTools.includes(toolName)) {
+  const toolAllowed = allowedTools.some(entry =>
+    entry.endsWith('*') ? toolName.startsWith(entry.slice(0, -1)) : entry === toolName,
+  );
+  if (allowedTools.length > 0 && !toolAllowed) {
     const decision = isHardGate ? 'deny' : 'ask';
     const tail =
       decision === 'deny'

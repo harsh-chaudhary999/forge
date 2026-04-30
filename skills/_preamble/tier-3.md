@@ -37,6 +37,8 @@ Inventing a solution for an unresolved blocker almost always creates a bigger pr
 
 During **intake**, **council**, **`qa-prd-analysis` Step 0.5**, **tech-plan** rounds, and any **sequential** human elicitation: **stay on the current question** — do **not** prefix or suffix messages with essays about **later** gates (e.g. *eval YAML isn’t written yet*, full **Step −1** / merge / waiver chains). That reads like a **lost thread** or **invented** rule and **erodes trust** even when the rest of the work is correct. **Allowed:** one-line handoff when the **active skill** says so; **refusing** a skip-ahead (**first missing** prerequisite + next step); user **asked** *why* / *full order*. Canonical: **`docs/forge-one-step-horizon.md`** — **No defensive downstream-gate narration (repo-wide)**.
 
+**One surface per turn (Cursor):** Do **not** combine a **`Questions`** / **`AskQuestion`** on **task-id** / **prd-locked** approval **with** a **different** long markdown block (**Q1** checklist, intake question, …) in the **same** message — **sequence** two turns. **`docs/forge-one-step-horizon.md`** — **No bundled unrelated decisions**.
+
 ## Completeness
 
 Do the complete thing. If the spec says "add caching to these 5 endpoints," add it to all 5 — not the first one. If the test suite has 20 failing tests, fix all 20 — not 18. Partial completion is not completion.

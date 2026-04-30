@@ -2,7 +2,7 @@
 name: using-forge
 description: "Bootstrap skill — inlined by session-start hook for every Forge-supported host (Claude Code, Cursor, Gemini CLI, JetBrains AI, Codex, Copilot CLI, IDX, Antigravity, OpenCode, etc.)"
 type: rigid
-version: 1.0.18
+version: 1.0.19
 preamble-tier: 4
 triggers:
   - "how to use forge"
@@ -67,7 +67,7 @@ Use this **whenever** the human must answer **more than one** distinct thing bef
 
 **How (dialogue mechanics — skill-agnostic):**
 
-1. **One primary dimension per assistant message** when multiple questions remain — not Q1–Q8 in one turn. **A single dimension may include a long structured checklist** (e.g. **`qa-prd-analysis` Q1** full test-type menu) — that is still **one** topic; do **not** collapse it to presets-only **without** showing the full menu when the canonical skill template is a checklist (**see `qa-prd-analysis` Q1 HARD-GATE**).
+1. **One primary dimension per assistant message** when multiple questions remain — not Q1–Q8 in one turn. **A single dimension may include a long structured checklist** (e.g. **`qa-prd-analysis` Q1** full test-type menu) — that is still **one** topic; do **not** collapse it to presets-only **without** showing the full menu when the canonical skill template is a checklist (**see `qa-prd-analysis` Q1 HARD-GATE**). **In that same turn, do not** also fire **`AskUserQuestion`** / **`AskQuestion`** / a **Questions** widget for a **different** topic (e.g. **task-id** / **prd-locked** approval while Q1 is in the message body) — **two competing primaries**; **sequence** prerequisite **→** **then** Q1 on the **next** message (**`docs/forge-one-step-horizon.md`** **No bundled unrelated decisions**, Cursor example).
 2. **Blocking interactive** for discrete forks: **`AskUserQuestion`** / **`AskQuestion`** / **numbered 1–N + stop** per **Blocking interactive prompts** above.
 3. **Reconcile after each reply:** if the answer **already settles** a later planned prompt, **skip** it and **state** *skipped — covered by …*; if the answer **surfaces new doubts**, ask **those** before advancing a rigid checklist.
 4. **Forbidden:** dumping **all** prompts for a phase in one message **plus** a **second** unrelated meta-prompt in the same turn; **prose-only** “reply with all answers”; **questions only** in brain files or tool payloads the user never saw in chat.
@@ -82,7 +82,7 @@ This pattern is **not** QA-specific — it applies on **every** Forge-supported 
 
 **Implements** **Multi-question elicitation** for **coverage** dimensions (templates **Q1–Q8**). **Canonical detail:** `skills/qa-prd-analysis/SKILL.md` **Step 0.5**.
 
-- Same **where / how** as above; plus **forbidden** in this phase: full Q1–Q8 wall in one message; “single bulk / approve all” shortcuts; **CSV / eval-YAML-only waiver** choices (**wrong gate** — use **`qa-write-scenarios`** / **`qa-manual-test-cases-from-prd`** **after** `qa-analysis.md`). **Q1** must show the **full** test-type checklist (not preset-only **Full/Lean** — see **`qa-prd-analysis`** Q1 **HARD-GATE**).
+- Same **where / how** as above; plus **forbidden** in this phase: full Q1–Q8 wall in one message; **Q1 in markdown + unrelated `AskQuestion`** (e.g. task-id / **prd-locked** approve) in the **same** turn — **dual prompt** (**`docs/forge-one-step-horizon.md`**); “single bulk / approve all” shortcuts; **CSV / eval-YAML-only waiver** choices (**wrong gate** — use **`qa-write-scenarios`** / **`qa-manual-test-cases-from-prd`** **after** `qa-analysis.md`). **Q1** must show the **full** test-type checklist (not preset-only **Full/Lean** — see **`qa-prd-analysis`** Q1 **HARD-GATE**).
 
 **Downstream references** to “Step 0.5” or “real interrogation” mean: **`qa-analysis.md`** after **Multi-question elicitation** completed for coverage — **`qa-write-scenarios`**, **`qa-manual-test-cases-from-prd`**, **`qa-pipeline-orchestrate`**, **`conductor-orchestrate`**, **`eval-scenario-format`**.
 

@@ -2,7 +2,7 @@
 name: forge-glossary
 description: "WHEN: You encounter an unfamiliar Forge term and need its canonical definition."
 type: reference
-version: 1.0.11
+version: 1.0.12
 preamble-tier: 1
 triggers:
   - "what does X mean"
@@ -57,7 +57,7 @@ Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the
 
 ### Bundled unrelated decisions (example: “bundled intake”)
 
-**Definition:** One assistant message uses **one** **blocking interactive** affordance (e.g. **`AskQuestion`** for a single fork) while treating **other** needle-moving choices as **prose** *“also answer…”* without their own **blocking** turn — or pastes **phase-specific** waiver/roadmap copy from a **later** gate. **Intake example:** **task-id** modal while Q9 design authority, net-new vs reuse, or Figma locks appear **only** in prose in the same turn.
+**Definition:** One assistant message uses **one** **blocking interactive** affordance (e.g. **`AskQuestion`** for a single fork) while treating **other** needle-moving choices as **prose** *“also answer…”* without their own **blocking** turn — or pastes **phase-specific** waiver/roadmap copy from a **later** gate — or stacks **two different primaries** (e.g. **`Questions`** widget for **task-id** approval **and** a **long markdown** **Q1** checklist in the **same** message). **Intake example:** **task-id** modal while Q9 design authority, net-new vs reuse, or Figma locks appear **only** in prose in the same turn.
 
 **Usage Context:** Violates **`using-forge`** **Multi-question elicitation** item **6**. Correct shape: **one fork per turn** (or a **Confirm/Correct** batch only where the active skill allows).
 

@@ -33,6 +33,8 @@ Any **doubt, question, confirmation, or choice** that needs a human answer — i
 
 **Question-forward / no trailing nag / no downstream essays:** **`docs/forge-one-step-horizon.md`** **Question-forward elicitation** and **No defensive downstream-gate narration (repo-wide)**; **`using-forge`** items **7–8**. Do **not** paste *why eval YAML (or any later gate) isn’t ready yet* between normal Q1→Q2-style turns — that copy is for **reference** or **skip-ahead refusal** only.
 
+**No dual prompts:** Do **not** show **`AskQuestion`** / **Questions** for one fork (e.g. approve **task-id** / **prd-locked**) **and** put a **different** long markdown question (e.g. **Q1** test-type checklist) in the **same** assistant message — **one primary question per turn** (**forge-one-step-horizon** **No bundled unrelated decisions**).
+
 **In Cursor you MUST:** output chat-visible text so the transcript shows what was asked; then **`AskQuestion`** when choices are discrete.
 
 **Why this breaks more often in Cursor:** no per-message reinjection hook — only **session-start** loads **`using-forge`**.

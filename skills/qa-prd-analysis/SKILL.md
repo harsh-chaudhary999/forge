@@ -3,7 +3,7 @@ name: qa-prd-analysis
 description: "WHEN: Before generating QA test cases from a PRD. Loads ALL brain artifacts first (PRD, tech plans, scan, contracts, product topology), then runs a structured interrogation to lock test types, surfaces, coverage depth, and all open ambiguities before a single scenario is written."
 type: rigid
 requires: [brain-read]
-version: 2.2.6
+version: 2.2.7
 preamble-tier: 3
 triggers:
   - "analyze PRD for QA"
@@ -53,6 +53,7 @@ allowed-tools:
 | "QA must rebuild the whole PRD→design matrix from zero every time" | **Violates reuse.** Council, tech plans, `shared-dev-spec`, `prd-locked` design fields, and `design/` exist precisely so downstream phases do not re-specify. Q8 is **verify completeness for test authoring**, not replace planning. |
 | "I'll write `qa-analysis.md` with Q1–Q8 marked confirmed from PRD alone — user wasn't available" | **Invalid.** Step 0.5 requires interrogation **completed in chat** (**sequential / adaptive** per this skill) with real answers or explicit risk-accept. Frontmatter **`test_types` / `surfaces`** copied from defaults without a user turn is **not** confirmation — downstream YAML will claim false legitimacy. |
 | "I'll paste the entire Q1–Q8 in one message **and** append **`AskQuestion`** *How should we proceed…* with options that overlap Q3/Q4 or bundle **CSV/YAML waiver**" | **Invalid UX + wrong gate.** One **primary** interaction model per turn; **waivers** belong to **`qa-write-scenarios`** / **`qa-manual-test-cases-from-prd`**, not **`qa-prd-analysis`**. **Sequential** turns only — never wall + unrelated modal. |
+| "I'll put **Q1** (full test-type checklist) in the chat message **and** use **`AskQuestion`** / **Questions** for *approve task-id / prd-locked / what next?*" | **Invalid — dual prompt.** **One turn = one primary question.** Prerequisite confirmation (**task-id**, draft **`prd-locked`**) is **turn A only** (widget **or** numbered options — **no** Q1 in that message). **Q1** is **turn B only** (full checklist — **no** second widget on another topic). See **`docs/forge-one-step-horizon.md`** **No bundled unrelated decisions** (Cursor example). |
 | "I'll offer **single bulk**, **approve recommendations**, or **hybrid** so the user can skip the back-and-forth" | **Invalid for Step 0.5.** Interrogation is **mandatorily sequential and interactive** — no menu to bypass dialogue. Speed is not a substitute for doubt closure. |
 | "I must ask Q2 verbatim even though Q1 already fixed surfaces and depth" | **Invalid.** **Adaptive reconciliation** — skip or shorten template prompts when already answered; ask **net-new** doubts instead. |
 | "I'll ask Q1 using only **Full / Lean / Custom** (or similar presets) **without** showing the full test-type checklist" | **Invalid.** The human must **see** every category (functional, non-functional, security, accessibility rows) to choose or waive — presets **hide capability**. Show the **full fenced Q1 menu** below first; optional presets **below** the menu are OK as shortcuts **after** visibility. |
@@ -242,7 +243,7 @@ The human must **see Q1–Q7 and Q8 (when UI in scope)** in the **chat thread** 
 
 ### Q1 — Test Types (mandatory)
 
-Ask as the **first** interrogation turn after Step 0 (after optional one-line context). **Only** Q1 content in that turn — then **wait**.
+Ask as the **first** interrogation turn after Step 0 (after optional one-line context). **Only** Q1 content in that turn — then **wait**. **HARD-GATE — No dual prompt with prerequisites:** If **`prd-locked`** / **task-id** still need a **blocking** human confirm, that confirm is **its own** preceding turn — **do not** combine that **`AskQuestion`** with **Q1** in the **same** assistant message (**Cursor** / any host: markdown **Q1** + widget **≠** one turn).
 
 **HARD-GATE — Full checklist visible:** Paste the **complete** fenced menu below (Functional → Accessibility) with brain-informed ☑/○ — **every row the skill lists**. **Forbidden:** replacing Q1 with **only** prose plus **Full / Lean CI / Custom** (or similar) **without** the full structured list above it — users cannot consent to types they cannot see. **Allowed:** **after** the full menu, add optional shortcuts (*e.g.* “Reply **All recommended**, **Lean CI**, or line-by-line yes/no”) **below** the fence — shortcuts may **not** substitute for the checklist.
 

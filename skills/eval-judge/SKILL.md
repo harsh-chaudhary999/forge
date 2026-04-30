@@ -1,9 +1,9 @@
 ---
 name: eval-judge
-description: "WHEN: All eval drivers have returned results and you need a final pass/fail verdict. Receives driver outputs from eval-coordinate-multi-surface and renders GREEN/RED/YELLOW judgment."
+description: "WHEN: You need a final pass/fail verdict after Phase 4.4 — either from eval-coordinate-multi-surface driver payloads (YAML scenarios) or from qa/semantic-eval-manifest.json + semantic-eval-run.log (semantic CSV path). Renders GREEN/RED/YELLOW."
 type: rigid
 requires: [brain-read]
-version: 1.0.1
+version: 1.0.2
 preamble-tier: 3
 triggers:
   - "judge eval results"
@@ -18,12 +18,14 @@ allowed-tools:
 
 # Eval Judge (HARD-GATE)
 
-The eval-judge is the terminal gate in the eval pipeline. It receives results from every eval driver (API, DB, cache, search, message bus, web, mobile), applies the judgment algorithm, and emits a verdict. No human, no agent, and no rationalization overrides a RED verdict.
+The eval-judge is the terminal gate in the eval pipeline. **Two inputs:** (1) **YAML path** — results from every eval driver (API, DB, cache, search, message bus, web, mobile) via **`eval-coordinate-multi-surface`**. (2) **Semantic path** — no **`eval/*.yaml`** execution; evidence is **`qa/semantic-eval-manifest.json`** **`outcome`** plus **`qa/semantic-eval-run.log`** after **`qa-semantic-csv-orchestrate`** / **`tools/run_semantic_csv_eval.py`** (Phase 4.4 post-stack-up). No human, no agent, and no rationalization overrides a RED verdict.
 
 ## Iron Law
 
 ```
-THE JUDGE NEVER ISSUES GREEN WITHOUT EVIDENCE FROM EVERY DRIVER — NO VERDICT IS EMITTED UNTIL RESULTS FROM ALL EXPECTED DRIVERS ARE RECEIVED AND CLASSIFIED.
+YAML PATH: THE JUDGE NEVER ISSUES GREEN WITHOUT EVIDENCE FROM EVERY EXPECTED DRIVER — NO VERDICT UNTIL RESULTS FROM eval-coordinate-multi-surface ARE RECEIVED AND CLASSIFIED.
+
+SEMANTIC PATH: THE JUDGE NEVER ISSUES GREEN WITHOUT A RECORDED outcome IN qa/semantic-eval-manifest.json AND CONSISTENT semantic-eval-run.log LINES FOR THE PHASE 4.4 RUN — outcome pass ⇒ GREEN; fail ⇒ RED; yellow ⇒ YELLOW. IF outcome IS ABSENT OR CONTRADICTS THE LOG, VERDICT RED (INCOMPLETE_DATA).
 ```
 
 **When drivers never ran:** Do **not** invoke this skill to manufacture GREEN, YELLOW, or RED. **`qa-pipeline-orchestrate`** Phase QA-P6 logs **`verdict=NOT_EXECUTED`** and QA-P7 sets **`execution_scope: static_only`** — **YELLOW** means non-critical driver failures after execution, not “we skipped automation.”
@@ -39,12 +41,31 @@ THE JUDGE NEVER ISSUES GREEN WITHOUT EVIDENCE FROM EVERY DRIVER — NO VERDICT I
 | 5 | "I already fixed the bug, re-running eval is redundant" | Fixing is not verifying. The fix must flow through eval to become evidence. No shortcutting the feedback loop. |
 | 6 | "The RED is from a non-critical driver so I can merge and fix later" | Non-critical failures produce YELLOW, not GREEN. YELLOW requires documentation and explicit acceptance. Silently merging is not acceptance. |
 | 7 | "The eval environment differs from production so this failure does not count" | Eval environment is the canonical test surface. If it differs from production, fix the environment -- do not discard the result. |
+| 8 | "Semantic path has no drivers — I'll skip eval-judge" | **Invalid.** Phase 4.4 still requires a verdict. Read **`outcome`** + **`semantic-eval-run.log`**; map **`pass`/`fail`/`yellow`** to GREEN/RED/YELLOW per § Semantic path below. |
+
+## Semantic path (Phase 4.4 — manifest + log)
+
+**When:** Conductor Phase 4.4 took the **semantic branch** (no **`eval/*.yaml`** to run, or policy designates manifest as the execution verdict source). **`eval-coordinate-multi-surface`** is **not** invoked for step results.
+
+**Inputs:**
+- **`~/forge/brain/prds/<task-id>/qa/semantic-eval-manifest.json`** — must include **`outcome`**: **`pass`**, **`fail`**, or **`yellow`** after the stack-up run.
+- **`~/forge/brain/prds/<task-id>/qa/semantic-eval-run.log`** — append-only transcript for the same run.
+
+**HARD-GATE:**
+- **`outcome: pass`** and log contains **no** contradictory **`FAILED`** / hard-error lines for required steps → verdict **GREEN**.
+- **`outcome: fail`** → **RED** (invoke self-heal per Phase 4.5).
+- **`outcome: yellow`** → **YELLOW** (document non-critical gaps before merge).
+- Missing **`outcome`** or empty manifest after claimed run → **RED**, reason **`INCOMPLETE_DATA`**.
+
+**Do not** fabricate driver-shaped YAML for this path — the manifest is the contract.
 
 ## Judgment Algorithm
 
+**YAML path:** Phases 1–5 below. **Semantic path:** use **§ Semantic path** only — do not require **`eval-coordinate-multi-surface`** payloads or driver step tables.
+
 ### Phase 1: Collect Driver Results
 
-Receive the result payload from `/eval-coordinate-multi-surface`. Each driver reports:
+Receive the result payload from **`eval-coordinate-multi-surface`** (**YAML path**). Each driver reports:
 
 ```yaml
 driver: <driver-name>        # e.g. eval-driver-api-http
@@ -267,7 +288,9 @@ Before emitting the final verdict, verify:
 
 | Related Skill | Relationship |
 |---|---|
-| `/eval-coordinate-multi-surface` | Upstream. Provides the driver result payload that this skill judges. |
+| `/eval-coordinate-multi-surface` | Upstream (**YAML path**). Provides the driver result payload that this skill judges. |
+| `/qa-semantic-csv-orchestrate` | Upstream (**semantic path**). Produces **`semantic-eval-manifest.json`** + **`semantic-eval-run.log`** for Phase 4.4. |
+| `docs/semantic-eval-csv.md` | Schema for **`qa/semantic-automation.csv`**. |
 | `/eval-scenario-format` | Defines the scenario YAML schema including `failure_mode`, `critical`, and `sla_ms` fields consumed by the judge. |
 | `/self-heal-locate-fault` | Downstream. Invoked by the judge on RED/FAIL_FLAKY verdicts to diagnose which service caused the failure. |
 | `/forge-eval-gate` | Parent gate. The eval-judge is the decision engine inside the eval gate workflow. |

@@ -2,7 +2,7 @@
 name: review-readiness
 description: "WHEN: You are about to raise a PR and need to verify all gates have passed. Checks spec frozen, eval GREEN, QA CSV covered, brain committed, no WIP commits."
 type: flexible
-version: 1.0.8
+version: 1.0.9
 preamble-tier: 2
 triggers:
   - "ready to raise PR"
@@ -51,23 +51,29 @@ fi
 
 ### Check 2 — Eval GREEN
 
+YAML runs record **`verdict: GREEN`** in **`eval/*.md`** (newer than frozen **`shared-dev-spec.md`**). **Semantic-only** tasks may have **no** `eval/` markdown — fall back to **`qa/semantic-eval-manifest.json`**: file newer than frozen spec and **`"outcome": "pass"`** (maps to GREEN for PR readiness; **`yellow`** / **`fail`** are not GREEN).
+
 ```bash
 BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 TASK_DIR="${TASK_DIR:-$(ls -td "$BRAIN_DIR/prds"/*/ 2>/dev/null | head -1)}"
 SPEC="${TASK_DIR%/}/shared-dev-spec.md"
 EVAL_DIR="${TASK_DIR%/}/eval"
+SEMANTIC_MANIFEST="${TASK_DIR%/}/qa/semantic-eval-manifest.json"
 # Newer than frozen spec mtime: eval run must post-date the locked spec, not a calendar window.
-if [ ! -d "$EVAL_DIR" ] || [ ! -f "$SPEC" ]; then
-  echo "✗ Eval GREEN      — EVAL_DIR or spec missing (check TASK_DIR / run Check 1)"
-  echo "  Fix: ensure $EVAL_DIR and frozen $SPEC exist"
+GREEN_FILE=""
+if [ -d "$EVAL_DIR" ] && [ -f "$SPEC" ]; then
+  GREEN_FILE=$(find "$EVAL_DIR" -name "*.md" -newer "$SPEC" 2>/dev/null | xargs grep -l "verdict: GREEN" 2>/dev/null | head -1)
+fi
+if [ ! -f "$SPEC" ]; then
+  echo "✗ Eval GREEN      — frozen spec missing at $SPEC (run Check 1)"
+  echo "  Fix: ensure shared-dev-spec.md exists and is frozen"
+elif [ -n "$GREEN_FILE" ]; then
+  echo "✓ Eval GREEN      — $GREEN_FILE"
+elif [ -f "$SEMANTIC_MANIFEST" ] && [ "$SEMANTIC_MANIFEST" -nt "$SPEC" ] && grep -qE '"outcome"[[:space:]]*:[[:space:]]*"pass"' "$SEMANTIC_MANIFEST" 2>/dev/null; then
+  echo "✓ Eval GREEN      — semantic manifest $SEMANTIC_MANIFEST (outcome: pass, newer than frozen spec)"
 else
-GREEN_FILE=$(find "$EVAL_DIR" -name "*.md" -newer "$SPEC" 2>/dev/null | xargs grep -l "verdict: GREEN" 2>/dev/null | head -1)
-  if [ -n "$GREEN_FILE" ]; then
-    echo "✓ Eval GREEN      — $GREEN_FILE"
-  else
-    echo "✗ Eval GREEN      — no GREEN verdict found in $EVAL_DIR"
-    echo "  Fix: run /forge-eval-gate and ensure eval passes"
-  fi
+  echo "✗ Eval GREEN      — no GREEN verdict in eval/*.md and no passing semantic manifest newer than spec"
+  echo "  Fix: run Phase 4.4 (YAML drivers + eval-judge, or qa-semantic-csv-orchestrate / semantic runner) and ensure outcome pass; see docs/forge-task-verification.md"
 fi
 ```
 
@@ -93,11 +99,19 @@ else
     echo "  Fix: complete qa-manual approval and log, or use documented waiver; see skills/qa-manual-test-cases-from-prd"
   else
     EVAL_SCENARIOS=$(find "$EVAL_DIR" -name "*.yaml" 2>/dev/null | wc -l | tr -d ' ')
+    SEMANTIC_MANIFEST="${TASK_DIR%/}/qa/semantic-eval-manifest.json"
+    SEMANTIC_CSV="${TASK_DIR%/}/qa/semantic-automation.csv"
+    SEMANTIC_OK=0
+    if [ -f "$SEMANTIC_MANIFEST" ] && { [ -f "$SEMANTIC_CSV" ] || grep -qE '"kind"[[:space:]]*:[[:space:]]*"semantic-csv-eval"' "$SEMANTIC_MANIFEST" 2>/dev/null; }; then
+      SEMANTIC_OK=1
+    fi
     if [ "$EVAL_SCENARIOS" -gt 0 ]; then
       echo "✓ QA CSV          — P4.0 approved=yes in conductor.log, $EVAL_SCENARIOS eval scenario(s) under $EVAL_DIR"
+    elif [ "$SEMANTIC_OK" -eq 1 ]; then
+      echo "✓ QA CSV          — P4.0 approved=yes, machine-eval via semantic ($SEMANTIC_MANIFEST)"
     else
-      echo "✗ QA CSV          — P4.0 passed but no eval scenarios under $EVAL_DIR"
-      echo "  Fix: run /forge-eval-gate; align eval YAML to CSV ids per qa-write-scenarios"
+      echo "✗ QA CSV          — P4.0 passed but no eval/*.yaml and no semantic pair (qa/semantic-automation.csv + qa/semantic-eval-manifest.json, or manifest kind semantic-csv-eval)"
+      echo "  Fix: run qa-write-scenarios → eval YAML, or qa-semantic-csv-orchestrate per docs/semantic-eval-csv.md"
     fi
   fi
 fi

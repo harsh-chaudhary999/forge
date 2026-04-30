@@ -2,8 +2,8 @@
 name: conductor-orchestrate
 description: "WHEN: PRD is locked. You are the master state machine orchestrating the entire forge workflow. Routes the task through all phases, tracks state, manages escalations, and coordinates subagents."
 type: rigid
-requires: [intake-interrogate, product-context-load, brain-read, brain-write, forge-worktree-gate, council-multi-repo-negotiate, spec-freeze, tech-plan-write-per-project, qa-manual-test-cases-from-prd, forge-tdd, eval-product-stack-up, eval-coordinate-multi-surface, forge-eval-gate, pr-set-coordinate, dream-retrospect-post-pr]
-version: 1.0.11
+requires: [intake-interrogate, product-context-load, brain-read, brain-write, forge-worktree-gate, council-multi-repo-negotiate, spec-freeze, tech-plan-write-per-project, qa-manual-test-cases-from-prd, forge-tdd, eval-product-stack-up, eval-coordinate-multi-surface, qa-semantic-csv-orchestrate, forge-eval-gate, pr-set-coordinate, dream-retrospect-post-pr]
+version: 1.0.12
 preamble-tier: 4
 triggers:
   - "start the pipeline"
@@ -582,7 +582,13 @@ The Conductor manages the complete delivery cycle: dispatching dev work, reviewi
 **ENTRY:** All repos pass code quality review.  
 **MUST NOT SKIP:** This phase is **not optional** for a completed delivery. If stack-up cannot run (e.g. missing `deploy_doc` / `start`+`health` in `product.md`), **STOP** and fix `product.md` — do not pretend the task finished.
 
-**ACTION:**
+**Branch selection (post-implementation eval — distinct from State 4b planning artifacts):**
+- **YAML path:** At least one **`eval/*.yaml`** under **`~/forge/brain/prds/<task-id>/eval/`** → run multi-surface drivers + **`eval-judge`** on driver payloads (existing flow).
+- **Semantic path:** **No** YAML scenarios **and** the task uses **`qa/semantic-automation.csv`** / **`qa/semantic-eval-manifest.json`** (State 4b logged **`[P4.0-SEMANTIC-EVAL]`** or manifest **`kind`** is **`semantic-csv-eval`**) → after stack-up, invoke **`qa-semantic-csv-orchestrate`** (run **`python3 tools/run_semantic_csv_eval.py`** from Forge repo with **`--task-id`**, **`--brain`**, and host driver settings per skill) **against the built stack**, refresh **`qa/semantic-eval-manifest.json`** **`outcome`** and **`qa/semantic-eval-run.log`**, then apply **`eval-judge`** **§ Semantic path** (manifest + log — not **`eval-coordinate-multi-surface`** payloads).
+- **Neither path:** **BLOCKED** — no machine-eval to execute for Phase 4.4.
+- **Both YAML and semantic on disk:** Default **YAML path** for Phase 4.4 (driver judge). Optionally re-run semantic validation if product policy requires both; **always** log **`[P4.4-EVAL-GREEN]`** only after the chosen path(s) yield an aggregate pass per **`eval-judge`**.
+
+**ACTION (YAML path):**
   1. Invoke `eval-product-stack-up` skill to bring up the entire product stack (all services, DBs, caches, etc.).
   2. Run eval scenario drivers:
      - HTTP API: `eval-driver-api-http`
@@ -594,9 +600,16 @@ The Conductor manages the complete delivery cycle: dispatching dev work, reviewi
      - Event Bus: `eval-driver-bus-kafka`
   3. Execute all eval scenarios from `eval-scenario-format`.
   4. Collect results: PASS (all assertions green) or FAIL (any assertion red).
+  5. Invoke **`eval-judge`** on driver outputs → verdict YAML → log **`[P4.4-EVAL-GREEN]`** when verdict is GREEN.
 
-**SUCCESS CONDITION:** All eval drivers pass. All assertions green.  
-**FAILURE CONDITION:** Any eval driver fails (assertion fails, error raised, timeout).  
+**ACTION (Semantic path):**
+  1. Invoke **`eval-product-stack-up`** (same stack requirement — semantic steps still hit URLs/devices).
+  2. Invoke **`qa-semantic-csv-orchestrate`** / **`python3 tools/run_semantic_csv_eval.py`** so **`outcome`** reflects this run against the **built** product (not a stale State 4b stub).
+  3. Invoke **`eval-judge`** on **`qa/semantic-eval-manifest.json`** + **`qa/semantic-eval-run.log`** per skill § Semantic path.
+  4. If verdict GREEN → log **`[P4.4-EVAL-GREEN] task_id=<id> timestamp=<ISO8601> path=semantic manifest=qa/semantic-eval-manifest.json`**. If RED/YELLOW → Phase 4.5.
+
+**SUCCESS CONDITION:** YAML path: all eval drivers pass; **`eval-judge`** GREEN. Semantic path: manifest **`outcome: pass`** (and judge confirms — **`yellow`**/`fail` are not GREEN).  
+**FAILURE CONDITION:** Any driver/assertion fails (YAML) **or** semantic **`outcome`** is **`fail`** / judge RED **or** **`yellow`** without documented acceptance.  
 **ON FAILURE:** Proceed to Phase 4.5 (Self-Heal).  
 **LOGGING:**
 ```
@@ -606,6 +619,10 @@ The Conductor manages the complete delivery cycle: dispatching dev work, reviewi
 [P4.4-EVAL] task_id=<id> driver=<driver> scenario=<name> assertion=<desc> result=<PASS|FAIL>
 [P4.4-EVAL] task_id=<id> driver=<driver> timestamp=<ISO8601> status=<PASS|FAIL>
 [P4.4-EVAL] task_id=<id> all_drivers=<count> passed=<count> failed=<count> status=<PASS|FAIL>
+[P4.4-EVAL] task_id=<id> path=semantic status=RUN_START
+[P4.4-EVAL] task_id=<id> path=semantic outcome=<pass|fail|yellow>
+[P4.4-EVAL-GREEN] task_id=<id> timestamp=<ISO8601> path=yaml
+[P4.4-EVAL-GREEN] task_id=<id> timestamp=<ISO8601> path=semantic manifest=qa/semantic-eval-manifest.json
 ```
 
 #### Phase 4.5: Self-Heal (Locate, Triage, Fix, Verify — Max 3 Retries)

@@ -21,8 +21,8 @@ NO EVAL SCENARIO RUNS AGAINST A PARTIAL STACK. EVERY ASSERTION VERIFIES SPECIFIC
 
 1. `forge-eval-gate` — verifies implementation is complete before eval opens
 2. `eval-product-stack-up` — brings up ALL services in dependency order, waits for all health checks
-3. `eval-coordinate-multi-surface` — coordinates drivers across all surfaces
-4. Select drivers per surface:
+3. **Either** `eval-coordinate-multi-surface` **(YAML `eval/*.yaml` scenarios)** **or** `qa-semantic-csv-orchestrate` / `tools/run_semantic_csv_eval.py` **(semantic CSV path — no YAML)** — Phase 4.4 must record **`[P4.4-EVAL-GREEN]`** via **`eval-judge`** on drivers **or** manifest+log per `eval-judge` § Semantic path
+4. Select drivers per surface (**YAML path only**):
    - API: `eval-driver-api-http`
    - Database: `eval-driver-db-mysql`
    - Cache: `eval-driver-cache-redis`
@@ -31,7 +31,7 @@ NO EVAL SCENARIO RUNS AGAINST A PARTIAL STACK. EVERY ASSERTION VERIFIES SPECIFIC
    - iOS: `eval-driver-ios-xctest`
    - Kafka: `eval-driver-bus-kafka`
    - Search: `eval-driver-search-es`
-5. `eval-judge` — scores all driver results, produces GREEN/RED verdict
+5. `eval-judge` — scores driver results **or** semantic manifest+log; produces GREEN/RED/YELLOW verdict
 6. If RED: `self-heal-locate-fault` → `self-heal-triage` → `self-heal-systematic-debug` → re-run eval
 
 ## Stack-Up Rules
@@ -55,4 +55,4 @@ Maximum 3 self-heal iterations per scenario (`self-heal-loop-cap`). If still RED
 
 ## Next Gate
 
-All scenarios GREEN in single run → `eval-judge` emits GREEN verdict → log `[P4.4-EVAL-GREEN] task_id=<id>` → switch to PR phase.
+YAML: all scenarios GREEN in single run → `eval-judge` emits GREEN → log `[P4.4-EVAL-GREEN]`. Semantic: manifest **`outcome: pass`** after stack-up run → `eval-judge` § Semantic path → log **`[P4.4-EVAL-GREEN] path=semantic`**. Then switch to PR phase.

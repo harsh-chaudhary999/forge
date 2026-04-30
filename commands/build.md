@@ -11,7 +11,7 @@ This command assumes **approved tech plans** and that **orchestration gates** fo
 Do NOT ship production feature code that bypasses **`conductor-orchestrate` State 4b** when the task is under **full `/forge`** or when **`forge_qa_csv_before_eval: true`** — implementer must refuse; back up to **`qa-manual-test-cases-from-prd`**, **`eval-translate-english`**, or **`forge-tdd`** RED as needed.
 </HARD-GATE>
 
-**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns); **one blocking affordance per unrelated fork** (no bundled prose obligations); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns, **no defensive downstream-gate narration** mid-elicitation — **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**); **one blocking affordance per unrelated fork** (no bundled prose obligations); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
 
 **Forge plugin scope:** Worktrees and brain paths per **`worktree-per-project-per-task`**; this repo’s skills only.
 

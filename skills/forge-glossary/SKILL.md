@@ -2,7 +2,7 @@
 name: forge-glossary
 description: "WHEN: You encounter an unfamiliar Forge term and need its canonical definition."
 type: reference
-version: 1.0.10
+version: 1.0.11
 preamble-tier: 1
 triggers:
   - "what does X mean"
@@ -45,7 +45,15 @@ Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the
 
 **What It's NOT:** Not a ban on **documentation** — `README.md`, `commands/forge.md`, and brain templates may list full order. Not “never mention a later stage” — only **don’t** narrate it **before** the user is on that gate without cause.
 
-**Cross-References:** **`using-forge`** (**Horizon narration**, **Multi-question elicitation** item 5). Canonical doc: **`docs/forge-one-step-horizon.md`**.
+**Cross-References:** **`using-forge`** (**Horizon narration**, **Multi-question elicitation** item 5). Canonical doc: **`docs/forge-one-step-horizon.md`** — also **No defensive downstream-gate narration (repo-wide)**.
+
+### Defensive downstream-gate narration
+
+**Definition:** Assistant prose whose **primary job** is to explain why a **later** gate or artifact does not exist yet (*eval YAML isn’t written yet*, *orphan automation*, pasting a full **`qa-write-scenarios` Step −1** chain, merge previews) **while** the human is still answering **earlier** phase questions.
+
+**Usage Context:** **Forbidden** as default filler **between** sequential elicitation turns — **any** Forge phase (**intake**, **`qa-prd-analysis`**, council, planning, …). **Allowed:** static **`commands/`** / **`README`** / **`SKILL.md`** tables; **skip-ahead refusal** (first missing prerequisite + next action); user **explicitly** asked *why* or *full order*.
+
+**Cross-References:** **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**; **`using-forge`** **Multi-question elicitation** items **7–8**.
 
 ### Bundled unrelated decisions (example: “bundled intake”)
 
@@ -57,9 +65,9 @@ Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the
 
 ### Question-forward elicitation (no reference-doc preface mid-answer)
 
-**Definition:** In **live chat**, when the next message’s **job** is to get **one** human answer, the assistant **does not** prefix with what **`commands/`** or **named skills** do, which **gates** are open, or which **later** artifacts do not exist — unless the user **asked** for status. **Does not** suffix with *not ready for …* / *needs … first* unless that is the **immediate** blocker or the user asked. Reference material stays in **`commands/`** and **README**.
+**Definition:** In **live chat**, when the next message’s **job** is to get **one** human answer, the assistant **does not** prefix with what **`commands/`** or **named skills** do, which **gates** are open, or which **later** artifacts do not exist — unless the user **asked** for status. **Does not** paste **defensive downstream-gate** essays between normal Q→Q turns (**forge-one-step-horizon** **No defensive downstream-gate narration**). **Does not** suffix with *not ready for …* / *needs … first* unless that is the **immediate** blocker or the user asked. Reference material stays in **`commands/`** and **README**.
 
-**Cross-References:** **`using-forge`** **Multi-question elicitation** items **7**–**8**; **`docs/forge-one-step-horizon.md`** **Question-forward elicitation**.
+**Cross-References:** **`using-forge`** **Multi-question elicitation** items **7**–**8**; **`docs/forge-one-step-horizon.md`** **Question-forward elicitation** and **No defensive downstream-gate narration (repo-wide)**.
 
 ---
 

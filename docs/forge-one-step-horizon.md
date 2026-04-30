@@ -2,7 +2,7 @@
 
 **Scope:** This norm applies to **live assistant / agent messages** in Cursor, Claude Code, and other hosts — not to static reference docs (`README.md`, `commands/*.md` diagrams, brain templates), which may list full dependency order for verification.
 
-**Canonical definition:** `skills/using-forge/SKILL.md` — **Horizon narration**, **Stage-local questioning**, **Multi-question elicitation** (item 5: speak only the immediate next dependency).
+**Canonical definition:** `skills/using-forge/SKILL.md` — **Horizon narration**, **Stage-local questioning**, **Multi-question elicitation** (items **5**, **7–8**: one-step horizon, question-forward, no trailing nag). **This doc** — **Question-forward elicitation**, **No defensive downstream-gate narration (repo-wide)**, **Phase-specific waivers**, **No bundled unrelated decisions**.
 
 ## Rule
 
@@ -31,6 +31,24 @@ In **chat**, name **only**:
 
 **No trailing later-stage reminders:** Do **not** end a message with *not ready for … yet*, *that needs … first*, or *gates … still open* — unless the user **explicitly** asked what remains, or **that one fact** is the **immediate** blocker for the **current** answer. **One** crisp **next** action when relevant is OK **without** dragging in unrelated downstream stages.
 
+## No defensive downstream-gate narration (repo-wide)
+
+**What this is:** Assistant prose whose **primary job** is to explain why a **later** gate or artifact does not exist yet — e.g. *eval YAML isn’t written yet because…*, *orphan automation*, pasting the full **`qa-write-scenarios` Step −1** chain, council → merge previews — **while** the human is still in an **earlier** phase (intake, **`qa-prd-analysis`** Q1–Q8, council rounds, tech-plan elicitation, branch/env prep, …).
+
+**Why it’s forbidden mid-flow:** The human’s attention belongs on **this turn’s** question. Downstream defensive copy is for **reference** or **refusal when someone skips ahead**, not as default filler between sequential answers.
+
+**Trust / perceived correctness:** When the user is answering **Qn** and the assistant suddenly lectures about **step N+k** (eval YAML, merge, waivers, full Step −1 chains), it reads like the model **lost the thread** or is **inventing** constraints — the same cues people label “hallucination.” That impression **discredits good work** already done in the thread; one breaking message can outweigh many solid turns. Staying **stage-local** preserves **confidence** that the assistant is coherent and following the same conversation.
+
+**Forbidden in live chat (all Forge phases, all IDEs):** Prefixing or suffixing normal multi-turn elicitation messages with that essay.
+
+**Where it *is* allowed:**
+
+- **Reference only:** `README.md`, `commands/*.md` dependency diagrams, static prerequisite tables in **`SKILL.md`**, other **`docs/`** — not re-pasted every turn.
+- **Gate refusal:** The user or agent **attempts** a later step early — give the **first missing** prerequisite and **one** next action; add a **short** *why* only if they asked or one line is needed to make the refusal intelligible.
+- **Explicit ask:** The user asked *why isn’t YAML written?*, *what’s the full order?*, *where are we?* — then a concise answer is appropriate.
+
+**Relation:** Same norm as **`using-forge`** **Horizon narration** and **Multi-question elicitation** items **7–8**. Complements **Phase-specific waivers** — do not smuggle later-gate pedagogy into upstream dialogue.
+
 ## No bundled unrelated decisions
 
 **Problem:** One message presents **one** structured prompt (**`AskQuestion`** / numbered choices for **one** fork only) while burying **other mandatory decisions** in prose — or mixes **unrelated** meta-instructions (roadmap, waiver text from another phase) in the same turn.
@@ -43,6 +61,8 @@ That violates **`skills/using-forge/SKILL.md`** **Multi-question elicitation** (
 - **Do not** paste **phase-specific** waiver or ordering copy from a **later** gate while the human is still in an **earlier** skill — see **Phase-specific waivers (example)** below.
 
 **Example (intake):** **task-id** or slug confirmation **must not** be the **only** **`AskQuestion`** while Q9 design authority, Figma locks, and similar **appear only in prose** in the same message — use **sequential** turns per **`intake-interrogate`**.
+
+**Example (QA):** Do not paste **Step −1** / *why eval YAML isn’t ready* essays between Q1→Q2→Q3 — see **No defensive downstream-gate narration (repo-wide)** above.
 
 ## Phase-specific waivers (example)
 
@@ -63,7 +83,7 @@ Slash command markdown under `commands/` may describe **full** flows. That is **
 
 **Every** file under **`commands/`** must use **this exact** assistant-facing block (optional **one** command-specific sentence *after* it). Keeps behavior consistent across **all** slash commands.
 
-**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns); **one blocking affordance per unrelated fork** (no bundled prose obligations); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns, **no defensive downstream-gate narration** mid-elicitation — **No defensive downstream-gate narration (repo-wide)** above); **one blocking affordance per unrelated fork** (no bundled prose obligations); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
 
 Rigid skills with **`AskUserQuestion`** should add under **Human input (all hosts):** a **Cross-cutting assistant dialogue** one-liner pointing here + **`using-forge`** items **4–8** (see **`forge-skill-anatomy`**).
 

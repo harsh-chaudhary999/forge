@@ -2,7 +2,7 @@
 name: preamble-tier-reference
 description: "WHEN: You need to inspect the shared preamble tier files injected by session-start and understand their role in prompt layering."
 type: reference
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 1
 allowed-tools:
   - Read

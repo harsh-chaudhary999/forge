@@ -51,7 +51,7 @@ Re-running **`install.sh --platform cursor`** refreshes **`~/.cursor/plugins/loc
 
 **Product terminology (all hosts, not Cursor-only):** per-task **`~/forge/brain/prds/<task-id>/terminology.md`** for domain names in QA/eval copy — see **[`docs/terminology-review.md`](../terminology-review.md)**, section **“Entrypoint matrix — commands + slice skills (v1)”** (and the rest of that doc).
 
-**Live-chat norms** (identical across **all** slash commands): **`docs/forge-one-step-horizon.md`** — canonical **`Assistant chat`** paragraph is duplicated in **every** `commands/*.md` file; **one-step horizon**, **question-forward** elicitation, **no bundled** unrelated forks, **no trailing** later-stage status lines, **Multi-question elicitation** items **4–8**.
+**Live-chat norms** (identical across **all** slash commands): **`docs/forge-one-step-horizon.md`** — canonical **`Assistant chat`** paragraph is duplicated in **every** `commands/*.md` file; **one-step horizon**, **question-forward** elicitation, **no defensive downstream-gate narration** mid-elicitation, **no bundled** unrelated forks, **no trailing** later-stage status lines, **Multi-question elicitation** items **4–8**.
 
 ## How It Works
 

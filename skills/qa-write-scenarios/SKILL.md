@@ -3,7 +3,7 @@ name: qa-write-scenarios
 description: "WHEN: qa-prd-analysis is complete and you need to write the maximum possible number of executable eval YAML scenarios — one per test type × surface × scenario variant. No gaps. No shortcuts."
 type: rigid
 requires: [brain-read, qa-prd-analysis, eval-scenario-format]
-version: 2.5.2
+version: 2.5.3
 preamble-tier: 3
 triggers:
   - "write eval scenarios"
@@ -29,7 +29,7 @@ Generates the **maximum possible number of executable eval YAML scenarios** from
 
 **`AskUserQuestion`** in **`allowed-tools`** is canonical; map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** on every IDE. **Step −1** governs *when* to prompt; **`using-forge`** governs *how* (**Interactive human input**, **Multi-question elicitation** for sequences, **Stage-local questioning**).
 
-**Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8** (repository-wide; not QA-only).
+**Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**; **No defensive downstream-gate narration (repo-wide)** (same norm in intake, council, planning — not only QA).
 
 **Terminology + review / process protocol (v1, this slice):**
 - **Product terms:** [docs/terminology-review.md](../../docs/terminology-review.md) — load **`terminology.md`** in **Step 0**; **Step 0.1** and **`expected`** strings per that doc. [forge-glossary](../forge-glossary/SKILL.md) = Forge process words only, **not** domain copy.
@@ -54,7 +54,7 @@ Generates the **maximum possible number of executable eval YAML scenarios** from
 | "`qa-analysis.md` + CSV is enough — I won't re-open tech plans or contracts" | **`qa-analysis.md` prioritizes types/surfaces; concrete routes, payloads, cache keys, and error codes live in shared-dev-spec, tech-plans, and contracts.** Shallow YAML repeats generic steps. Use the same primary-source bundle as **`qa-manual-test-cases-from-prd`** Step 1b (see Step 0.1 below). |
 | "I'll drop a Python/bash generator in `eval/` to emit YAML" | **`eval/` is only for driver-readable `*.yaml` (and manifests).** Generators like `_generate_scenarios.py` are not part of Forge, confuse CI/review, and usually produce **`preconditions: []`** and weak UI coverage. Author YAML directly (or use a **repo-local** `tools/` script **outside** `eval/` if you must codegen). **Never** commit `eval/_generate*.py` without team agreement — prefer deleting after one-off use. |
 | "Prerequisites are missing — I'll open with a blocking prompt about eval YAML / CSV waiver" | **Violates dependency order.** The **first** interaction must not be the **last** gate (automation-only waiver). Walk **forward** from **`prd-locked.md`** → **`qa-prd-analysis`** (**sequential interactive** Step 0.5 per **`using-forge`** / **`qa-prd-analysis`**) → **`manual-test-cases.csv`** (or waiver **after** PRD+QA exist). See **Step −1** below. |
-| "During **`qa-prd-analysis`** Step 0.5, I'll paste the *orphan automation / why eval YAML isn't written yet* essay **between** Q1, Q2, …" | **Invalid.** That explanation is for **gate-order violations** (Step −1), **not** between every interrogation turn. During Step 0.5, stay on the **current** question — one short forward sentence max. |
+| "During **`qa-prd-analysis`** Step 0.5, I'll paste the *orphan automation / why eval YAML isn't written yet* essay **between** Q1, Q2, …" | **Invalid — repo-wide.** **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**. Step −1 / orphan-automation prose is for **reference**, **skip-ahead refusal**, or **this skill** when authoring — **not** between upstream Q1→Q2 turns. |
 | "I'll list the whole QA→CSV→eval→merge chain in chat while the user is still on an upstream step" | **Invalid.** **`using-forge`** — **one-step horizon** in assistant messages: name **only** the **immediate** next artifact/skill unless the user asked for the roadmap. |
 | "I'll paste the Step 0.0 waiver lecture (*YAML before CSV*, *csv_baseline_waiver_user_quote*, *say so in your own words*) during **`qa-prd-analysis`** or any session that isn't **`qa-write-scenarios`** Step 0.0 gate" | **Wrong venue.** That prose runs **only** when **this skill** hits Step 0.0 (CSV missing / user insists on YAML-first). **`qa-prd-analysis`** stays coverage-only — see **`docs/forge-one-step-horizon.md`** **YAML-before-manual-CSV waiver**. |
 

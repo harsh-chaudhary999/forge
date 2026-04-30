@@ -2,7 +2,7 @@
 name: forge-skill-anatomy
 description: "WHEN: You are writing or reviewing a Forge skill and need the canonical template, rigor checklist, or CSO guidelines."
 type: reference
-version: 2.0.3
+version: 2.0.4
 preamble-tier: 1
 triggers:
   - "writing a new skill"
@@ -72,7 +72,7 @@ If **`AskUserQuestion`** appears in **`allowed-tools`**, the skill body **must**
 2. Points to **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** for the **full host table** (Cursor **`AskQuestion`**; CLIs / editors without the tool: **numbered options + stop**).
 3. Points to **`using-forge`** **Interactive human input** for prose vs structured blocking choices.
 4. If the skill elicits **multiple** human answers in sequence, points to **`using-forge`** **Multi-question elicitation** (transcript-first, one primary topic per turn when applicable, reconcile) — unless the skill documents a deliberate exception.
-5. Points to **`docs/forge-one-step-horizon.md`** and **`using-forge`** **Multi-question elicitation** items **4–8** for **all** live-dialogue norms — **one-step horizon**, **question-forward**, **no bundled** unrelated forks, **no trailing** later-stage reminders, **phase-specific** waivers — **not** tied to one product path; applies to **every** skill that guides chat behavior.
+5. Points to **`docs/forge-one-step-horizon.md`** and **`using-forge`** **Multi-question elicitation** items **4–8** for **all** live-dialogue norms — **one-step horizon**, **question-forward**, **no bundled** unrelated forks, **no trailing** later-stage reminders, **no defensive downstream-gate narration** mid-elicitation (**forge-one-step-horizon** section of that name), **phase-specific** waivers — **not** tied to one product path; applies to **every** skill that guides chat behavior.
 
 Gate and interrogation skills should **also** ensure chat-visible question text where **`using-forge`** or the skill already requires it — this section does not replace those HARD-GATEs.
 

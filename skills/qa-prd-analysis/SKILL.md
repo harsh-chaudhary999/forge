@@ -3,7 +3,7 @@ name: qa-prd-analysis
 description: "WHEN: Before generating QA test cases from a PRD. Loads ALL brain artifacts first (PRD, tech plans, scan, contracts, product topology), then runs a structured interrogation to lock test types, surfaces, coverage depth, and all open ambiguities before a single scenario is written."
 type: rigid
 requires: [brain-read]
-version: 2.2.5
+version: 2.2.6
 preamble-tier: 3
 triggers:
   - "analyze PRD for QA"
@@ -25,7 +25,7 @@ allowed-tools:
 
 **`AskUserQuestion`** in **`allowed-tools`** is canonical; map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** on every IDE. **Step 0.5** applies **`using-forge`** **Multi-question elicitation** to coverage templates **Q1–Q8** (see **`using-forge`** **QA PRD analysis** specialization). **One primary topic per assistant turn**; after each answer **reconcile**. **Never** a full Q1–Q8 wall **plus** a meta-prompt in the **same** turn.
 
-**Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8** (all coverage turns; same norms repository-wide).
+**Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**; **No defensive downstream-gate narration (repo-wide)** (no *why eval YAML isn’t ready* essays between Q1→Q2→… — **any** Forge phase).
 
 **HARD-GATE:** ALL brain artifacts must be loaded BEFORE asking the user any question. Questions asked without brain context are generic and waste the user's time. Brain-loaded questions are specific, informed, and resolve real ambiguities.
 
@@ -56,7 +56,7 @@ allowed-tools:
 | "I'll offer **single bulk**, **approve recommendations**, or **hybrid** so the user can skip the back-and-forth" | **Invalid for Step 0.5.** Interrogation is **mandatorily sequential and interactive** — no menu to bypass dialogue. Speed is not a substitute for doubt closure. |
 | "I must ask Q2 verbatim even though Q1 already fixed surfaces and depth" | **Invalid.** **Adaptive reconciliation** — skip or shorten template prompts when already answered; ask **net-new** doubts instead. |
 | "I'll ask Q1 using only **Full / Lean / Custom** (or similar presets) **without** showing the full test-type checklist" | **Invalid.** The human must **see** every category (functional, non-functional, security, accessibility rows) to choose or waive — presets **hide capability**. Show the **full fenced Q1 menu** below first; optional presets **below** the menu are OK as shortcuts **after** visibility. |
-| "I'll prepend *Why eval YAML isn't written yet* / *orphan automation* between every Step 0.5 answer" | **Invalid UX.** That ordering lecture belongs in **`qa-write-scenarios`** **Step −1** when the user **skips ahead** — **not** between Q1→Q2→Q3. Stay on the **current** question only; one-line forward pointers are OK, not essays. |
+| "I'll prepend *Why eval YAML isn't written yet* / *orphan automation* between every Step 0.5 answer" | **Invalid UX — repo-wide norm.** **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**. That copy is **reference** or **skip-ahead refusal** only — **not** between Q1→Q2→Q3. Stay on the **current** question; one-line forward pointers at handoff only when the skill says so. |
 | "I'll narrate the path *QA analysis → CSV → eval YAML → /qa-run* in every Q1–Q8 message so the user sees the ‘big picture’" | **Invalid.** **`using-forge`** — **do not** mention downstream stages unless **immediate** next dependency or user asked. Step 0.5 stays **coverage-only**; **`manual-test-cases.csv`** is the **next** artifact after **`qa-analysis.md`** — name it **only** when closing Step 0.5 / handing off, **not** before every answer. |
 
 **If you are thinking any of the above, you are about to violate this skill.**

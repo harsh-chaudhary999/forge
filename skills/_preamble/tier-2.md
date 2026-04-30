@@ -32,3 +32,7 @@ If you hit a blocker (ambiguous requirements, conflicting constraints, a gate th
 3. Output: `BLOCKED — [one sentence summary]` and stop.
 
 Inventing a solution for an unresolved blocker almost always creates a bigger problem downstream. See ETHOS.md Section 5 (Escalate, Don't Invent).
+
+## Multi-turn Forge dialogue (trust)
+
+During **intake**, **council**, **`qa-prd-analysis` Step 0.5**, **tech-plan** rounds, and any **sequential** human elicitation: **stay on the current question** — do **not** prefix or suffix messages with essays about **later** gates (e.g. *eval YAML isn’t written yet*, full **Step −1** / merge / waiver chains). That reads like a **lost thread** or **invented** rule and **erodes trust** even when the rest of the work is correct. **Allowed:** one-line handoff when the **active skill** says so; **refusing** a skip-ahead (**first missing** prerequisite + next step); user **asked** *why* / *full order*. Canonical: **`docs/forge-one-step-horizon.md`** — **No defensive downstream-gate narration (repo-wide)**.

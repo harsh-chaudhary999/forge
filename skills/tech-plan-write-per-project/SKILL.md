@@ -3,7 +3,7 @@ name: tech-plan-write-per-project
 description: "WHEN: Shared-dev-spec is frozen and per-project tech plans must be written before dev-implementer dispatch. Output: 1 maximal plan per repo with Section 1b detail, 1b.2a exploration, and Section 2 tasks fully elaborated."
 type: rigid
 requires: [brain-read]
-version: 1.0.2
+version: 1.0.3
 preamble-tier: 3
 triggers:
   - "write tech plan"
@@ -64,6 +64,8 @@ EVERY TASK IN A TECH PLAN IS SELF-CONTAINED, COMPLETE, AND EXECUTABLE IN ISOLATI
 2. **Chat only for judgment** — Use **Section 0.1** / **Section 0.2** for **human** decisions (product owner, TL, contract confirm). **Do not** use chat to get permission to open files or run grep.
 
 **Normative claims (companion rule):** Every **interface** claim in a task (path, field name, status code, topic name, column) must be **copied from** the **frozen** `shared-dev-spec.md` or the task-local inlined excerpt of **`contracts/*`** — **not invented** in the tech plan. If `shared-dev-spec` was thinner than reality, **fix the spec** (change request / re-council) — do not “paper over” in tasks. **Program / rollout / sequencing** lives in **`~/forge/brain/prds/<task-id>/delivery-plan.md`** (non-frozen); tech plans may **reference** it by heading but **must not** rely on it for interface truth.
+
+**Product terminology (`terminology.md`):** When **`~/forge/brain/prds/<task-id>/terminology.md`** exists, treat it as the **per-task** product term sheet (distinct from the Forge plugin glossary — [forge-glossary](../forge-glossary/SKILL.md)). **Read** it before writing user-facing strings, error messages, or marketing-adjacent labels in **Section 1b** / **Section 2**; align renames with **`open_doubts`** resolution and [docs/terminology-review.md](../../docs/terminology-review.md). If the file is **absent** and the PRD introduces **named product concepts** or **branded labels**, follow **intake-interrogate** to create it or record **N/A** with **WAIVER** in **Section 0** when the task policy allows (see terminology-review **slice** table).
 
 **Optional PM traceability (inside each `tech-plans/<repo>.md`):** You may group Section 2 tasks under IDs like **`REVERIF-<AREA>-<nn>`** with columns **Est / Deps / Acceptance / Spec refs** (link to `shared-dev-spec` heading or `contracts/` heading). This does **not** replace one-file-per-repo or self-contained task bodies.
 

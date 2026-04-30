@@ -2,7 +2,7 @@
 name: forge-council-gate
 description: "WHEN: A PRD has been locked by intake and needs Council negotiation. HARD-GATE: Every locked PRD goes through Council (4 surfaces + 5 contracts negotiated). No skipping."
 type: rigid
-version: 1.0.2
+version: 1.0.6
 preamble-tier: 3
 triggers:
   - "council gate"
@@ -57,6 +57,9 @@ If you notice any of these, STOP and do not proceed:
 - **Tech planning has begun for any surface before spec is frozen** — If any surface starts writing tasks before spec-freeze, they are planning against a moving target. STOP. Freeze the spec first.
 - **Council is skipped because "this is a patch to an existing feature"** — Patches modify behavior, touch contracts, and affect other surfaces. Every PRD — no matter how small — goes through council. STOP. No exceptions.
 - **Council closes without cohort/adjacency material when the PRD requires it** — Missing **`[ADJACENCY-SCAN]`**, missing cohort artifacts, or **`SPEC_INFERENCE`**-only segmentation per **`docs/adjacency-and-cohorts.md`**. STOP. Complete **State 2.6** + council checks before **`spec-freeze`**.
+- **`terminology.md` (product/domain) has unresolved open doubts** when those terms appear in **success criteria or contract-facing copy** — STOP. Resolve per [docs/terminology-review.md](../../docs/terminology-review.md) or **[intake-interrogate](../intake-interrogate/SKILL.md)**; do not lock **shared-dev-spec** on ambiguous customer-facing names. (Forge process terms: [forge-glossary](../forge-glossary/SKILL.md).)
+
+**`[TERMINOLOGY]` in `conductor.log` (standalone `/council`):** **Do not append** from this skill — only **[council-multi-repo-negotiate](../council-multi-repo-negotiate/SKILL.md) Step 5.4** (end of council) writes the line, so a council run does not leave **two** [TERMINOLOGY] lines with conflicting `open_doubts`. The hook `prompt-submit-gates.cjs` uses the **last** [TERMINOLOGY] line in the file only.
 
 ## Detailed Workflow
 

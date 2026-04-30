@@ -3,7 +3,7 @@ name: qa-branch-env-prep
 description: "WHEN: About to run QA eval and need to set up the execution environment. Determines run mode: URL-only (test against live URL), branch-local (checkout + start stack + run eval drivers), branch-code-validate (checkout + run repo test suite directly), or branch-tracking (record which branch is on a remote URL). Writes runtime env config for eval drivers."
 type: rigid
 requires: [brain-read]
-version: 1.0.3
+version: 1.0.6
 preamble-tier: 3
 triggers:
   - "checkout branches for QA"
@@ -25,6 +25,8 @@ allowed-tools:
 This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). Run-mode and checkout confirmations below use the same mapping. See **`using-forge`** **Interactive human input**.
 
 **Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**.
+
+**Terminology + review / process protocol (v1, this slice):** [docs/terminology-review.md](../../docs/terminology-review.md) — **`terminology.md`** can inform **branch-env-manifest.md** and human-readable **branch labels** (product names) when you write narrated evidence; **mechanics** (checkout, **`.eval-env`**) are unchanged. **Checklists / todos** in brain: **`planning-doubts.md`** and **`tech-plans` Section 2** only for v1 (no **`task-progress.md`** unless the team documents [forge-brain-layout](../forge-brain-layout/SKILL.md)). **Entrypoint:** [terminology-review.md — matrix](../../docs/terminology-review.md) (**/qa** chain → QA-P3).
 
 Sets up the execution environment for a QA eval run. **The first decision is always: what kind of run is this?**
 
@@ -90,7 +92,7 @@ Before marking this skill complete:
 
 ## Cross-References
 
-- **`brain-read`** — prerequisite skill that loads product.md and brain artifacts this skill depends on.
+- **`brain-read`** — prerequisite skill that loads product.md and brain artifacts this skill depends on. When **`~/forge/brain/prds/<task-id>/terminology.md`** exists, it is the per-task product term reference for **manifest** copy and human-readable branch labels ([docs/terminology-review.md](../../docs/terminology-review.md)); optional for env prep **mechanics**.
 - **`qa-pipeline-orchestrate`** — invokes this skill as phase QA-P3; the orchestrator's HARD-GATE checks for the manifest and `.eval-env` this skill produces.
 - **`eval-product-stack-up`** — downstream skill that reads `.eval-env` to set service environment variables before starting local services.
 - **`eval-coordinate-multi-surface`** — eval executor that sources `.eval-env` at runtime to resolve `{{ BASE_URL }}`, `{{ DEVICE_ID }}`, and other scenario variables.

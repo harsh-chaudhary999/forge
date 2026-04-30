@@ -2,7 +2,7 @@
 name: brain-write
 description: "WHEN: You need to record a decision, lock a spec, log an eval run, or document learnings in the brain."
 type: flexible
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 2
 triggers:
   - "record a decision"
@@ -54,6 +54,7 @@ Next: tech-plan-write-per-project"
 
 ## Key Guidelines
 
+- **Product terminology (`terminology.md`)** — **Path:** `~/forge/brain/prds/<task-id>/terminology.md`. **Format:** YAML frontmatter per [docs/templates/terminology.md](../../docs/templates/terminology.md) (`task_id`, `status`, `updated`, `open_doubts`, `terminology_risk`). **When to use this skill:** creating or **committing** the file after a review turn (not ad hoc edits without `git commit` in the brain). **HARD-GATE content:** use [docs/terminology-review.md](../../docs/terminology-review.md) for review protocol; prefer **append** to the **Revision** table over silent edits to locked rows. For machine DRIFT logs by convention, see `qa/terminology-drift-log.md` in the template [docs/templates/terminology-drift-log.md](../../docs/templates/terminology-drift-log.md) (optional).
 - **One file per decision** (prd-locked.md, shared-dev-spec.md, retrospective.md, etc.)
 - **Descriptive commit messages** — why this decision, what it depends on, next step
 - **Markup:** Markdown always

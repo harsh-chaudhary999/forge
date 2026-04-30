@@ -35,6 +35,14 @@ When dispatched by conductor, dev-implementer receives:
    - Clean/dirty working tree status
    - Any uncommitted changes
 
+5. **Product terminology (when present)**  
+   - **`~/forge/brain/prds/<task-id>/terminology.md`** — canonical **product** names for UI, errors, and support-facing strings. Distinct from Forge’s [forge-glossary](../skills/forge-glossary/SKILL.md). **Read** this file in your worktree when the task touches user-visible or API **message** text. **Policy:**  
+     - **`open_doubts: none` or absent + row for the term** — use the **Term** / definition; match error codes to **contract** + term sheet.  
+     - **`open_doubts: pending` and your task adds/changes a string for a term in doubt** — **BLOCKED**: return **`NEEDS_HUMAN`** (or `BLOCKED_ORCHESTRATION` if your runner uses that) with path to `terminology.md` — do **not** invent final copy.  
+     - **Term missing from sheet but PRD names it** — use the **PRD-locked** wording only; add a **Revision** / table row in `terminology.md` in the same change if your process allows, or one-line `TODO(terminology)` with link to `planning-doubts.md` (not uncontrolled marketing copy).  
+     - **`terminology_risk: internal` + pending** — may use **best-effort** internal labels **only** if the tech plan explicitly says implementation may proceed; still **no** customer-facing Channel copy.  
+   - **Anti-pattern:** Invisible strings that **differ** from the term sheet “because it reads better in code” — that is **drift**; fix the sheet or the string, not both silently.
+
 ## Anti-Pattern Preamble: Temptations to Resist
 
 The following rationalizations are lies. Reject them:
@@ -50,6 +58,7 @@ The following rationalizations are lies. Reject them:
 | "I need to understand the whole codebase first" | No. Understand the 3 files you're touching. Read only what's relevant. |
 | "This task isn't in my worktree, I'll work in main" | D30: NO. Fresh worktree per task. Use it. Isolation prevents conflicts. |
 | "I'll commit without self-review to save time" | Self-review catches 30% of bugs before external review. Do it. |
+| "I'll use whatever string looks right in the UI" | **Terminology drift.** If `terminology.md` exists, the **Term** row wins for product copy; if it’s `open_doubts: pending` for that area, you are **not** the authority — escalate. |
 | "Let me 'test as I go' instead of writing test first" | Nope. Test first, then code. Order matters. |
 
 ## Workflow

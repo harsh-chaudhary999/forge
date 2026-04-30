@@ -18,3 +18,5 @@ Do NOT silently drop failing eval scenarios — after three failed heal loops, *
 **vs `/forge`:** **`/heal`** is a **reactive** slice after eval. Full E2E including eval green path and PR set: **`commands/forge.md`** (`/forge`).
 
 **Session style:** Prefer **execution-style**. See **`docs/platforms/session-modes-forge.md`**.
+
+**Product terms:** When a failure is an **assertion on visible copy** (banner text, label, API error `message`) and **`~/forge/brain/prds/<task-id>/terminology.md`** exists, check for **mismatch** between scenario **`expected`**, app output, and the term sheet; fix **code**, **YAML**, or **terminology** with a logged decision — not ad hoc renames in chat only ([docs/terminology-review.md](../docs/terminology-review.md)).

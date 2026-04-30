@@ -7,6 +7,10 @@ Invoke the **`forge-council-gate`** skill, then **`council-multi-repo-negotiate`
 
 This requires a **locked PRD** from intake. If no **`prd-locked.md`** exists for the current task, **STOP** and use a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (e.g. **1)** run **`/intake`** in this session **2)** paste or point to a PRD to draft a lock **3)** abort) — not prose-only *run `/intake` first* with no same-turn choices.
 
+**Product terms:** Read **`~/forge/brain/prds/<task-id>/terminology.md`** when present; align **contract** and **error-message** strings with **canonical** rows before freeze ([docs/terminology-review.md](../docs/terminology-review.md), **`council-multi-repo-negotiate`**). **Session-resume (standalone /council without full conductor):** **`[TERMINOLOGY] …` is appended in `council-multi-repo-negotiate` Step 5.4 only** (end of council — not in **`forge-council-gate`**, to avoid two conflicting lines). `prompt-submit-gates.cjs` uses the **last** [TERMINOLOGY] line in `conductor.log` for **NEXT GATE** hints.
+
+**Review / checklist protocol (v1):** [docs/terminology-review.md](../docs/terminology-review.md) — *Interactive review protocol* and *Entrypoint matrix* sections. Cross-repo renames: log in **`planning-doubts.md`** and **`terminology.md`** (revision rows).
+
 The council invokes the four surface reasoning skills (backend, web, app, infra) and negotiates cross-service contracts (REST, DB, events, cache, search). Unresolvable conflicts escalate per **`dream-resolve-inline`** / dreamer rules in **`conductor-orchestrate`**.
 
 <HARD-GATE>

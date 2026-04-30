@@ -2,7 +2,7 @@
 name: forge-brain-persist
 description: "WHEN: A decision needs to be recorded in the brain. HARD-GATE: Every decision auditable, traceable, retrievable. Brain is immutable record of truth."
 type: rigid
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 2
 triggers:
   - "persist brain decision"
@@ -46,6 +46,7 @@ If you notice any of these, STOP and do not proceed:
 - **A decision is recorded in conversation or chat but not committed to `~/forge/brain/`** — Chat history is ephemeral. Brain is permanent. STOP. A decision exists only when it is a committed file in the brain repo. No exceptions.
 - **A decision file is written but not committed with `git commit`** — An uncommitted file is not a brain record — it disappears with the working directory. STOP. Every brain write must be followed by an explicit `git -C ~/forge/brain commit` before proceeding.
 - **A PRD is locked or a spec is frozen without a corresponding brain decision** — Locking without a brain record means there is no auditable basis for the lock. STOP. Every gate event (PRD lock, spec freeze, trade-off decision) must produce a brain commit before the pipeline advances.
+- **`terminology.md` is advanced to `status: locked` in git without a transcript-backed review (or with `open_doubts: pending` while consumers assume locked copy)** — STOP. Product terminology is a first-class decision surface (see [docs/terminology-review.md](../../docs/terminology-review.md) and [brain-write](../brain-write/SKILL.md)). Persist **who / when** in Revision rows or a brain `decisions/` note when the team requires extra audit.
 - **Decision body contains only a conclusion without reasoning** — Future maintainers cannot evaluate whether to change a decision if they don't know why it was made. STOP. Every decision must record the alternatives considered and the reasoning for the choice made.
 - **An existing brain decision is overwritten instead of superseded** — Overwriting destroys the audit trail of the change. STOP. When a decision changes, create a new decision that references the old one and marks the old decision's status as superseded — never edit the original record.
 - **Decision ID is absent or is a generic name like `decision-1`** — Non-unique IDs cause reference collisions and make brain-recall queries ambiguous. STOP. Every decision must have a globally unique ID following the brain naming convention (e.g., `PRD-20260401-auth-2fa`).
@@ -54,6 +55,7 @@ If you notice any of these, STOP and do not proceed:
 
 ### Identify Decision Points
 **Record a decision when:**
+- `terminology.md` is first created, materially revised, or set to `locked` after human review (pair with [brain-write](../brain-write/SKILL.md) for format)
 - PRD is locked (intake)
 - Spec is locked (council)
 - Tech plan decided

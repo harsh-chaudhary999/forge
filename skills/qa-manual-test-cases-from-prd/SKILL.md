@@ -3,7 +3,7 @@ name: qa-manual-test-cases-from-prd
 description: "WHEN: You need atomic manual QA test cases in CSV from a PRD plus optional existing suite and knowledge base, with estimation, reuse/deprecation tracking, review, and a final report — any product, any TMS."
 type: rigid
 requires: [qa-prd-analysis, brain-read, brain-write]
-version: 1.3.5
+version: 1.3.6
 preamble-tier: 3
 triggers:
   - "generate test cases"
@@ -198,6 +198,7 @@ SLUG=<product-slug>
 # Already required for orientation — re-read before authoring rows in Step 5
 cat "$BRAIN/prds/$TASK/qa/qa-analysis.md"
 cat "$BRAIN/prds/$TASK/prd-locked.md"
+cat "$BRAIN/prds/$TASK/terminology.md" 2>/dev/null
 cat "$BRAIN/prds/$TASK/shared-dev-spec.md" 2>/dev/null
 
 for f in "$BRAIN/prds/$TASK/tech-plans/"*.md; do [ -f "$f" ] && echo "=== $f ===" && cat "$f"; done
@@ -216,6 +217,7 @@ head -c 24000 "$BRAIN/products/$SLUG/codebase/SCAN.json" 2>/dev/null
 | Layer | Use in CSV rows |
 |---|---|
 | **prd-locked** | Success criteria, roles, out-of-scope, NFRs → positive/negative/edge cases + **preconditions** (who can act, what must already be true) |
+| **terminology.md** (if present) | **Canonical** product names, labels, and disallowed variants → **Expected result** and step text consistent with [docs/terminology-review.md](../../docs/terminology-review.md) |
 | **shared-dev-spec** | Cross-surface behaviors, versioning, idempotency, SLAs → API/integration cases |
 | **tech-plans** | Concrete routes, schemas, component names, task IDs → **Summary/Description** specificity and traceability |
 | **contracts** | Error shapes, cache keys, event schemas → contract-driven cases |

@@ -2,7 +2,7 @@
 name: forge-brain-layout
 description: "WHEN: You need to look up brain directory structure, naming conventions, or query patterns before writing to or reading from the brain."
 type: reference
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 2
 triggers:
   - "brain directory layout"
@@ -24,6 +24,8 @@ The brain is the **immutable decision record** for your entire product. Every ch
 
 The brain is **not** a task tracker, issue system, or temporary notes file. It is the permanent record of architecture, product, and engineering decisions that shaped the product.
 
+**Product terminology (`terminology.md`):** Per-task **domain** vocabulary (entities, roles, flags) lives in **`~/forge/brain/prds/<task-id>/terminology.md`**. It is **not** the same as **[forge-glossary](../forge-glossary/SKILL.md)** (Forge process terms). Optional **process checklists** for planning should prefer **`tech-plans/<repo>.md` Section 2** and **`planning-doubts.md`** over a separate “task tracker” file; see [docs/terminology-review.md](../../docs/terminology-review.md).
+
 ### Phase 2 prep (embeddings / hybrid index — optional today)
 
 Before any vector or FTS index ships, prefer **YAML frontmatter** on new decision files: stable `id`, `updated` (ISO-8601 date), `product` / `project` where applicable, and optional `supersedes: <prior-id>` for knowledge updates. Use predictable `##` section boundaries in long notes so a later indexer can chunk without splitting mid-thought. Codebase scans already emit `SCAN.json` under `products/<slug>/codebase/`; optional **`route-aliases.tsv`** there augments phase56 route matching. Each scan run also writes **`graph.json`**, **`SCAN_SUMMARY.md`**, and **`.forge_scan_manifest.json`**; the runner keeps per-role temp inputs under **`<run_dir>/_role/<role>/`** (see `tools/scan_forge/scan_paths.py`) so multi-repo inventories are not overwritten.
@@ -35,6 +37,7 @@ Before any vector or FTS index ships, prefer **YAML frontmatter** on new decisio
 ├── prds/                                  # Per-task PRD delivery (conductor path; parallel to product slug dirs)
 │   └── <task-id>/
 │       ├── prd-locked.md
+│       ├── terminology.md                 # Product/domain terms for this task (not Forge glossary); see docs/terminology-review.md + docs/templates/terminology.md
 │       ├── shared-dev-spec.md
 │       ├── parity/                        # HARD-GATE before spec-freeze (see spec-freeze Step 0): external-plan.md OR completed checklist.md OR waiver.md
 │       ├── planning-doubts.md             # Optional overflow for long Q&A during tech planning (summary still belongs in each tech-plans/*.md Section 0)

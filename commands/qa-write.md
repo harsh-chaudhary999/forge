@@ -11,6 +11,8 @@ description: "Partial slice — generate executable eval YAML scenarios from a l
 
 Invoke **`qa-prd-analysis`** → **`qa-manual-test-cases-from-prd`** (approved **`manual-test-cases.csv`**) → **`qa-write-scenarios`** to produce **executable eval scenarios** for a task. CSV-before-YAML order and optional YAML-first waiver (verbatim quote in **`qa-analysis.md`**) are defined **only** in **`qa-write-scenarios`** **Step 0.0** — **do not** paste waiver boilerplate during **`qa-prd-analysis`** (**`docs/forge-one-step-horizon.md`**).
 
+**Product terms:** Before bulk **`eval/*.yaml`**, **`qa-write-scenarios`** loads **`~/forge/brain/prds/<task-id>/terminology.md`** when present so **`expected`** strings, titles, and step copy use **canonical** product names — see [docs/terminology-review.md](../docs/terminology-review.md). If the file is missing, follow the **warn / offer draft** rules in that doc; do not invent domain glossaries in YAML alone.
+
 ## What this does
 
 ```

@@ -3,7 +3,7 @@ name: tech-plan-self-review
 description: "WHEN: A per-project tech plan has been written and needs verification before dispatch to dev-implementer. HARD-GATE: Section 0c inventory, codebase path recross-check, and 1b.2a touchpoint evidence must be written into the plan file before REVIEW_PASS."
 type: rigid
 requires: [brain-read]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "review tech plan"
@@ -79,6 +79,7 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 - **`SCAN_INCOMPLETE` / verify failure ignored:** `SCAN.json` exists but **`python3 tools/verify_scan_outputs.py …/codebase`** did not exit **0** (after retries per **`tech-plan-write-per-project`**) and the plan still cites brain paths as ground truth — STOP. Re-run **`/scan`** or mark paths **`OUT_OF_MANIFEST`** with evidence.
 - **Cohort / segmentation via `SPEC_INFERENCE` in Section 0** — Product-visible segment, eligibility, or batch-exclusion decisions recorded with **`SPEC_INFERENCE`** and/or **Confidence H** without **`USER:`** / **`PO:`** / **`TL:`** / verbatim spec — **forbidden for `REVIEW_PASS`** per **`tech-plan-write-per-project` Section 0.1** rule 6. **CHANGES** until **`touchpoints/COHORT-AND-ADJACENCY.md`** exists with human-backed rows or **`WAIVER`**.
 - **Missing adjacency / signal artifacts when PRD implies them** — Task lacks **`touchpoints/COHORT-AND-ADJACENCY.md`** or **`touchpoints/PRD-SIGNAL-REGISTRY.md`** (or documented waivers) while **`prd-locked.md`** **`pipeline_adjacency_notes`** or PRD text implies multi-pipeline or trust-line persistence — **CHANGES** or **BLOCKED** until council outputs or waivers land in brain.
+- **`terminology.md` with `open_doubts: pending` (or missing required rows) while plan copy uses product terms in UI/API** — **CHANGES** (align with [docs/terminology-review.md](../../docs/terminology-review.md), resolve in chat per protocol) or **BLOCKED** if contracts/human copy would still disagree
 
 **Any of these mean: BLOCKED. Fix before dispatch.**
 
@@ -97,6 +98,7 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 - **`touchpoints/*.md`** — cohort/adjacency, signal registry, etc. (**must** appear as inventory rows when any such files exist; cite paths like **`touchpoints/COHORT-AND-ADJACENCY.md`**)
 - **`qa/manual-test-cases.csv`** — when it has data rows, inventory **must** cite it (substring **`manual-test-cases`** or **`qa/manual`**)
 - Parity / delivery / design artifacts under the same task path when referenced by **`spec-freeze`** or the plan (e.g. `parity/checklist.md`, `design/README.md`)
+- **`~/forge/brain/prds/<task-id>/terminology.md`** (when present) — product-facing term table + frontmatter `status` / `open_doubts`; **cross-check** UI strings, error copy, and task **Summary** wording against **canonical** term rows ([docs/terminology-review.md](../../docs/terminology-review.md) precedence: contracts + locked PRD over informal prose)
 - Any **explicit** “development source” files the plan’s header or Section 0 cites (treat as authoritative for trace)
 
 **MUST produce in each `tech-plans/<repo>.md` (Section 1c — see `tech-plan-write-per-project` gate subsection). Chat summaries are supplementary evidence only, never a substitute for the file.**
@@ -117,6 +119,7 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 - [ ] **Gaps fixed** in the markdown plan (not “will add later” in chat only)
 - [ ] **`### 1b.0b` implementation at-a-glance** present; ✓ rows match elaborated **Section 1b.1** / **1b.1a** / **1b.5** / **`#### 1b.5b`** / **1b.4**; cross-repo table matches **XALIGN** / sibling plans
 - [ ] **`### 1b.2a` touchpoint inventory** present **after** **Section 1b.5** / **`#### 1b.5b`**; **Exploration notes** exercised; **Y**/**PARTIAL** rows have evidence (spot-check per **Section 0c** step **3b**)
+- [ ] If **`terminology.md`** exists for the task: terms used in plan **Description/Summary** and user-visible task copy match the sheet (or **WAIVER** + citation); if frontmatter **`open_doubts: pending`**, do **not** declare **REVIEW_PASS** for shippable product copy until resolved per [docs/terminology-review.md](../../docs/terminology-review.md)
 
 ### 0a. Planning doubt log (`tech-plan-write-per-project` Section 0)
 

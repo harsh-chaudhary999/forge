@@ -3,7 +3,7 @@ name: qa-pipeline-orchestrate
 description: "WHEN: A standalone QA run is needed against named feature branches and a target environment — independent of the full /forge delivery pipeline. Chains: brain read → scenario generation → branch prep → stack-up → multi-surface exec → verdict."
 type: rigid
 requires: [brain-read, qa-prd-analysis, qa-write-scenarios, qa-branch-env-prep, eval-product-stack-up, eval-coordinate-multi-surface, eval-judge]
-version: 1.0.10
+version: 1.0.14
 preamble-tier: 3
 triggers:
   - "run QA pipeline"
@@ -30,6 +30,13 @@ This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for 
 - `/qa` — full pipeline (write scenarios + branch prep + execute + judge)
 - `/qa-write` — write scenarios only (stops after Step QA-P2)
 - `/qa-run` — execute only (requires scenarios already in brain; starts at Step QA-P3)
+
+**Terminology + review / process protocol (v1, this slice):**
+- **Product terms:** [docs/terminology-review.md](../../docs/terminology-review.md) — **`terminology.md`** in **`~/forge/brain/prds/<task-id>/`**; use for report/assertion wording (**QA-P1** read, **QA-P7** optional `terminology_status` / `terminology_open_doubts` in `qa/qa-run-report-*.md`).
+- **Checklist / “todos” in brain:** Implementation and planning **todos** live in **`tech-plans/<repo>.md` Section 2** and **`planning-doubts.md`**, not a separate ad hoc tracker — v1 per same doc; **no `task-progress.md`** unless a team process adopts it and documents it in [forge-brain-layout](../forge-brain-layout/SKILL.md).
+- **Dialogue:** **`docs/forge-one-step-horizon.md`**, **`using-forge`** — do **not** use a **blocking** CSV/evYAML **prompt** before **`qa-write-scenarios` Step −1** is satisfied (same rule as in Anti-Pattern rows below).
+
+**Entrypoint matrix** (this skill vs `/qa` / `/qa-run`): [docs/terminology-review.md](../../docs/terminology-review.md) (**§ Entrypoint matrix — commands + slice skills**).
 
 ## Anti-Pattern Preamble
 
@@ -156,10 +163,13 @@ test -f "$BRAIN/prds/$TASK/prd-locked.md" \
   || { echo "BLOCKED: prd-locked.md not found for task $TASK"; exit 1; }
 
 cat "$BRAIN/prds/$TASK/prd-locked.md"
+cat "$BRAIN/prds/$TASK/terminology.md" 2>/dev/null
 cat "$BRAIN/products/$SLUG/product.md"
 ls "$BRAIN/prds/$TASK/tech-plans/" 2>/dev/null
 ls "$BRAIN/prds/$TASK/eval/" 2>/dev/null && echo "SCENARIOS PRESENT"
 ```
+
+**Product terminology:** If **`terminology.md`** exists, use it for **assertion / step** wording in reports and when reconciling driver output to **canonical** product labels ([docs/terminology-review.md](../../docs/terminology-review.md)). Absence does **not** block QA-P1.
 
 Log:
 ```
@@ -327,6 +337,8 @@ If a **previous** `qa-run-report-*.md` exists for this task and **the same scena
 
 If verdict **RED** and Jira MCP is configured: after **`self-heal-triage`**, optionally batch **`createJiraIssue`** per failing scenario (link keys in **Failures**). One path only — do not duplicate Slack + Jira + chat without filing IDs in this report.
 
+**Product terminology (optional in report):** If **`~/forge/brain/prds/<task-id>/terminology.md`** exists, set YAML frontmatter **`terminology_status:`** to its frontmatter **`status`** (e.g. `draft` \| `review` \| `locked`) and optionally **`terminology_open_doubts:`** to **`none`** \| **`pending`** (or omit if unknown). Aids **DRIFT** audits when QA runs surface copy conflicts.
+
 **Execution vs product verdict:** Use **`execution_scope: full`** when drivers ran. Use **`execution_scope: static_only`** when only YAML/schema validation (or manifest writes) occurred — set **`product_verdict: null`** and **`pipeline_verdict: NOT_EXECUTED`** (do **not** put **YELLOW** here). **`verdict`** in frontmatter may duplicate **`product_verdict`** for backward compatibility when **`execution_scope: full`**.
 
 ```markdown
@@ -341,6 +353,9 @@ brain_git_sha: <git -C ~/forge/brain rev-parse HEAD>
 forge_task_id_env: <FORGE_TASK_ID or empty>
 flake_suspected: false | true
 static_validation: PASS | FAIL | SKIPPED | null
+# Optional — set when terminology.md exists (see Phase QA-P7 body text)
+terminology_status: draft | review | locked | null
+terminology_open_doubts: none | pending | null
 ---
 
 # QA Run Report

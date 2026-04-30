@@ -36,6 +36,8 @@ If automation cannot run (no stack, no env), the pipeline uses **`NOT_EXECUTED`*
 
 Same **forward order** as **`/qa-write`**: **`prd-locked`** → **`qa-prd-analysis`** (**`using-forge`** **Multi-question elicitation** / Step 0.5) → **`manual-test-cases.csv`** (or valid waiver) before treating scenario generation as grounded — see **`qa-write-scenarios`** **Step −1**. Council / tech plans **help** but are **not** Step −1 gates. If **`/intake`** isn’t used, see **`commands/qa-write.md`** and **`using-forge`** **Coupling, prerequisites, and alternatives**. Do not open with eval/CSV waiver prompts when upstream artifacts are missing.
 
+**Product terms:** When **`terminology.md`** exists for the task, **`qa-prd-analysis`** / **`qa-manual-test-cases-from-prd`** / **`qa-write-scenarios`** load it so **expected results** and steps use **canonical** names — see [docs/terminology-review.md](../docs/terminology-review.md).
+
 - **`~/forge/brain/prds/<task-id>/prd-locked.md`** — locked PRD (**`/intake`** default; alternatives in **`qa-write-scenarios`** Step −1)
 - **`~/forge/brain/products/<slug>/product.md`** — product topology with repo paths
 - For local mode: services must be startable via the `start` commands in `product.md`

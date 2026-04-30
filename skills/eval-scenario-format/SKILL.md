@@ -3,7 +3,7 @@ name: eval-scenario-format
 description: "WHEN: Writing eval scenarios for a new PRD or feature. Defines the YAML format — driver action, target, expected result — for multi-surface eval execution."
 type: rigid
 requires: [brain-read]
-version: 1.1.0
+version: 1.1.2
 preamble-tier: 3
 triggers:
   - "format eval scenario"
@@ -18,6 +18,8 @@ allowed-tools:
 # Eval Scenario Format
 
 **Related (manual QA backlog):** For **atomic manual test cases** in CSV (PRD → spreadsheet / TMS import), use **`qa-manual-test-cases-from-prd`** after **`qa-prd-analysis`** (**`using-forge`** **Multi-question elicitation** / Step 0.5). This skill defines **YAML for automated eval drivers** only.
+
+**Product terminology:** When **`~/forge/brain/prds/<task-id>/terminology.md`** exists, **`expected`** strings and scenario titles should use **canonical** product terms ([docs/terminology-review.md](../../docs/terminology-review.md)). If **`qa-write-scenarios`** or legacy YAML predates a rename, add a **Revision** row in **`terminology.md`** (preferred) or append to optional **`qa/terminology-drift-log.md`** ([docs/templates/terminology-drift-log.md](../../docs/templates/terminology-drift-log.md)) — **not** in **`qa/scenarios-manifest.md`** (that file is coverage/inventory only). Then align YAML or the term sheet — do not silently assert obsolete labels.
 
 ## Anti-Pattern Preamble: Why Scenario Authors Write Broken Scenarios
 

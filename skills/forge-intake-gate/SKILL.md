@@ -2,7 +2,7 @@
 name: forge-intake-gate
 description: "WHEN: A new PRD arrives for implementation. HARD-GATE: Every PRD goes through intake-interrogate; mandatory **lock fields** in prd-locked.md must be satisfied (confidence-first questioning allowed). Q9 design/UI lock mandatory when web, app, or user-visible UI is in scope. No skipping intake, no exceptions, no \"trivial\" PRDs."
 type: rigid
-version: 1.0.3
+version: 1.0.6
 preamble-tier: 3
 triggers:
   - "intake gate"
@@ -65,6 +65,7 @@ If you notice any of these, STOP and do not proceed:
 - **Q10 (implementation closure) applies but `prd-locked.md` lacks `implementation_reference`, `delivery_mechanism`, and `implementation_stack` (or legacy `ui_implementation_stack`)** — Multi-repo, ambiguous delivery channel, or plausible prior VCS work without a locked reference + authoritative boundary + stack (or explicit `implementation_closure: not applicable`) recreates the “two definitions of done” fork. STOP. Re-run **`intake-interrogate` Q10** until concrete.
 - **Intake is being run after tech plans have started** — Tech plans derive from locked PRDs. If intake runs after planning begins, the plans are built on unlocked sand. STOP. Invalidate plans and re-run intake first.
 - **Authoritative PRD body missing or stubbed in brain** — `prd-source-confluence.md`, wiki export, or equivalent under `~/forge/brain/prds/<task-id>/` lacks **verbatim** material sections the org treats as normative (e.g. acceptance sections, NFRs, segmentation rules) and only holds a title or summary. STOP. Fetch or paste the full source before locking **or** record **`prd_body_waiver`** with owner + risk — planning must not invent missing sections.
+- **`terminology.md` has `open_doubts` not `none` (or equivalent unresolved rows) while council is imminent** — Domain vocabulary is not safe to freeze in contracts. STOP. Complete **[intake-interrogate](../intake-interrogate/SKILL.md)** product terminology steps and [docs/terminology-review.md](../../docs/terminology-review.md), or record a **waiver** in brain with owner.
 - **Persistence-heavy PRD without human-backed store ownership** — Multiple catalogs, connection pools, ORMs, or cross-database FKs are implied but **no** USER/DBA confirmation path is locked (which database owns which entity, read vs write pool). STOP. Intake must capture ownership or **`WAIVER`** — not implementer guesswork at tech-plan time.
 
 ## Detailed Workflow
@@ -154,8 +155,8 @@ Before locking, verify:
 
 - [ ] PRD document identified (or raw requirement captured)
 - [ ] Ownership and stakeholder clear
-- [ ] `/intake-interrogate` skill invoked (questions 1-8 asked)
-- [ ] All 8 answers provided (no "TBD" or "TK")
+- [ ] `/intake-interrogate` skill invoked (mandatory **lock fields** in `prd-locked.md` elicited — no fixed turn count; see that skill)
+- [ ] All required lock dimensions are answered (no TBD/TK in mandatory fields; same bar as [intake-interrogate](../intake-interrogate/SKILL.md))
 - [ ] Answers are complete (not circular, not deferring decisions)
 - [ ] Surfaces enumerated (web, app, backend, infra, admin)
 - [ ] Contracts identified (API, events, cache, DB, search)
@@ -164,6 +165,7 @@ Before locking, verify:
 - [ ] Assumptions documented (and challengeable)
 - [ ] No policy conflicts (or escalated to dreamer)
 - [ ] PRD lock record created in brain (PRDLK decision ID)
+- [ ] **`terminology.md` exists when product/contract-facing copy is in scope** (per [intake-interrogate](../intake-interrogate/SKILL.md) and [docs/terminology-review.md](../../docs/terminology-review.md)) — or absence is explicitly justified and not hiding unresolved names
 
 ## Edge Cases
 
@@ -257,8 +259,9 @@ Output: **PRD LOCKED** (ready for council) or **BLOCKED** (intake incomplete, po
 
 Before claiming intake complete:
 
-- [ ] All 8 intake questions answered (no skipped, no TBD answers)
+- [ ] All mandatory `prd-locked` dimensions satisfied (no skipped, no TBD) — not a “fixed eight questions” quota; [intake-interrogate](../intake-interrogate/SKILL.md)
 - [ ] Scope boundaries explicitly defined
 - [ ] Success criteria measurable and agreed upon
 - [ ] PRD locked and written to brain
 - [ ] Conductor notified that PRD is ready for Council
+- [ ] **`terminology.md` present in `~/forge/brain/prds/<task-id>/` when in scope** (same bar as [intake-interrogate](../intake-interrogate/SKILL.md) product-terminology HARD-GATE); verify **`open_doubts`** matches unresolved table rows

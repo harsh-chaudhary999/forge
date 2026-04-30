@@ -3,7 +3,7 @@ name: council-multi-repo-negotiate
 description: "WHEN: A locked PRD needs to be negotiated across all surfaces before implementation begins. Invokes all 4 surface reasoning skills, all 5 contract skills, resolves conflicts, outputs locked shared-dev-spec.md."
 type: rigid
 requires: [brain-read, reasoning-as-backend, reasoning-as-web-frontend, reasoning-as-app-frontend, reasoning-as-infra, contract-api-rest, contract-event-bus, contract-cache, contract-schema-db, contract-search]
-version: 1.0.3
+version: 1.0.7
 preamble-tier: 3
 triggers:
   - "negotiate across repos"
@@ -22,6 +22,10 @@ allowed-tools:
 This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). When multiple human decisions or conflict forks remain, follow **`using-forge`** **Multi-question elicitation** (**transcript-visible**, **one primary topic per message**, **reconcile** after replies). See **`using-forge`** **Interactive human input**.
 
 **Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**.
+
+## Product terminology (`terminology.md`)
+
+**Before** freezing contracts, **Read** `~/forge/brain/prds/<task-id>/terminology.md` if it exists. **Align** field names, resource names, and event type strings with the **locked** rows (or update `terminology.md` with a **Revision** row and **blocking** user confirm per [docs/terminology-review.md](../../docs/terminology-review.md) when council introduces a **rename**). **After the rename is decided and the Revision row is added:** if **every** table row and Notes cell is now resolved, set frontmatter **`open_doubts: none`** (or leave **`pending` only** while a row still has an open product question) — **spec-freeze** blocks freeze on `pending` without a waiver, so a finished rename must include clearing frontmatter when the sheet is clear. **`[TERMINOLOGY]` line in `conductor.log` is mandatory — see Step 5.4 (last in this section) below** (the **only** append for `/council` after **forge-council-gate**). Append **once at end of this council run**; on a **later** run, append **again** if `open_doubts` changes (append-only log; **`prompt-submit-gates.cjs` uses the last [TERMINOLOGY] line only**). Forge UI vocabulary: [forge-glossary](../forge-glossary/SKILL.md) — not this file.
 
 ## Anti-Pattern Preamble
 
@@ -432,6 +436,15 @@ Before marking LOCKED, verify:
 ```
 
 This marks the spec as immutable in the brain.
+
+### Step 5.4: Append [TERMINOLOGY] line to `conductor.log` (MANDATORY — /council session-resume)
+
+**Owning step** for `prompt-submit-gates.cjs` on the **standalone /council** path (this skill runs **last**; **forge-council-gate** does **not** append — avoid duplicate [TERMINOLOGY] lines). After **`terminology.md`** matches the negotiated `shared-dev-spec` and frontmatter / **Revision** rows are updated, **append one line** to `~/forge/brain/prds/<task-id>/conductor.log`:
+
+`[TERMINOLOGY] task_id=<id> file=present|missing status=<draft|review|locked|unknown> open_doubts=<none|pending|unknown>`
+
+- **Hooks use only the last [TERMINOLOGY] line** in the file; append a **new** line on a **later** council or conductor step if `open_doubts` changes.
+- **conductor-orchestrate** may have logged already in a full **/forge** run; a line appended **here** at council close is the **authoritative handoff of session state** for the task to the next prompt (via `prompt-submit-gates.cjs`).
 
 ---
 

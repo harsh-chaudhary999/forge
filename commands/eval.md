@@ -29,4 +29,6 @@ Do NOT treat **`/eval`** as “create test cases” — **YAML scenarios** and (
 
 **Session style:** Prefer **execution-style** (stack-up, drivers, logs). See **`docs/platforms/session-modes-forge.md`**.
 
+**Product terms:** **`expected`** text in **`eval/*.yaml`** should match **locked** names in **`~/forge/brain/prds/<task-id>/terminology.md`** when that file exists. If a scenario predates a rename, note **terminology DRIFT** in the eval log or run report, then align YAML or the term sheet — [docs/terminology-review.md](../docs/terminology-review.md).
+
 Nothing merges without eval **GREEN** per **`forge-eval-gate`**. If eval fails, use **`/heal`**.

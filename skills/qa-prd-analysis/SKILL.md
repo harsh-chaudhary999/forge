@@ -3,7 +3,7 @@ name: qa-prd-analysis
 description: "WHEN: Before generating QA test cases from a PRD. Loads ALL brain artifacts first (PRD, tech plans, scan, contracts, product topology), then runs a structured interrogation to lock test types, surfaces, coverage depth, and all open ambiguities before a single scenario is written."
 type: rigid
 requires: [brain-read]
-version: 2.2.4
+version: 2.2.5
 preamble-tier: 3
 triggers:
   - "analyze PRD for QA"
@@ -74,7 +74,7 @@ Before invoking this skill, verify:
 
 Before asking the first question (Step 0.5):
 
-- [ ] All sub-steps of Step 0 completed: product topology, PRD, shared-dev-spec, tech plans, contracts, SCAN.json, existing QA artifacts all read
+- [ ] All sub-steps of Step 0 completed: product topology, PRD, **terminology.md (if present)**, shared-dev-spec, tech plans, contracts, SCAN.json, existing QA artifacts all read
 - [ ] Internal summary built (features in scope, surfaces, existing coverage, SLAs, Tier 1 hubs)
 - [ ] Q1 pre-selections derived from actual PRD content — not from generic defaults
 - [ ] Q2 surface list filtered to what appears in `product.md` — not a generic list
@@ -160,6 +160,9 @@ cat "$BRAIN/products/$SLUG/product.md" 2>/dev/null
 # 2. Locked PRD — the source of all requirements
 cat "$BRAIN/prds/$TASK/prd-locked.md"
 
+# 2a. Product terminology (when present) — canonical labels for assertions / steps
+cat "$BRAIN/prds/$TASK/terminology.md" 2>/dev/null
+
 # 3. Shared dev spec — cross-surface contracts and SLAs
 cat "$BRAIN/prds/$TASK/shared-dev-spec.md" 2>/dev/null
 
@@ -191,6 +194,7 @@ for f in "$BRAIN/prds/$TASK/design/"*.md; do [ -f "$f" ] && echo "=== $f ===" &&
 
 After reading, build an internal summary:
 - Features in scope (from PRD)
+- **Product terms** — if **`terminology.md`** exists, note `status` / `open_doubts` and which **canonical** names to use in **Q1–Q8** and downstream **Expected result** text ([docs/terminology-review.md](../../docs/terminology-review.md) — not [forge-glossary](../forge-glossary/SKILL.md))
 - Surfaces present in product (from product.md)
 - **PRD ↔ design / UI mapping already captured elsewhere** — `tech-plans/*.md` (components, routes, testids), `shared-dev-spec.md`, `prd-locked.md` design / Q9 anchors, `design/*.md`, Confluence/PRD tables linked in lock — note **paths + whether traceability is complete enough for test steps**
 - Existing test coverage (from qa/ and eval/)

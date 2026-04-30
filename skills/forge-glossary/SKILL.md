@@ -2,13 +2,16 @@
 name: forge-glossary
 description: "WHEN: You encounter an unfamiliar Forge term and need its canonical definition."
 type: reference
-version: 1.0.8
+version: 1.0.10
 preamble-tier: 1
 triggers:
   - "what does X mean"
   - "forge glossary"
   - "define forge term"
   - "forge terminology"
+  - "product terminology"
+  - "terminology.md"
+  - "per-task terminology"
 allowed-tools:
   - Bash
   - Read
@@ -25,6 +28,14 @@ Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the
 **Definition:** The host-specific mechanism that gathers a human answer without advancing until answered — canonical skill tool **`AskUserQuestion`** (see **`allowed-tools`**); **Cursor** maps to **`AskQuestion`**; hosts **without** that tool use **numbered choices in chat + stop**. Full host table: **`using-forge`** **Blocking interactive prompts**. Applies to **every** Forge-supported IDE, not one vendor.
 
 **Cross-References:** **`using-forge`** (**Interactive human input**, **Stage-local questioning**).
+
+### Product terminology (`terminology.md`) — not this glossary
+
+**Definition:** The **per-task** product term sheet at **`~/forge/brain/prds/<task-id>/terminology.md`** (table of **canonical** names, disallowed variants, **open_doubts** in frontmatter). Authored in **intake** / aligned at **council**; used by **planning**, **QA**, and **assertion** text so **human-facing** copy matches **contracts** and the **PRD lock**.
+
+**Usage context:** This **forge-glossary** skill documents **Forge plugin** and **pipeline** terms only. For **branded** or **product** vocabulary, read **`terminology.md`** and [docs/terminology-review.md](../../docs/terminology-review.md) — not this file.
+
+**Cross-References:** [intake-interrogate](../intake-interrogate/SKILL.md), [council-multi-repo-negotiate](../council-multi-repo-negotiate/SKILL.md), [docs/terminology-review.md](../../docs/terminology-review.md), [docs/templates/terminology.md](../../docs/templates/terminology.md).
 
 ### One-step horizon (horizon narration)
 

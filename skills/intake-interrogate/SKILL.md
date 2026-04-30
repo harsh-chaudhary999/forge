@@ -3,7 +3,7 @@ name: intake-interrogate
 description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Confidence-first: pre-fill from PRD + product.md; variable number of user turns — stop as soon as mandatory lock fields are concrete and doubts are cleared (no fixed question count; two answers can resolve many latent doubts). Q4 registry + Q9 design gates unchanged when they apply; **Q10 implementation closure** (VCS reference, authoritative delivery boundary, implementation stack) when the ambiguity gate in Q10 applies."
 type: rigid
 requires: [brain-write]
-version: 1.0.6
+version: 1.0.8
 preamble-tier: 2
 triggers:
   - "interrogate PRD"
@@ -264,6 +264,17 @@ When the PRD centers on an entity type that likely participates in **multiple pr
 - External doc / ticket link as the only narrative **without** an `implementation_reference` decision when item **(4)** could apply.
 - **`delivery_mechanism: TBD`**, **`implementation_stack: implementer’s choice`**, or **“decide in tech plan”** — delegates the fork to implementation time.
 
+## Product terminology (`terminology.md`) — HARD-GATE with `prd-locked`
+
+**Not** [forge-glossary](../forge-glossary/SKILL.md) (Forge process terms). **Product/domain** terms for this task go in **`~/forge/brain/prds/<task-id>/terminology.md`** per [docs/terminology-review.md](../../docs/terminology-review.md) and [docs/templates/terminology.md](../../docs/templates/terminology.md).
+
+1. **Extract** candidate entities, roles, metrics, and flags from the PRD and success criteria while eliciting lock fields. **Blocking** interactive prompts for ambiguous nouns (same host mapping as this skill’s **`AskUserQuestion`** / **`AskQuestion`** / **numbered + stop**).
+2. **Write** `terminology.md` in the same task directory as `prd-locked.md`, with `status: draft` and `open_doubts: none` only when all listed doubts are **resolved** or explicitly deferred in `planning-doubts.md` (see [forge-brain-layout](../forge-brain-layout/SKILL.md) directory tree).
+3. **Review turn:** Before council, offer the **terminology review protocol** in [docs/terminology-review.md](../../docs/terminology-review.md) — one approval turn, not bundled with unrelated decisions ([docs/forge-one-step-horizon.md](../../docs/forge-one-step-horizon.md)).
+4. After user approval, set **frontmatter** `status: review` or `locked` as appropriate.
+
+**HARD-GATE:** Do not treat intake as **complete** if `open_doubts` in `terminology.md` frontmatter is not `none` and doubts are not recorded elsewhere with an owner. Council negotiates on **shared words**; unresolved domain ambiguity **blocks** [forge-council-gate](../forge-council-gate/SKILL.md) until resolved or **waived** with reason in brain.
+
 ## Output
 
 Write all answers to `~/forge/brain/prds/<task-id>/prd-locked.md`:
@@ -408,10 +419,11 @@ Write all answers to `~/forge/brain/prds/<task-id>/prd-locked.md`:
 
 ## Commit
 
-After all **mandatory lock fields** are concrete (Q1–Q8 dimensions + **Q9 when web/app/UI in scope** + **Q10 when implementation-closure gate applies** — via pre-fill + confirm and/or doubt-driven questions), commit the prd-locked.md:
+After all **mandatory lock fields** are concrete (Q1–Q8 dimensions + **Q9 when web/app/UI in scope** + **Q10 when implementation-closure gate applies** — via pre-fill + confirm and/or doubt-driven questions), commit **`prd-locked.md`** and **`terminology.md` when that file exists** (created per **Product terminology** section above — required whenever product/contract copy is in scope):
 
 ```bash
 git -C ~/forge/brain add prds/<task-id>/prd-locked.md
+[ -f ~/forge/brain/prds/<task-id>/terminology.md ] && git -C ~/forge/brain add prds/<task-id>/terminology.md
 git -C ~/forge/brain commit -m "intake: lock PRD for <task-id>"
 ```
 
@@ -427,6 +439,7 @@ Before claiming intake complete:
 - [ ] **If `design_new_work: yes`:** `design_brain_paths` **or** (`lovable_github_repo` + pinned ref) **or** (`figma_file_key` + `figma_root_node_ids`) **or** `design_waiver: prd_only` with owner + risk — not URL-only
 - [ ] **If Q9 was in scope:** `design_intake_anchor` line present **and** the **verbatim blockquote** design-source-of-truth question appears in **this** intake thread before lock
 - [ ] **Q10 when gate applies:** `implementation_reference`, `delivery_mechanism`, and **`implementation_stack`** (or legacy **`ui_implementation_stack`**) are concrete in `prd-locked.md`, **or** `implementation_closure: not applicable` with reason (see **Q10** section)
+- [ ] **`terminology.md`:** Written for tasks with product-facing or contract error strings (from **Product terminology** / [docs/terminology-review.md](../../docs/terminology-review.md)), **`open_doubts` accurate** vs table Notes, and **staged in git** on lock (see **Commit** above) — the HARD-GATE below is empty if the file is never created
 - [ ] Each answer confirmed in the user's own words and written back for approval
 - [ ] Contradictions between answers detected and resolved before locking
 - [ ] prd-locked.md written to `~/forge/brain/prds/<task-id>/` and committed to brain

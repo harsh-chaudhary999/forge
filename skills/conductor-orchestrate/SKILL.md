@@ -3,7 +3,7 @@ name: conductor-orchestrate
 description: "WHEN: PRD is locked. You are the master state machine orchestrating the entire forge workflow. Routes the task through all phases, tracks state, manages escalations, and coordinates subagents."
 type: rigid
 requires: [intake-interrogate, product-context-load, brain-read, brain-write, forge-worktree-gate, council-multi-repo-negotiate, spec-freeze, tech-plan-write-per-project, qa-manual-test-cases-from-prd, forge-tdd, eval-product-stack-up, eval-coordinate-multi-surface, forge-eval-gate, pr-set-coordinate, dream-retrospect-post-pr]
-version: 1.0.6
+version: 1.0.7
 preamble-tier: 4
 triggers:
   - "start the pipeline"
@@ -282,6 +282,7 @@ The Conductor:
 
 ### State 3: Council Negotiation
 **ENTRY:** `context-loaded.md` exists; **State 2.5 complete** — a **`[DISCOVERY]`** line is logged (full survey or **`obligation=waived`** per State 2.5); **`[ADJACENCY-SCAN]`** logged per State 2.6 (**COMPLETE** or documented **SKIPPED**).  
+**Product terminology (v1):** If `~/forge/brain/prds/<task-id>/terminology.md` exists, read frontmatter `status` and `open_doubts`. Log **`[TERMINOLOGY] task_id=<id> file=present|missing status=<draft|review|locked|unknown> open_doubts=<none|pending|unknown>`**. If **missing**, **recommend** creating it from [intake-interrogate](../intake-interrogate/SKILL.md) + [docs/terminology-review.md](../../docs/terminology-review.md) before contract lock; if **`open_doubts` ≠ `none`**, follow [forge-council-gate](../forge-council-gate/SKILL.md) — **do not** treat contracts as user-ready. If file **absent** in hotfix paths, log **[TERMINOLOGY]… missing** and continue per task policy ([docs/terminology-review.md](../../docs/terminology-review.md) slice table).  
 **ACTION:** Invoke `council-multi-repo-negotiate` skill. For each repo, reason about:
   - REST API contracts
   - Event/Kafka schemas

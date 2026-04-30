@@ -192,6 +192,8 @@ Forge uses **three** linked layers. None replaces the others:
 | **2. Eval YAML** | **`~/forge/brain/prds/<task-id>/eval/*.yaml`** | **Machine-runnable** scenarios for **P4.4** (**`eval-scenario-format`**, **`eval-translate-english`**, drivers: web CDP, API HTTP, DB, cache, search, mobile, …). This is Forge’s **E2E / multi-surface execution** spec. **Does not** require Gherkin in your product repo. |
 | **3. Repo automated tests** | Your repos (worktrees) | **`forge-tdd`**: **RED → GREEN → refactor**. Can be **unit**, **integration**, or **BDD** (Cucumber, etc.) — whatever the repo runs in CI. **First** failing tests that encode the **tech plan** (and **CSV `Id`s`** when CSV exists), **then** production code. |
 
+**Product terminology (per task, optional but recommended for named concepts):** **`~/forge/brain/prds/<task-id>/terminology.md`** — canonical **product** names and labels for UI/API/support copy, **distinct** from the Forge plugin glossary ([`skills/forge-glossary/SKILL.md`](skills/forge-glossary/SKILL.md)). See **[`docs/terminology-review.md`](docs/terminology-review.md)** (same file as [`docs/terminology-review-protocol.md`](docs/terminology-review-protocol.md) — **symlink**) for the interactive review protocol, **entrypoint matrix** (which `/` command and slice skill does what), planning **checklist** policy (Section 2 + `planning-doubts.md`), and **post-v1** triage (e.g. `verify_forge`, `migrations/`) that does **not** block the first protocol ship.
+
 ### Delivery path (manual QA CSV + `/forge`) vs standalone QA (`/qa`)
 
 Use **both** when they solve different jobs:

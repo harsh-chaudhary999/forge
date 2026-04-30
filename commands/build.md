@@ -18,3 +18,5 @@ Do NOT ship production feature code that bypasses **`conductor-orchestrate` Stat
 **vs `/forge`:** **`/build`** is execution for **implementation** only. Full pipeline (including State 4b QA CSV first on **`/forge`**): **`commands/forge.md`**.
 
 **Session style:** Prefer **execution-style** (edits, tests, terminals). See **`docs/platforms/session-modes-forge.md`**.
+
+**Product terms:** For **user-visible** strings (UI, errors, emails), read **`~/forge/brain/prds/<task-id>/terminology.md`** when it exists; align copy with **canonical** rows or record **DRIFT** + fix in the task brain per [docs/terminology-review.md](../docs/terminology-review.md) — not [skills/forge-glossary/SKILL.md](../skills/forge-glossary/SKILL.md) (Forge process terms only).

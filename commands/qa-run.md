@@ -3,7 +3,7 @@ name: qa-run
 description: "Partial slice — execute existing eval scenarios against named feature branches and a target environment. Requires eval/*.yaml already in brain (run /qa-write first). Chains: branch checkout → env config → stack-up → multi-surface drivers → verdict."
 ---
 
-**Input is `eval/*.yaml` only** (automation). Does not read **`manual-test-cases.csv`**.
+**Input is `eval/*.yaml` only** (automation). Does not read **`manual-test-cases.csv`**. Optional: read **`~/forge/brain/prds/<task-id>/terminology.md`** when present so **verdicts** and **run reports** use **canonical** product labels ([docs/terminology-review.md](../docs/terminology-review.md)).
 
 Invoke **`qa-pipeline-orchestrate`** starting at **Phase QA-P3** (branch prep) to execute eval scenarios that already exist in brain.
 

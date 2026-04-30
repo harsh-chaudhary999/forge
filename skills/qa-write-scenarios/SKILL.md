@@ -3,7 +3,7 @@ name: qa-write-scenarios
 description: "WHEN: qa-prd-analysis is complete and you need to write the maximum possible number of executable eval YAML scenarios — one per test type × surface × scenario variant. No gaps. No shortcuts."
 type: rigid
 requires: [brain-read, qa-prd-analysis, eval-scenario-format]
-version: 2.4.9
+version: 2.5.2
 preamble-tier: 3
 triggers:
   - "write eval scenarios"
@@ -30,6 +30,13 @@ Generates the **maximum possible number of executable eval YAML scenarios** from
 **`AskUserQuestion`** in **`allowed-tools`** is canonical; map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** on every IDE. **Step −1** governs *when* to prompt; **`using-forge`** governs *how* (**Interactive human input**, **Multi-question elicitation** for sequences, **Stage-local questioning**).
 
 **Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8** (repository-wide; not QA-only).
+
+**Terminology + review / process protocol (v1, this slice):**
+- **Product terms:** [docs/terminology-review.md](../../docs/terminology-review.md) — load **`terminology.md`** in **Step 0**; **Step 0.1** and **`expected`** strings per that doc. [forge-glossary](../forge-glossary/SKILL.md) = Forge process words only, **not** domain copy.
+- **Prerequisite order (Step −1) is a hard gate** — the **review** protocol is **turn-based**; do **not** open with a **last-mile** (CSV/YAML waiver) **blocking** prompt when **`prd-locked`** or **`qa-analysis.md`** is still missing.
+- **Planning “todos”** for the *delivery* slice are in **`tech-plans/*.md` Section 2** / **`planning-doubts.md`**, not this skill’s file — this skill only authors **`eval/*.yaml`**.
+
+**Entrypoint matrix:** [docs/terminology-review.md](../../docs/terminology-review.md) (slash: **`/qa-write`**).
 
 ## Anti-Pattern Preamble
 
@@ -172,6 +179,7 @@ BRAIN=~/forge/brain/prds/<task-id>
 # Required — cannot proceed without these
 cat "$BRAIN/prd-locked.md"
 cat "$BRAIN/qa/qa-analysis.md"
+cat "$BRAIN/terminology.md" 2>/dev/null
 
 # Manual QA baseline — REQUIRED unless qa-analysis.md waives (see Red Flags)
 cat "$BRAIN/qa/manual-test-cases.csv" 2>/dev/null
@@ -218,6 +226,7 @@ Before **Step 3**, resolve **product `<slug>`** and ensure you have **Read** (th
 | Artifact | Why |
 |---|---|
 | **`prd-locked.md`** | Success criteria wording drives expected results. |
+| **`terminology.md`** (if present) | **Canonical** product terms for `expected` strings and step descriptions ([docs/terminology-review.md](../../docs/terminology-review.md)) — not [forge-glossary](../forge-glossary/SKILL.md). |
 | **`shared-dev-spec.md`** | Cross-service SLAs, error codes, versioning. |
 | **`tech-plans/*.md`** | Routes, schemas, component/task IDs — **mandatory** for non-placeholder targets. |
 | **`products/<slug>/contracts/*.md`** | Required whenever API/cache/event/search surfaces appear in confirmed surfaces. |

@@ -2,7 +2,7 @@
 name: forge-subagent-anatomy
 description: "WHEN: You are creating or reviewing a Forge subagent and need the canonical template, state machine, or dispatch rules."
 type: reference
-version: 1.0.0
+version: 1.0.2
 preamble-tier: 1
 triggers:
   - "subagent template"
@@ -40,6 +40,10 @@ Subagents are isolated agents that solve a **single, well-defined task** in a fr
 4. **Clear input/output contracts prevent miscommunication** — A subagent's role, inputs, and outputs are explicit contracts. Parent session knows exactly what to give and what to expect back.
 
 This guide teaches you to write subagents that are **focused, unambiguous, and reliably executable**.
+
+## Product language (brain)
+
+When the parent passes a **`task_id`**, if **`~/forge/brain/prds/<task-id>/terminology.md`** exists, subagents that author **user-facing** text, **API error** copy, or **eval/QA** assertions must **read** that file from the brain path (or ask the parent to pass the path in the dispatch prompt) and use **canonical** product terms — not [forge-glossary](../forge-glossary/SKILL.md) alone. The **conductor does not** auto-inject term excerpts; the subagent’s allowed tools must include **Read** for that path. See [docs/terminology-review.md](../../docs/terminology-review.md).
 
 ## Part 1: Required Sections
 

@@ -49,6 +49,8 @@ Re-running **`install.sh --platform cursor`** refreshes **`~/.cursor/plugins/loc
 
 **Standalone QA (slash commands):** **`/qa`** (full pipeline), **`/qa-write`** (scenarios only), **`/qa-run`** (execute existing YAML) — same skills as in-repo **`commands/qa.md`**, **`qa-write.md`**, **`qa-run.md`**. See **[README — QA & test artifacts](../../README.md#qa--test-artifacts)** (subsection **Delivery path vs standalone `/qa`**). **Ordering:** **`qa-write-scenarios` Step −1** (`skills/qa-write-scenarios/SKILL.md`) — **`prd-locked`** → **`qa-prd-analysis`** → CSV / waiver → eval YAML; agents must not open with the **last** gate. **Human choices** (task-id, next step, doubts): On Cursor use **`AskQuestion`** (alias for canonical **`AskUserQuestion`**); universal rules — **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** + **Interactive human input** — apply to **every** Forge IDE, not Cursor-only. Not prose-only “reply with…”. Cursor does **not** inject per-prompt gate hints (no `UserPromptSubmit` hook); rely on skills + **`using-forge`** at session start.
 
+**Product terminology (all hosts, not Cursor-only):** per-task **`~/forge/brain/prds/<task-id>/terminology.md`** for domain names in QA/eval copy — see **[`docs/terminology-review.md`](../terminology-review.md)**, section **“Entrypoint matrix — commands + slice skills (v1)”** (and the rest of that doc).
+
 **Live-chat norms** (identical across **all** slash commands): **`docs/forge-one-step-horizon.md`** — canonical **`Assistant chat`** paragraph is duplicated in **every** `commands/*.md` file; **one-step horizon**, **question-forward** elicitation, **no bundled** unrelated forks, **no trailing** later-stage status lines, **Multi-question elicitation** items **4–8**.
 
 ## How It Works

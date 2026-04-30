@@ -11,6 +11,21 @@
 
 'use strict';
 
+/**
+ * Appended when `lastTerminologyOpen(logContent)` is true, for **SPEC_FROZEN** (State 4b) and **EVAL_GREEN**
+ * (pre-merge / PR). Framing: do not ship or merge product-facing copy on unresolved terms.
+ * **DISPATCH** (eval in flight) uses `TERMINOLOGY_ALSO_SUFFIX_DISPATCH` instead — see that constant.
+ */
+const TERMINOLOGY_ALSO_SUFFIX =
+  '\n\nALSO: [TERMINOLOGY] in conductor.log has open_doubts pending/unknown — resolve terminology.md per docs/terminology-review.md; do not ship user-facing copy on unresolved terms.';
+
+/**
+ * Same trigger as `TERMINOLOGY_ALSO_SUFFIX` but for the **DISPATCH** phase (eval running — not shipping yet):
+ * stress resolving before PRs, not "do not ship."
+ */
+const TERMINOLOGY_ALSO_SUFFIX_DISPATCH =
+  '\n\nALSO: [TERMINOLOGY] in conductor.log has open_doubts pending/unknown — resolve terminology.md per docs/terminology-review.md before PRs are raised; eval and scenarios may not match product copy until then.';
+
 // ==================== Gate Detection ====================
 
 const GATE_PATTERNS = {
@@ -34,36 +49,60 @@ const GATE_PATTERNS = {
 };
 
 /**
+ * `conductor.log` is append-only; multiple [TERMINOLOGY] lines are normal.
+ * Only the *last* line reflects current `open_doubts` (e.g. council overwrites a stale pending).
+ * Tolerates `open_doubts=pending` (conductor), optional spaces, and a few `:`/quoted forms from hand-edits.
+ */
+function lastTerminologyOpen(logContent) {
+  if (!logContent) return false;
+  const termLines = logContent.split('\n').filter((l) => /\[TERMINOLOGY\]/.test(l));
+  if (!termLines.length) return false;
+  const last = termLines[termLines.length - 1];
+  return /\bopen_doubts\s*[:=]\s*["']?(pending|unknown)\b/i.test(last);
+}
+
+/**
  * Determines the next gate message based on conductor.log content.
  * Returns a string or null if no specific next-gate applies.
+ * Branch order is intentional: if multiple markers are present, **earlier** checks in this
+ * function (PR merged → EVAL_GREEN → DISPATCH → …) **win** — the log is treated as
+ * *latest phase* first. Discipline: avoid contradictory duplicate markers in one file.
  */
 function resolveNextGate(logContent) {
   const has = (pattern) => pattern.test(logContent);
+  const termOpen = () => lastTerminologyOpen(logContent);
 
   // Already fully done
   if (has(GATE_PATTERNS.PR_MERGED)) return null;
 
   // Eval GREEN → move to PR
   if (has(GATE_PATTERNS.EVAL_GREEN)) {
-    return 'NEXT GATE: Invoke pr-set-coordinate → pr-set-merge-order → merge PRs in locked order → log [P5-PR-MERGED]';
+    return `NEXT GATE: Invoke pr-set-coordinate → pr-set-merge-order → merge PRs in locked order → log [P5-PR-MERGED]${termOpen() ? TERMINOLOGY_ALSO_SUFFIX : ''}`;
   }
 
   // Dispatched but not GREEN → eval running
   if (has(GATE_PATTERNS.DISPATCH)) {
-    return 'NEXT GATE: Eval must reach GREEN (all scenarios pass in one run) before PR set. If RED: invoke self-heal-locate-fault → self-heal-triage (max 3 iterations).';
+    return `NEXT GATE: Eval must reach GREEN (all scenarios pass in one run) before PR set. If RED: invoke self-heal-locate-fault → self-heal-triage (max 3 iterations).${termOpen() ? TERMINOLOGY_ALSO_SUFFIX_DISPATCH : ''}`;
   }
 
-  // Spec frozen → need State 4b gates before dispatch
+  // Spec frozen → need State 4b gates before dispatch.
+  // NEVER swallow [TERMINOLOGY]: e.g. spec was frozen, session resumes, product doubts filed later.
   if (has(GATE_PATTERNS.SPEC_FROZEN)) {
+    const termSuffix = termOpen() ? TERMINOLOGY_ALSO_SUFFIX : '';
     const missing = [];
     if (!has(GATE_PATTERNS.QA_CSV))    missing.push('[P4.0-QA-CSV] — run qa-prd-analysis → qa-manual-test-cases-from-prd → get user approval');
     if (!has(GATE_PATTERNS.EVAL_YAML)) missing.push('[P4.0-EVAL-YAML] — write eval scenarios under prds/<id>/eval/*.yaml');
     if (!has(GATE_PATTERNS.TDD_RED))   missing.push('[P4.0-TDD-RED] — write failing test, observe FAIL before any implementation');
 
     if (missing.length > 0) {
-      return `NEXT GATE (State 4b — required before [P4.1-DISPATCH]):\n${missing.map(m => `  • ${m}`).join('\n')}`;
+      return `NEXT GATE (State 4b — required before [P4.1-DISPATCH]):\n${missing.map(m => `  • ${m}`).join('\n')}${termSuffix}`;
     }
-    return 'NEXT GATE: All State 4b gates satisfied. Log [P4.1-DISPATCH] and begin eval phase.';
+    return `NEXT GATE: All State 4b gates satisfied. Log [P4.1-DISPATCH] and begin eval phase.${termSuffix}`;
+  }
+
+  // PRD locked but spec not yet frozen: terminology must not block in silence (before council / freeze)
+  if (has(GATE_PATTERNS.PRD_LOCKED) && termOpen()) {
+    return 'NEXT GATE: Product terminology (terminology.md) has open_doubts pending/unknown per [TERMINOLOGY] in conductor.log — resolve via intake / council / docs/terminology-review.md before spec-freeze; do not freeze shared-dev-spec while doubts are unresolved unless documented waiver.';
   }
 
   // PRD locked → council
@@ -124,7 +163,7 @@ function resolveQAPipelineGate(logContent) {
 
   // Scenarios written — branch/env prep
   if (has(GATE_PATTERNS.QA_P2_SCENARIOS)) {
-    return `QA NEXT GATE: Scenarios written — invoke qa-branch-env-prep (ask run mode: url-only / branch-local / branch-tracking), then log [QA-BRANCH-ENV].`;
+    return `QA NEXT GATE: Scenarios written — invoke qa-branch-env-prep (ask run mode: url-only / branch-local / branch-code-validate / branch-tracking), then log [QA-BRANCH-ENV].`;
   }
 
   // Brain loaded — generate scenarios
@@ -137,6 +176,7 @@ function resolveQAPipelineGate(logContent) {
 
 module.exports = {
   GATE_PATTERNS,
+  lastTerminologyOpen,
   resolveNextGate,
   resolveQAPipelineGate,
 };

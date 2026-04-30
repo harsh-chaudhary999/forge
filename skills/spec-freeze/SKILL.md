@@ -3,7 +3,7 @@ name: spec-freeze
 description: "WHEN: The shared-dev-spec is locked after council negotiation. Prevents all spec mutations during build phase. Invoke before per-project tech planning begins."
 type: rigid
 requires: [brain-read, brain-write]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "freeze the spec"
@@ -328,6 +328,7 @@ If a behavioral change is genuinely required:
 
 Stop immediately and escalate if you observe any of the following:
 
+- **`terminology.md` for this `task-id` has `open_doubts: pending` or `open_doubts: unknown` in frontmatter (or an unresolved “Notes / open doubts” table that should have been promoted to frontmatter)** while you are about to freeze — **STOP.** [forge-council-gate](../forge-council-gate/SKILL.md) and [docs/terminology-review.md](../../docs/terminology-review.md) require product vocabulary to be aligned with contracts before the spec is treated as user-ready. **Do not** set `shared-dev-spec.md` to `status: frozen` or run **Step 2** until doubts are resolved, waived in brain with owner, or `open_doubts: none`. **Bypassing** `forge-council-gate` and invoking **only** `spec-freeze` is a common failure mode — this check exists so that path is still **BLOCKED** when terminology is not clean. *Exception:* `terminology_risk: internal` with documented waiver may proceed per team policy (document in `planning-doubts.md`).
 - **Spec file modified after freeze without a `SPECFIX-COSMETIC` or `SPECFRZ` commit prefix** -- unauthorized mutation
 - **Tech plan references contracts not in the frozen spec** -- spec drift or shadow negotiation
 - **Surface claims "we agreed to change X" without a SPECCHG decision record** -- informal override, process violation
@@ -342,6 +343,7 @@ Before declaring spec frozen, verify:
 
 - [ ] Shared-dev-spec exists and is complete (from `forge-council-gate`)
 - [ ] All 4 surfaces signed off (backend, web, app, infra)
+- [ ] **`terminology.md`** (if it exists) has **no** blocking `open_doubts: pending` for this freeze (or explicit waiver) — see Red Flags
 - [ ] All 5 contracts locked (API, events, cache, DB, search) -- no "TBD"
 - [ ] No unresolved conflicts in spec (all consensus or dreamer-resolved)
 - [ ] Spec committed to git with `SPECFREEZE:` prefix

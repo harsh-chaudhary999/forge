@@ -7,26 +7,13 @@
  *   - tools/js/test-prompt-submit-gates.cjs (CI regression tests)
  *
  * No process.exit, no I/O — safe to require() from tests.
+ *
+ * Read top-to-bottom: `GATE_PATTERNS` → `lastTerminologyOpen` → `TERMINOLOGY_ALSO_*` → `resolveNextGate`.
  */
 
 'use strict';
 
-/**
- * Appended when `lastTerminologyOpen(logContent)` is true, for **SPEC_FROZEN** (State 4b) and **EVAL_GREEN**
- * (pre-merge / PR). Framing: do not ship or merge product-facing copy on unresolved terms.
- * **DISPATCH** (eval in flight) uses `TERMINOLOGY_ALSO_SUFFIX_DISPATCH` instead — see that constant.
- */
-const TERMINOLOGY_ALSO_SUFFIX =
-  '\n\nALSO: [TERMINOLOGY] in conductor.log has open_doubts pending/unknown — resolve terminology.md per docs/terminology-review.md; do not ship user-facing copy on unresolved terms.';
-
-/**
- * Same trigger as `TERMINOLOGY_ALSO_SUFFIX` but for the **DISPATCH** phase (eval running — not shipping yet):
- * stress resolving before PRs, not "do not ship."
- */
-const TERMINOLOGY_ALSO_SUFFIX_DISPATCH =
-  '\n\nALSO: [TERMINOLOGY] in conductor.log has open_doubts pending/unknown — resolve terminology.md per docs/terminology-review.md before PRs are raised; eval and scenarios may not match product copy until then.';
-
-// ==================== Gate Detection ====================
+// ==================== Gate detection patterns ====================
 
 const GATE_PATTERNS = {
   QA_CSV:           /\[P4\.0-QA-CSV\].*approved=yes/,
@@ -61,6 +48,23 @@ function lastTerminologyOpen(logContent) {
   return /\bopen_doubts\s*[:=]\s*["']?(pending|unknown)\b/i.test(last);
 }
 
+// ==================== Terminology “ALSO:” suffixes (use after `lastTerminologyOpen`) ====================
+
+/**
+ * Appended when `lastTerminologyOpen(logContent)` is true, for **SPEC_FROZEN** (State 4b) and **EVAL_GREEN**
+ * (pre-merge / PR). Framing: do not ship or merge product-facing copy on unresolved terms.
+ * **DISPATCH** (eval in flight) uses `TERMINOLOGY_ALSO_SUFFIX_DISPATCH` instead — see that constant.
+ */
+const TERMINOLOGY_ALSO_SUFFIX =
+  '\n\nALSO: [TERMINOLOGY] in conductor.log has open_doubts pending/unknown — resolve terminology.md per docs/terminology-review.md; do not ship user-facing copy on unresolved terms.';
+
+/**
+ * Same trigger as `TERMINOLOGY_ALSO_SUFFIX` but for the **DISPATCH** phase (eval running — not shipping yet):
+ * stress resolving before PRs, not "do not ship."
+ */
+const TERMINOLOGY_ALSO_SUFFIX_DISPATCH =
+  '\n\nALSO: [TERMINOLOGY] in conductor.log has open_doubts pending/unknown — resolve terminology.md per docs/terminology-review.md before PRs are raised; eval and scenarios may not match product copy until then.';
+
 /**
  * Determines the next gate message based on conductor.log content.
  * Returns a string or null if no specific next-gate applies.
@@ -70,25 +74,25 @@ function lastTerminologyOpen(logContent) {
  */
 function resolveNextGate(logContent) {
   const has = (pattern) => pattern.test(logContent);
-  const termOpen = () => lastTerminologyOpen(logContent);
+  const isTermOpen = lastTerminologyOpen(logContent);
 
   // Already fully done
   if (has(GATE_PATTERNS.PR_MERGED)) return null;
 
   // Eval GREEN → move to PR
   if (has(GATE_PATTERNS.EVAL_GREEN)) {
-    return `NEXT GATE: Invoke pr-set-coordinate → pr-set-merge-order → merge PRs in locked order → log [P5-PR-MERGED]${termOpen() ? TERMINOLOGY_ALSO_SUFFIX : ''}`;
+    return `NEXT GATE: Invoke pr-set-coordinate → pr-set-merge-order → merge PRs in locked order → log [P5-PR-MERGED]${isTermOpen ? TERMINOLOGY_ALSO_SUFFIX : ''}`;
   }
 
   // Dispatched but not GREEN → eval running
   if (has(GATE_PATTERNS.DISPATCH)) {
-    return `NEXT GATE: Eval must reach GREEN (all scenarios pass in one run) before PR set. If RED: invoke self-heal-locate-fault → self-heal-triage (max 3 iterations).${termOpen() ? TERMINOLOGY_ALSO_SUFFIX_DISPATCH : ''}`;
+    return `NEXT GATE: Eval must reach GREEN (all scenarios pass in one run) before PR set. If RED: invoke self-heal-locate-fault → self-heal-triage (max 3 iterations).${isTermOpen ? TERMINOLOGY_ALSO_SUFFIX_DISPATCH : ''}`;
   }
 
   // Spec frozen → need State 4b gates before dispatch.
   // NEVER swallow [TERMINOLOGY]: e.g. spec was frozen, session resumes, product doubts filed later.
   if (has(GATE_PATTERNS.SPEC_FROZEN)) {
-    const termSuffix = termOpen() ? TERMINOLOGY_ALSO_SUFFIX : '';
+    const termSuffix = isTermOpen ? TERMINOLOGY_ALSO_SUFFIX : '';
     const missing = [];
     if (!has(GATE_PATTERNS.QA_CSV))    missing.push('[P4.0-QA-CSV] — run qa-prd-analysis → qa-manual-test-cases-from-prd → get user approval');
     if (!has(GATE_PATTERNS.EVAL_YAML)) missing.push('[P4.0-EVAL-YAML] — write eval scenarios under prds/<id>/eval/*.yaml');
@@ -101,7 +105,7 @@ function resolveNextGate(logContent) {
   }
 
   // PRD locked but spec not yet frozen: terminology must not block in silence (before council / freeze)
-  if (has(GATE_PATTERNS.PRD_LOCKED) && termOpen()) {
+  if (has(GATE_PATTERNS.PRD_LOCKED) && isTermOpen) {
     return 'NEXT GATE: Product terminology (terminology.md) has open_doubts pending/unknown per [TERMINOLOGY] in conductor.log — resolve via intake / council / docs/terminology-review.md before spec-freeze; do not freeze shared-dev-spec while doubts are unresolved unless documented waiver.';
   }
 
@@ -118,7 +122,7 @@ function resolveNextGate(logContent) {
  * Returns a next-gate string if a QA pipeline is in flight, or null if complete/not started.
  *
  * NOTE: This function receives log content already scoped to a specific task log.
- * The scoping logic is in findMostRecentQAPipelineLog (FORGE_TASK_ID → mtime fallback).
+ * The scoping logic is in `findMostRecentQAPipelineLog` in **forge-stage-detect.cjs** (FORGE_TASK_ID → mtime fallback).
  */
 function resolveQAPipelineGate(logContent) {
   const has = (pattern) => pattern.test(logContent);

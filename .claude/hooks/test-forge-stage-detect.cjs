@@ -6,6 +6,7 @@ const {
   findLastPhaseMarker,
   markerToStage,
   detectStageFromLogContent,
+  findMostRecentQAPipelineLog,
 } = require('./forge-stage-detect.cjs');
 
 function test(name, fn) {
@@ -47,6 +48,11 @@ test('no markers defaults intake', () => {
 
 test('P3-SPEC-FROZEN build', () => {
   assert.strictEqual(markerToStage('[P3-SPEC-FROZEN]'), 'build');
+});
+
+test('findMostRecentQAPipelineLog is exported (scoping lives with findMostRecentConductorLog)', () => {
+  assert.strictEqual(typeof findMostRecentQAPipelineLog, 'function');
+  assert.strictEqual(findMostRecentQAPipelineLog('/nonexistent-brain-xyz-12345'), null);
 });
 
 console.log('forge-stage-detect: all tests passed');

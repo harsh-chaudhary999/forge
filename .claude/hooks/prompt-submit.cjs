@@ -32,10 +32,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const {
   forgeBrainSearchPaths,
   findMostRecentConductorLog,
+  findMostRecentQAPipelineLog,
 } = require(path.join(__dirname, 'forge-stage-detect.cjs'));
 
 const {
@@ -49,47 +49,7 @@ function log(message) {
   }
 }
 
-/**
- * Finds the relevant qa-pipeline.log for the current session.
- *
- * Scoping strategy (matches session-start.cjs conductor log selection):
- *   1. If FORGE_TASK_ID or FORGE_PRD_TASK_ID is set and brain/prds/<id>/qa-pipeline.log
- *      exists → use that file (recommended when multiple tasks exist).
- *   2. Else → fall back to the most recently modified qa-pipeline.log under prds/ (mtime
- *      heuristic). WARNING: with concurrent QA runs this can pick the wrong task.
- *      Set FORGE_TASK_ID in your shell to make injection deterministic.
- *
- * Returns the resolved log path, or null if none found.
- */
-function findMostRecentQAPipelineLog(brainPath) {
-  const prdsDir = path.join(brainPath, 'prds');
-  if (!fs.existsSync(prdsDir)) return null;
-
-  // Prefer task-scoped log when env provides a task ID
-  const envTaskId = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
-  if (envTaskId) {
-    const scopedLog = path.join(prdsDir, envTaskId, 'qa-pipeline.log');
-    if (fs.existsSync(scopedLog)) {
-      log(`QA pipeline log: scoped by FORGE_TASK_ID=${envTaskId}`);
-      return scopedLog;
-    }
-  }
-
-  // mtime fallback — ambiguous when multiple tasks have active QA runs
-  let best = null;
-  try {
-    for (const taskId of fs.readdirSync(prdsDir)) {
-      const logPath = path.join(prdsDir, taskId, 'qa-pipeline.log');
-      if (!fs.existsSync(logPath)) continue;
-      const mtime = fs.statSync(logPath).mtimeMs;
-      if (!best || mtime > best.mtime) best = { path: logPath, mtime };
-    }
-  } catch (e) {
-    log(`QA pipeline log scan error: ${e.message}`);
-  }
-  if (best) log(`QA pipeline log: mtime fallback → ${best.path} (set FORGE_TASK_ID for deterministic scoping)`);
-  return best ? best.path : null;
-}
+// QA pipeline log path selection: see findMostRecentQAPipelineLog in forge-stage-detect.cjs
 
 function tryGetNextGate() {
   const brainCandidates = forgeBrainSearchPaths();

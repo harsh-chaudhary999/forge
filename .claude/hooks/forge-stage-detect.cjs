@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Forge conductor.log → stage stub name (intake | council | build | eval | pr).
- * Also exports brain path helpers shared by session-start.cjs and prompt-submit.cjs.
+ * Also exports brain path helpers and log discovery: `findMostRecentConductorLog`,
+ * `findMostRecentQAPipelineLog` (shared by session-start.cjs and prompt-submit.cjs).
  * Used by session-start.cjs in this directory; run test-forge-stage-detect.cjs to verify.
  *
  * Rule: take the LAST [P…] phase marker in the log (document order), then map it.
@@ -105,10 +106,53 @@ function findMostRecentConductorLog(brainPath) {
   return mostRecentLog;
 }
 
+/**
+ * Resolves `brainPath/prds/<task-id>/qa-pipeline.log` (standalone QA /qa-run flow).
+ * Same scoping as `findMostRecentConductorLog`: prefer `FORGE_TASK_ID` or
+ * `FORGE_PRD_TASK_ID` when the scoped file exists; else newest mtime under prds/*.
+ * @param {string} brainPath
+ * @returns {string|null}
+ */
+function findMostRecentQAPipelineLog(brainPath) {
+  const prdsDir = path.join(brainPath, 'prds');
+  if (!fs.existsSync(prdsDir)) return null;
+
+  const debug = (m) => {
+    if (process.env.FORGE_HOOKS_DEBUG === '1') console.error(`[qa-pipeline.log] ${m}`);
+  };
+
+  const envTaskId = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
+  if (envTaskId) {
+    const scopedLog = path.join(prdsDir, envTaskId, 'qa-pipeline.log');
+    if (fs.existsSync(scopedLog)) {
+      debug(`scoped by FORGE_TASK_ID=${envTaskId} → ${scopedLog}`);
+      return scopedLog;
+    }
+  }
+
+  let best = null;
+  try {
+    for (const taskId of fs.readdirSync(prdsDir)) {
+      const logPath = path.join(prdsDir, taskId, 'qa-pipeline.log');
+      if (!fs.existsSync(logPath)) continue;
+      const mtime = fs.statSync(logPath).mtimeMs;
+      if (!best || mtime > best.mtime) best = { path: logPath, mtime };
+    }
+  } catch (e) {
+    debug(`scan error: ${e.message}`);
+  }
+  if (best) {
+    debug(`mtime fallback → ${best.path} (set FORGE_TASK_ID for deterministic scoping)`);
+    return best.path;
+  }
+  return null;
+}
+
 module.exports = {
   findLastPhaseMarker,
   markerToStage,
   detectStageFromLogContent,
   forgeBrainSearchPaths,
   findMostRecentConductorLog,
+  findMostRecentQAPipelineLog,
 };

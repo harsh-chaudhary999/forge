@@ -16,7 +16,6 @@
 const path = require('path');
 
 const {
-  GATE_PATTERNS,
   lastTerminologyOpen,
   resolveNextGate,
   resolveQAPipelineGate,

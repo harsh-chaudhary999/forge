@@ -2,7 +2,7 @@
 name: review-readiness
 description: "WHEN: You are about to raise a PR and need to verify all gates have passed. Checks spec frozen, eval GREEN, QA CSV covered, brain committed, no WIP commits."
 type: flexible
-version: 1.0.7
+version: 1.0.8
 preamble-tier: 2
 triggers:
   - "ready to raise PR"
@@ -38,7 +38,7 @@ Run all 6 checks in order (same `TASK_DIR` as below). Count **failures** (lines 
 
 ```bash
 BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
-TASK_DIR=$(ls -td "$BRAIN_DIR/prds"/*/ 2>/dev/null | head -1)
+TASK_DIR="${TASK_DIR:-$(ls -td "$BRAIN_DIR/prds"/*/ 2>/dev/null | head -1)}"
 SPEC="${TASK_DIR%/}/shared-dev-spec.md"
 
 if [ -f "$SPEC" ] && grep -q "status: frozen" "$SPEC" 2>/dev/null; then
@@ -71,27 +71,33 @@ GREEN_FILE=$(find "$EVAL_DIR" -name "*.md" -newer "$SPEC" 2>/dev/null | xargs gr
 fi
 ```
 
-### Check 3 — QA CSV covered
+### Check 3 — QA CSV + State 4b + eval
+
+Authoritative **human CSV approval** is logged in **`conductor.log`**, not a substring in the CSV body (`[P4.0-QA-CSV]` … `approved=yes`, same as `GATE_PATTERNS.QA_CSV` in `prompt-submit-gates.cjs`).
 
 ```bash
 BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 TASK_DIR="${TASK_DIR:-$(ls -td "$BRAIN_DIR/prds"/*/ 2>/dev/null | head -1)}"
 EVAL_DIR="${TASK_DIR%/}/eval"
+CONDUCTOR_LOG="${TASK_DIR%/}/conductor.log"
 QA_CSV=$(find "$TASK_DIR" -name "*.csv" 2>/dev/null | head -1)
-if [ -z "$QA_CSV" ]; then
-  echo "✓ QA CSV          — no CSV found (skip)"
+if [ -z "$QA_CSV" ] || [ ! -f "$QA_CSV" ]; then
+  echo "✓ QA CSV          — no manual CSV in task (skip)"
 else
-  APPROVED=$(grep -c "approved" "$QA_CSV" 2>/dev/null || echo "0")
-  if [ "$APPROVED" -eq 0 ]; then
-    echo "✓ QA CSV          — no approved rows"
+  P40=0
+  if [ -f "$CONDUCTOR_LOG" ] && grep -aE '\[P4\.0-QA-CSV\].*approved=yes' "$CONDUCTOR_LOG" >/dev/null 2>&1; then
+    P40=1
+  fi
+  if [ "$P40" -eq 0 ]; then
+    echo "✗ QA CSV          — manual CSV at $QA_CSV but $CONDUCTOR_LOG has no [P4.0-QA-CSV] … approved=yes (State 4b)"
+    echo "  Fix: complete qa-manual approval and log, or use documented waiver; see skills/qa-manual-test-cases-from-prd"
   else
-    # Check if eval dir has files referencing journey IDs
     EVAL_SCENARIOS=$(find "$EVAL_DIR" -name "*.yaml" 2>/dev/null | wc -l | tr -d ' ')
     if [ "$EVAL_SCENARIOS" -gt 0 ]; then
-      echo "✓ QA CSV          — $APPROVED approved rows, $EVAL_SCENARIOS eval scenarios present"
+      echo "✓ QA CSV          — P4.0 approved=yes in conductor.log, $EVAL_SCENARIOS eval scenario(s) under $EVAL_DIR"
     else
-      echo "✗ QA CSV          — $APPROVED approved rows but no eval scenarios found"
-      echo "  Fix: run /forge-eval-gate QA CSV traceability check"
+      echo "✗ QA CSV          — P4.0 passed but no eval scenarios under $EVAL_DIR"
+      echo "  Fix: run /forge-eval-gate; align eval YAML to CSV ids per qa-write-scenarios"
     fi
   fi
 fi
@@ -142,8 +148,8 @@ if [ ! -f "$TERM" ]; then
   echo "✓ Terminology   — no terminology.md (skip)"
 else
   # Strip optional YAML double/single quotes from scalar values
-  OPEN=$(awk -F: '/^open_doubts:/{v=$0; sub(/^open_doubts:[ \t]*/,"",v); gsub(/^\047|\047$|^\042|\042$|^[ \t]+|[ \t]+$/,"",v); print tolower(v); exit}' "$TERM" 2>/dev/null || true)
-  RISK=$(awk -F: '/^terminology_risk:/{v=$0; sub(/^terminology_risk:[ \t]*/,"",v); gsub(/^\047|\047$|^\042|\042$|^[ \t]+|[ \t]+$/,"",v); print tolower(v); exit}' "$TERM" 2>/dev/null || true)
+  OPEN=$(awk '/^open_doubts:/{v=$0; sub(/^open_doubts:[ \t]*/,"",v); gsub(/^\047|\047$|^\042|\042$|^[ \t]+|[ \t]+$/,"",v); print tolower(v); exit}' "$TERM" 2>/dev/null || true)
+  RISK=$(awk '/^terminology_risk:/{v=$0; sub(/^terminology_risk:[ \t]*/,"",v); gsub(/^\047|\047$|^\042|\042$|^[ \t]+|[ \t]+$/,"",v); print tolower(v); exit}' "$TERM" 2>/dev/null || true)
   if [ "$OPEN" = "none" ] || [ -z "$OPEN" ]; then
     echo "✓ Terminology   — open_doubts none (or empty)"
   elif [ "$OPEN" = "pending" ]; then

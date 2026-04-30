@@ -3,7 +3,7 @@ name: qa-branch-env-prep
 description: "WHEN: About to run QA eval and need to set up the execution environment. Determines run mode: URL-only (test against live URL), branch-local (checkout + start stack + run eval drivers), branch-code-validate (checkout + run repo test suite directly), or branch-tracking (record which branch is on a remote URL). Writes runtime env config for eval drivers."
 type: rigid
 requires: [brain-read]
-version: 1.0.6
+version: 1.0.7
 preamble-tier: 3
 triggers:
   - "checkout branches for QA"
@@ -37,7 +37,7 @@ Sets up the execution environment for a QA eval run. **The first decision is alw
 | **Branch-code-validate** | Check out feature branches and run the repo's own test suite directly (`npm test`, `pytest`, `go test`, etc.) — no running app needed | Yes | No |
 | **Branch-tracking** | Remote URL exists AND you want to record which branch is deployed there (traceability only) | No | Yes |
 
-**Ask this first — do not assume.** The user may have a live URL, may want the stack started locally, or may simply want the repo's unit/integration tests run against the feature branch code.
+**Ask run mode only after Step 0.0 discovery — do not assume.** Hardware probes (`uname`, `adb`, `emulator -list-avds`, Chrome) inform Step 0.1 so **`url-only`** is not picked blindly when **branch-local** could boot an existing AVD. The user may still prefer a live URL, stack locally, or repo tests only.
 
 **Branch-code-validate vs branch-local:** Use `branch-code-validate` when the primary goal is validating code logic via the repo's existing test suite. Use `branch-local` when the primary goal is running end-to-end eval scenarios through a running application. Both require a branch checkout.
 
@@ -48,6 +48,7 @@ Sets up the execution environment for a QA eval run. **The first decision is alw
 | Rationalization | Why It Fails |
 |---|---|
 | "I'll assume branch-local mode since that's the full workflow" | Assuming branch checkout when the user has a live URL wastes time and may overwrite their working tree. Always ask. |
+| "I'll default url-only so we skip checkout — faster" | **Invalid** when Step 0.0 showed **adb + AVD + Chrome** and the task needs **local** driver eval — **`url-only`** never boots **`emulator`**; user must **explicitly** pick **A** after **informed** options. |
 | "I'll skip branch confirmation, the user said the branch name" | Typos in branch names silently land on the wrong commit. One confirmation step prevents testing the wrong code entirely. |
 | "Dirty working tree is fine, I'll just checkout" | Checking out a branch over uncommitted changes silently discards work or produces a mixed state. Always stash or abort. |
 | "I'll just set env vars in my shell session" | Shell session env is invisible to subagents and CI. `.eval-env` is the durable, auditable env record. |
@@ -62,8 +63,8 @@ Sets up the execution environment for a QA eval run. **The first decision is alw
 
 Before invoking this skill, verify:
 
-- [ ] `task_id` is known and `prd-locked.md` exists in brain for it
-- [ ] Product slug is known — `product.md` must be readable before proceeding
+- [ ] `task_id` is known and `prd-locked.md` exists in brain for it (needed for **`qa/logs`** path under **`prds/<task-id>/`**)
+- [ ] Product slug is known — `product.md` must be readable **before Steps 1+** (Step **0.0–0.1** only need **`task_id`** for logging and run-mode choice)
 - [ ] Branch names are provided for each repo that needs switching (or `mode: remote` is confirmed)
 - [ ] Target environment is specified: `local` (start stack here) or `remote` (test existing deployment)
 - [ ] You are NOT about to use production credentials — QA env only
@@ -93,7 +94,7 @@ Before marking this skill complete:
 ## Cross-References
 
 - **`brain-read`** — prerequisite skill that loads product.md and brain artifacts this skill depends on. When **`~/forge/brain/prds/<task-id>/terminology.md`** exists, it is the per-task product term reference for **manifest** copy and human-readable branch labels ([docs/terminology-review.md](../../docs/terminology-review.md)); optional for env prep **mechanics**.
-- **`qa-pipeline-orchestrate`** — invokes this skill as phase QA-P3; the orchestrator's HARD-GATE checks for the manifest and `.eval-env` this skill produces.
+- **`qa-pipeline-orchestrate`** — invokes this skill as phase QA-P3; the orchestrator's HARD-GATE checks for the manifest and `.eval-env` this skill produces. **Step 0.0** host discovery is the **authoritative** input so run mode matches hardware; QA-P5 driver preflight **re-checks** (**safety net**).
 - **`eval-product-stack-up`** — downstream skill that reads `.eval-env` to set service environment variables before starting local services.
 - **`eval-coordinate-multi-surface`** — eval executor that sources `.eval-env` at runtime to resolve `{{ BASE_URL }}`, `{{ DEVICE_ID }}`, and other scenario variables.
 
@@ -116,7 +117,8 @@ This skill may invoke MCP tools when configured:
 ## Iron Law
 
 ```
-ALWAYS ASK RUN MODE FIRST (URL-ONLY / BRANCH-LOCAL / BRANCH-CODE-VALIDATE / BRANCH-TRACKING) — NEVER ASSUME.
+RUN HOST HARDWARE DISCOVERY BEFORE THE RUN-MODE PROMPT (STEP 0.0) — THEN ASK RUN MODE (STEP 0.1) WITH OPTIONS THAT REFLECT WHAT THIS MACHINE ACTUALLY HAS — NEVER ASSUME OR SILENTLY DEFAULT URL-ONLY WHEN LOCAL DRIVERS ARE AVAILABLE.
+ALWAYS ASK RUN MODE (URL-ONLY / BRANCH-LOCAL / BRANCH-CODE-VALIDATE / BRANCH-TRACKING) — NEVER ASSUME.
 NEVER CHECKOUT A BRANCH WITHOUT EXPLICIT USER CONFIRMATION SHOWING: REPO PATH, CURRENT BRANCH, AND TARGET BRANCH.
 NEVER WRITE TO product.md, docker-compose.yml, OR ANY SERVICE CONFIG — .eval-env IS THE ONLY OUTPUT FILE.
 ALWAYS WRITE A MANIFEST — EVEN FOR URL-ONLY RUNS — RECORDING WHAT WAS TESTED AND WHEN.
@@ -132,30 +134,57 @@ FOR BRANCH-CODE-VALIDATE: RECORD RAW TEST OUTPUT TO BRAIN — "TESTS PASSED" IN 
 - **`.eval-env` already contains values from a prior run** — STOP. Show existing values. Confirm overwrite with user.
 - **`product.md` repo paths do not exist on disk** — STOP. Cannot checkout without valid repo path. Report missing repos.
 - **Remote env URL is provided but no connectivity check passes** — STOP. Log: `CONNECTIVITY FAIL: <URL> unreachable`. Ask user to verify the URL before continuing.
+- **Skipping Step 0.0 host discovery and presenting generic A/B/C/D** — STOP. The run-mode choice **must** be informed by what the host can actually run (ADB, AVDs, browsers, OS). Otherwise the agent may **silently pick `url-only`** and **never** exercise **`eval-driver-*`** preflight or local emulator boot — see **Step 0.0**.
 
-## Step 0 — Determine Run Mode
+## Step 0 — Determine Run Mode (discovery first, then A–D)
 
-**HARD-GATE:** Ask the user this question before reading product.md or doing anything else. Present **A–D** via **`AskQuestion`** / **`AskUserQuestion`** or **numbered 1–4** + **stop** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** — not runbook-only prose.
+### Step 0.0 — Host hardware discovery (HARD-GATE — before Step 0.1)
+
+**Run this before** **`AskQuestion`** for run mode and **before** reading **`product.md`** for repo lists (discovery needs **no** product parse — only the shell).
+
+1. **`mkdir -p ~/forge/brain/prds/<task-id>/qa/logs`** (see **`skills/forge-brain-layout/SKILL.md`** **qa/logs/**).
+2. Append a **`--- qa-branch-env-prep Step0 ---`** section to **`eval-preflight-<ISO8601>.log`** (same filename convention as **`eval-driver-*`** preflight — one log per run is OK; use **one** timestamp for the session).
+3. Run **non-destructive** probes; **tee** stdout/stderr into that log:
+   - **`uname -s`** (if **not** **`Darwin`**, **iOS XCTest is not runnable on this host** — note in summary).
+   - **`which adb`** ; if found: **`adb version`** (first line).
+   - **`which emulator`** ; if found: **`emulator -list-avds`** (lists **offline** AVDs such as **`Pixel_10_Pro_XL`** even when **not** booted).
+   - **Linux + Android in scope:** **`test -r /dev/kvm && echo kvm_readable=yes || echo kvm_readable=no`** (if **`no`**, the hardware emulator is often **slow or hangs on boot** — same class of failure as **`eval-driver-android-adb`** KVM preflight; prefer **physical device**, **remote** URL + device farm, or a host where your user is in the **`kvm`** group).
+   - **Browsers:** **`which google-chrome-stable google-chrome chromium chromium-browser`** (distro-dependent); record **first hit** or **none**.
+4. **Summarize in chat** (3–7 lines): OS, adb path or missing, **named AVDs** from **`emulator -list-avds`** or “none”, **KVM** (`/dev/kvm` readable or not on Linux), Chrome/Chromium path or missing, and **iOS viability** (macOS only).
+
+This discovery **feeds QA-P3** (authoritative fit for run mode). **`qa-pipeline-orchestrate`** QA-P5 repeats / deepens checks per **`eval-driver-*`** — it is a **safety net**, not a substitute for an uninformed Step 0.1.
+
+### Step 0.1 — Determine run mode (HARD-GATE)
+
+**After Step 0.0**, present **A–D** via **`AskQuestion`** / **`AskUserQuestion`** or **numbered 1–4** + **stop** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** — **not** generic boilerplate. **Prepend** the Step 0.0 summary so each option is **grounded**:
+
+- State which modes are **viable on this machine** given discovery — e.g. *“**B) Branch-local** is viable: Chrome at `<path>` and AVD `<name>` exists (emulator not running yet — will boot at QA-P5 / driver preflight per **`eval-driver-android-adb`**).”*
+- *“**A) URL-only** always works if you have a reachable URL; it does **not** start local emulator or Chrome CDP — use when targeting **remote** staging only.”*
+- If **`uname`** is not **Darwin**, say explicitly: *“**iOS XCTest scenarios cannot run here** — use a Mac/CI for iOS or mark iOS N/A.”*
+- **Do not** silently steer toward **`url-only`** when **`branch-local`** is viable and the PRD expects multi-surface eval — let the user choose with eyes open.
+
+Template body (fill **`<DISCOVERY>`** from Step 0.0). **Do not** shorten to literal ellipsis — use the full lines below (or copy the matching row from the **Run mode** table in this skill’s intro).
 
 ```
 How do you want to run these tests?
 
-  A) URL-only — I have a live URL (staging / preview / CI deploy).
-     You give me: BASE_URL, API_BASE_URL, and any other env vars.
-     No branch checkout — I write the env config and eval drivers run against the URL.
+<DISCOVERY — short bullets: OS, adb/AVDs, KVM on Linux, browser, iOS note>
 
-  B) Branch-local — I want to start the stack locally on a specific feature branch.
-     You give me: branch names per repo.
-     I check out the branches, start the stack, then eval drivers run against localhost.
+  A) URL-only — Target an already-running environment (staging / preview / CI deploy). You provide:
+     BASE_URL, API_BASE_URL, plus any driver secrets (DB_DSN, REDIS_URL, TEST_USER_*, …) needed for eval.
+     No git checkout, no local stack, no booting AVD/emulator or local Chrome CDP unless drivers point at reachable endpoints.
 
-  C) Branch-code-validate — I want to validate code logic by running the repo's own
-     test suite (npm test / pytest / go test / mvn test / etc.) directly on the branch.
-     You give me: branch names per repo.
-     I check out the branches and run each repo's configured test command.
-     No running app, no URLs needed.
+  B) Branch-local — Check out feature branches, bring up the product stack per product.md, then run eval drivers
+     (eval-product-stack-up → qa-pipeline QA-P5). Requires branches map + runtime env (BASE_URL after stack-up,
+     DEVICE_ID / IOS_SIMULATOR_ID / DB_DSN / REDIS_URL as scenarios require). Uses host resources from discovery
+     (Chrome for CDP, emulator if Android in scope — see KVM note on Linux).
 
-  D) Branch-tracking — I have a live URL AND want to record which branch is deployed there.
-     You give me: BASE_URL + branch names (traceability only — no local checkout).
+  C) Branch-code-validate — Check out branches and run each repo’s native test suite only (npm test, pytest,
+     go test, …). No full product stack or eval-driver UI automation. Same branches map; optional test_commands
+     overrides from product.md.
+
+  D) Branch-tracking — You provide BASE_URL to the deployed stack; record which branch/SHA is live per repo
+     in the branch-env manifest for traceability (optional shallow checkout for diff only — see workflow notes).
 ```
 
 Record the answer as `run_mode: url-only | branch-local | branch-code-validate | branch-tracking`. (**Hotfix** is not a separate mode — use **`branch-local`** or **`branch-code-validate`** and list **`hotfix_surfaces`** in **`qa-analysis.md`** so QA-P5 runs a narrowed surface set.)

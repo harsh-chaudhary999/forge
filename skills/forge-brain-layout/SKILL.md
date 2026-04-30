@@ -2,7 +2,7 @@
 name: forge-brain-layout
 description: "WHEN: You need to look up brain directory structure, naming conventions, or query patterns before writing to or reading from the brain."
 type: reference
-version: 1.0.1
+version: 1.0.5
 preamble-tier: 2
 triggers:
   - "brain directory layout"
@@ -43,7 +43,16 @@ Before any vector or FTS index ships, prefer **YAML frontmatter** on new decisio
 │       ├── planning-doubts.md             # Optional overflow for long Q&A during tech planning (summary still belongs in each tech-plans/*.md Section 0)
 │       ├── delivery-plan.md               # Optional: program / rollout meta — NOT frozen for implementer isolation; may evolve until GA
 │       ├── design/                        # REQUIRED for net-new UI: exports, MCP_INGEST.md, README (see intake Q9 + conductor P4.0b)
-│       ├── qa/                            # Optional: qa-analysis.md, manual-test-cases.csv, scenarios-manifest.md, branch-env-manifest.md, TEST_SUITE_REPORT.md (see qa-prd-analysis, qa-manual-test-cases-from-prd, qa-write-scenarios)
+│       ├── qa/                            # Optional per-task QA / machine-eval artifacts
+│       │   ├── manual-test-cases.csv      # Human acceptance inventory (qa-manual-test-cases-from-prd)
+│       │   ├── semantic-automation.csv   # NL-first / semantic eval steps (docs/semantic-eval-csv.md)
+│       │   ├── semantic-eval-manifest.json  # Coherence + machine gate (docs/forge-task-verification.md)
+│       │   ├── semantic-eval-run.log     # Transcript for semantic / CSV-anchored runs
+│       │   ├── qa-analysis.md
+│       │   ├── scenarios-manifest.md
+│       │   ├── branch-env-manifest.md
+│       │   ├── TEST_SUITE_REPORT.md
+│       │   └── logs/                      # eval host preflight / driver probe logs (eval-driver-*, QA-P5)
 │       ├── tech-plans/
 │       │   ├── HUMAN_SIGNOFF.md            # After agent self-review + XALIGN: human approval / feedback / waiver before State 4b (see docs/tech-plan-human-signoff.template.md)
 │       │   └── <repo-name>.md
@@ -135,12 +144,20 @@ Before any vector or FTS index ships, prefer **YAML frontmatter** on new decisio
 
 ### Directory Annotations
 
+**qa/semantic-automation.csv** — NL-first or structured semantic eval steps; schema and orchestration: **`docs/semantic-eval-csv.md`**, skill **`qa-semantic-csv-orchestrate`**.
+
+**qa/semantic-eval-manifest.json** — Records machine-eval outcome and paths for **`verify_forge_task.py`** when **`eval/*.yaml`** is not the primary artifact. See **`docs/forge-task-verification.md`**.
+
+**qa/semantic-eval-run.log** — Append-only transcript for semantic / CSV-anchored execution (complements driver preflight logs under **`qa/logs/`**).
+
+**qa/logs/** — Under **`~/forge/brain/prds/<task-id>/qa/logs/`**, optional **eval host preflight** and driver probe transcripts (ADB, CDP, API reachability). Create with **`mkdir -p`** before append. **Naming:** **`eval-preflight-<ISO8601>.log`**; use **append-only** sections per surface with markers such as **`--- android ---`**, **`--- web ---`**, **`--- ios ---`**, **`--- api ---`**. **Redact** tokens and secrets. Canonical references: **`eval-driver-android-adb`**, **`eval-driver-web-cdp`**, **`eval-driver-ios-xctest`**, **`eval-driver-api-http`**, **`qa-pipeline-orchestrate`** (QA-P5).
+
 **prds/** — Task-scoped conductor path (`<task-id>/`) aligned with `intake-interrogate`, `conductor-orchestrate`, and `~/forge/brain/prds/<task-id>/prd-locked.md`. Holds **`design/`** for net-new UI (exports, `MCP_INGEST.md`, `README.md`). Distinct from **`products/{slug}/prd/{prd-id}/`** layout; teams may use one or both — do not assume artifacts exist in both without checking.
 
 **products/** — Contains all PRD-specific context and delivery artifacts
-- **`forge_qa_csv_before_eval`** in **`~/forge/brain/products/<slug>/product.md`** is a **product-level switch** (omit or `false` = no CSV hard gate; **`true` = hard gate**): when **`true`**, **`conductor-orchestrate`** **must not** log **`[P4.0-EVAL-YAML]`** until approved **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** exists and **`[P4.0-QA-CSV]`** is logged — so TDD and eval trace to the same acceptance inventory. Calling the switch “optional” only means **teams choose** whether CSV is mandatory for that product; the gate is **not** optional once the flag is on.
+- **`forge_qa_csv_before_eval`** in **`~/forge/brain/products/<slug>/product.md`** is a **product-level switch** (omit or `false` = no CSV hard gate; **`true` = hard gate**): when **`true`**, **`conductor-orchestrate`** **must not** log **`[P4.0-EVAL-YAML]`** or **`[P4.0-SEMANTIC-EVAL]`** until approved **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** exists and **`[P4.0-QA-CSV]`** is logged — so TDD and eval trace to the same acceptance inventory. Calling the switch “optional” only means **teams choose** whether CSV is mandatory for that product; the gate is **not** optional once the flag is on.
 - Optional **`qa_track`**: **`delivery`** (default mental model — **`/forge`** + State 4b CSV) vs **`standalone`** (team leans on **`/qa`** / **`qa-run`** without full conductor). **Documentation only** — does not reroute automation by itself.
-- Optional **machine gate** on the brain repo: run **`python3 <forge>/tools/verify_forge_task.py --task-id <id> --brain ~/forge/brain`** in CI — see Forge **`docs/forge-task-verification.md`** (checks `eval/*.yaml`, `conductor.log` ordering, QA CSV when the flag is true, net-new **design/** evidence). For **tech plan discipline**, add **`--strict-tech-plans`** so **`REVIEW_PASS`** cannot ship without FORGE-GATE Section 0c / recross markers and canonical **1b** headings (**`tools/verify_tech_plans.py`**).
+- Optional **machine gate** on the brain repo: run **`python3 <forge>/tools/verify_forge_task.py --task-id <id> --brain ~/forge/brain`** in CI — see Forge **`docs/forge-task-verification.md`** (checks **`eval/*.yaml`** **or** valid **`qa/semantic-eval-manifest.json`** + **`qa/semantic-automation.csv`** coherence when applicable, `conductor.log` ordering, QA CSV when the flag is true, net-new **design/** evidence). For **tech plan discipline**, add **`--strict-tech-plans`** so **`REVIEW_PASS`** cannot ship without FORGE-GATE Section 0c / recross markers and canonical **1b** headings (**`tools/verify_tech_plans.py`**).
 - Each product gets its own slug (e.g., `auth-service`, `web-ui`)
 - Each PRD gets a unique ID (e.g., `PRD-20260410-001`)
 - Council, contracts, evals, and learnings are nested under PRD ID

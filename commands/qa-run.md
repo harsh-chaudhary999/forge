@@ -1,20 +1,20 @@
 ---
 name: qa-run
-description: "Partial slice — execute existing eval scenarios against named feature branches and a target environment. Requires eval/*.yaml already in brain (run /qa-write first). Chains: branch checkout → env config → stack-up → multi-surface drivers → verdict."
+description: "Partial slice — execute existing machine-eval artifacts against named branches and a target environment. Requires eval/*.yaml and/or a valid qa/semantic-eval-manifest.json (+ qa/semantic-automation.csv when applicable) per docs/forge-task-verification.md — not YAML-only. Chains: branch checkout → env config → stack-up → multi-surface drivers → verdict."
 ---
 
-**Input is `eval/*.yaml` only** (automation). Does not read **`manual-test-cases.csv`**. Optional: read **`~/forge/brain/prds/<task-id>/terminology.md`** when present so **verdicts** and **run reports** use **canonical** product labels ([docs/terminology-review.md](../docs/terminology-review.md)).
+**Input:** **`eval/*.yaml`** **and/or** the **semantic** artifacts under **`qa/`** ( **`semantic-eval-manifest.json`**, **`semantic-automation.csv`** ) per **`docs/forge-task-verification.md`** and **`docs/semantic-eval-csv.md`** — whichever **`qa-pipeline-orchestrate`** will execute for this task. Does not read **`manual-test-cases.csv`**. Optional: read **`~/forge/brain/prds/<task-id>/terminology.md`** when present so **verdicts** and **run reports** use **canonical** product labels ([docs/terminology-review.md](../docs/terminology-review.md)).
 
 Invoke **`qa-pipeline-orchestrate`** starting at **Phase QA-P3** (branch prep) to execute eval scenarios that already exist in brain.
 
 ## What this does
 
 ```
-existing eval/*.yaml in brain
+existing machine-eval inputs in brain (eval/*.yaml and/or qa/semantic-eval-manifest.json + semantic automation per docs)
   → checkout named feature branches (with confirmation)
   → write .eval-env (runtime overrides for drivers)
   → start product stack in dependency order (local mode)
-  → run web/mobile/API/DB/cache drivers against all scenario files
+  → run drivers / semantic pipeline per qa-pipeline-orchestrate
   → judge: GREEN / RED / YELLOW
   → write run report to brain/prds/<task-id>/qa/
 ```
@@ -45,7 +45,7 @@ existing eval/*.yaml in brain
 ## Prerequisites
 
 - **`qa-write-scenarios` Step −1** satisfied **before** `/qa-write`: **`prd-locked.md`**, **`qa-prd-analysis`** + **`qa-analysis.md`**, then **`manual-test-cases.csv`** or documented waiver where policy requires — see **`skills/qa-write-scenarios/SKILL.md`**. `/qa-run` assumes upstream authoring order was respected.
-- **`~/forge/brain/prds/<task-id>/eval/*.yaml`** — scenarios must exist (run `/qa-write` first)
+- **Machine-eval inputs present:** **`~/forge/brain/prds/<task-id>/eval/*.yaml`** **and/or** valid **`~/forge/brain/prds/<task-id>/qa/semantic-eval-manifest.json`** (with **`qa/semantic-automation.csv`** when the manifest implies semantic CSV — see **`docs/forge-task-verification.md`**). YAML-only is **not** required when the semantic path is authoritative for the task.
 - **`~/forge/brain/products/<slug>/product.md`** — for repo paths and service start commands
 - For Android: `adb devices` shows connected device or running emulator
 - For iOS: simulator running (`xcrun simctl list | grep Booted`) or Appium MCP configured

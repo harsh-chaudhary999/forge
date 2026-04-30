@@ -3,7 +3,7 @@ name: qa-write-scenarios
 description: "WHEN: qa-prd-analysis is complete and you need to write the maximum possible number of executable eval YAML scenarios — one per test type × surface × scenario variant. No gaps. No shortcuts."
 type: rigid
 requires: [brain-read, qa-prd-analysis, eval-scenario-format]
-version: 2.5.7
+version: 2.5.8
 preamble-tier: 3
 triggers:
   - "write eval scenarios"
@@ -51,6 +51,7 @@ Generates the **maximum possible number of executable eval YAML scenarios** from
 | "Existing eval YAML is close enough, I'll add a few" | Read the existing files first. If test types are missing, add full sets — not a few patches. |
 | "I'll write scenarios from memory" | Memory drifts from the PRD. Read prd-locked.md, tech-plans, and qa-analysis.md fresh on every invocation. |
 | "I'll generate eval YAML before manual CSV — PRD is enough" | **Automation without an approved human baseline is orphan automation.** You cannot faithfully prioritize coverage or trace YAML rows to acceptance IDs until **`manual-test-cases.csv`** exists (skill **`qa-manual-test-cases-from-prd`** through approval). YAML then maps journeys to those rows where applicable. |
+| "I'll bulk-write driver YAML before the stack / exploration exists — I'll fill in selectors later" | **Invalid when it produces fiction.** Concrete **`eval/*.yaml`** requires knowable **targets**; if execution readiness is still exploratory, record **`qa/semantic-automation.csv`** + manifest first (**`docs/semantic-eval-csv.md`**), then harden to YAML once locators and APIs are stable. |
 | "`qa-analysis.md` + CSV is enough — I won't re-open tech plans or contracts" | **`qa-analysis.md` prioritizes types/surfaces; concrete routes, payloads, cache keys, and error codes live in shared-dev-spec, tech-plans, and contracts.** Shallow YAML repeats generic steps. Use the same primary-source bundle as **`qa-manual-test-cases-from-prd`** Step 1b (see Step 0.1 below). |
 | "I'll drop a Python/bash generator in `eval/` to emit YAML" | **`eval/` is only for driver-readable `*.yaml` (and manifests).** Generators like `_generate_scenarios.py` or **task-specific** names (**`_generate_reverification_eval.py`**, `_generate_<feature>_eval.py`) are **not** part of Forge — they are usually written for **speed**, then **left in `eval/`** by mistake. They confuse CI/review and usually produce **`preconditions: []`**, **few or generic `steps`**, and **no** concrete `target` / payloads. Author YAML by hand from **prd-locked + tech plans + contracts** (or use **repo-local** `tools/` **outside** `eval/` if you must codegen, then **delete** the generator or move it to **`tools/`** — **never** commit `eval/_generate*.py` without team agreement). |
 | "Manual CSV is only Summary + Expected — full steps are optional" | **Invalid — upstream skill.** **`qa-manual-test-cases-from-prd`** requires **numbered Description steps** and explicit **Preconditions** when state ≠ default; “plain” rows are **rejected** at sample review. |

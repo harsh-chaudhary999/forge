@@ -3,7 +3,7 @@ name: eval-product-stack-up
 description: "WHEN: Eval is about to run and the full product stack must be brought up first. Reads forge-product.md, starts services in dependency order, runs health checks, confirms stack is ready for eval scenarios."
 type: rigid
 requires: [brain-read]
-version: 1.0.1
+version: 1.0.2
 preamble-tier: 4
 triggers:
   - "bring up the stack"
@@ -94,6 +94,12 @@ This skill enables:
 - Pre-flight checks before any service startup
 - Graceful and forceful shutdown patterns
 - Comprehensive failure diagnostics
+
+### Eval host preflight vs product stack (cross-cutting)
+
+This skill only proves configured services from **`product.md`** are **READY** (HTTP health, ports, deps). It does **not** install Chrome/CDP, Android emulator/adb, XCTest/simctl, or Node/Appium — those are **eval host** concerns.
+
+Before **`eval-coordinate-multi-surface`** / **`qa-pipeline-orchestrate`** QA-P5, agents **must** follow **`eval-driver-ios-xctest`**, **`eval-driver-android-adb`**, **`eval-driver-web-cdp`**, **`eval-driver-api-http`** preflight sections and write transcripts under **`~/forge/brain/prds/<task-id>/qa/logs/`** (**`skills/forge-brain-layout/SKILL.md`**). Failure modes should be distinguishable: **service unhealthy** (this skill) vs **no browser / no device / wrong OS for iOS** (driver skills). Do not blame **stack-up** when the blocker is **missing KVM** or **no `--remote-debugging-port`**.
 
 ## API Reference
 

@@ -11,6 +11,8 @@ triggers:
   - "event bus spec"
   - "message schema"
 allowed-tools:
+  - Read
+  - Edit
   - Write
 ---
 

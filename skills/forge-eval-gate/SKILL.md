@@ -2,7 +2,7 @@
 name: forge-eval-gate
 description: "WHEN: Implementation is complete and PRs are ready to merge. HARD-GATE: Nothing merges without eval passing. E2E product eval is the final gate."
 type: rigid
-version: 1.0.3
+version: 1.0.7
 preamble-tier: 4
 triggers:
   - "eval gate"
@@ -27,7 +27,7 @@ allowed-tools:
 | "This is just a config change, it doesn't need full eval" | Config changes affect all downstream consumers. Eval catches config mismatches that code review never will. |
 | "We can defer eval to post-merge, do it in staging" | Once merged, the bug is in main. Eval is pre-merge only. Post-merge eval is incident response, not quality control. |
 | "Conductor / agent stopped after implement or review — eval was never run" | **Orchestration is incomplete.** `conductor-orchestrate` **must** enter **P4.4** (`eval-product-stack-up` + drivers) after reviews unless the human **logs an explicit task ABORT**. Partial runs are not shippable. |
-| "We skipped writing `eval/*.yaml` and went straight to implementation" | **Invalid orchestration.** **State 4b** requires **`[P4.0-EVAL-YAML]`** with **≥1** file under `~/forge/brain/prds/<task-id>/eval/` **before** P4.1. No eval scenarios → P4.4 has nothing faithful to run; you only have ad-hoc manual checks. **CI:** wire **`tools/verify_forge_task.py`** (`docs/forge-task-verification.md`) so this state fails the merge, not just the session. |
+| "We skipped writing `eval/*.yaml` and went straight to implementation" | **Invalid orchestration** unless **`qa/semantic-eval-manifest.json`** + **`[P4.0-SEMANTIC-EVAL]`** satisfies machine eval (see **`docs/forge-task-verification.md`**). When **`kind`** is **`semantic-csv-eval`**, **`qa/semantic-automation.csv`** must exist and parse (**`docs/semantic-eval-csv.md`**). Otherwise **State 4b** requires **`[P4.0-EVAL-YAML]`** with **≥1** file under `~/forge/brain/prds/<task-id>/eval/` **before** P4.1. No executable eval artifact → P4.4 has nothing faithful to run. **CI:** **`tools/verify_forge_task.py`** enforces YAML or valid manifest + CSV coherence. |
 | "We led the session with a blocking interactive prompt about a downstream gate before upstream prerequisites existed" | **Inverted order — violates `using-forge` Stage-local questioning.** Examples: eval/CSV waiver before **`prd-locked`** or **`qa-analysis`**; merge strategy before council; tech-plan approval before plans exist. Fix the **first** missing prerequisite for the **current** phase only. **`qa-write-scenarios` Step −1** applies to the QA→eval slice. |
 | "Eval passed but nobody checked against approved QA CSV" | When **`forge_qa_csv_before_eval: true`**, GREEN eval should **exercise the same journeys** as **`qa/manual-test-cases.csv`** (IDs referenced in YAML). Otherwise “passing eval” is not proof the signed acceptance set ran. |
 | "The performance test results look good from the code, we don't need eval" | Code metrics don't equal runtime behavior. Network latency, contention, GC pauses all appear at runtime, not in code. |
@@ -48,7 +48,7 @@ If you notice any of these, STOP and do not proceed:
 - **A PR is raised before eval passes** — Merging without eval means deploying untested code. STOP. Eval must return GREEN before any PR is raised.
 - **Eval is run against uncommitted code** — Eval must test what will be merged, not what is in progress. STOP. Commit all changes before running eval.
 - **Eval driver is skipped because the service is "not changed"** — Unchanged services still verify integration. STOP. All drivers must run regardless of which services changed.
-- **Feature code or `[P4.1-DISPATCH]` appears in logs without `[P4.0-EVAL-YAML]`** — Eval scenarios were never authored. STOP. Back up to **`eval-scenario-format`** + **`eval-translate-english`**; do not treat the task as shippable.
+- **Feature code or `[P4.1-DISPATCH]` appears in logs without `[P4.0-EVAL-YAML]` or `[P4.0-SEMANTIC-EVAL]`** — No machine-eval artifact was recorded. STOP. Back up to **`eval-scenario-format`** + **`eval-translate-english`** **or** **`qa-semantic-csv-orchestrate`** / **`docs/semantic-eval-csv.md`**; do not treat the task as shippable.
 - **Eval fails but team proceeds citing "it's a known flaky test"** — Known flakiness is a real bug. STOP. Fix the flakiness or remove the test; do not proceed past a failing eval.
 - **Self-heal has run 3 times and eval still fails** — The cap has been reached. STOP. Escalate to human with full failure context. Do not attempt a 4th self-heal cycle.
 - **Eval verdict is YELLOW and team treats it as GREEN** — YELLOW means non-critical failures. STOP. Investigate YELLOW scenarios before merging; do not treat YELLOW as acceptable.
@@ -62,7 +62,7 @@ If you notice any of these, STOP and do not proceed:
   - Identify critical paths (auth, checkout, data integrity, scale)
   - Identify edge cases (timeouts, network failures, concurrent operations)
 - **QA CSV Traceability Check** (if `qa/manual-test-cases.csv` exists):
-  - For each row with status `approved`, verify at least one eval YAML scenario references its journey ID
+  - For each row with status `approved`, verify at least one **YAML** scenario **or** **`TraceToCsvId`** on a **`semantic-automation.csv`** step references its journey **`Id`**
   - Log coverage: `X/Y approved journeys covered by eval scenarios`
   - Block if any approved journey has no corresponding eval scenario — do not proceed to stack-up until coverage is complete
   - Write coverage report to brain: `~/forge/brain/prds/<task-id>/eval/qa-csv-coverage-<YYYYMMDD>.md`

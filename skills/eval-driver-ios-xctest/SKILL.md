@@ -3,7 +3,7 @@ name: eval-driver-ios-xctest
 description: "WHEN: Eval scenario specifies driver=ios-xctest. Eval driver for iOS via XCTest + xcrun simctl. Functions: connect(simulator_id), launch(bundle_id), tap(target), type(text), swipe(direction, element), assert_element(target), screenshot(), disconnect()."
 type: rigid
 requires: [eval-scenario-format]
-version: 1.0.1
+version: 1.0.2
 preamble-tier: 3
 triggers:
   - "eval on iOS"
@@ -61,6 +61,14 @@ If you notice any of these, STOP and do not proceed:
 ## Host and simulator resolution (before `connect()`)
 
 Mirror the Android driver: **detect → pin from config → else ask (interactive) or FAIL (CI)**.
+
+### 0. Host OS gate (HARD-GATE — run first)
+
+**XCTest and `xcrun simctl` require macOS.** They **cannot** run on Linux, Windows, or generic CI workers without a **Mac** toolchain.
+
+1. Run **`uname -s`** (or host-equivalent). If the result is **not** **`Darwin`**, **STOP** immediately — **do not** invoke **`xcrun`**, **`simctl`**, or **`xcodebuild`** on this host.
+2. **`mkdir -p ~/forge/brain/prds/<task-id>/qa/logs`** and append one line to **`eval-preflight-<ISO8601>.log`**: e.g. **`--- ios ---`**, **`uname`**, **`BLOCKED: XCTest requires macOS + Xcode`** (see **`skills/forge-brain-layout/SKILL.md`** **qa/logs/**).
+3. Tell the user plainly: **this machine is not macOS** — run iOS eval on a **Mac** or a **CI runner with macOS + Xcode**, or mark **`driver: ios-xctest`** scenarios **N/A** with reason **`host_os_not_darwin`** in the eval report / **`qa-pipeline-orchestrate`** log.
 
 ### 1. Preconditions (fail fast with a clear message)
 

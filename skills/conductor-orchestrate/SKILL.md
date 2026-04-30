@@ -3,7 +3,7 @@ name: conductor-orchestrate
 description: "WHEN: PRD is locked. You are the master state machine orchestrating the entire forge workflow. Routes the task through all phases, tracks state, manages escalations, and coordinates subagents."
 type: rigid
 requires: [intake-interrogate, product-context-load, brain-read, brain-write, forge-worktree-gate, council-multi-repo-negotiate, spec-freeze, tech-plan-write-per-project, qa-manual-test-cases-from-prd, forge-tdd, eval-product-stack-up, eval-coordinate-multi-surface, forge-eval-gate, pr-set-coordinate, dream-retrospect-post-pr]
-version: 1.0.8
+version: 1.0.11
 preamble-tier: 4
 triggers:
   - "start the pipeline"
@@ -38,10 +38,10 @@ This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for 
 | "Tech plans are done when the markdown is saved — skip self-review and XALIGN" | **State 4** now requires **`tech-plan-self-review` rounds** and **`[TECH-PLAN-XALIGN]`** when multi-repo HTTP. Skipping that is the same failure class as skipping eval — integration bugs ship on **assumed** API wiring. |
 | "Agent PASS is enough — skip human `HUMAN_SIGNOFF.md` before eval" | **Human tech-plan gate** is a **distinct phase** after agent review. Without **`[TECH-PLAN-HUMAN]`** (**`APPROVED`** or documented **`WAIVED`**), the pipeline is not intact — stakeholders never blessed the elaboration. STOP. |
 | "`design_new_work: yes` but we can start UI code from the wiki/doc link" | Chat and external doc URLs are **not** the brain transport layer. Without **`[DESIGN-INGEST]`** evidence on disk, implementers invent pixels. Same failure class as skipping intake Q9 implementability. |
-| "Eval YAML after the feature — faster to code first" | **State 4b is before State 5.** Without `~/forge/brain/prds/<task-id>/eval/*.yaml` and **`[P4.0-EVAL-YAML]`**, there is nothing for **`eval-coordinate-multi-surface`** to run in P4.4 and no proof the journey was agreed. Coding first is an orchestration failure. |
+| "Eval YAML after the feature — faster to code first" | **State 4b is before State 5.** Without **either** `eval/*.yaml` + **`[P4.0-EVAL-YAML]`** **or** valid **`qa/semantic-eval-manifest.json`** + **`[P4.0-SEMANTIC-EVAL]`** (see **`docs/forge-task-verification.md`**), there is no agreed machine-eval artifact and P4.4 has nothing honest to run. Coding first is an orchestration failure. |
 | "`WAIVE_EVAL_YAML` so we can ship" | **Not allowed** for normal delivery. Only **`ABORT_TASK`** (human, logged) ends the run without eval artifacts — that is **not** a shipped feature. |
 | "`forge_qa_csv_before_eval: true` but we'll add the CSV after eval YAML" | Defeats the point: **RED** and **eval** must align to the **same** signed acceptance rows. CSV comes **first** when the flag is set. |
-| "`/forge` but we'll skip CSV because `product.md` never set the flag" | **`commands/forge.md` (`/forge`) = full pipeline:** State 4b **mandates** **`qa-prd-analysis`** + **`qa-manual-test-cases-from-prd`** and **`[P4.0-QA-CSV]`** before **`[P4.0-EVAL-YAML]`** — same as **`forge_qa_csv_before_eval: true`**. Persist **`forge_qa_csv_before_eval: true`** in **`product.md`** if it was missing or false. |
+| "`/forge` but we'll skip CSV because `product.md` never set the flag" | **`commands/forge.md` (`/forge`) = full pipeline:** State 4b **mandates** **`qa-prd-analysis`** + **`qa-manual-test-cases-from-prd`** and **`[P4.0-QA-CSV]`** before the first **`[P4.0-EVAL-YAML]`** or **`[P4.0-SEMANTIC-EVAL]`** — same as **`forge_qa_csv_before_eval: true`**. Persist **`forge_qa_csv_before_eval: true`** in **`product.md`** if it was missing or false. |
 | "Council can start without `[DISCOVERY]` — we'll grep branches during build" | **State 2.5** exists so **greenfield vs existing in-repo work** (topic branches, tags, open change requests) is resolved **before** contracts are negotiated. Skipping it repeats “two definitions of done.” STOP. Log **`[DISCOVERY]`** or an explicit skip per State 2.5 rules. |
 | "I'll use a blocking prompt about merge order / P4.4 eval / tech-plan sign-off / QA CSV while PRD isn't locked or discovery isn't done" | **Violates stage-local questioning** (`using-forge`). Prompts must unblock **only** the **current** authorized phase. Surface the **first** missing prerequisite; do not burn the user's attention on hypothetical downstream choices. |
 | "I'll narrate the full pipeline (State 4b → P4.4 → PR set → …) in chat on every turn while the user is still on an earlier gate" | **`docs/forge-one-step-horizon.md`** — **one-step horizon** in assistant messages; full order belongs in **`commands/forge.md`** / **README**, not repeated dialogue. |
@@ -52,8 +52,8 @@ This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for 
 
 ```
 THE ORCHESTRATOR IS THE SINGLE SOURCE OF STATE. NO PHASE IS SKIPPED, NO TRANSITION IS UNAUTHORIZED, AND NO SUBAGENT ESCALATION IS IGNORED.
-NO P4.1 / IMPLEMENTATION DISPATCH WITHOUT [P4.0-EVAL-YAML] (scenario_files>=1) AND [P4.0-TDD-RED] PER POLICY — THERE IS NO STANDARD "WAIVE_EVAL_YAML" FOR SHIPPABLE WORK.
-NO FULL /forge PIPELINE (commands/forge.md) WITHOUT [P4.0-QA-CSV] approved=yes BEFORE [P4.0-EVAL-YAML] — SET forge_qa_csv_before_eval: true IN product.md IF UNSET OR FALSE.
+NO P4.1 / IMPLEMENTATION DISPATCH WITHOUT ( [P4.0-EVAL-YAML] scenario_files>=1 OR [P4.0-SEMANTIC-EVAL] with valid qa/semantic-eval-manifest.json per docs/forge-task-verification.md ) AND [P4.0-TDD-RED] PER POLICY.
+NO FULL /forge PIPELINE (commands/forge.md) WITHOUT [P4.0-QA-CSV] approved=yes BEFORE THE FIRST [P4.0-EVAL-YAML] OR [P4.0-SEMANTIC-EVAL] — SET forge_qa_csv_before_eval: true IN product.md IF UNSET OR FALSE.
 ```
 
 ## Red Flags — STOP
@@ -70,7 +70,7 @@ If you notice any of these, STOP and do not proceed:
 - **Orchestration stops after P4.1 dispatch or P4.3 QA without entering P4.4 eval** — Partial delivery leaves **no E2E proof** and violates `forge-eval-gate`. STOP unless the human explicitly **aborts the task** with a logged `ABORT` reason. "Ran out of time" is not a valid skip for eval on a claimed-complete feature.
 - **No logged `P4.0-TDD-RED` (or equivalent) before production commits** — `forge-tdd` was not applied: no failing tests were written and run first. STOP. Back up to test authoring before more feature code.
 - **P4.1 UI dispatch without `[DESIGN-INGEST]` when `design_new_work: yes`** — Net-new visual work requires materialized design in `~/forge/brain/prds/<task-id>/design/` **or** locked `figma_file_key` + `figma_root_node_ids` with MCP/API notes in brain — unless `design_waiver: prd_only` is explicit. STOP. Run **Phase 4.0b** first (see below).
-- **`[P4.1-DISPATCH]` or `[DISPATCH]` implementation lines without prior `[P4.0-EVAL-YAML]`** — At least **one** `*.yaml` (or agreed extension) must exist under `~/forge/brain/prds/<task-id>/eval/` and the log must show **`[P4.0-EVAL-YAML] scenario_files=<n>`** with **n≥1**. If the log jumps from tech plan to `IMPLEMENTATION_STARTED`, STOP — you are replaying the known failure mode; back up to **`eval-scenario-format`** + **`eval-translate-english`**.
+- **`[P4.1-DISPATCH]` or `[DISPATCH]` without prior eval artifact** — Either **≥1** `*.yaml` under `~/forge/brain/prds/<task-id>/eval/` and **`[P4.0-EVAL-YAML] scenario_files≥1`**, **or** valid **`qa/semantic-eval-manifest.json`** + logged **`[P4.0-SEMANTIC-EVAL]`** (see **`docs/forge-task-verification.md`**). If the log jumps from tech plan to `IMPLEMENTATION_STARTED`, STOP; back up to **`eval-scenario-format`** + **`eval-translate-english`** or semantic eval path.
 
 ## Purpose
 
@@ -319,7 +319,7 @@ Ensure **consensus** across all repos (no conflicting contracts).
      ```
      **FAIL** → return to step 4 (revision) until **PASS** or escalate.
   6. Only after **all** `[TECH-PLAN-REVIEW] … PASS` and **`[TECH-PLAN-XALIGN] … PASS`** (or XALIGN `N/A` single-repo HTTP) may conductor proceed to the **human tech-plan gate** (step 7) — not yet State 4b.
-  6b. **Machine structure (slip rail):** Run **`python3 tools/verify_tech_plans.py --task-id <id> --brain <brain>`** from the Forge checkout; require **exit 0** before step 7. Fails on missing canonical **1b** headings, **`### 1b.2a` before** wire maps, or **`REVIEW_PASS`** without **`<!-- FORGE-GATE:SECTION-0C-INVENTORY:v1 -->`** / **`<!-- FORGE-GATE:CODE-RECROSS:v1 -->`** (see **`tech-plan-write-per-project` Section 1c** + **`tech-plan-self-review` Section 0c**). **`verify_forge_task.py --strict-tech-plans`** bundles the same tech-plan checks but also requires **`eval/*.yaml`** — better for CI **after** eval files exist. Teams that saw **structural green / semantic thin** plans should run **`--strict-0c-inventory`** (or **`verify_tech_plans.py --strict-0c-inventory`**) in CI — rejects Section 0c **GAP** rows and **prd-locked-only** inventories when Confluence mirror, **touchpoints/**, or populated **QA CSV** exist (**`docs/forge-task-verification.md`**).
+  6b. **Machine structure (slip rail):** Run **`python3 tools/verify_tech_plans.py --task-id <id> --brain <brain>`** from the Forge checkout; require **exit 0** before step 7. Fails on missing canonical **1b** headings, **`### 1b.2a` before** wire maps, or **`REVIEW_PASS`** without **`<!-- FORGE-GATE:SECTION-0C-INVENTORY:v1 -->`** / **`<!-- FORGE-GATE:CODE-RECROSS:v1 -->`** (see **`tech-plan-write-per-project` Section 1c** + **`tech-plan-self-review` Section 0c**). **`verify_forge_task.py --strict-tech-plans`** bundles the same tech-plan checks but also requires **`eval/*.yaml`** **or** valid **`qa/semantic-eval-manifest.json`** — better for CI **after** eval artifacts exist. Teams that saw **structural green / semantic thin** plans should run **`--strict-0c-inventory`** (or **`verify_tech_plans.py --strict-0c-inventory`**) in CI — rejects Section 0c **GAP** rows and **prd-locked-only** inventories when Confluence mirror, **touchpoints/**, or populated **QA CSV** exist (**`docs/forge-task-verification.md`**).
   7. **Human tech-plan gate (feedback + go-ahead):** Ensure **`~/forge/brain/prds/<task-id>/tech-plans/HUMAN_SIGNOFF.md`** exists per **`docs/tech-plan-human-signoff.template.md`** with **`status: approved`** **or** **`waived`** (reason + actor required). If **`changes_requested`**, merge feedback into plans, return to **step 4** (self-review loop) until agent PASS + XALIGN + **new** human signoff. Log:
      ```
      [TECH-PLAN-HUMAN] task_id=<id> status=APPROVED|WAIVED|CHANGES_REQUESTED actor=<who>
@@ -341,20 +341,27 @@ Ensure **consensus** across all repos (no conflicting contracts).
 
 ### State 4b: Eval scenarios + RED tests (HARD-GATE before implementation)
 
-**Agent prerequisite order (same as State 4b steps 0→1):** **`qa-write-scenarios` Step −1** — **`prd-locked.md`** → **`qa-prd-analysis`** (**`using-forge`** **Multi-question elicitation** for coverage, Step 0.5 + **`qa-analysis.md`**) → **`qa-manual-test-cases-from-prd`** / approved CSV or valid waiver → **then** **`eval/*.yaml`**. Do **not** use a **blocking interactive prompt** about CSV/evYAML waivers while **`prd-locked`** or completed **`qa-analysis.md`** is missing (“last gate first”).
+**Agent prerequisite order (same as State 4b steps 0→1):** **`qa-write-scenarios` Step −1** — **`prd-locked.md`** → **`qa-prd-analysis`** (**`using-forge`** **Multi-question elicitation** for coverage, Step 0.5 + **`qa-analysis.md`**) → **`qa-manual-test-cases-from-prd`** / approved CSV or valid waiver → **then** **eval artifact:** **`eval/*.yaml`** (YAML path) **or** **`qa/semantic-eval-manifest.json`** + **`[P4.0-SEMANTIC-EVAL]`** (semantic path per **`docs/forge-task-verification.md`**). Do **not** use a **blocking interactive prompt** about CSV/eval waivers while **`prd-locked`** or completed **`qa-analysis.md`** is missing (“last gate first”).
 
 **ENTRY:** All tech plans written; **`tech-plan-self-review` PASS** per repo; **`[TECH-PLAN-XALIGN]`** **PASS** or **N/A**; **`[TECH-PLAN-HUMAN]`** with **`APPROVED`** or **`WAIVED`**; **`tech-plans/HUMAN_SIGNOFF.md`** on disk matching that log; `shared-dev-spec.md` locked.  
 **ACTION:**
-  0. **Manual QA CSV (acceptance inventory — before eval YAML and before feature TDD):**
+  0. **Manual QA CSV (acceptance inventory — before eval artifact and before feature TDD):**
   - **Full pipeline entrypoint (`/forge` — `commands/forge.md`):** The user chose **end-to-end automation**, not a partial phase. **Always** complete **`qa-prd-analysis`** + **`qa-manual-test-cases-from-prd`** through **Step 7 approval** so **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** exists with **≥1** approved row. Log **`[P4.0-QA-CSV] task_id=<id> rows=<n> approved=yes`**. **Do not** log **`[P4.0-QA-CSV] skipped=not_required`**. If **`~/forge/brain/products/<slug>/product.md`** has **`forge_qa_csv_before_eval`** unset or **`false`**, **set it to `true`** when this step completes so **`verify_forge_task.py`** and later runs match **`/forge`** semantics.
   - **Partial runs** (orchestration **without** the **`/forge`** entrypoint — e.g. user only ran **`/plan`** or asked for “council only”): When **`forge_qa_csv_before_eval: true`** in **`product.md`**, or when the **task charter** explicitly requires a QA CSV deliverable, same requirements as the **`/forge`** bullet (mandatory CSV + log). If the flag is **false** or unset **and** the run is **partial**, this step is **recommended** — log **`[P4.0-QA-CSV] skipped=not_required`** only when intentionally omitted for that partial run.
   - **Escape:** When CSV is mandatory (**flag true** **or** **`/forge`**), the only escape is **`[ABORT_TASK]`** with human owner — not silent skip.
-  1. **Eval scenarios (YAML) — before any feature dispatch, after step 0 when applicable:** Materialize **at least one** executable scenario file under `~/forge/brain/prds/<task-id>/eval/` using **`eval-scenario-format`** + **`eval-translate-english`** from PRD + shared-dev-spec **and** (when `manual-test-cases.csv` exists) **trace rows by `Id` in scenario names or comments**. **Do not** log implementation dispatch until this directory exists on disk. Log **`[P4.0-EVAL-YAML] scenario_files=<n>`** with **`n≥1`**. If the team truly cannot author scenarios yet, the only allowed escape is **`[ABORT_TASK]`** with human owner — not silent skip.
+  1. **Eval artifact — before any feature dispatch, after step 0 when applicable:** Satisfy **one** path on disk (do **not** log P4.1 until one holds):
+     - **YAML path:** **≥1** executable scenario under `~/forge/brain/prds/<task-id>/eval/` using **`eval-scenario-format`** + **`eval-translate-english`** from PRD + shared-dev-spec **and** (when `manual-test-cases.csv` exists) **trace rows by `Id` in scenario names or comments**. Log **`[P4.0-EVAL-YAML] scenario_files=<n>`** with **`n≥1`**.
+     - **Semantic manifest path:** Write valid **`~/forge/brain/prds/<task-id>/qa/semantic-eval-manifest.json`** per **`docs/forge-task-verification.md`** (schema_version, task_id, recorded_at, kind; optional outcome). Log **`[P4.0-SEMANTIC-EVAL]`** (include manifest path / outcome in the line). Use when placeholder YAML would be fiction — the manifest is the honest machine-eval record for **`verify_forge_task.py`**.
+     If neither path can be produced yet, the only allowed escape is **`[ABORT_TASK]`** with human owner — not silent skip.
   2. **TDD — RED first:** For each repo, dispatch **`dev-implementer`** (or a test-focused subagent with the same rigor) with **`forge-tdd`** attached to the prompt. **First deliverable only:** automated tests that encode acceptance from the **tech plan** and, when present, **approved CSV rows** — **must run and fail (RED)** before any production feature code ships for that repo. Log `[P4.0-TDD-RED] repo=<repo> test_files=<list> red_confirmed=yes`.
-  3. Conductor **does not** leave State 4b until **all** of the following hold: (a) **`[P4.0-QA-CSV]`** with `approved=yes` when **`forge_qa_csv_before_eval: true`** **or** the run is **full `/forge`** (`commands/forge.md`); when the flag is false/unset **and** the run is **partial** (not **`/forge`**), (a) may be `skipped=not_required` per step 0; (b) **`[P4.0-EVAL-YAML]`** with `scenario_files≥1`; (c) every in-scope repo has `red_confirmed=yes` (or explicit human **`WAIVE_TDD`** logged with reason — not default). Next: State **4b-design** when applicable, else State 5.
+  3. Conductor **does not** leave State 4b until **all** of the following hold (parentheses = required grouping — **not** “semantic path skips QA-CSV”):  
+     - **(Eval artifact)** **either** **`[P4.0-EVAL-YAML]`** with `scenario_files≥1` **or** **`[P4.0-SEMANTIC-EVAL]`** with valid **`qa/semantic-eval-manifest.json`** on disk; **and**  
+     - **(QA CSV)** **`[P4.0-QA-CSV]`** per step 0 (`approved=yes` when **`forge_qa_csv_before_eval: true`** **or** full **`/forge`**; **`skipped=not_required`** only when flag is false/unset **and** run is **partial**); **and**  
+     - **(TDD)** every in-scope repo has `red_confirmed=yes` (or explicit human **`WAIVE_TDD`** with reason — not default).  
+     Next: State **4b-design** when applicable, else State 5.
 
-**SUCCESS CONDITION:** QA CSV satisfied when required (**`forge_qa_csv_before_eval: true`** or **full `/forge`**); `eval/` exists with ≥1 scenario file; **`[P4.0-EVAL-YAML]`** logged; every repo has logged RED (or waived TDD).  
-**FAILURE CONDITION:** Missing QA CSV when required (**flag true** or **`/forge`**); missing `eval/`; missing `[P4.0-EVAL-YAML]`; skipped RED.  
+**SUCCESS CONDITION:** QA CSV satisfied when required (**`forge_qa_csv_before_eval: true`** or **full `/forge`**); **either** `eval/` has ≥1 scenario **or** valid semantic manifest **+** matching log line; every repo has logged RED (or waived TDD).  
+**FAILURE CONDITION:** Missing QA CSV when required (**flag true** or **`/forge`**); **neither** eval YAML **nor** valid semantic manifest + **`[P4.0-SEMANTIC-EVAL]`**; skipped RED.  
 **ESCALATION:** Missing deploy/runbook in `product.md` → user must fix workspace (`/workspace` Step 3b) before `eval-product-stack-up` can succeed.
 
 ### State 4b-design: Design ingestion (HARD-GATE before P4.1 when net-new UI)
@@ -375,7 +382,11 @@ Ensure **consensus** across all repos (no conflicting contracts).
 **SUCCESS CONDITION:** `[DESIGN-INGEST] … status=PASS` logged, or gate **not applicable** (backend-only / `design_new_work: no` / `design_waiver: prd_only`).
 
 ### State 5: Dispatch Subagents (Dev Implementers — GREEN + completion)
-**ENTRY:** **`[P4.0-EVAL-YAML]` logged with `scenario_files≥1`** **and** State 4b complete (RED logged per repo per policy, **and** **`[P4.0-QA-CSV]`** satisfied per step 0: **`approved=yes`** when **`forge_qa_csv_before_eval: true`** **or** full **`/forge`**, else **`skipped=not_required`** allowed **only** for **partial** runs) **and** State **4b-design** satisfied or not applicable. **If `[P4.0-EVAL-YAML]` is missing, State 5 is forbidden.**  
+**ENTRY:** **All** of the following must hold (explicit **`and`** between sections; section **1** is **`or` inside** — semantic path does **not** waive QA-CSV):
+  1. **Eval artifact:** **either** **`[P4.0-EVAL-YAML]`** with `scenario_files≥1` **or** (**`[P4.0-SEMANTIC-EVAL]`** **and** a valid **`qa/semantic-eval-manifest.json`** on disk). If **neither**, State 5 is **forbidden**.
+  2. **QA CSV:** **`[P4.0-QA-CSV]`** per step 0 — **`approved=yes`** when **`forge_qa_csv_before_eval: true`** **or** full **`/forge`**, else **`skipped=not_required`** allowed **only** for **partial** runs.
+  3. **TDD / State 4b:** RED logged per repo per policy (or explicit **`WAIVE_TDD`**).
+  4. **Design:** State **4b-design** satisfied or not applicable.  
 **ACTION:**
   1. Create a worktree per repo (if not already from 4b, reuse policy per `worktree-per-project-per-task`).
   2. Dispatch `dev-implementer` subagent for each repo IN PARALLEL (safe: no shared state between repos).
@@ -386,7 +397,7 @@ Ensure **consensus** across all repos (no conflicting contracts).
      - Contract impact for this repo
      - Success criteria
      - **`forge-tdd`:** implement **GREEN** to satisfy existing tests; extend tests only in new RED→GREEN cycles
-     - Paths to eval YAML for this task
+     - Paths to eval artifacts for this task (**`eval/*.yaml`** and/or **`qa/semantic-eval-manifest.json`** per task policy)
   4. Track completion per subagent.
 
 **SUCCESS CONDITION:** All subagents complete. All repos have commits on their branch.  
@@ -483,21 +494,25 @@ Ensure **consensus** across all repos (no conflicting contracts).
 
 The Conductor manages the complete delivery cycle: dispatching dev work, reviewing code, running evals, and self-healing failures.
 
-#### Phase 4.0: Eval YAML + RED tests (same as State 4b)
+#### Phase 4.0: Eval artifact (YAML or semantic manifest) + RED tests (same as State 4b)
 **ENTRY:** Tech plans + **`[TECH-PLAN-REVIEW]` PASS** per repo + **`[TECH-PLAN-XALIGN]`** PASS or N/A + **`[TECH-PLAN-HUMAN]`** APPROVED or WAIVED + **`tech-plans/HUMAN_SIGNOFF.md`** + `shared-dev-spec.md` locked.  
-**ACTION:** Same as **State 4b** above — **step 0 QA CSV when required** (**`forge_qa_csv_before_eval: true`** **or** full **`/forge`**), then **`eval/` with ≥1 YAML**, **`[P4.0-EVAL-YAML]`** logged, then **forge-tdd** RED logged per repo **before** Phase 4.1 feature work. **Phase 4.1 is invalid without `[P4.0-EVAL-YAML]`** (and invalid without **`[P4.0-QA-CSV]`** **`approved=yes`** when **`forge_qa_csv_before_eval: true`** **or** full **`/forge`**).
+**ACTION:** Same as **State 4b** above — **step 0 QA CSV when required** (**`forge_qa_csv_before_eval: true`** **or** full **`/forge`**), then **either** **`eval/` with ≥1 YAML** + **`[P4.0-EVAL-YAML]`** **or** valid **`qa/semantic-eval-manifest.json`** + **`[P4.0-SEMANTIC-EVAL]`**, then **forge-tdd** RED logged per repo **before** Phase 4.1 feature work. **Phase 4.1 is invalid without** that eval gate (and invalid without **`[P4.0-QA-CSV]`** **`approved=yes`** when **`forge_qa_csv_before_eval: true`** **or** full **`/forge`**).
 
 #### Phase 4.0b: Design ingestion (same as State 4b-design)
 **ENTRY:** Phase 4.0 complete.  
 **ACTION:** Same as **State 4b-design** above — materialize design to `~/forge/brain/prds/<task-id>/design/` or lock figma key+nodes with ingest notes; log `[DESIGN-INGEST]`. **Blocks Phase 4.1** when applicable and not satisfied.
 
 #### Phase 4.1: Dispatch (Create Worktrees, Dispatch Dev-Implementers — GREEN)
-**ENTRY:** **`[P4.0-EVAL-YAML]` with `scenario_files≥1`** **and** **`[P4.0-QA-CSV]`** per step 0 policy **and** Phase 4.0 complete (`[P4.0-TDD-RED]` logged per repo per policy) **and** Phase **4.0b** satisfied or not applicable.  
+**ENTRY:** **All** required (same **`(YAML or semantic) AND QA-CSV AND TDD AND design-phase`** grouping as State 5 — semantic path does **not** waive QA-CSV):
+  1. **Eval:** **`[P4.0-EVAL-YAML]`** with `scenario_files≥1` **or** (**`[P4.0-SEMANTIC-EVAL]`** + valid **`qa/semantic-eval-manifest.json`**).
+  2. **`[P4.0-QA-CSV]`** per step 0 policy (`approved=yes` when **`forge_qa_csv_before_eval: true`** **or** full **`/forge`**; else **`skipped=not_required`** only for partial runs).
+  3. Phase 4.0 complete: **`[P4.0-TDD-RED]`** per repo per policy.
+  4. Phase **4.0b** satisfied or not applicable.  
 **ACTION:**
   1. Invoke `worktree-per-project-per-task` skill to create isolated worktrees per repo.
   2. For each repo IN PARALLEL:
      - Dispatch `dev-implementer` subagent.
-     - Pass: task_id, repo path, tech plan, contract impact, success criteria, **`forge-tdd`**, paths to eval YAML, confirmation that RED tests already exist.
+     - Pass: task_id, repo path, tech plan, contract impact, success criteria, **`forge-tdd`**, paths to eval artifacts (YAML and/or semantic manifest), confirmation that RED tests already exist.
      - Track worktree ID and branch name.
   3. Monitor all subagents for completion or failure.
 
@@ -952,7 +967,7 @@ User decides: retry, manual fix, or abort
 
 ### Log Format
 
-**Audit rule (MUST for phase markers):** Every appended line that contains a **`[P…]`** phase token (e.g. **`[P4.0-EVAL-YAML]`**, **`[P4.1-DISPATCH]`**) MUST start with an **ISO-8601 UTC timestamp** so `conductor.log` sorts and verifies cleanly:
+**Audit rule (MUST for phase markers):** Every appended line that contains a **`[P…]`** phase token (e.g. **`[P4.0-EVAL-YAML]`**, **`[P4.0-SEMANTIC-EVAL]`**, **`[P4.1-DISPATCH]`**) MUST start with an **ISO-8601 UTC timestamp** so `conductor.log` sorts and verifies cleanly:
 
 - Preferred: `2026-04-24T12:00:00Z [P4.0-EVAL-YAML] scenario_files=1 …`
 - Also accepted: `[2026-04-24T12:00:00Z] [P4.0-EVAL-YAML] …`
@@ -981,7 +996,7 @@ All logs written to: `~/forge/brain/prds/<task-id>/conductor.log`
 
 After materializing eval (or other) artifacts, record **SHA256 attestations** in append-only **`phase-ledger.jsonl`** at `~/forge/brain/prds/<task-id>/` — any shell can run:
 
-`python3 <forge>/tools/append_phase_ledger.py --brain … --task-id … --phase '[P4.0-EVAL-YAML]' --artifacts eval/smoke.yaml`
+`python3 <forge>/tools/append_phase_ledger.py --brain … --task-id … --phase '[P4.0-EVAL-YAML]' --artifacts eval/smoke.yaml` (or **`--phase '[P4.0-SEMANTIC-EVAL]' --artifacts qa/semantic-eval-manifest.json`**)
 
 CI can enforce with **`tools/verify_forge_task.py --validate-phase-ledger`** (and **`--phase-ledger-verify-hashes`** when you want bytes proof).
 
@@ -989,11 +1004,11 @@ CI can enforce with **`tools/verify_forge_task.py --validate-phase-ledger`** (an
 
 Forge ships **`tools/verify_forge_task.py`** (stdlib core; optional PyYAML for eval shape) to **fail CI or pre-push** when:
 
-- `prds/<task-id>/eval/` has no scenario YAML, or eval YAML shape is invalid (**`--validate-eval-yaml`**), or
+- `prds/<task-id>/eval/` has no scenario YAML **and** `qa/semantic-eval-manifest.json` is missing or invalid, or eval YAML shape is invalid when present (**`--validate-eval-yaml`**), or
 - **`prd-locked.md`** is missing mandatory intake sections (**`--check-prd-sections`**), or
 - **`shared-dev-spec.md`** fails checklist / TBD scan (**`--check-shared-spec`**), or
 - **`phase-ledger.jsonl`** is invalid or hashes do not match disk (**`--validate-phase-ledger`**, **`--phase-ledger-verify-hashes`**), or
-- `conductor.log` shows **`[P4.1-DISPATCH]`** before **`[P4.0-EVAL-YAML]`**, or
+- `conductor.log` shows **`[P4.1-DISPATCH]`** before the first **`[P4.0-EVAL-YAML]`** or **`[P4.0-SEMANTIC-EVAL]`**, or
 - `forge_qa_csv_before_eval: true` but CSV / log order is wrong, or
 - Net-new design (per `prd-locked.md`) lacks **`design/`** files and/or **`[DESIGN-INGEST]`** before P4.1.
 
@@ -1053,8 +1068,8 @@ conductor_state task_id=<id>
 - [ ] Logs human-readable, timestamped, machine-parseable.
 
 ### Phase 4 (Delivery & Verification)
-- [ ] **P4.0 Prerequisites:** **`[P4.0-QA-CSV]`** with approved `manual-test-cases.csv` **before** `[P4.0-EVAL-YAML]` when **`forge_qa_csv_before_eval: true`** **or** entrypoint is **full `/forge`** (`commands/forge.md`); for **partial** runs with flag false/unset, log `skipped=not_required` only if CSV is intentionally omitted.
-- [ ] **P4.0 Prerequisites:** `~/forge/brain/prds/<task-id>/eval/` contains **≥1** scenario file; **`[P4.0-EVAL-YAML] scenario_files≥1`** logged; **`forge-tdd` RED** logged per repo (`[P4.0-TDD-RED]`); conductor log shows subagent runs for tests-before-feature. **Never** log `[P4.1-DISPATCH]` before `[P4.0-EVAL-YAML]`.
+- [ ] **P4.0 Prerequisites:** **`[P4.0-QA-CSV]`** with approved `manual-test-cases.csv` **before** the first `[P4.0-EVAL-YAML]` or `[P4.0-SEMANTIC-EVAL]` when **`forge_qa_csv_before_eval: true`** **or** entrypoint is **full `/forge`** (`commands/forge.md`); for **partial** runs with flag false/unset, log `skipped=not_required` only if CSV is intentionally omitted.
+- [ ] **P4.0 Prerequisites:** **Either** `~/forge/brain/prds/<task-id>/eval/` has **≥1** scenario and **`[P4.0-EVAL-YAML] scenario_files≥1`**, **or** valid **`qa/semantic-eval-manifest.json`** + **`[P4.0-SEMANTIC-EVAL]`**; **`forge-tdd` RED** logged per repo (`[P4.0-TDD-RED]`); conductor log shows subagent runs for tests-before-feature. **Never** log `[P4.1-DISPATCH]` before the eval gate.
 - [ ] **P4.0b Design ingest:** When `design_new_work: yes` and web/app in scope, `[DESIGN-INGEST]` logged with brain `design/` or figma key+nodes evidence — before P4.1.
 - [ ] **P4.1 Dispatch:** worktree-per-project-per-task invoked. Dev-implementers dispatched in parallel **after** RED and design gate (GREEN implementation).
 - [ ] **P4.2 Review:** spec-reviewer invoked per repo; **design-implementation-reviewer** or **figma-design-sync** when harness exists and net-new UI. Max 2 fix rounds per repo. Escalation on final FAIL.
@@ -1132,7 +1147,7 @@ Before claiming orchestration complete:
 
 - [ ] PRD locked in brain before council was dispatched
 - [ ] All 4 surfaces reasoned and all 5 contracts locked before build dispatch
-- [ ] **P4.0:** `[P4.0-QA-CSV]` per product policy; `eval/*.yaml` (≥1) on disk; **`[P4.0-EVAL-YAML]`** logged; **`forge-tdd` RED** logged per repo before GREEN implementation
+- [ ] **P4.0:** `[P4.0-QA-CSV]` per product policy; **either** `eval/*.yaml` (≥1) + **`[P4.0-EVAL-YAML]`** **or** valid **`qa/semantic-eval-manifest.json`** + **`[P4.0-SEMANTIC-EVAL]`**; **`forge-tdd` RED** logged per repo before GREEN implementation
 - [ ] **P4.0b:** `[DESIGN-INGEST]` when net-new UI; waived or N/A documented otherwise
 - [ ] All subagent statuses resolved (no NEEDS_CONTEXT or BLOCKED outstanding) before eval
 - [ ] **P4.4 eval invoked** (not skipped after partial implement); eval returned GREEN before any PRs were raised

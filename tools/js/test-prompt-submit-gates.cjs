@@ -89,11 +89,19 @@ assert('spec frozen, nothing done → 3 missing gates',
   resolveNextGate('[P1-PRD-LOCKED]\n[P3-SPEC-FROZEN]'),
   '[P4.0-QA-CSV]');
 
-assert('spec frozen, QA-CSV done → still missing EVAL-YAML and TDD-RED',
+assert('spec frozen, QA-CSV done → still missing eval artifact (YAML or semantic) and TDD-RED',
   resolveNextGate('[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes'),
-  '[P4.0-EVAL-YAML]');
+  '[P4.0-SEMANTIC-EVAL]');
 
-assert('spec frozen, all 3 done → dispatch',
+assert('spec frozen, QA-CSV + SEMANTIC-EVAL, no TDD → missing TDD only',
+  resolveNextGate('[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-SEMANTIC-EVAL]'),
+  '[P4.0-TDD-RED]');
+
+assert('spec frozen, QA-CSV + SEMANTIC-EVAL + TDD → all State 4b satisfied (no false EVAL-YAML)',
+  resolveNextGate('[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-SEMANTIC-EVAL]\n[P4.0-TDD-RED]'),
+  'All State 4b gates satisfied');
+
+assert('YAML path only (EVAL-YAML + QA-CSV + TDD; no SEMANTIC-EVAL) → all State 4b satisfied',
   resolveNextGate('[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-EVAL-YAML]\n[P4.0-TDD-RED]'),
   'All State 4b gates satisfied');
 

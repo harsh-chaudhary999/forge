@@ -3,7 +3,7 @@ name: eval-driver-android-adb
 description: "WHEN: Eval scenario requires Android app interaction or assertion. Eval driver for Android via ADB + UIAutomator. Functions: connect(device_id), launch(package), tap(target), type(text), swipe(direction), assert_element(target), screenshot(), disconnect()."
 type: rigid
 requires: [eval-scenario-format]
-version: 1.0.1
+version: 1.0.3
 preamble-tier: 3
 triggers:
   - "eval on Android"
@@ -77,6 +77,25 @@ If you notice any of these, STOP and do not proceed:
 
 Use this **every** eval run so failures are **actionable** (missing SDK vs no device vs wrong device), not opaque.
 
+### Preflight — host capability, logging, failure modes (run before §1)
+
+**Log file (canonical):** **`mkdir -p ~/forge/brain/prds/<task-id>/qa/logs`** then append to **`eval-preflight-<ISO8601>.log`** (see **`skills/forge-brain-layout/SKILL.md`** **qa/logs/**). Start each probe block with **`--- android ---`**. **Tee** or redirect **stdout + stderr** of **`adb`**, **`emulator`**, **`sdkmanager`**, **`avdmanager`** into that file so crashes are debuggable.
+
+| Check | Action |
+|--------|--------|
+| **Environment** | If **`which adb`** fails or **`emulator` / `sdkmanager` missing**, append checklist to log: **`ANDROID_HOME`**, **`ANDROID_SDK_ROOT`**, **`PATH`** must include **`platform-tools`**, **`emulator`**, **`cmdline-tools/latest/bin`**. Tell user to fix env and retry — **do not** guess paths. |
+| **Linux KVM (acceleration)** | On Linux: **`[ -r /dev/kvm ]`**; if **`kvm-ok`** exists, run it. **No KVM** (or CI without `/dev/kvm`) → hardware emu often **too slow or stuck**; **BLOCK** with log path: use a **KVM-capable host**, **physical USB device**, or **external device farm** — **no infinite boot wait**. |
+| **Timeouts (no infinite loops)** | Cap **wall-clock** for emulator start (team default e.g. **10–15 min** first boot). Cap **poll iterations** for **`sys.boot_completed`** (e.g. **60** tries × **5 s** = **5 min** max) — then **BLOCK** with last **`adb`** / **`getprop`** lines in log. |
+| **Air-gapped / download failure** | If **`sdkmanager`** / image install fails (network, 403, disk): **STOP**, paste **stderr** into log, **do not** blind-retry. Suggest **proxy**, **offline SDK mirror**, or **Android Studio** SDK Manager — user must decide. |
+| **Permission errors (SDK dirs)** | If **`EACCES`** / cannot write under **`ANDROID_HOME`**: **do not** run **`sudo`** inside the agent session. Print **exact** **`chown`**/**`chmod`** or one-line **`sudo`** commands for the **user’s terminal**, then **`AskUserQuestion`**: *Applied — retry preflight?* per **`using-forge`**. |
+
+**Non-empty AVD list but no running emulator (before `connect()`):** This path is **common** (e.g. **`Pixel_10_Pro_XL`** exists but **`adb devices`** is empty). It is **not** the same as **§5** (zero AVDs).
+
+1. After § Preflight env/KVM checks, run **`adb devices -l`** and **`emulator -list-avds`**; append to **`qa/logs/eval-preflight-*.log`**.
+2. If **`emulator -list-avds`** returns **≥1** name and **`adb devices`** shows **no** usable **`emulator-555x`** / **`device`** row (empty list or only **`offline`**/**`unauthorized`**): **list the AVD names** and use **`AskUserQuestion`** / **`AskQuestion`**: *Boot one of these now for Android eval? Which AVD?* (or *defer / use USB device*). **Do not** assume **`url-only`** from **`qa-branch-env-prep`** meant “skip Android” — explicit decline → log **`drivers=skipped_reason=android:no_running_device_user_declined_boot`** when scenarios still require Android.
+3. On **confirm**, follow **§3 Boot path** with **§ Preflight** timeouts — **no** unbounded **`wait-for-device`** / **`getprop`** loops.
+4. **`qa-branch-env-prep` Step 0.0** may already have listed the same AVDs — **still** confirm boot here before **`connect()`** if no device is attached.
+
 ### 1. Preconditions (fail fast with a clear message)
 
 - **`adb` in PATH** — If `which adb` fails, tell the user: install **Android SDK Platform-Tools**, or set **`ANDROID_HOME`** (or **`ANDROID_SDK_ROOT`**) and add **`$ANDROID_HOME/platform-tools`** to **PATH**. Do not guess paths.
@@ -117,6 +136,17 @@ If **`emulator`** is missing, or **`emulator -list-avds`** is empty and no USB d
 - Prefer **booting an existing AVD** that matches the requested **API level** (or closest name from **`emulator -list-avds`**).
 - **Creating** a new AVD (**`avdmanager create avd`**) + **installing** system images (**`sdkmanager`**) is **slow**, **license-** and **network-sensitive**, and often **breaks unattended**. If it fails, return **BLOCKED** with the exact stderr (e.g. **`sdkmanager --licenses`**, missing **`cmdline-tools`**, accept licenses).
 - If spawn/create is impossible, return **`success: false`** with env/SDK/timeout detail — **never** silently skip mobile eval.
+
+**Ordered path when `emulator -list-avds` is empty and no USB device** (log each step to **`qa/logs/eval-preflight-*.log`**):
+
+1. **List installed system images** — **`sdkmanager --list_installed`** (and/or list **`system-images`** packages). If a **usable** **Google APIs** / **default** x86_64 image exists for the target API, run **`avdmanager create avd -n <name> -k <system-image-id>`** with **non-interactive** flags (`--force` if supported). See **`sdkmanager --licenses`** if prompted.
+2. If **no** suitable image is installed: **`AskUserQuestion`** / **`AskQuestion`** for **API level** and **ABI** (e.g. **google_apis** vs **default**, **x86_64**). Install packages such as **`platforms;android-XX`** and **`system-images;android-XX;google_apis;x86_64`** via **`sdkmanager`** — append full stderr on failure (**air-gap** → stop with evidence).
+3. **Create AVD** with **`avdmanager create avd`**, then **boot** per **§3** with **§ Preflight** timeouts (**no** unbounded **`getprop`** loop).
+4. **`adb wait-for-device`** → **`sys.boot_completed == 1`** within capped polls — else **BLOCK** with log tail.
+
+### 5b. Optional: Appium MCP / Appium server (host choice)
+
+If the human chooses **Appium** over raw ADB UIAutomator (per **CLAUDE.md** D5 — **ask** first): follow upstream **[appium/appium-mcp](https://github.com/appium/appium-mcp)** for MCP wiring; **`npm i -g appium`** may require **Node** — if **`npm`** / **`node`** missing, tell user to install **Node LTS**, then retry. **Do not** **`sudo`** in-agent for system-wide installs; document failures in **`qa/logs/`**. Align with **`eval-coordinate-multi-surface`** so one path is selected per task.
 
 ### 6. Unbiased expectation
 

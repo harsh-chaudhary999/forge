@@ -18,6 +18,8 @@
 const GATE_PATTERNS = {
   QA_CSV:           /\[P4\.0-QA-CSV\].*approved=yes/,
   EVAL_YAML:        /\[P4\.0-EVAL-YAML\]/,
+  /** Alternative or supplementary State 4b machine-eval log marker — may coexist with [P4.0-EVAL-YAML]; see docs/forge-task-verification.md */
+  SEMANTIC_EVAL:    /\[P4\.0-SEMANTIC-EVAL\]/,
   TDD_RED:          /\[P4\.0-TDD-RED\]/,
   DISPATCH:         /\[P4\.1-DISPATCH\]/,
   EVAL_GREEN:       /\[P4\.4-EVAL-GREEN\]/,
@@ -94,9 +96,11 @@ function resolveNextGate(logContent) {
   if (has(GATE_PATTERNS.SPEC_FROZEN)) {
     const termSuffix = isTermOpen ? TERMINOLOGY_ALSO_SUFFIX : '';
     const missing = [];
-    if (!has(GATE_PATTERNS.QA_CSV))    missing.push('[P4.0-QA-CSV] — run qa-prd-analysis → qa-manual-test-cases-from-prd → get user approval');
-    if (!has(GATE_PATTERNS.EVAL_YAML)) missing.push('[P4.0-EVAL-YAML] — write eval scenarios under prds/<id>/eval/*.yaml');
-    if (!has(GATE_PATTERNS.TDD_RED))   missing.push('[P4.0-TDD-RED] — write failing test, observe FAIL before any implementation');
+    if (!has(GATE_PATTERNS.QA_CSV)) missing.push('[P4.0-QA-CSV] — run qa-prd-analysis → qa-manual-test-cases-from-prd → get user approval');
+    if (!has(GATE_PATTERNS.EVAL_YAML) && !has(GATE_PATTERNS.SEMANTIC_EVAL)) {
+      missing.push('[P4.0-EVAL-YAML] or [P4.0-SEMANTIC-EVAL] — write eval/*.yaml scenarios or qa/semantic-eval-manifest.json + log line per docs/forge-task-verification.md');
+    }
+    if (!has(GATE_PATTERNS.TDD_RED)) missing.push('[P4.0-TDD-RED] — write failing test, observe FAIL before any implementation');
 
     if (missing.length > 0) {
       return `NEXT GATE (State 4b — required before [P4.1-DISPATCH]):\n${missing.map(m => `  • ${m}`).join('\n')}${termSuffix}`;

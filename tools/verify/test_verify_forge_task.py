@@ -123,5 +123,60 @@ class TestVerifyDetailed(unittest.TestCase):
         self.assertEqual(warns, [])
 
 
+
+class TestSemanticEvalManifest(unittest.TestCase):
+    def test_manifest_only_passes_eval_gate(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as brain_s:
+            brain = Path(brain_s)
+            tid = "x-task"
+            task_dir = brain / "prds" / tid
+            (task_dir / "qa").mkdir(parents=True)
+            manifest = task_dir / "qa" / "semantic-eval-manifest.json"
+            manifest.write_text(
+                """{"schema_version":1,"task_id":"x-task","recorded_at":"2026-04-29T00:00:00Z","kind":"semantic-eval-record","outcome":"pass"}
+""",
+                encoding="utf-8",
+            )
+            prd = task_dir / "prd-locked.md"
+            prd.write_text("# PRD Locked\n", encoding="utf-8")
+
+            errs, warns = vft.verify_detailed(
+                brain=brain,
+                task_id=tid,
+                product_slug=None,
+                strict_tdd=False,
+                require_log=False,
+            )
+            need_yaml_msgs = [e for e in errs if "Need at least one eval scenario" in e]
+            self.assertEqual(need_yaml_msgs, [], errs)
+
+    def test_bad_manifest_errors(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as brain_s:
+            brain = Path(brain_s)
+            tid = "x-task"
+            task_dir = brain / "prds" / tid
+            (task_dir / "qa").mkdir(parents=True)
+            manifest = task_dir / "qa" / "semantic-eval-manifest.json"
+            manifest.write_text(
+                '{"schema_version":1,"task_id":"wrong","recorded_at":"2026-04-29T00:00:00Z","kind":"k"}',
+                encoding="utf-8",
+            )
+            prd = task_dir / "prd-locked.md"
+            prd.write_text("# PRD Locked\n", encoding="utf-8")
+
+            errs, warns = vft.verify_detailed(
+                brain=brain,
+                task_id=tid,
+                product_slug=None,
+                strict_tdd=False,
+                require_log=False,
+            )
+            self.assertTrue(any("task_id must match" in e for e in errs))
+            self.assertTrue(any("Need at least one eval scenario" in e for e in errs))
+
 if __name__ == "__main__":
     unittest.main()

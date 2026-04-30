@@ -3,7 +3,7 @@ name: eval-coordinate-multi-surface
 description: "WHEN: A multi-surface eval scenario needs to be executed across web, API, DB, cache, search, and event bus layers. Coordinate multi-driver eval scenarios. Chain web (CDP) → API (HTTP) → DB (MySQL) → cache (Redis) → search (ES) → events (Kafka). Report pass/fail with evidence."
 type: rigid
 requires: [brain-read, eval-driver-web-cdp, eval-driver-api-http, eval-driver-db-mysql, eval-driver-cache-redis, eval-driver-search-es, eval-driver-bus-kafka]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "run multi-surface eval"
@@ -51,6 +51,7 @@ EVERY SURFACE IN THE SCENARIO MUST BE DRIVEN IN ORDER — NO SURFACE IS SKIPPED 
 
 If you notice any of these, STOP and do not proceed:
 
+- **QA-P5 / multi-surface run logs success using only `curl` smokes while YAML specifies `driver: api-http` for API steps** — STOP. Dispatch **`api-http`** steps through **`eval-driver-api-http`** (this skill’s orchestration role). **`curl`** may aid debugging; it **does not** satisfy **`driver: api-http`** scenario execution. Same for **`eval-product-stack-up`** vs **eval host** confusion — services **up** implies API driver **can** run; skipping it is a **judgement error**, not infra absent.
 - **A scenario step fails and subsequent steps are still executed** — A failed step means the system is in an unknown state. Running further steps against corrupted state produces meaningless results. STOP. Any step failure must abort the scenario and record the failure point.
 - **DB and cache are not checked after a web action** — A web action completing does not mean the data persisted or the cache invalidated. These are separate layers that can silently fail. STOP. Every write action must be followed by DB and cache verification steps.
 - **Services are health-checked at startup but not re-verified mid-scenario** — A service can degrade or crash during a long scenario. Health at start ≠ health at step 12. STOP. Re-check critical service health after any step that produces unexpected results.

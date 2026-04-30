@@ -3,7 +3,7 @@ name: qa-manual-test-cases-from-prd
 description: "WHEN: You need atomic manual QA test cases in CSV from a PRD plus optional existing suite and knowledge base, with estimation, reuse/deprecation tracking, review, and a final report — any product, any TMS."
 type: rigid
 requires: [qa-prd-analysis, brain-read, brain-write]
-version: 1.4.1
+version: 1.4.3
 preamble-tier: 3
 triggers:
   - "generate test cases"
@@ -45,7 +45,7 @@ Approved manual test cases are **acceptance inventory**: they define *what* must
 4. **P4.1 implementation (GREEN)** — production code only after RED exists.
 5. **P4.4 eval** — **real execution** of the YAML against the stack; results should align with the same acceptance inventory.
 
-**HARD-GATE (team opt-in):** If `~/forge/brain/products/<slug>/product.md` sets **`forge_qa_csv_before_eval: true`** for this product, **`conductor-orchestrate` State 4b** requires a logged **`[P4.0-QA-CSV]`** *before* **`[P4.0-EVAL-YAML]`**. Without that, do not author eval YAML or dispatch feature work.
+**HARD-GATE (team opt-in):** If `~/forge/brain/products/<slug>/product.md` sets **`forge_qa_csv_before_eval: true`** for this product, **`conductor-orchestrate` State 4b** requires a logged **`[P4.0-QA-CSV]`** *before* **`[P4.0-EVAL-YAML]`** or **`[P4.0-SEMANTIC-EVAL]`**. Without that, do not author machine-eval artifacts or dispatch feature work.
 
 **Anti-pattern:** Writing eval YAML or TDD tests **only** from prose tech plans while ignoring an in-flight QA CSV for the same task — you will double-specify and drift.
 
@@ -78,7 +78,7 @@ Approved manual test cases are **acceptance inventory**: they define *what* must
 ## Iron Law
 
 ```
-EACH TEST CASE TESTS EXACTLY ONE VERIFIABLE OUTCOME; EVERY ROW HAS A SOURCE (PRD | KB | REGRESSION | …); BEFORE STEP 5, RE-LOAD THE FULL REQUIREMENT BUNDLE (STEP 1b) — NOT JUST qa-analysis.md; EVERY NEW ROW MUST BE ANCHORABLE TO A PRD BULLET, SPEC SECTION, TECH-PLAN TASK, OR CONTRACT CLAUSE; DO NOT APPEND ROWS TO THE CSV UNTIL STEP 3 (SAMPLES) IS APPROVED — AND NEVER SKIP STEP 7 COUNT APPROVAL BEFORE THE FINAL REPORT (STEP 8). FOR TEAMS THAT OPT IN (forge_qa_csv_before_eval: true), THIS CSV MUST BE APPROVED BEFORE EVAL YAML AND BEFORE TDD FEATURE WORK SO RED TESTS AND P4.4 EXECUTION TRACE TO THE SAME ACCEPTANCE SET.
+EACH TEST CASE TESTS EXACTLY ONE VERIFIABLE OUTCOME; EVERY ROW HAS A SOURCE (PRD | KB | REGRESSION | …); BEFORE STEP 5, RE-LOAD THE FULL REQUIREMENT BUNDLE (STEP 1b) — NOT JUST qa-analysis.md; EVERY NEW ROW MUST BE ANCHORABLE TO A PRD BULLET, SPEC SECTION, TECH-PLAN TASK, OR CONTRACT CLAUSE; DO NOT APPEND ROWS TO THE CSV UNTIL STEP 3 (SAMPLES) IS APPROVED — AND NEVER SKIP STEP 7 COUNT APPROVAL BEFORE THE FINAL REPORT (STEP 8). FOR TEAMS THAT OPT IN (forge_qa_csv_before_eval: true), THIS CSV MUST BE APPROVED BEFORE MACHINE-EVAL ARTIFACTS (DECLARATIVE YAML OR SEMANTIC CSV/MANIFEST) AND BEFORE TDD FEATURE WORK SO RED TESTS AND P4.4 EXECUTION TRACE TO THE SAME ACCEPTANCE SET.
 DESCRIPTION IS NEVER “PLAIN PROSE SUMMARY.” UI/API CASES: DESCRIPTION MUST CONTAIN NUMBERED STEPS (1. Navigate… OR 1. Call …); PRECONDITIONS EXPLICIT (COLUMN OR “Preconditions:” LEAD-IN) WHEN STATE ≠ DEFAULT HAPPY PATH; SUMMARY+EXPECTED ALONE WITHOUT EXECUTABLE STEPS IS REJECTED AT SAMPLE REVIEW.
 WHEN qa-analysis.md HAS coverage_depth: comprehensive, CSV HEADER MUST INCLUDE “Preconditions” (AND “Source”) — NOT 8-COLUMN-ONLY; PRECONDITIONS CELL PER ROW = EXPLICIT SETUP OR “None” / “N/A — default happy path”, NEVER BLANK SILENCE.
 SUMMARY MUST READ AS PLAIN ENGLISH TO A NEW QA READER (NO ACRONYM SOUP / INTERNAL TICKET SHORTHAND WITHOUT DEFINITION); A LIST OF CUTE TITLES WITHOUT NUMBERED DESCRIPTION IS NOT A TEST SUITE — FIX BEFORE STEP 3 APPROVAL.

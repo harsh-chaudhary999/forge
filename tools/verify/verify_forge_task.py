@@ -3,7 +3,8 @@
 Machine checks for Forge task readiness under a git-backed brain.
 
 Validates (when applicable):
-  - At least one eval scenario file under prds/<task-id>/eval/
+  - At least one eval scenario file under prds/<task-id>/eval/, OR valid
+    qa/semantic-eval-manifest.json (semantic eval evidence — docs/forge-task-verification.md)
   - Optional --validate-eval-yaml: eval scenario shape checks (PyYAML when
     installed; else stdlib best-effort via tools/verify/eval_yaml_stdlib.py).
   - Optional --check-prd-sections: prd-locked.md mandatory lock headings/fields.
@@ -11,7 +12,8 @@ Validates (when applicable):
     markers must start with ISO-8601 (audit trail).
   - Optional --strict-single-task-brain: fail if multiple prds/*/conductor.log
     (use --allow-multi-task-brain to opt out).
-  - conductor.log ordering: [P4.0-EVAL-YAML] before any [P4.1-DISPATCH]
+  - conductor.log ordering: [P4.0-EVAL-YAML] or [P4.0-SEMANTIC-EVAL] before
+    any [P4.1-DISPATCH] (earlier automation marker wins for ordering)
   - forge_qa_csv_before_eval: true -> qa/manual-test-cases.csv + log order vs eval
   - Net-new design (prd-locked) -> design/ artifacts or [DESIGN-INGEST] before P4.1
   - Optional --strict-tdd: [P4.0-TDD-RED] before first [P4.1-DISPATCH]
@@ -64,6 +66,7 @@ if str(_TOOLS_DIR) not in sys.path:
 from eval_yaml_stdlib import validate_eval_dir_stdlib
 from forge_paths import default_brain_root, sanitize_task_id
 from phase_ledger import LEDGER_NAME, verify_ledger
+from semantic_csv import validate_semantic_automation_file
 from shared_spec_policy import validate_shared_spec
 
 
@@ -295,6 +298,7 @@ RE_DESIGN_NEW_YES = re.compile(
 )
 RE_DESIGN_WAIVER_PRD = re.compile(r"design_waiver.*prd_only", re.IGNORECASE)
 RE_P40_EVAL = re.compile(r"\[P4\.0-EVAL-YAML\]")
+RE_P40_SEMANTIC_EVAL = re.compile(r"\[P4\.0-SEMANTIC-EVAL\]")
 RE_P41_DISPATCH = re.compile(r"\[P4\.1-DISPATCH\]")
 RE_P40_QA_APPROVED = re.compile(r"\[P4\.0-QA-CSV\].*approved=yes")
 RE_P40_QA_SKIPPED = re.compile(r"\[P4\.0-QA-CSV\].*skipped=not_required")
@@ -363,6 +367,63 @@ def _eval_yaml_count(eval_dir: Path) -> int:
         if p.is_file() and p.suffix.lower() in (".yaml", ".yml"):
             n += 1
     return n
+
+
+def _semantic_eval_manifest_path(task_dir: Path) -> Path:
+    return task_dir / "qa" / "semantic-eval-manifest.json"
+
+
+def _validate_semantic_eval_manifest(task_dir: Path, task_id: str) -> list[str]:
+    path = _semantic_eval_manifest_path(task_dir)
+    if not path.is_file():
+        return []
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+    except json.JSONDecodeError as exc:
+        return [f"{path.name}: invalid JSON ({exc})"]
+    if not isinstance(raw, dict):
+        return [f"{path.name}: root must be a JSON object"]
+    errs: list[str] = []
+    if raw.get("schema_version") != 1:
+        errs.append(f"{path.name}: schema_version must be 1")
+    if raw.get("task_id") != task_id:
+        errs.append(f"{path.name}: task_id must match task ({task_id!r})")
+    for key in ("recorded_at", "kind"):
+        v = raw.get(key)
+        if not v or not isinstance(v, str) or not str(v).strip():
+            errs.append(f"{path.name}: missing or empty string {key!r}")
+    outcome = raw.get("outcome")
+    if outcome is not None and outcome not in ("pass", "fail", "yellow"):
+        errs.append(f"{path.name}: outcome must be pass, fail, yellow, or omitted")
+    return errs
+
+
+def _semantic_automation_csv_path(task_dir: Path) -> Path:
+    return task_dir / "qa" / "semantic-automation.csv"
+
+
+def _semantic_csv_coherence_errors(task_dir: Path, manifest_raw: dict | None) -> list[str]:
+    """
+    When qa/semantic-automation.csv exists, validate parse + DependsOn DAG.
+    When manifest kind is semantic-csv-eval, require that CSV file to exist.
+    """
+    errs: list[str] = []
+    csv_path = _semantic_automation_csv_path(task_dir)
+    kind = manifest_raw.get("kind") if isinstance(manifest_raw, dict) else None
+    if csv_path.is_file():
+        errs.extend(validate_semantic_automation_file(csv_path))
+    elif kind == "semantic-csv-eval":
+        errs.append(
+            f"semantic-eval-manifest.json kind semantic-csv-eval requires {_semantic_automation_csv_path(task_dir)}"
+        )
+    return errs
+
+
+def _first_automation_line(lines: list[str]) -> int | None:
+    ln_y = _first_line_number(RE_P40_EVAL, lines)
+    ln_s = _first_line_number(RE_P40_SEMANTIC_EVAL, lines)
+    found = [x for x in (ln_y, ln_s) if x is not None]
+    return min(found) if found else None
 
 
 def _csv_data_rows(csv_path: Path) -> int:
@@ -505,13 +566,33 @@ def verify_detailed(
 
     eval_dir = task_dir / "eval"
     n_yaml = _eval_yaml_count(eval_dir)
-    if n_yaml < 1:
+    manifest_path = _semantic_eval_manifest_path(task_dir)
+    manifest_errs = _validate_semantic_eval_manifest(task_dir, task_id)
+    has_valid_manifest = manifest_path.is_file() and not manifest_errs
+    errors.extend(manifest_errs)
+    manifest_raw: dict | None = None
+    if manifest_path.is_file():
+        try:
+            _loaded = json.loads(manifest_path.read_text(encoding="utf-8", errors="replace"))
+            if isinstance(_loaded, dict):
+                manifest_raw = _loaded
+        except json.JSONDecodeError:
+            manifest_raw = None
+    errors.extend(_semantic_csv_coherence_errors(task_dir, manifest_raw))
+    if n_yaml < 1 and not has_valid_manifest:
         errors.append(
-            f"Need at least one eval scenario (*.yaml/*.yml) under {eval_dir} "
+            f"Need at least one eval scenario (*.yaml/*.yml) under {eval_dir}, "
+            f"or valid {_semantic_eval_manifest_path(task_dir)} "
             "(State 4b / forge-eval-gate)."
         )
+    elif n_yaml < 1 and has_valid_manifest:
+        print(
+            f"INFO: using {_semantic_eval_manifest_path(task_dir)} as eval artifact "
+            "(no eval/*.yaml)",
+            file=sys.stderr,
+        )
 
-    if validate_eval_yaml and eval_dir.is_dir():
+    if validate_eval_yaml and eval_dir.is_dir() and n_yaml >= 1:
         errors.extend(_validate_eval_yaml_files(eval_dir))
 
     qa_csv = task_dir / "qa" / "manual-test-cases.csv"
@@ -543,19 +624,22 @@ def verify_detailed(
     # but line ordering in the log is the canonical ordering authority).
     if using_ledger:
         # Presence checks via ledger
-        has_eval_yaml  = "P4.0-EVAL-YAML" in ledger
+        has_eval_yaml = "P4.0-EVAL-YAML" in ledger
+        has_semantic = "P4.0-SEMANTIC-EVAL" in ledger
+        has_eval_ready = has_eval_yaml or has_semantic
         has_dispatch   = "P4.1-DISPATCH"  in ledger
         has_qa_ok      = "P4.0-QA-CSV"   in ledger
         has_tdd_red    = "P4.0-TDD-RED"  in ledger
 
-        if has_dispatch and not has_eval_yaml:
+        if has_dispatch and not has_eval_ready:
             errors.append(
-                "Gate ledger: [P4.1-DISPATCH] satisfied but [P4.0-EVAL-YAML] missing — invalid orchestration."
+                "Gate ledger: [P4.1-DISPATCH] satisfied but neither [P4.0-EVAL-YAML] nor "
+                "[P4.0-SEMANTIC-EVAL] — invalid orchestration."
             )
-        if require_qa and has_eval_yaml and not has_qa_ok:
+        if require_qa and has_eval_ready and not has_qa_ok:
             errors.append(
                 "Gate ledger: forge_qa_csv_before_eval: true requires [P4.0-QA-CSV] satisfied "
-                "before [P4.0-EVAL-YAML]."
+                "before [P4.0-EVAL-YAML] or [P4.0-SEMANTIC-EVAL]."
             )
         if strict_tdd and has_dispatch and not has_tdd_red:
             errors.append(
@@ -571,26 +655,27 @@ def verify_detailed(
         # fall through to conductor.log line checks below only when lines exist.
 
     if lines:
-        ln_eval = _first_line_number(RE_P40_EVAL, lines)
+        ln_automation = _first_automation_line(lines)
         ln_p41 = _first_line_number(RE_P41_DISPATCH, lines)
         ln_qa_ok = _first_line_number(RE_P40_QA_APPROVED, lines)
         ln_tdd = _first_line_number(RE_P40_TDD_RED, lines)
 
         if not using_ledger:
             # Presence checks via conductor.log (fallback when no ledger)
-            if ln_p41 is not None and ln_eval is None:
+            if ln_p41 is not None and ln_automation is None:
                 errors.append(
-                    "conductor.log has [P4.1-DISPATCH] but no [P4.0-EVAL-YAML] — invalid orchestration."
+                    "conductor.log has [P4.1-DISPATCH] but no [P4.0-EVAL-YAML] or "
+                    "[P4.0-SEMANTIC-EVAL] — invalid orchestration."
                 )
 
         # Ordering checks always use conductor.log line numbers (ledger has no line order)
-        if ln_p41 is not None and ln_eval is not None and ln_p41 < ln_eval:
+        if ln_p41 is not None and ln_automation is not None and ln_p41 < ln_automation:
             errors.append(
                 f"conductor.log: first [P4.1-DISPATCH] (line {ln_p41}) is before "
-                f"[P4.0-EVAL-YAML] (line {ln_eval})."
+                f"first automation marker [P4.0-EVAL-YAML]/[P4.0-SEMANTIC-EVAL] (line {ln_automation})."
             )
 
-        if require_qa and ln_eval is not None and not using_ledger:
+        if require_qa and ln_automation is not None and not using_ledger:
             if ln_qa_ok is None:
                 if RE_P40_QA_SKIPPED.search("\n".join(lines)):
                     errors.append(
@@ -600,12 +685,12 @@ def verify_detailed(
                 else:
                     errors.append(
                         "forge_qa_csv_before_eval: true requires [P4.0-QA-CSV] ... approved=yes "
-                        f"before [P4.0-EVAL-YAML] (eval first seen line {ln_eval})."
+                        f"before first automation marker (line {ln_automation})."
                     )
-            elif ln_qa_ok >= ln_eval:
+            elif ln_qa_ok >= ln_automation:
                 errors.append(
                     f"forge_qa_csv_before_eval: true but [P4.0-QA-CSV] approved (line {ln_qa_ok}) "
-                    f"is not before [P4.0-EVAL-YAML] (line {ln_eval})."
+                    f"is not before first automation marker (line {ln_automation})."
                 )
 
         if not using_ledger:

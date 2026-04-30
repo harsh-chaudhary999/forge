@@ -5,7 +5,7 @@ description: "Partial slice — isolated worktrees + TDD implementation (GREEN a
 
 Invoke **`forge-worktree-gate`**, then drive implementation with **`forge-tdd`** (and **`dev-implementer`** as appropriate): **RED → GREEN → refactor** in **fresh git worktrees** per repo.
 
-This command assumes **approved tech plans** and that **orchestration gates** for the task are satisfied **before** production feature work — see **`agents/dev-implementer.md`** (**`BLOCKED_ORCHESTRATION`** if **`eval/`** is empty, missing **`[P4.0-EVAL-YAML]`**, or missing QA CSV / log when **`product.md`** requires it or the run was full **`/forge`**).
+This command assumes **approved tech plans** and that **orchestration gates** for the task are satisfied **before** production feature work — see **`agents/dev-implementer.md`** (**`BLOCKED_ORCHESTRATION`** if machine-eval artifacts are missing (**no `eval/*.yaml`** **and** no valid **`qa/semantic-eval-manifest.json`** per **`verify_forge_task.py`**), missing **`[P4.0-EVAL-YAML]`** / **`[P4.0-SEMANTIC-EVAL]`**, or missing QA CSV / log when **`product.md`** requires it or the run was full **`/forge`**).
 
 <HARD-GATE>
 Do NOT ship production feature code that bypasses **`conductor-orchestrate` State 4b** when the task is under **full `/forge`** or when **`forge_qa_csv_before_eval: true`** — implementer must refuse; back up to **`qa-manual-test-cases-from-prd`**, **`eval-translate-english`**, or **`forge-tdd`** RED as needed.

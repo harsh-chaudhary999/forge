@@ -3,7 +3,7 @@ name: eval-scenario-format
 description: "WHEN: Writing eval scenarios for a new PRD or feature. Defines the YAML format — driver action, target, expected result — for multi-surface eval execution."
 type: rigid
 requires: [brain-read]
-version: 1.1.4
+version: 1.1.7
 preamble-tier: 3
 triggers:
   - "format eval scenario"
@@ -19,7 +19,9 @@ allowed-tools:
 
 **Related (manual QA backlog):** For **atomic manual test cases** in CSV (PRD → spreadsheet / TMS import), use **`qa-manual-test-cases-from-prd`** after **`qa-prd-analysis`** (**`using-forge`** **Multi-question elicitation** / Step 0.5). This skill defines **YAML for automated eval drivers** only.
 
-**CSV vs eval YAML — independence vs order:** The **files are not one artifact.** CSV is a **human/manual** case inventory (spreadsheet / TMS); **`eval/*.yaml`** is **machine-executable** scenario format for drivers — different consumers, no runtime coupling (eval does not ingest CSV). Forge still specifies **`qa-write-scenarios` Step −1**: **`manual-test-cases.csv`** approved **or** a **documented waiver** in **`qa-analysis.md`** **before** bulk **`eval/*.yaml`** — that is **process / governance** (avoid orphan automation, optional traceability by CSV **`Id`** **where rows map**), **not** “YAML is generated from CSV.” Assistants often mention **both** in one sentence as a **task checklist**, not as tight logical coupling.
+**CSV vs eval YAML — independence vs order:** The **files are not one artifact.** CSV is a **human/manual** case inventory (spreadsheet / TMS); **`eval/*.yaml`** is **machine-executable** scenario format for drivers — different consumers, no runtime coupling (eval does not ingest CSV). Forge still specifies **`qa-write-scenarios` Step −1**: **`manual-test-cases.csv`** approved **or** a **documented waiver** in **`qa-analysis.md`** **before** bulk machine-eval work (**`eval/*.yaml`** **or**, when used, semantic artifacts per **`docs/semantic-eval-csv.md`**) — that is **process / governance** (avoid orphan automation, optional traceability by CSV **`Id`** **where rows map**), **not** “YAML is generated from CSV.” Assistants often mention **both** in one sentence as a **task checklist**, not as tight logical coupling.
+
+**Semantic automation CSV (NL-first):** Full **declarative** YAML needs **concrete** driver targets (selectors, stable URLs, request shapes). Those usually appear **after** exploratory runs against a real stack — not before. When authoring **`eval/*.yaml`** early would force **placeholder steps**, use **`qa/semantic-automation.csv`** (**Intent** + **Surface** + **`DependsOn`**) and **`qa/semantic-eval-manifest.json`** instead (**`docs/semantic-eval-csv.md`**, **`qa-semantic-csv-orchestrate`**). **`verify_forge_task.py`** accepts **either** YAML **or** a valid semantic manifest; **`kind: semantic-csv-eval`** requires the CSV on disk. After exploration, **crystallize** stable journeys into YAML for regression if the team wants deterministic **`eval-coordinate-multi-surface`** runs.
 
 **Executable scenarios (not placeholders):** Each scenario MUST have **`steps:`** with at least **one** concrete driver action (navigate, request, assert, …) and **`expected`** / assertions where the format requires them — **not** only a scenario title and a vague expectation. **`preconditions:`** MUST list **named** setup for journeys that are not cold-start anonymous (**see Anti-Pattern 3a**); **`preconditions: []`** is **wrong** for typical logged-in or seeded-state UI/API flows. Throwaway codegen scripts that emit empty preconditions and stub steps are **rejected** artifacts.
 
@@ -158,7 +160,7 @@ metadata:
   tags: ["smoke"]
 ```
 
-Then grow steps per **`eval-scenario-format`** below. CI: **`tools/verify_forge_task.py`** checks **≥1** YAML and log order; **`--validate-eval-yaml`** uses **PyYAML** when installed, otherwise **`tools/verify/eval_yaml_stdlib.py`** (same shape rules, best-effort on exotic YAML). **`tools/forge_drift_check.py`** (shim → **`tools/verify/forge_drift_check.py`**) can warn when **Success Criteria** prose never appears in eval/QA files — **`docs/forge-task-verification.md`**.
+Then grow steps per **`eval-scenario-format`** below. CI: **`tools/verify_forge_task.py`** accepts **≥1** YAML **or** valid **`qa/semantic-eval-manifest.json`** (semantic path — **`docs/forge-task-verification.md`**); when YAML exists, **`--validate-eval-yaml`** uses **PyYAML** when installed, otherwise **`tools/verify/eval_yaml_stdlib.py`**. **`tools/forge_drift_check.py`** (shim → **`tools/verify/forge_drift_check.py`**) can warn when **Success Criteria** prose never appears in eval/QA files — **`docs/forge-task-verification.md`**.
 
 ## Schema
 

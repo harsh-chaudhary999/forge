@@ -1,7 +1,7 @@
 # Examples
 
 - **`sample-prd.md`** — Example PRD shape for narrative demos (see repo **`README.md`**).
-- **`semantic-automation.csv`** — Minimal machine-eval CSV with **api** and **web** rows (columns per **`docs/semantic-eval-csv.md`**). Copy into **`~/forge/brain/prds/<task-id>/qa/`** and extend for your product.
+- **`semantic-automation.csv`** — Machine-eval CSV with **api** → **mysql** (**DependsOn** chain after an API write) and **web** rows (columns per **`docs/semantic-eval-csv.md`**). Copy into **`~/forge/brain/prds/<task-id>/qa/`** and extend for your product.
 
 Semantic automation: **`docs/semantic-eval-csv.md`**, **`tools/run_semantic_csv_eval.py`**, **`qa/semantic-eval-manifest.json`**.
 

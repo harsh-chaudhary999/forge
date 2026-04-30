@@ -1,3 +1,5 @@
 Id,Surface,Intent,DependsOn,TraceToCsvId,ExpectedHint
 step-api-health,api,"GET /health returns 200 with JSON body containing status ok",,,response contains status
+step-api-create-favorite,api,"POST /api/v2/favorites with valid body creates a server-side favorite row",step-api-health,,201 created
+step-mysql-favorite-row,mysql,"SELECT verifies the favorite row exists for the user and product from the API POST",step-api-create-favorite,,count at least 1
 step-web-login,web,"Open app root; confirm login form is visible",step-api-health,TC-001,heading or form login

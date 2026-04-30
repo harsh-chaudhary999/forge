@@ -2,8 +2,8 @@
 name: forge-self-test
 description: "WHEN: You need to validate the entire Forge pipeline works end-to-end on a real product. Run before declaring Forge production-ready or after major changes to skills/agents."
 type: rigid
-requires: [forge-intake-gate, forge-council-gate, forge-tdd, forge-eval-gate, forge-verification]
-version: 1.0.0
+requires: [forge-intake-gate, forge-council-gate, forge-tdd, forge-eval-gate, forge-verification, review-readiness]
+version: 2.0.0
 preamble-tier: 3
 triggers:
   - "test forge itself"
@@ -950,6 +950,15 @@ Ready for Phase 4 (Eval)
    └─ Mobile driver:  PASS (4/4 scenarios)
    
    Verdict: 🟢 GREEN (25/25 scenarios passed, 0 failures)
+
+7. Verify semantic machine-eval closure (brain — seed task path used by self-test):
+   ├─ `prds/<task-id>/conductor.log` contains **`[P4.0-SEMANTIC-EVAL]`** (State 4b marker after manifest exists)
+   ├─ `qa/semantic-eval-manifest.json`: **`outcome`** is **`pass`** when claiming production-ready GREEN (honest manifest — not `yellow`/`fail` for ship bar)
+   ├─ `qa/semantic-eval-run.log` **committed** whenever the runner wrote it (reproducible trace — do not omit from git if produced)
+   └─ **`python3 tools/verify_forge_task.py --task-id <task-id> --brain <brain-root>`** exits **0** (machine gate — CI parity)
+
+8. Invoke: **review-readiness** (`skills/review-readiness/SKILL.md`)
+   Pre-PR gate **before** Phase 5: spec frozen, eval GREEN evidence, QA CSV coverage where policy requires, brain committed, no WIP commits, terminology checks (six checks in skill). **Do not** open **`/pr-set-coordinate`** until review-readiness passes.
 ```
 
 **Assertions:**
@@ -958,6 +967,11 @@ Ready for Phase 4 (Eval)
 - ✅ All 6 eval drivers completed (no skipped drivers)
 - ✅ All scenarios passed (no failures)
 - ✅ eval-judge: GREEN verdict (not YELLOW or RED)
+- ✅ **`[P4.0-SEMANTIC-EVAL]`** present in **`conductor.log`** for the task under test
+- ✅ **`qa/semantic-eval-manifest.json`**: **`outcome: pass`** (aligned with GREEN claim)
+- ✅ **`qa/semantic-eval-run.log`** present in git when the runner produced it
+- ✅ **`verify_forge_task.py`** exit code **0** for that task + brain
+- ✅ **review-readiness**: all checks in **`skills/review-readiness/SKILL.md`** pass (pre-PR gate before Phase 5)
 
 **Expected Output:**
 ```
@@ -989,20 +1003,30 @@ Verdict: 🟢 GREEN
 ├─ All critical scenarios: PASS
 ├─ All drivers operational
 ├─ No blocking issues
-└─ Ready for Phase 5 (Ship)
+└─ Ready for Phase 4.5 (Review readiness)
 
 Duration: 20-30 minutes
 ```
 
+### Phase 4.5: Review readiness (pre-PR)
+
+**HARD-GATE:** Run after Phase 4 eval artifacts and a successful `verify_forge_task.py` run; before `/pr-set-coordinate`.
+
+Invoke **`review-readiness`** end-to-end (spec frozen, eval GREEN, QA CSV / waiver, brain committed, no WIP, terminology). This is the same gate humans use before raising PRs — the self-test must exercise it so “production-ready” cannot skip terminology / brain hygiene.
+
+**Assertions:**
+- ✅ **`review-readiness`** workflow completes with **no ✗ failures** (see skill § Workflow)
+
+**Expected Output:** Summary lines matching **`review-readiness`** success pattern (all checks ✓).
+
 **Failure Modes & Recovery:**
-- If code review FAIL: dev-implementer fixes, re-review (don't proceed)
-- If eval returns YELLOW: diagnose non-critical failures, document, fix or document as known limitation
-- If any driver fails: use self-heal-systematic-debug to diagnose, fix service, re-run driver
-- If stack won't start: check infrastructure logs, restart missing service, re-run stack-up
+- If review-readiness fails: fix the listed gate (spec drift, uncommitted brain, WIP commits, terminology risk), re-run before Phase 5.
 
 ---
 
 ### Phase 5: Ship + Retrospective
+
+**Prerequisite:** Phase 4.5 **review-readiness** passed (semantic artifacts + **`verify_forge_task.py`** satisfied in Phase 4).
 
 **HARD-GATE: All PRs must be coordinated and merged in dependency order. No cherry-picking.**
 
@@ -1173,7 +1197,9 @@ Duration: 5-10 minutes
 | **3** | TDD | Every task has test-first commit followed by impl commit, all tests passing | Implementation before test, failed tests, no clear TDD cycle | BLOCKED |
 | **4** | Code Review | spec-reviewer PASS for all 4 repos, code-quality-reviewer PASS for all 4 repos | Any reviewer FAIL, critical issues found | BLOCKED (rework required) |
 | **4** | Stack Up | All 4 services running (MySQL, Redis, Kafka, ES), stack healthy | Any service failed to start, health check failed | BLOCKED (cannot proceed to eval) |
-| **4** | Eval | All 6 drivers completed, eval-judge returns GREEN verdict | Any driver skipped, YELLOW verdict, any scenario failed | BLOCKED (cannot proceed to Phase 5) |
+| **4** | Eval | All 6 drivers completed, eval-judge returns GREEN verdict | Any driver skipped, YELLOW verdict, any scenario failed | BLOCKED |
+| **4** | Semantic machine-eval | **`[P4.0-SEMANTIC-EVAL]`** in **`conductor.log`**; **`semantic-eval-manifest.json`** with honest **`outcome`** for GREEN bar; **`semantic-eval-run.log`** committed when produced; **`verify_forge_task.py`** exit 0 | Missing marker, verifier fails, manifest contradicts GREEN | BLOCKED |
+| **4.5** | Review readiness | **`review-readiness`** skill — all six pre-PR checks pass | Any check fails | BLOCKED (cannot proceed to Phase 5) |
 | **5** | PRs | All 4 PRs raised with dependency links, merge order enforced, all merged | PR missing dependency link, merge order violated, merge failed | BLOCKED (cannot release) |
 | **5** | Retrospective | Dreamer retrospective completed, score + patterns recorded in brain | Retrospective incomplete, no patterns extracted | WARNING (log but allow) |
 
@@ -1707,6 +1733,11 @@ Before declaring Forge production-ready, verify all items:
 - [ ] eval-product-stack-up succeeded
 - [ ] All 6 drivers ran (no skipped drivers)
 - [ ] eval-judge: GREEN verdict
+- [ ] **`[P4.0-SEMANTIC-EVAL]`** in **`conductor.log`**; **`semantic-eval-manifest.json`** **`outcome: pass`** for ship bar; **`semantic-eval-run.log`** committed when produced
+- [ ] **`verify_forge_task.py`** exit **0** on seed task + brain
+
+**Phase 4.5 (Review readiness):**
+- [ ] **`review-readiness`** — all six checks pass (pre-PR gate)
 
 **Phase 5 (Ship):**
 - [ ] All PRs raised with dependency links

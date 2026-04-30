@@ -22,7 +22,7 @@ Concrete **URLs, selectors, and payloads** often only become known **after** run
 |------|-----------|
 | **Semantic** | `qa/semantic-automation.csv` + `qa/semantic-eval-manifest.json` + `qa/semantic-eval-run.log` |
 
-**Worked example:** [`docs/examples/semantic-automation.csv`](examples/semantic-automation.csv) — two steps (**api** then **web**) with **DependsOn** and **TraceToCsvId**.
+**Worked example:** [`docs/examples/semantic-automation.csv`](examples/semantic-automation.csv) — **api** health → **api** write → **mysql** verify (DAG depends on API before DB read) → **web** UI; **DependsOn** + **TraceToCsvId**.
 
 ## File layout
 

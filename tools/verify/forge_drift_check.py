@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Drift check: surface text in prd-locked.md that may be missing from eval / QA artifacts.
+Drift check: surface text in prd-locked.md that may be missing from semantic automation
+and manual QA CSV text under ``qa/``.
 
 Heuristic only — not a substitute for human review. Helps catch renamed journeys,
-stale PRD text, or eval scenarios that never referenced acceptance language.
+stale PRD text, or automation rows that never referenced acceptance language.
 
 Usage:
   python3 tools/forge_drift_check.py --task-id <id> --brain ~/forge/brain
@@ -61,6 +62,12 @@ def _combined_semantic_automation_text(task_dir: Path) -> str:
 
 
 def _combined_qa_text(qa_csv: Path) -> str:
+    """Lowercase body of ``qa/manual-test-cases.csv``, or empty when the file is absent.
+
+    Absence is normal when intake/policy waived manual QA CSV — the drift haystack is then
+    semantic automation files only (``_combined_semantic_automation_text``). Intentionally
+    silent (no WARN): callers combine semantic + manual text regardless.
+    """
     if not qa_csv.is_file():
         return ""
     try:

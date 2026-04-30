@@ -1,125 +1,30 @@
 ---
 name: qa-write
-description: "Partial slice — generate executable eval YAML scenarios from a locked PRD and tech plans. Produces brain/prds/<task-id>/eval/*.yaml covering all in-scope surfaces. Does not execute scenarios (use /qa-run for that)."
+description: "Partial slice — after qa-prd-analysis and approved manual-test-cases.csv: author or refresh qa/semantic-automation.csv + semantic-eval-manifest (Forge machine-eval). Does not execute against the stack (use /qa-run). Unit/integration tests in repos come from forge-tdd + CSV acceptance rows."
 ---
 
-## What `/qa-write` is — and what it is not
+## What `/qa-write` is
 
-**Eval YAML (`eval/*.yaml`)** is only for **automated execution**: Forge’s multi-surface drivers (browser, API, DB, cache, …), **`/qa-run`**, **`/qa`**, and machine gates that read **`eval/`**. It is **not** your manual QA backlog or TMS export.
+Forge machine-eval artifacts are **`qa/semantic-automation.csv`**, **`qa/semantic-eval-manifest.json`**, and **`qa/semantic-eval-run.log`** per **`docs/semantic-eval-csv.md`**, orchestrated by **`qa-semantic-csv-orchestrate`**.
 
-**Manual baseline (`qa/manual-test-cases.csv`)** comes from the skills **`qa-prd-analysis`** → **`qa-manual-test-cases-from-prd`** (through sample + count approval). That CSV is the human acceptance inventory; **this command does not create it.** Name is historical: `/qa-write` means **write automation scenarios**, not “write all QA artifacts.”
+**`qa/manual-test-cases.csv`** (from **`qa-manual-test-cases-from-prd`**) is the **human acceptance** set; those rows **inform `forge-tdd`** RED/GREEN tests in product repos. They are **not** the same file as **`semantic-automation.csv`** (machine step definitions).
 
-Invoke **`qa-prd-analysis`** → **`qa-manual-test-cases-from-prd`** (approved **`manual-test-cases.csv`**) → **`qa-write-scenarios`** to produce **executable eval scenarios** for a task. CSV-before-YAML order and optional YAML-first waiver (verbatim quote in **`qa-analysis.md`**) are defined **only** in **`qa-write-scenarios`** **Step 0.0** — **do not** paste waiver boilerplate during **`qa-prd-analysis`** (**`docs/forge-one-step-horizon.md`**).
-
-**Product terms:** Before bulk **`eval/*.yaml`**, **`qa-write-scenarios`** loads **`~/forge/brain/prds/<task-id>/terminology.md`** when present so **`expected`** strings, titles, and step copy use **canonical** product names — see [docs/terminology-review.md](../docs/terminology-review.md). If the file is missing, follow the **warn / offer draft** rules in that doc; do not invent domain glossaries in YAML alone.
-
-## What this does
+## Flow
 
 ```
-prd-locked.md + tech-plans + shared-dev-spec
-  → qa-prd-analysis (surface map, coverage gaps, clarifications)
-  → qa-manual-test-cases-from-prd → qa/manual-test-cases.csv (approved manual baseline)
-  → qa-write-scenarios (eval YAML per surface: web / API / Android / iOS / DB / cache)
-  → brain/prds/<task-id>/eval/*.yaml
-  → brain/prds/<task-id>/qa/scenarios-manifest.md
+prd-locked.md
+  → qa-prd-analysis → qa/qa-analysis.md
+  → qa-manual-test-cases-from-prd → qa/manual-test-cases.csv (approved)
+  → qa-semantic-csv-orchestrate → qa/semantic-automation.csv + manifest + run log
+  → log [P4.0-SEMANTIC-EVAL] in conductor.log when using full pipeline
 ```
-
-Stops after writing scenarios to brain. No branch checkout. No execution. No stack-up.
 
 ## Usage
 
 ```
-/qa-write <task-id>                                   # qa-prd-analysis Step 0.5 (one dimension/turn; Q1 = full test-type menu per skill) + all types + all surfaces
-/qa-write <task-id> --surface web,api                 # limit to specific surfaces
-/qa-write <task-id> --type smoke,regression           # limit to specific test types
-/qa-write <task-id> --type all                        # all types (comprehensive)
-/qa-write <task-id> --surface android --type positive,negative,security
-/qa-write <task-id> --surface ios --type positive,negative,accessibility
+/qa-write <task-id>
 ```
 
-## Surface flag reference
+Invoke **`qa-semantic-csv-orchestrate`** and **`docs/semantic-eval-csv.md`**; use **`python3 tools/run_semantic_csv_eval.py --task-id <id> --brain ~/forge/brain`** (and host drivers per D5) to materialize manifest + run log.
 
-| Flag | Targets | Driver |
-|---|---|---|
-| `--surface web` | Browser (desktop + responsive) | CDP |
-| `--surface android` | Android app (emulator or device) | ADB + UIAutomator / Appium MCP |
-| `--surface ios` | iOS app (simulator or device) | XCTest / Appium MCP |
-| `--surface api` | REST/GraphQL endpoints | HTTP |
-| `--surface db` | Database integrity checks | MySQL/Postgres |
-| `--surface cache` | Redis key/TTL checks | Redis |
-| `--surface all` | All surfaces in product.md | all drivers |
-| `--surface web,api` | Web + API only | CDP + HTTP |
-
-## Test type flag reference
-
-| Flag | What gets generated |
-|---|---|
-| `--type smoke` | Critical path only — fastest CI gate |
-| `--type positive` | All valid input flows per role |
-| `--type negative` | Invalid inputs, error messages, HTTP 4xx |
-| `--type boundary` | Min/max/min−1/max+1 for every bounded input |
-| `--type edge` | Concurrency, empty states, unicode, duplicate POSTs |
-| `--type regression` | Existing flows that must not break |
-| `--type security` | OWASP Top 10 per surface |
-| `--type accessibility` | WCAG 2.1 AA per interactive component |
-| `--type performance` | SLA assertions from shared-dev-spec |
-| `--type all` | All of the above |
-
-## Prerequisites
-
-**What is tightly vs loosely coupled**
-
-| Required on disk (order matters) | Optional but improves scenario precision |
-|----------------------------------|------------------------------------------|
-| **`prd-locked.md`** → **`qa-analysis.md`** → **`manual-test-cases.csv`** (or waiver) → **`qa-write-scenarios`** | **`shared-dev-spec.md`**, **tech plans**, **contracts** — not mandatory to *start* QA authoring; use when they exist so selectors/routes aren’t guessed |
-
-Standalone **`/qa-write`** does **not** require **`/forge`**, **Council**, or **tech planning** — only the brain artifacts above.
-
-**If you don’t want to run `/intake`:** you still need **`prd-locked.md`** under **`~/forge/brain/prds/<task-id>/`** somehow — e.g. paste PRD/wiki content and have the assistant **draft** the lock file for you to approve, or copy a lock from another task **only if** scope matches. Wiki-only links without a brain file don’t satisfy automation gates.
-
-**Dependency order (agents — read first, all IDEs):** **`prd-locked.md`** → **`qa-prd-analysis`** (**`using-forge`** **Multi-question elicitation**, Step 0.5, **`qa-analysis.md`**) → **`qa/manual-test-cases.csv`** approved **or** documented waiver → **then** **`qa-write-scenarios`**. Do **not** use a **blocking interactive prompt** (**`AskUserQuestion`** / host mapping in **`using-forge`**) about **eval YAML / CSV waiver** as the **first** turn when **`prd-locked`** or **`qa-analysis`** is missing — fix **step 1** then **step 2** first. See **`qa-write-scenarios`** **Step −1**, **`using-forge`** **Multi-question elicitation**, **Blocking interactive prompts**, and **Coupling, prerequisites, and alternatives**.
-
-- **`~/forge/brain/prds/<task-id>/prd-locked.md`** — locked PRD (**`/intake`** is the default path; alternatives in **`qa-write-scenarios`** Step −1 table)
-- **`~/forge/brain/prds/<task-id>/qa/qa-analysis.md`** — from **`qa-prd-analysis`** with Step 0.5 (**`using-forge`** **Multi-question elicitation** for coverage; not agent-only “confirmed”)
-- **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** — ≥1 approved data row from **`qa-manual-test-cases-from-prd`**, **or** waiver frontmatter in **`qa-analysis.md`** (see **`qa-write-scenarios`** Step 0.0 + **`csv_baseline_waiver_user_quote`**)
-- **`~/forge/brain/prds/<task-id>/tech-plans/`** — per-repo tech plans recommended (run `/plan` first); minimal scenario generation is possible from PRD alone but targets will be less precise
-
-## What gets written to brain
-
-```
-~/forge/brain/prds/<task-id>/
-  eval/
-    web-<feature>.yaml          # web UI scenarios (CDP driver)
-    api-<feature>.yaml          # REST/GraphQL scenarios (HTTP driver)
-    mobile-android-<feature>.yaml  # Android scenarios (ADB driver)
-    mobile-ios-<feature>.yaml      # iOS scenarios (XCTest/Appium driver)
-    cross-surface-<feature>.yaml   # multi-driver scenarios
-  qa/
-    qa-analysis.md              # surface map from qa-prd-analysis
-    scenarios-manifest.md       # coverage table, variable list, N/A surfaces
-```
-
-## Scenario quality standard
-
-Every scenario generated by this command must:
-- Trace to a PRD success criterion or tech plan task ID
-- Use concrete targets (`data-testid`, exact API routes, table names, cache key patterns) — no placeholders
-- Cover happy path + boundary/negative + error recovery (3 tiers)
-- Use `{{ VARIABLE }}` templating for env-specific values (URLs, credentials, device IDs)
-
-## After this command
-
-Run **`/qa-run <task-id>`** to execute the generated scenarios against a target environment and branches.
-
-Or run **`/qa <task-id>`** to generate + execute in one command.
-
-<HARD-GATE>
-Do NOT skip `qa-prd-analysis` — scenario generation without surface analysis produces shallow, non-traceable scenarios that fail at runtime or give false confidence.
-Do NOT bulk-generate eval YAML without an approved **`manual-test-cases.csv`** baseline (or documented waiver in **`qa-analysis.md`**) — see **`qa-write-scenarios`** Step 0.0.
-</HARD-GATE>
-
-**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns, **no defensive downstream-gate narration** mid-elicitation — **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**); **one blocking affordance per unrelated fork** (no bundled prose obligations); **no dual prompts** — **never** **`AskQuestion`** / **Questions** widget on **one** topic **and** a **long markdown question** on **another** in the **same** message; **no chat–widget duplicate** — long lists / same question body **once** in **chat**; **`AskQuestion`** = **short** title + **options** only (**`docs/forge-one-step-horizon.md`** **Chat vs `AskQuestion` / Questions widget**); **headline / first § = immediate next artifact** — **not** *What unlocks eval YAML*, **eval `*.yaml`**, or Step −1 **as the main heading** when **manual CSV** / **`qa-manual-test-cases-from-prd`** / **`qa-prd-analysis`** is still the next gate (**`docs/forge-one-step-horizon.md`** **Headline = immediate next step**); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**. *(Canonical paragraph — same for every `commands/*.md`; reference diagrams above stay documentation-only.)*
-
-**Forge plugin scope:** Skills from `skills/`; brain from `~/forge/brain/`.
-
-**vs `/qa`:** `/qa-write` is scenario authoring only. Full pipeline (branch checkout + execution + verdict): `/qa`.
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — one-step horizon; no defensive downstream-gate narration while **`prd-locked`** or **`qa-analysis.md`** is missing.

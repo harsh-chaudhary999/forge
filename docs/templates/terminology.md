@@ -15,7 +15,7 @@ terminology_risk: user_visible
 
 # Product terminology — `<task-id>`
 
-Canonical **domain** names for this task. Use these strings in `shared-dev-spec.md`, `tech-plans/*.md`, QA CSV, and eval YAML unless the frozen contract uses a different **code** identifier. **When editing in the brain:** the Forge clone has canonical docs at `docs/terminology-review.md` — this file is under `prds/<task-id>/` (do not rely on relative links to `docs/` or `skills/`; they will not resolve from the brain path after copy).
+Canonical **domain** names for this task. Use these strings in `shared-dev-spec.md`, `tech-plans/*.md`, QA CSV, and semantic automation rows unless the frozen contract uses a different **code** identifier. **When editing in the brain:** the Forge clone has canonical docs at `docs/terminology-review.md` — this file is under `prds/<task-id>/` (do not rely on relative links to `docs/` or `skills/`; they will not resolve from the brain path after copy).
 
 ## Frontmatter: `open_doubts`
 

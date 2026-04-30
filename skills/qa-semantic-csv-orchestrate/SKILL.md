@@ -1,6 +1,6 @@
 ---
 name: qa-semantic-csv-orchestrate
-description: "WHEN: A task uses NL-first automation (semantic-automation.csv) instead of or alongside eval/*.yaml and you need to validate DependsOn, run the host driver loop, and write semantic-eval-manifest.json + conductor [P4.0-SEMANTIC-EVAL]."
+description: "WHEN: Primary machine-eval path — NL-first automation (semantic-automation.csv): validate DependsOn, run the host driver loop, write semantic-eval-manifest.json + semantic-eval-run.log (CSV execution results) + conductor [P4.0-SEMANTIC-EVAL]."
 type: rigid
 requires: [brain-read, brain-write, forge-brain-layout, forge-verification]
 version: 1.0.1
@@ -64,11 +64,11 @@ ASK THE HUMAN FOR DRIVER STRATEGY (MCP vs LOCAL) BEFORE IMPLEMENTING REAL BROWSE
 
 ### Pre-Invocation Checklist: Do I Need This Skill?
 
-- [ ] The task is using **`qa/semantic-automation.csv`** as the **primary or supplementary** automation surface (not YAML-only), **or** **`verify_forge_task.py`** / product policy expects **`kind: semantic-csv-eval`**.
+- [ ] The task is using **`qa/semantic-automation.csv`** as the automation surface, **or** **`verify_forge_task.py`** / product policy expects **`kind: semantic-csv-eval`**.
 - [ ] **`docs/semantic-eval-csv.md`** schema is the source of truth for columns (**Id**, **Surface**, **DependsOn**, etc.).
 - [ ] You can run **`python3 tools/run_semantic_csv_eval.py`** from the Forge repo (or **`tools/verify/run_semantic_csv_eval.py`** directly).
 
-If any NO: another skill may own this phase (e.g. **`qa-write-scenarios`** for YAML-only).
+If any NO: **STOP** — this skill is the machine-eval path; fix prerequisites or defer automation.
 
 ### Pre-Implementation Checklist: Am I Ready?
 
@@ -85,7 +85,7 @@ If any NO: **STOP** — fix inputs before claiming semantic eval.
 - [ ] **`semantic-eval-run.log`** appended for this run.
 - [ ] **`[P4.0-SEMANTIC-EVAL]`** line exists in **`conductor.log`** **after** artifacts on disk.
 - [ ] **`verify_forge_task.py`** exit **0** for this task/brain.
-- [ ] No fictional YAML: if YAML exists, it traces to PRD/CSV; semantic path is not a cover for placeholder scenarios.
+- [ ] No placeholder **Intent** rows: semantic path must be honest executable automation per **`docs/semantic-eval-csv.md`**.
 
 If any NO: machine gate or conductor discipline failed — fix before merge.
 
@@ -93,7 +93,7 @@ If any NO: machine gate or conductor discipline failed — fix before merge.
 
 - **`DependsOn`** cycle or unknown **Id** reference.
 - **`semantic-eval-manifest.json`** **`kind`** is **`semantic-csv-eval`** but **`semantic-automation.csv`** is missing.
-- Logging **`[P4.1-DISPATCH]`** before **`[P4.0-SEMANTIC-EVAL]`** or **`[P4.0-EVAL-YAML]`** when **`conductor.log`** is in use.
+- Logging **`[P4.1-DISPATCH]`** before **`[P4.0-SEMANTIC-EVAL]`** when **`conductor.log`** is in use.
 - Declaring semantic **GREEN** when only **`noop`** / **`--dry-run`** ran and product proof was required.
 - **`FORGE_SEMANTIC_DRIVER`** or MCP secrets committed into **`conductor.log`** or **`semantic-eval-run.log`** — **redact** first.
 
@@ -101,7 +101,7 @@ If any NO: machine gate or conductor discipline failed — fix before merge.
 
 | Scenario | Action | Why naive approach fails |
 |---|---|---|
-| Task ships **both** **`eval/*.yaml`** and semantic CSV | Run **`verify_forge_task.py`**; satisfy **both** artifacts if policy requires; **`[P4.0-EVAL-YAML]`** and **`[P4.0-SEMANTIC-EVAL]`** may **both** appear — not mutually exclusive. | Assuming one path voids the other breaks gates and **`prompt-submit-gates`** semantics. |
+| Manifest **`outcome`** contradicts **`semantic-eval-run.log`** | Reconcile or **RED** — **`eval-judge`** requires consistent evidence. | Shipping on mismatched logs is false GREEN. |
 | CSV references **Surface** not supported on this host (e.g. iOS on Linux) | Mark step **SKIPPED** in log with reason; document **N/A** in manifest outcome or narrow **`qa-analysis.md`** surfaces. | Blind **FAIL** blocks honest partial verification. |
 | **`DependsOn`** references a step **Id** in **`manual-test-cases.csv`** only | Ensure **`Id`** exists in **`semantic-automation.csv`** — DependsOn targets **CSV row Ids**, not TMS strings alone. | Resolver returns unknown Id → validation failure. |
 | Large CSV (>100 rows) | Validate with **`semantic_csv.py`** first; batch driver runs with timeouts per **`eval-driver-*`** policy. | Timeouts mid-run without structured **SKIPPED** look like product bugs. |
@@ -114,17 +114,13 @@ If any NO: machine gate or conductor discipline failed — fix before merge.
 - [**forge-brain-layout**](/skills/forge-brain-layout/SKILL.md) — **`qa/`**, **`semantic-automation.csv`**, manifest paths.
 - [**forge-verification**](/skills/forge-verification/SKILL.md) — run verifier before claiming pass.
 
-**YAML vs semantic**
-
-- [**eval-scenario-format**](/skills/eval-scenario-format/SKILL.md) — **`eval/*.yaml`** driver scenarios; **orthogonal** file; same task may use **either** or **both**; **`verify_forge_task`** accepts YAML **or** valid manifest when policy matches.
-
 **Manual QA traceability**
 
 - [**qa-manual-test-cases-from-prd**](/skills/qa-manual-test-cases-from-prd/SKILL.md) — optional **`TraceToCsvId`** links semantic steps to **`manual-test-cases.csv`** rows.
 
 **Pipeline**
 
-- [**qa-pipeline-orchestrate**](/skills/qa-pipeline-orchestrate/SKILL.md) — may run semantic path when YAML is intentionally absent; prerequisites: machine-eval inputs present per **`docs/forge-task-verification.md`**.
+- [**qa-pipeline-orchestrate**](/skills/qa-pipeline-orchestrate/SKILL.md) — invokes this path at QA-P2 / QA-P5 per **`docs/forge-task-verification.md`**.
 
 **Verification doc**
 

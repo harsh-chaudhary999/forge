@@ -3,17 +3,14 @@
 Machine checks for Forge task readiness under a git-backed brain.
 
 Validates (when applicable):
-  - At least one eval scenario file under prds/<task-id>/eval/, OR valid
-    qa/semantic-eval-manifest.json (semantic eval evidence — docs/forge-task-verification.md)
-  - Optional --validate-eval-yaml: eval scenario shape checks (PyYAML when
-    installed; else stdlib best-effort via tools/verify/eval_yaml_stdlib.py).
+  - Valid qa/semantic-eval-manifest.json (required machine-eval evidence —
+    docs/forge-task-verification.md).
   - Optional --check-prd-sections: prd-locked.md mandatory lock headings/fields.
   - Optional --require-conductor-timestamps: conductor.log lines with phase
     markers must start with ISO-8601 (audit trail).
   - Optional --strict-single-task-brain: fail if multiple prds/*/conductor.log
     (use --allow-multi-task-brain to opt out).
-  - conductor.log ordering: [P4.0-EVAL-YAML] or [P4.0-SEMANTIC-EVAL] before
-    any [P4.1-DISPATCH] (earlier automation marker wins for ordering)
+  - conductor.log ordering: [P4.0-SEMANTIC-EVAL] before any [P4.1-DISPATCH]
   - forge_qa_csv_before_eval: true -> qa/manual-test-cases.csv + log order vs eval
   - Net-new design (prd-locked) -> design/ artifacts or [DESIGN-INGEST] before P4.1
   - Optional --strict-tdd: [P4.0-TDD-RED] before first [P4.1-DISPATCH]
@@ -31,8 +28,6 @@ Validates (when applicable):
     tools/verify_tech_plans.py).
 
 Core checks use stdlib only (product.md may mix markdown headings with YAML).
-PyYAML strengthens eval checks when installed (see tools/verify/requirements-verify.txt);
-stdlib fallback is always available for the same flag.
 
 Usage (from Forge repo root, brain elsewhere):
   python3 tools/verify_forge_task.py --task-id my-feature --brain ~/forge/brain
@@ -48,7 +43,7 @@ Drift (PRD success criteria vs eval/QA text):
 
 Phase ledger (append-only JSONL + SHA256):
   python3 tools/append_phase_ledger.py --brain ~/forge/brain --task-id my-feature \\
-    --phase '[P4.0-EVAL-YAML]' --artifacts eval/smoke.yaml
+    --phase '[P4.0-SEMANTIC-EVAL]' --artifacts qa/semantic-eval-manifest.json
 """
 
 from __future__ import annotations
@@ -63,87 +58,10 @@ _TOOLS_DIR = Path(__file__).resolve().parent
 if str(_TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(_TOOLS_DIR))
 
-from eval_yaml_stdlib import validate_eval_dir_stdlib
 from forge_paths import default_brain_root, sanitize_task_id
 from phase_ledger import LEDGER_NAME, verify_ledger
 from semantic_csv import validate_semantic_automation_file
 from shared_spec_policy import validate_shared_spec
-
-
-def _validate_single_eval_document(data: object, label: str) -> list[str]:
-    """Minimal invariants aligned with skills/eval-scenario-format (smoke + steps)."""
-    errs: list[str] = []
-    if not isinstance(data, dict):
-        return [f"{label}: root must be a mapping (YAML object), got {type(data).__name__}"]
-    scenario = data.get("scenario")
-    if not scenario or not isinstance(scenario, str) or not scenario.strip():
-        errs.append(f"{label}: missing or empty 'scenario' (non-empty string required)")
-    steps = data.get("steps")
-    if not isinstance(steps, list) or len(steps) < 1:
-        errs.append(f"{label}: 'steps' must be a non-empty list")
-        return errs
-    for i, step in enumerate(steps):
-        prefix = f"{label} steps[{i}]"
-        if not isinstance(step, dict):
-            errs.append(f"{prefix}: must be a mapping, got {type(step).__name__}")
-            continue
-        for key in ("id", "driver", "action", "expected"):
-            if key not in step:
-                errs.append(f"{prefix}: missing key {key!r}")
-        exp = step.get("expected")
-        if exp is not None:
-            if not isinstance(exp, dict):
-                errs.append(f"{prefix}: 'expected' must be a mapping, got {type(exp).__name__}")
-            elif len(exp) == 0:
-                errs.append(
-                    f"{prefix}: 'expected' must not be empty "
-                    "(machine-readable assertions required per eval-scenario-format)"
-                )
-    return errs
-
-
-def _validate_eval_yaml_files_pyyaml(eval_dir: Path, yaml_mod: object) -> list[str]:
-    """Parse each *.yaml/*.yml with PyYAML (full fidelity)."""
-    errors: list[str] = []
-    yaml_files = sorted(
-        p for p in eval_dir.iterdir() if p.is_file() and p.suffix.lower() in (".yaml", ".yml")
-    )
-    for path in yaml_files:
-        try:
-            raw = path.read_text(encoding="utf-8", errors="replace")
-        except OSError as exc:
-            errors.append(f"{path.name}: cannot read file: {exc}")
-            continue
-        try:
-            docs = list(yaml_mod.safe_load_all(raw))
-        except getattr(yaml_mod, "YAMLError", Exception) as exc:
-            errors.append(f"{path.name}: YAML parse error: {exc}")
-            continue
-        substantive = [d for d in docs if d is not None]
-        if not substantive:
-            errors.append(f"{path.name}: no YAML documents (empty or comments only)")
-            continue
-        for di, data in enumerate(substantive):
-            label = path.name if len(substantive) == 1 else f"{path.name} (document {di + 1})"
-            errors.extend(_validate_single_eval_document(data, label))
-    return errors
-
-
-def _validate_eval_yaml_files(eval_dir: Path) -> list[str]:
-    """
-    Eval scenario shape: prefer PyYAML when installed; else stdlib best-effort
-    (tools/verify/eval_yaml_stdlib.py).
-    """
-    try:
-        import yaml as yaml_mod  # type: ignore
-    except ImportError:
-        print(
-            "INFO: PyYAML not installed — using stdlib eval YAML checks "
-            "(pip install -r tools/verify/requirements-verify.txt for full fidelity).",
-            file=sys.stderr,
-        )
-        return validate_eval_dir_stdlib(eval_dir)
-    return _validate_eval_yaml_files_pyyaml(eval_dir, yaml_mod)
 
 
 RE_PRD_LOCKED_HEADING = re.compile(r"(?m)^#\s+PRD\s+Locked\s*$", re.IGNORECASE)
@@ -219,8 +137,8 @@ def _conductor_timestamp_violations(lines: list[str]) -> list[str]:
             continue
         errs.append(
             f"conductor.log line {i}: phase marker present but line lacks leading ISO-8601 "
-            f"timestamp (use e.g. '2026-04-24T12:00:00Z [P4.0-EVAL-YAML] …' or "
-            f"'[2026-04-24T12:00:00Z] [P4.0-EVAL-YAML] …'). Got: {raw[:160]!r}"
+            f"timestamp (use e.g. '2026-04-24T12:00:00Z [P4.0-SEMANTIC-EVAL] …' or "
+            f"'[2026-04-24T12:00:00Z] [P4.0-SEMANTIC-EVAL] …'). Got: {raw[:160]!r}"
         )
     return errs
 
@@ -297,7 +215,6 @@ RE_DESIGN_NEW_YES = re.compile(
     r"(?:\*\*design_new_work:\*\*|design_new_work:)\s*yes\b", re.IGNORECASE
 )
 RE_DESIGN_WAIVER_PRD = re.compile(r"design_waiver.*prd_only", re.IGNORECASE)
-RE_P40_EVAL = re.compile(r"\[P4\.0-EVAL-YAML\]")
 RE_P40_SEMANTIC_EVAL = re.compile(r"\[P4\.0-SEMANTIC-EVAL\]")
 RE_P41_DISPATCH = re.compile(r"\[P4\.1-DISPATCH\]")
 RE_P40_QA_APPROVED = re.compile(r"\[P4\.0-QA-CSV\].*approved=yes")
@@ -359,16 +276,6 @@ def _prd_design_waiver_prd_only(prd_text: str) -> bool:
     return bool(RE_DESIGN_WAIVER_PRD.search(prd_text))
 
 
-def _eval_yaml_count(eval_dir: Path) -> int:
-    if not eval_dir.is_dir():
-        return 0
-    n = 0
-    for p in eval_dir.iterdir():
-        if p.is_file() and p.suffix.lower() in (".yaml", ".yml"):
-            n += 1
-    return n
-
-
 def _semantic_eval_manifest_path(task_dir: Path) -> Path:
     return task_dir / "qa" / "semantic-eval-manifest.json"
 
@@ -420,10 +327,8 @@ def _semantic_csv_coherence_errors(task_dir: Path, manifest_raw: dict | None) ->
 
 
 def _first_automation_line(lines: list[str]) -> int | None:
-    ln_y = _first_line_number(RE_P40_EVAL, lines)
-    ln_s = _first_line_number(RE_P40_SEMANTIC_EVAL, lines)
-    found = [x for x in (ln_y, ln_s) if x is not None]
-    return min(found) if found else None
+    """First machine-eval gate line — [P4.0-SEMANTIC-EVAL]."""
+    return _first_line_number(RE_P40_SEMANTIC_EVAL, lines)
 
 
 def _csv_data_rows(csv_path: Path) -> int:
@@ -470,7 +375,6 @@ def verify(
     strict_tdd: bool,
     require_log: bool,
     gates_dir: Path | None = None,
-    validate_eval_yaml: bool = False,
     check_prd_sections: bool = False,
     check_shared_spec: bool = False,
     shared_spec_path: Path | None = None,
@@ -490,7 +394,6 @@ def verify(
         strict_tdd=strict_tdd,
         require_log=require_log,
         gates_dir=gates_dir,
-        validate_eval_yaml=validate_eval_yaml,
         check_prd_sections=check_prd_sections,
         check_shared_spec=check_shared_spec,
         shared_spec_path=shared_spec_path,
@@ -513,7 +416,6 @@ def verify_detailed(
     strict_tdd: bool,
     require_log: bool,
     gates_dir: Path | None = None,
-    validate_eval_yaml: bool = False,
     check_prd_sections: bool = False,
     check_shared_spec: bool = False,
     shared_spec_path: Path | None = None,
@@ -564,8 +466,6 @@ def verify_detailed(
             file=sys.stderr,
         )
 
-    eval_dir = task_dir / "eval"
-    n_yaml = _eval_yaml_count(eval_dir)
     manifest_path = _semantic_eval_manifest_path(task_dir)
     manifest_errs = _validate_semantic_eval_manifest(task_dir, task_id)
     has_valid_manifest = manifest_path.is_file() and not manifest_errs
@@ -579,21 +479,12 @@ def verify_detailed(
         except json.JSONDecodeError:
             manifest_raw = None
     errors.extend(_semantic_csv_coherence_errors(task_dir, manifest_raw))
-    if n_yaml < 1 and not has_valid_manifest:
+    if not has_valid_manifest:
         errors.append(
-            f"Need at least one eval scenario (*.yaml/*.yml) under {eval_dir}, "
-            f"or valid {_semantic_eval_manifest_path(task_dir)} "
-            "(State 4b / forge-eval-gate)."
+            f"Need valid {_semantic_eval_manifest_path(task_dir)} "
+            "(schema_version, task_id match, recorded_at, kind — State 4b / "
+            "docs/forge-task-verification.md)."
         )
-    elif n_yaml < 1 and has_valid_manifest:
-        print(
-            f"INFO: using {_semantic_eval_manifest_path(task_dir)} as eval artifact "
-            "(no eval/*.yaml)",
-            file=sys.stderr,
-        )
-
-    if validate_eval_yaml and eval_dir.is_dir() and n_yaml >= 1:
-        errors.extend(_validate_eval_yaml_files(eval_dir))
 
     qa_csv = task_dir / "qa" / "manual-test-cases.csv"
     if require_qa:
@@ -624,22 +515,21 @@ def verify_detailed(
     # but line ordering in the log is the canonical ordering authority).
     if using_ledger:
         # Presence checks via ledger
-        has_eval_yaml = "P4.0-EVAL-YAML" in ledger
         has_semantic = "P4.0-SEMANTIC-EVAL" in ledger
-        has_eval_ready = has_eval_yaml or has_semantic
+        has_eval_ready = has_semantic
         has_dispatch   = "P4.1-DISPATCH"  in ledger
         has_qa_ok      = "P4.0-QA-CSV"   in ledger
         has_tdd_red    = "P4.0-TDD-RED"  in ledger
 
         if has_dispatch and not has_eval_ready:
             errors.append(
-                "Gate ledger: [P4.1-DISPATCH] satisfied but neither [P4.0-EVAL-YAML] nor "
-                "[P4.0-SEMANTIC-EVAL] — invalid orchestration."
+                "Gate ledger: [P4.1-DISPATCH] satisfied but [P4.0-SEMANTIC-EVAL] is absent "
+                "— invalid orchestration."
             )
         if require_qa and has_eval_ready and not has_qa_ok:
             errors.append(
                 "Gate ledger: forge_qa_csv_before_eval: true requires [P4.0-QA-CSV] satisfied "
-                "before [P4.0-EVAL-YAML] or [P4.0-SEMANTIC-EVAL]."
+                "before [P4.0-SEMANTIC-EVAL]."
             )
         if strict_tdd and has_dispatch and not has_tdd_red:
             errors.append(
@@ -664,15 +554,15 @@ def verify_detailed(
             # Presence checks via conductor.log (fallback when no ledger)
             if ln_p41 is not None and ln_automation is None:
                 errors.append(
-                    "conductor.log has [P4.1-DISPATCH] but no [P4.0-EVAL-YAML] or "
-                    "[P4.0-SEMANTIC-EVAL] — invalid orchestration."
+                    "conductor.log has [P4.1-DISPATCH] but no [P4.0-SEMANTIC-EVAL] "
+                    "— invalid orchestration."
                 )
 
         # Ordering checks always use conductor.log line numbers (ledger has no line order)
         if ln_p41 is not None and ln_automation is not None and ln_p41 < ln_automation:
             errors.append(
                 f"conductor.log: first [P4.1-DISPATCH] (line {ln_p41}) is before "
-                f"first automation marker [P4.0-EVAL-YAML]/[P4.0-SEMANTIC-EVAL] (line {ln_automation})."
+                f"first [P4.0-SEMANTIC-EVAL] (line {ln_automation})."
             )
 
         if require_qa and ln_automation is not None and not using_ledger:
@@ -801,14 +691,6 @@ def main() -> int:
         ),
     )
     p.add_argument(
-        "--validate-eval-yaml",
-        action="store_true",
-        help=(
-            "Validate each eval *.yaml/*.yml scenario shape (PyYAML if installed, "
-            "else stdlib best-effort in tools/verify/eval_yaml_stdlib.py)."
-        ),
-    )
-    p.add_argument(
         "--check-prd-sections",
         action="store_true",
         help="Require prd-locked.md intake template headings and Q9 heuristic for UI repos.",
@@ -901,7 +783,6 @@ def main() -> int:
         strict_tdd=args.strict_tdd,
         require_log=args.require_log,
         gates_dir=gates_dir,
-        validate_eval_yaml=args.validate_eval_yaml,
         check_prd_sections=args.check_prd_sections,
         check_shared_spec=args.check_shared_spec,
         shared_spec_path=shared_spec_path,

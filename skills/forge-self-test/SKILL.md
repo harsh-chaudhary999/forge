@@ -811,7 +811,7 @@ Ready for Phase 4 (Eval)
    ├─ Verify all services online
    └─ Log startup summary
 
-5. Invoke: /eval-coordinate-multi-surface
+5. Invoke: qa-semantic-csv-orchestrate (or `run_semantic_csv_eval.py` per docs/semantic-eval-csv.md)
    Run scenarios across 6 drivers:
 
    Driver 1 — API HTTP (eval-driver-api-http):

@@ -35,7 +35,7 @@ Inventing a solution for an unresolved blocker almost always creates a bigger pr
 
 ## Multi-turn Forge dialogue (trust)
 
-During **intake**, **council**, **`qa-prd-analysis` Step 0.5**, **tech-plan** rounds, and any **sequential** human elicitation: **stay on the current question** — do **not** prefix or suffix messages with essays about **later** gates (e.g. *eval YAML isn’t written yet*, full **Step −1** / merge / waiver chains). That reads like a **lost thread** or **invented** rule and **erodes trust** even when the rest of the work is correct. **Allowed:** one-line handoff when the **active skill** says so; **refusing** a skip-ahead (**first missing** prerequisite + next step); user **asked** *why* / *full order*. Canonical: **`docs/forge-one-step-horizon.md`** — **No defensive downstream-gate narration (repo-wide)**.
+During **intake**, **council**, **`qa-prd-analysis` Step 0.5**, **tech-plan** rounds, and any **sequential** human elicitation: **stay on the current question** — do **not** prefix or suffix messages with essays about **later** gates (e.g. *semantic machine eval isn’t ready yet*, full **ordering-table** / merge / waiver chains). That reads like a **lost thread** or **invented** rule and **erodes trust** even when the rest of the work is correct. **Allowed:** one-line handoff when the **active skill** says so; **refusing** a skip-ahead (**first missing** prerequisite + next step); user **asked** *why* / *full order*. Canonical: **`docs/forge-one-step-horizon.md`** — **No defensive downstream-gate narration (repo-wide)**.
 
 **One surface per turn (Cursor):** Do **not** combine a **`Questions`** / **`AskQuestion`** on **task-id** / **prd-locked** approval **with** a **different** long markdown block (**Q1** checklist, intake question, …) in the **same** message — **sequence** two turns. **`docs/forge-one-step-horizon.md`** — **No bundled unrelated decisions**.
 
@@ -110,7 +110,7 @@ These WIP commits are squashed before PR creation. They exist solely as a recove
 
 **When to checkpoint:**
 - After locking a spec
-- After completing a phase gate (QA CSV approved, eval YAML written, TDD RED done)
+- After completing a phase gate (QA CSV approved, semantic machine eval manifest logged, TDD RED done)
 - Before any operation that could fail and leave state unclear
 - After a major debugging session resolves a blocker
 

@@ -23,7 +23,7 @@ These skills extend Forge with **extra workflows** (benchmarking, session snapsh
 | **`qa-live-app`** | Live-app QA patterns when eval drivers are not enough. |
 | **`second-opinion-review`** | Structured second pass (another model or human) before merge on high-stakes diffs. |
 | **`security-checklist-pass`** | Quick STRIDE + OWASP-oriented checklist with file-level evidence. |
-| **`qa-write-scenarios`** | Generate executable eval YAML from PRD + tech plans (all test types: positive, negative, BVA, edge, smoke, regression, security, accessibility). Invoked by `/qa-write` and `/qa`. |
+| **`qa-semantic-csv-orchestrate`** | Validate and run **`qa/semantic-automation.csv`**, write semantic manifest + run log. Invoked by `/qa-write` and `/qa`. |
 | **`qa-branch-env-prep`** | Check out named feature branches across product repos and write `.eval-env` for driver runtime overrides. Invoked by `/qa-run` and `/qa`. |
 | **`qa-pipeline-orchestrate`** | Coordinator for the standalone QA pipeline (7 phases: brain load → scenarios → branch prep → stack-up → multi-surface exec → judge → report). Invoked by `/qa` and `/qa-run`. |
 

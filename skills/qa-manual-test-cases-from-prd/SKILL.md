@@ -25,13 +25,13 @@ allowed-tools:
 
 **Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**.
 
-**HARD-GATE:** Do not append production CSV rows until **Step 3 (samples) is approved**; do not ship the final report until **Step 7 (count) is approved**. When **`forge_qa_csv_before_eval: true`**, do not author **`eval/*.yaml`** or start feature **TDD** until this skill’s CSV path is approved and logged per **`conductor-orchestrate`**.
+**HARD-GATE:** Do not append production CSV rows until **Step 3 (samples) is approved**; do not ship the final report until **Step 7 (count) is approved**. When **`forge_qa_csv_before_eval: true`**, do not start **semantic machine-eval** or feature **TDD** until this skill’s CSV path is approved and logged per **`conductor-orchestrate`**.
 
 ---
 
 Turn analyzed requirements into **atomic**, **traceable** manual test cases (default: CSV). Plug-and-play: you supply **base URLs**, **test management export or MCP**, and **output path**; the workflow does not assume a specific vendor beyond optional tool hooks.
 
-**Not the same as Forge eval YAML:** Automated multi-surface eval uses **`eval-scenario-format`** (YAML drivers). This skill produces **human/manual (and automation-ready) step lists** in **CSV** for QA backlogs, Jira/Xray/TestRail import, or spreadsheets.
+**Not the same as `qa/semantic-automation.csv`:** This file is **human/manual** acceptance; semantic automation is **`qa-semantic-csv-orchestrate`** + **`docs/semantic-eval-csv.md`**. This skill produces **atomic** rows in **CSV** for QA backlogs, Jira/Xray/TestRail import, or spreadsheets.
 
 ## Position in the delivery pipeline (why timing matters)
 
@@ -40,16 +40,16 @@ Approved manual test cases are **acceptance inventory**: they define *what* must
 **Target order (downstream of tech plan + locked `shared-dev-spec.md`, upstream of code and eval execution):**
 
 1. **`qa-prd-analysis`** → **`qa-manual-test-cases-from-prd`** through **Step 7 count approval** and finalized **`manual-test-cases.csv`** (atomic rows with **Source**).
-2. **`eval-translate-english`** + **`eval-scenario-format`** — author **`eval/*.yaml`** so each scenario **names or comments traceability** to CSV **Id** rows where applicable (same user journeys, automatable drivers).
-3. **`forge-tdd` RED** — repo automated tests encode acceptance from **tech plan + CSV rows** (one RED test per critical row or grouped by journey per team convention, but must be **traceable**).
+2. **`qa-semantic-csv-orchestrate`** — author **`qa/semantic-automation.csv`**; use **`TraceToCsvId`** to link steps to manual CSV **Id** rows where applicable.
+3. **`forge-tdd` RED** — repo automated tests encode acceptance from **tech plan + CSV rows** (traceable).
 4. **P4.1 implementation (GREEN)** — production code only after RED exists.
-5. **P4.4 eval** — **real execution** of the YAML against the stack; results should align with the same acceptance inventory.
+5. **P4.4 eval** — execute semantic CSV against the stack; **`eval-judge`** reads manifest + run log.
 
-**HARD-GATE (team opt-in):** If `~/forge/brain/products/<slug>/product.md` sets **`forge_qa_csv_before_eval: true`** for this product, **`conductor-orchestrate` State 4b** requires a logged **`[P4.0-QA-CSV]`** *before* **`[P4.0-EVAL-YAML]`** or **`[P4.0-SEMANTIC-EVAL]`**. Without that, do not author machine-eval artifacts or dispatch feature work.
+**HARD-GATE (team opt-in):** If `~/forge/brain/products/<slug>/product.md` sets **`forge_qa_csv_before_eval: true`** for this product, **`conductor-orchestrate` State 4b** requires a logged **`[P4.0-QA-CSV]`** *before* **`[P4.0-SEMANTIC-EVAL]`**. Without that, do not author machine-eval artifacts or dispatch feature work.
 
-**Anti-pattern:** Writing eval YAML or TDD tests **only** from prose tech plans while ignoring an in-flight QA CSV for the same task — you will double-specify and drift.
+**Anti-pattern:** Writing **`qa/semantic-automation.csv`** or TDD tests **only** from prose tech plans while ignoring an in-flight manual QA CSV for the same task — you will double-specify and drift.
 
-**Prerequisite order (agents):** This skill is **step 3** of **`qa-write-scenarios` Step −1** (`prd-locked` → **`qa-prd-analysis`** → **this CSV / waiver** → eval YAML). Upstream **`qa-prd-analysis`** must complete **`using-forge`** **Multi-question elicitation** for coverage (Step 0.5 — see **`qa-prd-analysis`**). **Do not** open with a **blocking interactive prompt** (**`AskUserQuestion`** / host equivalent per **`using-forge`**) about YAML-before-CSV or eval paths while **`prd-locked.md`** or valid **`qa-analysis.md`** (post–Step 0.5 chat) is missing.
+**Prerequisite order (agents):** `prd-locked` → **`qa-prd-analysis`** → **this CSV** → **`qa-semantic-csv-orchestrate`**. Upstream **`qa-prd-analysis`** must complete **`using-forge`** **Multi-question elicitation** for coverage (Step 0.5 — see **`qa-prd-analysis`**). **Do not** open with downstream-gate prompts while **`prd-locked.md`** or valid **`qa-analysis.md`** (post–Step 0.5 chat) is missing.
 
 ## Anti-Pattern Preamble
 
@@ -62,9 +62,9 @@ Approved manual test cases are **acceptance inventory**: they define *what* must
 | "Deprecation in Jira can wait" | Stale tests run in regression and hide real failures; document at least in report, execute TMS updates when your org uses them. |
 | "XRAY/Atlassian MCP unavailable — I'll guess prior cases" | STOP. Use exports the user provides or block until Source 2 exists. |
 | "Step 7 count review is bureaucratic" | Estimation vs actual drift catches systematic under-coverage; skipping it ships silent gaps. |
-| "We'll publish the CSV after developers start" | When **`forge_qa_csv_before_eval: true`**, the CSV is **before** eval YAML and **before** TDD feature work — late CSV means rework and eval that does not match what RED asserted. |
+| "We'll publish the CSV after developers start" | When **`forge_qa_csv_before_eval: true`**, the CSV is **before** semantic machine eval and **before** TDD feature work — late CSV means rework and eval that does not match what RED asserted. |
 | "`qa-analysis.md` is enough — I don't need prd-locked / tech plans / contracts again" | **`qa-analysis.md` is an index and interrogation record, not a substitute for primary sources.** Rows must trace to **prd-locked**, **shared-dev-spec**, **tech-plans**, and **contracts** where those contain the actual acceptance rules, routes, and edge cases. Re-load the full task bundle before Step 5 (see Step 1b). |
-| "User hasn't locked PRD — I'll ask about eval YAML / waiver anyway" | **Violates Step −1.** Fix **`prd-locked`** (**`/intake`**) and **`qa-prd-analysis`** first; this skill comes **after** those. |
+| "User hasn't locked PRD — I'll ask about machine-eval / waiver ordering anyway" | **Violates Step −1.** Fix **`prd-locked`** (**`/intake`**) and **`qa-prd-analysis`** first; this skill comes **after** those. |
 | "Summary + Expected Result are enough — testers know how to execute" | **Invalid.** **Description** must be **numbered action steps** (`1.` … `2.` …) per field rules — **not** a vague paragraph. **Summary** is one line; **execution lives in Description** (+ **Preconditions** for setup). |
 | "I'll pipe rows from a throwaway script without validating steps and preconditions" | **Invalid.** Scripts often emit **thin** rows; every row must pass **Description** / **Preconditions** HARD-GATEs **before** samples approval. **Never** commit **`eval/_generate*.py`**-style junk under **`qa/`** as the CSV source of truth. |
 | "Preconditions can be empty / TBD — we'll fill later" | **Invalid** for any case that is **not** default anonymous happy path. Undocumented setup → **`CONTEXT_GAP`** or **blocking** user clarification **before** final rows — see **Preconditions — explicit coverage**. |

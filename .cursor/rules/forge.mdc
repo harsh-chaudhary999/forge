@@ -31,7 +31,7 @@ Any **doubt, question, confirmation, or choice** that needs a human answer — i
 
 **Forbidden bundle:** **One** **`AskQuestion`** plus a prose wall demanding **other** needle-moving answers **and** unrelated roadmap / waiver text **in the same message** — use **sequential turns** (**`using-forge`** item **6**; **`docs/forge-one-step-horizon.md`** **No bundled unrelated decisions**).
 
-**Question-forward / no trailing nag / no downstream essays:** **`docs/forge-one-step-horizon.md`** **Question-forward elicitation** and **No defensive downstream-gate narration (repo-wide)**; **`using-forge`** items **7–8**. Do **not** paste *why eval YAML (or any later gate) isn’t ready yet* between normal Q1→Q2-style turns — that copy is for **reference** or **skip-ahead refusal** only.
+**Question-forward / no trailing nag / no downstream essays:** **`docs/forge-one-step-horizon.md`** **Question-forward elicitation** and **No defensive downstream-gate narration (repo-wide)**; **`using-forge`** items **7–8**. Do **not** paste *why semantic machine eval (or any later gate) isn’t ready yet* between normal Q1→Q2-style turns — that copy is for **reference** or **skip-ahead refusal** only.
 
 **No dual prompts:** Do **not** show **`AskQuestion`** / **Questions** for one fork (e.g. approve **task-id** / **prd-locked**) **and** put a **different** long markdown question (e.g. **Q1** test-type checklist) in the **same** assistant message — **one primary question per turn** (**forge-one-step-horizon** **No bundled unrelated decisions**).
 
@@ -49,6 +49,6 @@ Forge **automates artifacts and pipelines** — not **decisions**. At every **ne
 
 **Stage-local questioning — respect process order:** Ask only what unblocks the **current** Forge stage (or the **next** prerequisite in dependency order). **Do not** open with a **blocking prompt** about **later** phases when upstream prerequisites are still missing. Fix the **first** gap first. **Do not** narrate the full downstream roadmap in chat **before** the user is there — **one-step horizon** unless they asked “what’s after?” Full norm: **`using-forge`** → **Stage-local questioning** + **horizon narration**; **`docs/forge-one-step-horizon.md`**.
 
-**Example (when QA automation is in scope):** If **`prd-locked`** or **`qa-analysis`** is missing, **do not** ask about **eval YAML or CSV waiver** first — follow the dependency chain in the active skill (e.g. **`qa-write-scenarios`** **Step −1**).
+**Example (when QA automation is in scope):** If **`prd-locked`** or **`qa-analysis`** is missing, **do not** ask about **semantic automation or CSV waiver** first — follow the dependency chain in the active skill (e.g. **`commands/qa-write.md`**).
 
-**Headline = immediate next step (not downstream YAML):** When **`manual-test-cases.csv`** or **`qa-prd-analysis`** is still the gap, the **first heading / lead** in chat must be **that** artifact or skill — **not** **`## What unlocks eval YAML`**, **eval `*.yaml`**, or Step −1 **as the primary section title**. **`docs/forge-one-step-horizon.md`** — **Headline = immediate next step**.
+**Headline = immediate next step (not downstream machine eval):** When **`manual-test-cases.csv`** or **`qa-prd-analysis`** is still the gap, the **first heading / lead** in chat must be **that** artifact or skill — **not** **`## What unlocks machine eval`**, **`qa/semantic-automation.csv`**, or the full ordering table **as the primary section title**. **`docs/forge-one-step-horizon.md`** — **Headline = immediate next step**.

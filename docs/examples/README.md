@@ -1,10 +1,7 @@
-# Eval scenario examples
+# Examples
 
-Copy or adapt these YAML files into your task brain under `brain/prds/<task-id>/eval/` (for example `smoke.yaml`). They satisfy the **minimum smoke** pattern described in **`skills/eval-scenario-format/SKILL.md`**.
+- **`sample-prd.md`** — Example PRD shape for narrative demos (see repo **`README.md`**).
 
-- **`eval-api-http-smoke.yaml`** — one `GET` against a health URL; adjust host, path, and port to your stack.
-- **`eval-web-cdp-smoke.yaml`** — one browser navigation; adjust URL and optional title assertion.
-
-After copying, run **`eval-product-stack-up`** then **`eval-coordinate-multi-surface`** (or your host’s **`/eval`**) per **`skills/forge-eval-gate/SKILL.md`**.
+Machine-eval smoke is **not** YAML in this repo: use **`docs/semantic-eval-csv.md`**, **`qa/semantic-automation.csv`**, **`tools/run_semantic_csv_eval.py`**, and **`qa/semantic-eval-manifest.json`**.
 
 After **`/scan`**, you can inspect **`graph.json`** without loading every module note: **`python3 tools/forge_graph_query.py`** — see **`tools/README.md`**.

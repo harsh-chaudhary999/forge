@@ -89,7 +89,7 @@ assert('spec frozen, nothing done → 3 missing gates',
   resolveNextGate('[P1-PRD-LOCKED]\n[P3-SPEC-FROZEN]'),
   '[P4.0-QA-CSV]');
 
-assert('spec frozen, QA-CSV done → still missing eval artifact (YAML or semantic) and TDD-RED',
+assert('spec frozen, QA-CSV done → still missing SEMANTIC-EVAL and TDD-RED',
   resolveNextGate('[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes'),
   '[P4.0-SEMANTIC-EVAL]');
 
@@ -97,12 +97,8 @@ assert('spec frozen, QA-CSV + SEMANTIC-EVAL, no TDD → missing TDD only',
   resolveNextGate('[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-SEMANTIC-EVAL]'),
   '[P4.0-TDD-RED]');
 
-assert('spec frozen, QA-CSV + SEMANTIC-EVAL + TDD → all State 4b satisfied (no false EVAL-YAML)',
+assert('spec frozen, QA-CSV + SEMANTIC-EVAL + TDD → all State 4b satisfied',
   resolveNextGate('[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-SEMANTIC-EVAL]\n[P4.0-TDD-RED]'),
-  'All State 4b gates satisfied');
-
-assert('YAML path only (EVAL-YAML + QA-CSV + TDD; no SEMANTIC-EVAL) → all State 4b satisfied',
-  resolveNextGate('[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-EVAL-YAML]\n[P4.0-TDD-RED]'),
   'All State 4b gates satisfied');
 
 assertAll('spec frozen + TERMINOLOGY pending → State 4b + ALSO (both verified)',
@@ -111,7 +107,7 @@ assertAll('spec frozen + TERMINOLOGY pending → State 4b + ALSO (both verified)
 
 assert('spec frozen, all 4b, two [TERMINOLOGY] last none → no ALSO (no false positive from earlier pending)',
   resolveNextGate(
-    '[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-EVAL-YAML]\n[P4.0-TDD-RED]\n[TERMINOLOGY] first open_doubts=pending\n[TERMINOLOGY] task_id=X file=present open_doubts=none',
+    '[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-SEMANTIC-EVAL]\n[P4.0-TDD-RED]\n[TERMINOLOGY] first open_doubts=pending\n[TERMINOLOGY] task_id=X file=present open_doubts=none',
   ),
   'All State 4b gates satisfied',
 );
@@ -139,7 +135,7 @@ assert(
 );
 
 assert('spec frozen, all 4b done, TERMINOLOGY pending (single line) → dispatch line + ALSO terminology',
-  resolveNextGate('[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-EVAL-YAML]\n[P4.0-TDD-RED]\n[TERMINOLOGY] task_id=X file=present open_doubts=pending'),
+  resolveNextGate('[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-SEMANTIC-EVAL]\n[P4.0-TDD-RED]\n[TERMINOLOGY] task_id=X file=present open_doubts=pending'),
   'ALSO: [TERMINOLOGY]');
 
 assert('dispatch logged → eval running',
@@ -153,6 +149,14 @@ assertAll('DISPATCH + last [TERMINOLOGY] pending → eval hint + ALSO (pre-PR fr
 
 assert('eval GREEN → PR gate',
   resolveNextGate('[P4.4-EVAL-GREEN]'),
+  'pr-set-coordinate');
+
+assert('P4.4-EVAL-GREEN path=yaml still matches EVAL_GREEN pattern',
+  resolveNextGate('[P4.4-EVAL-GREEN] task_id=X timestamp=2026-01-01T00:00:00Z path=yaml'),
+  'pr-set-coordinate');
+
+assert('P4.4-EVAL-GREEN path=semantic still matches EVAL_GREEN pattern',
+  resolveNextGate('[P4.4-EVAL-GREEN] task_id=X timestamp=2026-01-01T00:00:00Z path=semantic manifest=qa/semantic-eval-manifest.json'),
   'pr-set-coordinate');
 
 assertAll('EVAL_GREEN + last [TERMINOLOGY] pending → pr-set + ALSO (terminology not silent pre-PR)',

@@ -1,9 +1,9 @@
 ---
 name: eval-judge
-description: "WHEN: You need a final pass/fail verdict after Phase 4.4 — either from eval-coordinate-multi-surface driver payloads (YAML scenarios) or from qa/semantic-eval-manifest.json + semantic-eval-run.log (semantic CSV path). Renders GREEN/RED/YELLOW."
+description: "WHEN: Phase 4.4 needs a final pass/fail verdict from qa/semantic-eval-manifest.json outcome + qa/semantic-eval-run.log (semantic CSV execution). Renders GREEN/RED/YELLOW."
 type: rigid
 requires: [brain-read]
-version: 1.0.2
+version: 2.0.0
 preamble-tier: 3
 triggers:
   - "judge eval results"
@@ -18,280 +18,62 @@ allowed-tools:
 
 # Eval Judge (HARD-GATE)
 
-The eval-judge is the terminal gate in the eval pipeline. **Two inputs:** (1) **YAML path** — results from every eval driver (API, DB, cache, search, message bus, web, mobile) via **`eval-coordinate-multi-surface`**. (2) **Semantic path** — no **`eval/*.yaml`** execution; evidence is **`qa/semantic-eval-manifest.json`** **`outcome`** plus **`qa/semantic-eval-run.log`** after **`qa-semantic-csv-orchestrate`** / **`tools/run_semantic_csv_eval.py`** (Phase 4.4 post-stack-up). No human, no agent, and no rationalization overrides a RED verdict.
+Forge machine-eval evidence is **only** the semantic path: **`qa/semantic-eval-manifest.json`** and **`qa/semantic-eval-run.log`** after **`qa-semantic-csv-orchestrate`** / **`tools/run_semantic_csv_eval.py`** with stack up (**`eval-product-stack-up`**). Host tools map **`qa/semantic-automation.csv`** **Surface** rows to **`eval-driver-***`** skills per **`docs/semantic-eval-csv.md`**.
+
+No human, agent, or rationalization overrides a RED verdict.
 
 ## Iron Law
 
 ```
-YAML PATH: THE JUDGE NEVER ISSUES GREEN WITHOUT EVIDENCE FROM EVERY EXPECTED DRIVER — NO VERDICT UNTIL RESULTS FROM eval-coordinate-multi-surface ARE RECEIVED AND CLASSIFIED.
-
-SEMANTIC PATH: THE JUDGE NEVER ISSUES GREEN WITHOUT A RECORDED outcome IN qa/semantic-eval-manifest.json AND CONSISTENT semantic-eval-run.log LINES FOR THE PHASE 4.4 RUN — outcome pass ⇒ GREEN; fail ⇒ RED; yellow ⇒ YELLOW. IF outcome IS ABSENT OR CONTRADICTS THE LOG, VERDICT RED (INCOMPLETE_DATA).
+THE JUDGE NEVER ISSUES GREEN WITHOUT A RECORDED outcome IN qa/semantic-eval-manifest.json AND CONSISTENT qa/semantic-eval-run.log LINES FOR THE PHASE 4.4 RUN — outcome pass ⇒ GREEN; fail ⇒ RED; yellow ⇒ YELLOW. IF outcome IS ABSENT OR CONTRADICTS THE LOG, VERDICT RED (INCOMPLETE_DATA).
 ```
 
-**When drivers never ran:** Do **not** invoke this skill to manufacture GREEN, YELLOW, or RED. **`qa-pipeline-orchestrate`** Phase QA-P6 logs **`verdict=NOT_EXECUTED`** and QA-P7 sets **`execution_scope: static_only`** — **YELLOW** means non-critical driver failures after execution, not “we skipped automation.”
+**When drivers never ran:** Do **not** invoke this skill to manufacture GREEN. If automation was not executed, verdict is **RED** or invoke **`qa-pipeline-orchestrate`** static-only paths per that skill.
 
 ## Anti-Pattern Preamble: Why Agents Fabricate Green Verdicts
 
 | # | Rationalization | The Truth |
 |---|---|---|
-| 1 | "Most drivers passed, the one failure is minor" | A single critical-path failure is RED. Partial pass is not pass. Severity classification exists for a reason -- use it, don't override it. |
-| 2 | "The failure is flaky, I saw it pass last time" | Flaky is a classification that requires 3x retry evidence. One prior pass is anecdote, not evidence. Run the retries. |
-| 3 | "The performance numbers are close enough to SLA" | Close is not within. 305ms against a 300ms SLA is a fail. Tolerances are defined in the scenario, not invented at judgment time. |
-| 4 | "All functional tests pass, the bus event delay is just infrastructure noise" | Event delivery timing is product behavior. If the consumer depends on sub-second delivery and you measured 4 seconds, the product is broken. |
-| 5 | "I already fixed the bug, re-running eval is redundant" | Fixing is not verifying. The fix must flow through eval to become evidence. No shortcutting the feedback loop. |
-| 6 | "The RED is from a non-critical driver so I can merge and fix later" | Non-critical failures produce YELLOW, not GREEN. YELLOW requires documentation and explicit acceptance. Silently merging is not acceptance. |
-| 7 | "The eval environment differs from production so this failure does not count" | Eval environment is the canonical test surface. If it differs from production, fix the environment -- do not discard the result. |
-| 8 | "Semantic path has no drivers — I'll skip eval-judge" | **Invalid.** Phase 4.4 still requires a verdict. Read **`outcome`** + **`semantic-eval-run.log`**; map **`pass`/`fail`/`yellow`** to GREEN/RED/YELLOW per § Semantic path below. |
+| 1 | "Most steps passed, one failure is minor" | A single critical-path failure is RED. Partial pass is not pass. |
+| 2 | "I'll skip eval-judge because there are no YAML scenarios" | **Invalid.** Evidence is manifest + log — always run this skill when Phase 4.4 claims completion. |
+| 3 | "The manifest says pass but the log shows FAILED" | **RED** — inconsistent evidence (`INCOMPLETE_DATA` or failure — treat as RED until reconciled). |
 
-## Semantic path (Phase 4.4 — manifest + log)
+## Inputs (Phase 4.4)
 
-**When:** Conductor Phase 4.4 took the **semantic branch** (no **`eval/*.yaml`** to run, or policy designates manifest as the execution verdict source). **`eval-coordinate-multi-surface`** is **not** invoked for step results.
+- **`~/forge/brain/prds/<task-id>/qa/semantic-eval-manifest.json`** — includes **`outcome`**: **`pass`**, **`fail`**, or **`yellow`** after the stack-up run.
+- **`~/forge/brain/prds/<task-id>/qa/semantic-eval-run.log`** — append-only JSON lines per step for the same run.
 
-**Inputs:**
-- **`~/forge/brain/prds/<task-id>/qa/semantic-eval-manifest.json`** — must include **`outcome`**: **`pass`**, **`fail`**, or **`yellow`** after the stack-up run.
-- **`~/forge/brain/prds/<task-id>/qa/semantic-eval-run.log`** — append-only transcript for the same run.
+## HARD-GATE mapping
 
-**HARD-GATE:**
-- **`outcome: pass`** and log contains **no** contradictory **`FAILED`** / hard-error lines for required steps → verdict **GREEN**.
-- **`outcome: fail`** → **RED** (invoke self-heal per Phase 4.5).
-- **`outcome: yellow`** → **YELLOW** (document non-critical gaps before merge).
-- Missing **`outcome`** or empty manifest after claimed run → **RED**, reason **`INCOMPLETE_DATA`**.
+- **`outcome: pass`** and log has **no** contradictory hard failures for required steps → **GREEN**.
+- **`outcome: fail`** → **RED** (self-heal per Phase 4.5).
+- **`outcome: yellow`** → **YELLOW** (document gaps before merge).
+- Missing **`outcome`** or empty/invalid manifest after claimed run → **RED**, reason **`INCOMPLETE_DATA`**.
 
-**Do not** fabricate driver-shaped YAML for this path — the manifest is the contract.
+## Verdict output (minimal schema)
 
-## Judgment Algorithm
+Emit structured YAML or markdown with:
 
-**YAML path:** Phases 1–5 below. **Semantic path:** use **§ Semantic path** only — do not require **`eval-coordinate-multi-surface`** payloads or driver step tables.
+- **`verdict`**: GREEN \| RED \| YELLOW  
+- **`timestamp`**: ISO-8601  
+- **`evidence`**: pointers to manifest path, log path, and any cited step ids from **`semantic-automation.csv`**  
+- **`reason`**: for RED/YELLOW — cite manifest **`outcome`** and log lines  
 
-### Phase 1: Collect Driver Results
+Record **RED** and **YELLOW** in brain via **`brain-write`** when your workflow requires an audit id.
 
-Receive the result payload from **`eval-coordinate-multi-surface`** (**YAML path**). Each driver reports:
+## Red Flags — STOP
 
-```yaml
-driver: <driver-name>        # e.g. eval-driver-api-http
-scenario: <scenario-id>       # e.g. SC-AUTH-001
-step: <step-number>           # e.g. 3
-status: PASS | FAIL | SKIP | ERROR
-failure_mode: stop | continue | log   # from scenario definition
-critical: true | false        # from scenario definition
-duration_ms: <int>
-evidence: <string>            # assertion detail, HTTP status, query result
-error: <string | null>        # stack trace or error message if FAIL/ERROR
-retry_count: <int>            # number of times this step was retried
-retry_history: [...]          # outcomes of prior retries
-```
-
-**HARD-GATE:** If the result payload is missing or malformed, verdict is RED with reason `INCOMPLETE_DATA`. Do not guess.
-
-### Phase 2: Classify Each Step
-
-For every step in every scenario, assign a classification:
-
-| Step Status | Critical Flag | Classification |
-|---|---|---|
-| PASS | any | STEP_PASS |
-| FAIL | true | STEP_FAIL_CRITICAL |
-| FAIL | false | STEP_FAIL_NON_CRITICAL |
-| SKIP | any | STEP_SKIPPED |
-| ERROR | any | STEP_ERROR (treat as STEP_FAIL_CRITICAL) |
-
-### Phase 3: Apply Failure Mode
-
-Each step carries a `failure_mode` from the scenario definition:
-
-| Failure Mode | On FAIL Behavior |
-|---|---|
-| `stop` | Halt scenario execution immediately. Record all remaining steps as STEP_SKIPPED. |
-| `continue` | Record failure, proceed to next step. |
-| `log` | Record failure as warning, proceed. Does not affect verdict unless critical. |
-
-### Phase 3.5: Evidence Confidence Calibration
-
-Before aggregating to a verdict, each driver result passes through a confidence gate. Evidence quality determines whether a FAIL is surfaced as-is or flagged for investigation.
-
-This gate applies **only to surfacing findings in the report** — it does NOT change the verdict logic. A FAIL with LOW confidence still produces RED. Confidence calibration affects how findings are communicated, not whether failures count.
-
-**Confidence tiers:**
-
-| Tier | Score | Definition | Treatment |
-|---|---|---|---|
-| HIGH | ≥ 0.80 | Direct evidence: HTTP status code, exact assertion value, DB row count, queue offset delta | Surface as-is with full evidence |
-| MODERATE | 0.60–0.79 | Indirect evidence: timing-sensitive assertion, partial state, inferred from absence | Surface with caveat: `(moderate confidence — verify manually)` |
-| LOW | < 0.60 | No direct evidence: timeout with no error, empty error field, circumstantial | Surface in a separate `Low-Confidence Signals` section — do NOT block verdict on these alone |
-
-**Assigning confidence:**
-
-```
-Driver returned a non-2xx HTTP status with exact status code?
-  → HIGH
-
-Driver returned exact assertion value mismatch (expected X, got Y)?
-  → HIGH
-
-Driver returned error with full stack trace?
-  → HIGH
-
-Driver returned timeout or connection refused with no further detail?
-  → MODERATE (service may be slow, not broken)
-
-Step failed with empty `error` field and no evidence string?
-  → LOW (driver bug or data gap — flag for driver investigation)
-
-Step failed after retry with inconsistent outcomes (FAIL, PASS, FAIL)?
-  → MODERATE (flaky classification applies separately)
-
-Performance SLA breach with measured duration_ms vs sla_ms?
-  → HIGH (numeric, deterministic)
-
-Performance advisory with no sla_ms defined in scenario?
-  → LOW (no agreed threshold, do not surface as failure)
-```
-
-**Output addition for Phase 5:** Each entry in `evidence_summary` gains a `confidence` field:
-
-```yaml
-evidence_summary:
-  - scenario: SC-AUTH-001
-    step: 3
-    driver: eval-driver-api-http
-    status: FAIL
-    evidence: "HTTP 401 — expected 200"
-    classification: FAIL_CRITICAL
-    confidence: HIGH          # ← new field
-```
-
-Low-confidence signals appear in a dedicated section at the end of the verdict report, clearly separated from verdict-determining failures:
-
-```yaml
-low_confidence_signals:
-  - scenario: SC-CACHE-002
-    step: 5
-    driver: eval-driver-cache-redis
-    status: FAIL
-    evidence: ""
-    note: "Empty evidence field — driver may not have received response. Investigate driver health before attributing to product code."
-    confidence: LOW
-```
-
-### Phase 4: Aggregate to Verdict
-
-Scan all classified steps and determine the overall verdict:
-
-**ALL_PASS** -- Every step across every scenario is STEP_PASS.
-- Verdict: **GREEN**
-- Action: Eval complete. Ready for merge.
-
-**FAIL_CRITICAL** -- One or more steps classified as STEP_FAIL_CRITICAL or STEP_ERROR.
-- Verdict: **RED**
-- Action: Halt. Report evidence. Invoke `/self-heal-locate-fault`. No merge.
-
-**FAIL_FLAKY** -- Step(s) failed, but retry_history shows intermittent pass/fail pattern AND retry_count >= 3.
-- Verdict: **RED** (flaky is still RED until root cause is fixed)
-- Action: Classify as flaky in report. Invoke `/self-heal-locate-fault` with flaky flag. Require root-cause fix before re-eval.
-- **HARD-GATE:** Flaky classification requires exactly 3+ retries with mixed pass/fail outcomes. Fewer than 3 retries means the step is FAIL_CRITICAL, not flaky.
-
-**PARTIAL_PASS_NON_CRITICAL** -- All critical steps pass, but one or more non-critical steps failed.
-- Verdict: **YELLOW**
-- Action: Document which non-critical steps failed, the driver that reported the failure, the evidence, and the reason the step is classified non-critical. Write to brain via `/brain-write` with decision ID `EVALJUDGE-YYYY-MM-DD-HH`. YELLOW requires explicit dreamer acknowledgment before merge proceeds.
-
-### Phase 5: Compile Output
-
-The judge emits a structured verdict:
-
-```yaml
-verdict: GREEN | RED | YELLOW
-timestamp: <ISO-8601>
-scenario_count: <int>
-step_count: <int>
-pass_count: <int>
-fail_count: <int>
-skip_count: <int>
-affected_services: [<service-name>, ...]
-evidence_summary:
-  - scenario: <scenario-id>
-    step: <step-number>
-    driver: <driver-name>
-    status: <PASS|FAIL|SKIP|ERROR>
-    evidence: <string>
-    classification: <ALL_PASS|FAIL_CRITICAL|FAIL_FLAKY|PARTIAL_PASS_NON_CRITICAL>
-retry_history:
-  - scenario: <scenario-id>
-    step: <step-number>
-    attempts: <int>
-    outcomes: [PASS, FAIL, FAIL, ...]
-decision_id: <EVALJUDGE-YYYY-MM-DD-HH | null>
-low_confidence_signals:
-  - scenario: <scenario-id>
-    step: <step-number>
-    driver: <driver-name>
-    status: <FAIL|ERROR>
-    evidence: <string | "">
-    note: <explanation of why confidence is low and what to investigate>
-    confidence: LOW
-```
-
-## Adjudication Rules
-
-These rules are applied in order. First match wins.
-
-1. **Any STEP_ERROR present** -- Verdict RED. Errors are infrastructure or driver failures; they invalidate the entire run.
-2. **Any STEP_FAIL_CRITICAL present** -- Verdict RED. Critical path is broken.
-3. **Any STEP_FAIL with retry_count >= 3 and mixed outcomes** -- Verdict RED (FAIL_FLAKY). Flaky but still RED.
-4. **Any STEP_FAIL_NON_CRITICAL present, zero critical failures** -- Verdict YELLOW. Partial pass.
-5. **All steps STEP_PASS or STEP_SKIPPED (where skip is due to upstream stop, not failure)** -- Verdict GREEN.
-6. **All steps STEP_SKIPPED (no steps actually ran)** -- Verdict RED with reason `NO_EXECUTION`. An eval that did not execute is not a pass.
-
-## Edge Cases
-
-| # | Edge Case | Symptom | Action | Fallback |
-|---|---|---|---|---|
-| 1 | **Timing-dependent assertion** | Cache TTL assertion fails because eval checked 1ms before expiry; passes on retry | Retry step 3x with exponential backoff (100ms, 500ms, 2s). If 2 of 3 retries pass, classify as timing-sensitive and flag for scenario hardening. | If all 3 retries fail, classify as FAIL_CRITICAL. Do not invent wider timing tolerances at judgment time. Escalate to scenario author to fix assertion window. |
-| 2 | **Flaky vs real failure** | Step fails intermittently across retries with no obvious pattern | Require exactly 3 retries. Inspect retry_history: if outcomes are mixed (e.g., FAIL, PASS, FAIL), classify FAIL_FLAKY. If all 3 fail, classify FAIL_CRITICAL. | Invoke `/self-heal-locate-fault` with full retry evidence. If fault locator identifies a race condition or state leak, document and require code fix before re-eval. |
-| 3 | **Partial pass across drivers** | API driver passes, DB driver passes, but cache driver reports stale data after write | Verdict is YELLOW only if cache step is marked non-critical in the scenario. If cache consistency is critical-path, verdict is RED regardless of other drivers passing. | Cross-check the scenario definition for critical flag. If the scenario author omitted the critical flag, treat as critical (fail-safe default). Document the gap. |
-| 4 | **Conflicting driver results** | Web driver sees success page, but DB driver shows no row inserted | Verdict RED. Conflicting evidence across drivers indicates a real bug (e.g., frontend optimistic update without backend commit). Both driver results are included in evidence. | Invoke `/self-heal-locate-fault` targeting the gap between the two drivers. Typical root causes: async write not flushed, transaction rollback after UI response, eventual consistency window exceeded. |
-| 5 | **Performance degradation without functional failure** | All assertions pass, but p95 latency is 2x the SLA threshold | If the scenario defines an `sla_ms` field, compare measured `duration_ms` against it. Breach means FAIL for that step. If no SLA defined, log a warning but do not fail. | Emit YELLOW with performance advisory. Flag the scenario for SLA definition if missing. Do not silently pass a slow endpoint -- surface the data so the dreamer can decide. |
-| 6 | **Driver timeout / no response** | A driver does not return a result within the scenario timeout | Treat as STEP_ERROR. The judge does not distinguish between "driver crashed" and "service hung." Both produce RED. | Invoke `/eval-coordinate-multi-surface` to check driver health. If the driver process is alive but the target service is unresponsive, the fault is in the service, not the driver. Document accordingly. |
-| 7 | **Empty scenario list** | Eval is invoked but no scenarios are provided | Verdict RED with reason `NO_SCENARIOS`. An eval with no scenarios is not a pass -- it is a configuration error. | Check brain for expected scenario count. If scenarios should exist but are missing, invoke `/eval-scenario-format` to regenerate from spec. |
-
-## Red Flags -- STOP
-
-Stop immediately and escalate if any of these are true:
-
-- **Verdict changed after initial determination.** Once the judge emits GREEN/RED/YELLOW, the verdict is final for that run. Do not retroactively change it. Re-run eval to get a new verdict.
-- **Evidence is missing from a FAIL step.** Every FAIL must carry evidence (error message, assertion detail, HTTP status). A FAIL without evidence is a judge bug -- fix the judge, do not emit a verdict.
-- **retry_count exceeds 3 without explicit escalation.** The self-heal loop cap is 3. If a step has been retried more than 3 times, something is wrong with the retry logic, not the eval. Halt and investigate.
-- **A driver reports PASS but the evidence contradicts.** If the API driver says PASS but the evidence field says "HTTP 500", the driver is broken. Verdict RED, investigate driver correctness.
-- **Agent attempts to override verdict manually.** No agent, subagent, or orchestrator may change a RED to GREEN. The only path from RED to GREEN is a new eval run that passes.
-- **Scenario definitions modified between eval run and judgment.** If scenarios change mid-pipeline, the results are invalid. Verdict RED with reason `SCENARIO_TAMPER`.
-
-## Verification Checklist
-
-Before emitting the final verdict, verify:
-
-- [ ] All driver results received (no missing drivers from the expected set)
-- [ ] Every step in every scenario has a classification (no unclassified steps)
-- [ ] Critical flag respected: all critical-step failures produce RED
-- [ ] Failure modes applied: stop/continue/log honored per step definition
-- [ ] Flaky classification backed by 3x retry evidence (not assumed)
-- [ ] YELLOW verdicts include full non-critical failure documentation
-- [ ] Evidence field populated for every FAIL and ERROR step
-- [ ] Performance SLA checked where `sla_ms` is defined in scenario
-- [ ] Confidence calibration applied to every FAIL/ERROR step (HIGH / MODERATE / LOW assigned)
-- [ ] LOW confidence signals moved to `low_confidence_signals` section — not mixed with verdict-determining failures
-- [ ] MODERATE confidence findings tagged with `(moderate confidence — verify manually)`
-- [ ] Verdict output is valid YAML matching the schema in Phase 5
-- [ ] Decision recorded in brain for YELLOW and RED verdicts
-- [ ] Affected services list is accurate (derived from driver + scenario metadata)
-- [ ] No verdict override occurred after initial determination
+- Verdict changed after initial determination for the same run — re-run eval instead.
+- **PASS** claimed when **`semantic-eval-run.log`** contains FAILED lines that contradict pass.
+- Overriding RED without a new successful **`qa-semantic-csv-orchestrate`** run.
 
 ## Cross-References
 
-| Related Skill | Relationship |
+| Related | Role |
 |---|---|
-| `/eval-coordinate-multi-surface` | Upstream (**YAML path**). Provides the driver result payload that this skill judges. |
-| `/qa-semantic-csv-orchestrate` | Upstream (**semantic path**). Produces **`semantic-eval-manifest.json`** + **`semantic-eval-run.log`** for Phase 4.4. |
-| `docs/semantic-eval-csv.md` | Schema for **`qa/semantic-automation.csv`**. |
-| `/eval-scenario-format` | Defines the scenario YAML schema including `failure_mode`, `critical`, and `sla_ms` fields consumed by the judge. |
-| `/self-heal-locate-fault` | Downstream. Invoked by the judge on RED/FAIL_FLAKY verdicts to diagnose which service caused the failure. |
-| `/forge-eval-gate` | Parent gate. The eval-judge is the decision engine inside the eval gate workflow. |
-| `/brain-write` | Used to persist YELLOW and RED verdict decisions with full evidence for audit trail. |
+| **`qa-semantic-csv-orchestrate`** | Produces manifest + run log. |
+| **`docs/semantic-eval-csv.md`** | CSV schema and conductor **`[P4.0-SEMANTIC-EVAL]`**. |
+| **`eval-product-stack-up`** | Stack before execution. |
+| **`eval-driver-*`** | Host execution mapping from **Surface** — not a separate YAML scenario layer. |
+| **`self-heal-locate-fault`** | Downstream on RED — use **`semantic-eval-run.log`** JSON lines as primary evidence. |
+| **`forge-eval-gate`** | Parent workflow containing this judge. |

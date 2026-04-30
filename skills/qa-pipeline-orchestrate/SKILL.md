@@ -1,8 +1,8 @@
 ---
 name: qa-pipeline-orchestrate
-description: "WHEN: A standalone QA run is needed against named feature branches and a target environment — independent of the full /forge delivery pipeline. Chains: brain read → scenario generation → branch prep → stack-up → multi-surface exec → verdict."
+description: "WHEN: A standalone QA run is needed against named feature branches and a target environment — independent of the full /forge delivery pipeline. Chains: brain read → semantic automation CSV + manifest → branch prep → stack-up → semantic eval exec → verdict."
 type: rigid
-requires: [brain-read, qa-prd-analysis, qa-write-scenarios, qa-branch-env-prep, eval-product-stack-up, eval-coordinate-multi-surface, eval-judge]
+requires: [brain-read, qa-prd-analysis, qa-semantic-csv-orchestrate, qa-branch-env-prep, eval-product-stack-up, eval-judge]
 version: 1.0.19
 preamble-tier: 3
 triggers:
@@ -24,7 +24,7 @@ Standalone QA pipeline that runs from brain artifacts (PRD + tech plans) through
 
 ## Human input (all hosts)
 
-This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**, **Multi-question elicitation**, and **Stage-local questioning**; scenario ordering rules in **`qa-write-scenarios`** **Step −1**. Dialogue norm: **`docs/forge-one-step-horizon.md`** + **`using-forge`** **Multi-question elicitation** items **4–8** (same as all **`commands/*.md`** **Assistant chat** — do not restate the full chain each message; **no defensive downstream-gate narration** mid-elicitation; question-forward; no trailing nag).
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**, **Multi-question elicitation**, and **Stage-local questioning**; prerequisite order: **`manual-test-cases.csv`** (or waiver) → **`qa/semantic-automation.csv`** + manifest (**`qa-semantic-csv-orchestrate`**). Dialogue norm: **`docs/forge-one-step-horizon.md`** + **`using-forge`** **Multi-question elicitation** items **4–8** (same as all **`commands/*.md`** **Assistant chat** — do not restate the full chain each message; **no defensive downstream-gate narration** mid-elicitation; question-forward; no trailing nag).
 
 **Entry points:**
 - `/qa` — full pipeline (write scenarios + branch prep + execute + judge)
@@ -34,7 +34,7 @@ This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for 
 **Terminology + review / process protocol (v1, this slice):**
 - **Product terms:** [docs/terminology-review.md](../../docs/terminology-review.md) — **`terminology.md`** in **`~/forge/brain/prds/<task-id>/`**; use for report/assertion wording (**QA-P1** read, **QA-P7** optional `terminology_status` / `terminology_open_doubts` in `qa/qa-run-report-*.md`).
 - **Checklist / “todos” in brain:** Implementation and planning **todos** live in **`tech-plans/<repo>.md` Section 2** and **`planning-doubts.md`**, not a separate ad hoc tracker — v1 per same doc; **no `task-progress.md`** unless a team process adopts it and documents it in [forge-brain-layout](../forge-brain-layout/SKILL.md).
-- **Dialogue:** **`docs/forge-one-step-horizon.md`**, **`using-forge`** — do **not** use a **blocking** CSV/evYAML **prompt** before **`qa-write-scenarios` Step −1** is satisfied (same rule as in Anti-Pattern rows below).
+- **Dialogue:** **`docs/forge-one-step-horizon.md`**, **`using-forge`** — do **not** use a **blocking** CSV waiver **prompt** before **`prd-locked`** + **`qa-analysis`** + **`manual-test-cases.csv`** (or waiver) exist when policy requires them.
 
 **Entrypoint matrix** (this skill vs `/qa` / `/qa-run`): [docs/terminology-review.md](../../docs/terminology-review.md) (**§ Entrypoint matrix — commands + slice skills**).
 
@@ -48,7 +48,7 @@ This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for 
 | "I'll run only the web surface for a full-stack feature" | A web GREEN with a broken API write is still a broken feature. Multi-surface is not optional for full-stack changes. |
 | "The QA run failed but I'll fix it manually and not re-run" | A manual fix without a re-run produces no evidence. The verdict must come from an automated run, not a claim. |
 | "I don't need to write results to brain — I can see them in the terminal" | Terminal output is ephemeral. Brain artifacts are auditable across sessions, teams, and CI runs. |
-| "`/qa` invoked — I'll use a blocking prompt about eval/CSV waiver before checking brain" | **Violates stage-local questioning** (`using-forge`) **and** **`qa-write-scenarios` Step −1`**: **`prd-locked`** → **`qa-prd-analysis`** (**sequential adaptive** Step 0.5 per **`using-forge`**) → **`manual-test-cases.csv`** (or valid waiver) → **then** QA-P2 eval YAML. Read brain **first**; surface the **first missing** artifact — never a **blocking interactive prompt** about downstream QA/evYAML choices before upstream prerequisites exist. |
+| "`/qa` invoked — I'll use a blocking prompt about eval/CSV waiver before checking brain" | **Violates stage-local questioning** (`using-forge`): **`prd-locked`** → **`qa-prd-analysis`** (**Step 0.5** per **`using-forge`**) → **`manual-test-cases.csv`** (or valid waiver) → **then** **`qa/semantic-automation.csv`** + manifest via **`qa-semantic-csv-orchestrate`**. Read brain **first**; surface the **first missing** artifact. |
 | "I'll output **What to do next** runbook prose (intake → qa-analysis → CSV → qa-write) and end with *reply with task-id…* only — no **`AskQuestion`** / numbered list" | **Violates `using-forge` Interactive human input.** Same message must include **`AskQuestion`** or **numbered options + stop** for the **first** fork — never runbook-only. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
@@ -60,7 +60,7 @@ Before invoking this skill, verify:
 - [ ] `task_id` is known and `prd-locked.md` exists in brain
 - [ ] Product slug is known (resolves `product.md` and repo paths)
 - [ ] Entry point is clear: `/qa` (full), `/qa-write` (scenarios only), or `/qa-run` (execute only)
-- [ ] If `/qa-run`: machine-eval artifacts exist — **`eval/*.yaml`** **and/or** valid **`qa/semantic-eval-manifest.json`** + **`qa/semantic-automation.csv`** per **`docs/semantic-eval-csv.md`** / **`verify_forge_task.py`**
+- [ ] If `/qa-run`: valid **`qa/semantic-eval-manifest.json`** + **`qa/semantic-automation.csv`** per **`docs/semantic-eval-csv.md`** / **`verify_forge_task.py`**
 - [ ] Branches and target env are confirmed (or `mode: remote` with valid BASE_URL)
 
 ## Pre-Implementation Checklist
@@ -87,13 +87,12 @@ Before reporting pipeline complete:
 ## Cross-References
 
 - **`using-forge`** — **Stage-local questioning** (all phases): prompts must unblock **only** the current stage. **Assistant chat:** **`docs/forge-one-step-horizon.md`** (**one-step horizon**).
-- **`qa-write-scenarios` Step −1** — QA→eval **prerequisite order** before QA-P2 or any **blocking interactive prompt** about CSV/evYAML: **`prd-locked.md`** → **`qa-prd-analysis`** → **`manual-test-cases.csv`** or documented waiver — never invert.
-- **`qa-prd-analysis`** — must run before this skill (unless reusing existing scenarios) to produce `qa/qa-analysis.md` which feeds QA-P2. Interrogation follows **`using-forge`** **Multi-question elicitation** (coverage Step 0.5 — not a one-shot Q1–Q8 wall).
-- **`qa-write-scenarios`** — invoked at QA-P2 to generate **`eval/*.yaml`** from brain artifacts and **`qa-analysis.md`** (use **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** when the task uses the semantic path instead).
+- **Prerequisite order** before QA-P2: **`prd-locked.md`** → **`qa-prd-analysis`** → **`manual-test-cases.csv`** or documented waiver — never invert.
+- **`qa-prd-analysis`** — must run before this skill (unless reusing existing artifacts) to produce `qa/qa-analysis.md` which feeds QA-P2. Interrogation follows **`using-forge`** **Multi-question elicitation** (coverage Step 0.5 — not a one-shot Q1–Q8 wall).
+- **`qa-semantic-csv-orchestrate`** — invoked at QA-P2 / QA-P5 to validate **`qa/semantic-automation.csv`**, run hosts, refresh **`semantic-eval-manifest.json`** + **`semantic-eval-run.log`** (**`docs/semantic-eval-csv.md`**).
 - **`qa-branch-env-prep`** — invoked at QA-P3 to check out feature branches and write `.eval-env`.
 - **`eval-product-stack-up`** — invoked at QA-P4 to start local services in dependency order.
-- **`eval-coordinate-multi-surface`** — invoked at QA-P5 to dispatch scenarios to surface-specific drivers.
-- **`eval-judge`** — invoked at QA-P6 to render GREEN / YELLOW / RED verdict from execution results.
+- **`eval-judge`** — invoked at QA-P6 to render GREEN / YELLOW / RED from **`eval-judge`** § Semantic path (**manifest + run.log**) when QA-P5 ran semantic execution.
 - **`self-heal-triage`** — invoked when verdict is RED to classify failure root cause before re-run.
 
 ---
@@ -125,7 +124,7 @@ EVERY RUN IS COMMITTED TO BRAIN WITH ITS SHA EVIDENCE — TERMINAL OUTPUT IS NOT
 ## Red Flags — STOP
 
 - **task_id does not resolve to a brain PRD** — STOP. The pipeline cannot operate without `prd-locked.md`. Ask user to run `/intake` first or provide the correct task_id.
-- **No machine-eval artifacts in brain** (no **`eval/*.yaml`** **and** no valid semantic manifest path per **`verify_forge_task.py`**) **and `/qa-run` was invoked** — STOP. Ask user to run **`/qa-write`** and/or **`qa-semantic-csv-orchestrate`** first.
+- **No valid `qa/semantic-eval-manifest.json`** per **`verify_forge_task.py`** **and `/qa-run` was invoked** — STOP. Ask user to run **`qa-semantic-csv-orchestrate`** / **`/qa-write`** first.
 - **Branch checkout failed for any repo** — STOP. Do not run eval against a partially-checked-out product.
 - **Stack health check failed in local mode** — STOP. Do not run eval against a broken stack. Report which service failed to start.
 - **eval-judge returns RED and user asks to merge anyway** — STOP. RED verdict is a hard gate. Fix the failure and re-run.
@@ -135,7 +134,7 @@ EVERY RUN IS COMMITTED TO BRAIN WITH ITS SHA EVIDENCE — TERMINAL OUTPUT IS NOT
 
 ```
 QA-P1: Load brain artifacts
-QA-P2: Generate eval scenarios (skip if /qa-run)
+QA-P2: Semantic automation CSV + manifest (skip if /qa-run)
 QA-P3: Branch checkout + env prep  ← determines run mode
 QA-P4: Stack-up (skip if url-only / branch-tracking / branch-code-validate)
 QA-P5: Multi-surface execution     (skip if branch-code-validate — test suite results used instead)
@@ -151,7 +150,7 @@ Each phase logs a gate line to `~/forge/brain/prds/<task-id>/qa-pipeline.log`.
 
 ## Phase QA-P1 — Load Brain Artifacts
 
-**Before QA-P2:** Satisfy **`qa-write-scenarios` Step −1** — if **`prd-locked.md`** missing, **BLOCK** (user runs **`/intake`**); if **`qa/qa-analysis.md`** missing or Step 0.5 **sequential interrogation** not completed in chat (**`using-forge`** **QA PRD analysis**), run **`qa-prd-analysis`** first; if CSV baseline missing and no valid waiver, **`qa-manual-test-cases-from-prd`** before generating **`eval/*.yaml`** **or** semantic **`qa/semantic-automation.csv`**. Do not prompt the user about downstream waivers until upstream steps exist.
+**Before QA-P2:** If **`prd-locked.md`** missing, **BLOCK** (user runs **`/intake`**); if **`qa/qa-analysis.md`** missing or Step 0.5 **sequential interrogation** not completed in chat (**`using-forge`** **QA PRD analysis**), run **`qa-prd-analysis`** first; if CSV baseline missing and no valid waiver, **`qa-manual-test-cases-from-prd`** before authoring **`qa/semantic-automation.csv`**. Do not prompt the user about downstream waivers until upstream steps exist.
 
 ```bash
 BRAIN=~/forge/brain
@@ -166,7 +165,7 @@ cat "$BRAIN/prds/$TASK/prd-locked.md"
 cat "$BRAIN/prds/$TASK/terminology.md" 2>/dev/null
 cat "$BRAIN/products/$SLUG/product.md"
 ls "$BRAIN/prds/$TASK/tech-plans/" 2>/dev/null
-ls "$BRAIN/prds/$TASK/eval/" 2>/dev/null && echo "SCENARIOS PRESENT"
+ls "$BRAIN/prds/$TASK/qa/semantic-automation.csv" 2>/dev/null && echo "SEMANTIC CSV PRESENT"
 ```
 
 **Product terminology:** If **`terminology.md`** exists, use it for **assertion / step** wording in reports and when reconciling driver output to **canonical** product labels ([docs/terminology-review.md](../../docs/terminology-review.md)). Absence does **not** block QA-P1.
@@ -178,21 +177,21 @@ Log:
 
 ---
 
-## Phase QA-P2 — Generate Eval Scenarios
+## Phase QA-P2 — Semantic automation + manifest
 
-**Skip this phase if:** `/qa-run` was invoked AND machine-eval artifacts already satisfy **`verify_forge_task.py`** (**`eval/*.yaml`** **and/or** valid **`qa/semantic-eval-manifest.json`** + CSV when **`kind: semantic-csv-eval`**).
+**Skip this phase if:** `/qa-run` was invoked AND **`verify_forge_task.py`** already passes (**valid `qa/semantic-eval-manifest.json`** + CSV coherence when required).
 
-**Order:** Same as **`qa-write-scenarios` Step −1** — never a **blocking interactive prompt** about YAML-before-CSV while **`prd-locked`** or **`qa-analysis.md`** (post-interrogation) is absent.
+**Order:** **`prd-locked`** → **`qa-analysis`** → **`manual-test-cases.csv`** — never a **blocking interactive prompt** about automation while upstream artifacts are absent.
 
 Invoke `qa-prd-analysis` first (**sequential interactive** Step 0.5; reads PRD, maps surfaces, writes `qa/qa-analysis.md` to brain).
-Complete **`qa-manual-test-cases-from-prd`** so **`qa/manual-test-cases.csv`** has ≥1 approved data row — **unless** `qa-analysis.md` frontmatter waives (see **`qa-write-scenarios`** Step 0.0).
-Then invoke **`qa-write-scenarios`** (writes **`eval/*.yaml`**) **and/or** **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** for the semantic path — pick the machine-eval strategy the task uses (**`docs/semantic-eval-csv.md`**).
+Complete **`qa-manual-test-cases-from-prd`** so **`qa/manual-test-cases.csv`** has ≥1 approved data row — **unless** `qa-analysis.md` frontmatter waives (see **`qa-manual-test-cases-from-prd`**).
+Then invoke **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** to produce **`qa/semantic-automation.csv`**, **`semantic-eval-manifest.json`**, **`semantic-eval-run.log`** (**`docs/semantic-eval-csv.md`**). Product **unit/integration tests** come from **`forge-tdd`** driven by tech plans + CSV — not driver YAML.
 
 **HARD-GATE:** Do not advance to QA-P3 until:
 - `~/forge/brain/prds/<task-id>/qa/qa-analysis.md` exists
-- **`qa/manual-test-cases.csv` baseline satisfied** (data rows **or** waiver per **`qa-write-scenarios`**) before treating QA-P2 scenario generation as complete
-- Machine-eval artifacts satisfy **`tools/verify/verify_forge_task.py`** for this task (**≥1** `eval/*.yaml` **or** valid **`qa/semantic-eval-manifest.json`**, with **`qa/semantic-automation.csv`** when **`kind: semantic-csv-eval`**)
-- `~/forge/brain/prds/<task-id>/qa/scenarios-manifest.md` exists when **YAML** scenarios were authored (**optional** / N/A when semantic-only path — document in **`qa-pipeline.log`**)
+- **`qa/manual-test-cases.csv` baseline satisfied** (data rows **or** waiver) before treating QA-P2 as complete
+- Machine-eval artifacts satisfy **`tools/verify/verify_forge_task.py`**: valid **`qa/semantic-eval-manifest.json`** (+ **`qa/semantic-automation.csv`** when **`kind: semantic-csv-eval`**)
+- Optional `~/forge/brain/prds/<task-id>/qa/scenarios-manifest.md` only if your team maintains a coverage inventory
 
 Log:
 ```
@@ -276,23 +275,11 @@ Load env:
 set -a && source ~/forge/brain/prds/<task-id>/.eval-env && set +a
 ```
 
-Invoke `eval-coordinate-multi-surface` with:
-- Scenario files from `~/forge/brain/prds/<task-id>/eval/`
-- Surface filter from `--surface` flag (default: all surfaces present in scenario files)
-- Env variables sourced from `.eval-env`
+Invoke **`qa-semantic-csv-orchestrate`** / **`python3 tools/run_semantic_csv_eval.py`** with **`--task-id`**, **`--brain`**, and host driver settings per **`docs/semantic-eval-csv.md`**. Steps come from **`qa/semantic-automation.csv`** (**Id**, **Surface**, **Intent**, **DependsOn**); drivers are web/API/mobile/etc. per row — see **`eval-driver-***`** skills as invoked by the host runner.
 
-**Hotfix narrow scope:** If **`qa/qa-analysis.md`** YAML lists **`hotfix_surfaces: [api, web]`** (set during **`qa-prd-analysis`** for urgent patches), run only scenarios whose **`surface`** matches that set; log others as **`SKIP (hotfix scope)`** — do not treat as pass.
+**Hotfix narrow scope:** If **`qa/qa-analysis.md`** lists **`hotfix_surfaces: [api, web]`** (set during **`qa-prd-analysis`**), run only CSV rows whose **`Surface`** matches; log others as **`SKIP (hotfix scope)`**.
 
-The coordinator chains drivers in scenario order:
-1. Web scenarios → `eval-driver-web-cdp`
-2. API scenarios → `eval-driver-api-http`
-3. DB verification steps → `eval-driver-db-mysql`
-4. Cache verification steps → `eval-driver-cache-redis`
-5. Event verification steps → `eval-driver-bus-kafka`
-6. Android scenarios → `eval-driver-android-adb`
-7. iOS scenarios → `eval-driver-ios-xctest`
-
-**HARD-GATE:** Every in-scope scenario must be attempted. No scenario is silently skipped unless its `requires_device: true` and `DEVICE_ID` is absent from `.eval-env` — that scenario gets `SKIP` status, not silent omission. (**Hotfix scope** reduces what “in-scope” means — see above.)
+**HARD-GATE:** Every in-scope CSV step must be attempted or explicitly **SKIPPED** with reason (e.g. missing device). Do not silently omit rows.
 
 Log:
 ```
@@ -469,11 +456,11 @@ Skip QA-P4. In the report, note the remote BASE_URL as the test target. Record t
 
 ### Static validation only (no stack, no drivers — common in agent sessions)
 
-When the session validates **`eval/*.yaml`**, semantic **`qa/semantic-automation.csv`**, and/or writes **`semantic-eval-manifest.json`** but **does not** start a stack or invoke drivers (no **`BASE_URL`**, no device, no credentials, or policy forbids long-running services):
+When the session validates **`qa/semantic-automation.csv`** and/or writes **`semantic-eval-manifest.json`** but **does not** start a stack or invoke drivers (no **`BASE_URL`**, no device, no credentials, or policy forbids long-running services):
 
 - Label the outcome **`pipeline_verdict: NOT_EXECUTED`** and **`execution_scope: static_only`** — **not** **YELLOW**.
 - **YELLOW** remains reserved for **`eval-judge`** when drivers ran and non-critical steps failed.
 - The human summary should read like **“automation not run — environment gap”**, not **“partial pass.”**
 
 ### No tech plans in brain
-`qa-write-scenarios` will be blocked. The pipeline logs `[QA-P2-SCENARIOS] status=BLOCKED reason=no-tech-plans`. Ask user: "Tech plans are absent. Would you like to (1) run `/plan` first, (2) provide a brief description of what to test and generate minimal scenarios from the PRD only, or (3) supply existing **eval YAML** or a **semantic automation CSV** + manifest manually?"
+Semantic CSV authoring needs targets from tech plans + contracts. The pipeline logs `[QA-P2-SCENARIOS] status=BLOCKED reason=no-tech-plans`. Ask user: "Tech plans are absent. Would you like to (1) run `/plan` first, (2) provide a brief description for minimal **`qa/semantic-automation.csv`** rows from the PRD only, or (3) supply **`qa/semantic-automation.csv`** + **`semantic-eval-manifest.json`** manually?"

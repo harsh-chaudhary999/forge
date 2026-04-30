@@ -25,15 +25,15 @@ allowed-tools:
 
 **`AskUserQuestion`** in **`allowed-tools`** is canonical; map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** on every IDE. **Step 0.5** applies **`using-forge`** **Multi-question elicitation** to coverage templates **Q1–Q8** (see **`using-forge`** **QA PRD analysis** specialization). **One primary topic per assistant turn**; after each answer **reconcile**. **Never** a full Q1–Q8 wall **plus** a meta-prompt in the **same** turn.
 
-**Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**; **No defensive downstream-gate narration (repo-wide)** (no *why eval YAML isn’t ready* essays between Q1→Q2→… — **any** Forge phase).
+**Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**; **No defensive downstream-gate narration (repo-wide)** (no *why semantic machine eval isn’t ready* essays between Q1→Q2→… — **any** Forge phase).
 
 **HARD-GATE:** ALL brain artifacts must be loaded BEFORE asking the user any question. Questions asked without brain context are generic and waste the user's time. Brain-loaded questions are specific, informed, and resolve real ambiguities.
 
-**HARD-GATE:** PRD analysis + interrogation answers must be written to brain before bulk scenario generation (`qa-write-scenarios`) proceeds. Chat-only analysis is not valid.
+**HARD-GATE:** PRD analysis + interrogation answers must be written to brain before bulk semantic automation authoring (**`/qa-write`**, **`qa-semantic-csv-orchestrate`**) proceeds. Chat-only analysis is not valid.
 
-**Upstream of eval YAML:** **`qa-write-scenarios`** **Step −1** defines forward order: **`prd-locked.md`** → **this skill** (`qa-analysis.md` + chat interrogation) → **`qa-manual-test-cases-from-prd`** / CSV or waiver → **then** eval YAML. Agents must **not** ask users about **CSV/evYAML waivers** before **`prd-locked`** exists or before Step 0.5 ran in chat.
+**Upstream of machine eval:** **`commands/qa-write.md`** / **`conductor-orchestrate`** ordering defines forward order: **`prd-locked.md`** → **this skill** (`qa-analysis.md` + chat interrogation) → **`qa-manual-test-cases-from-prd`** / CSV or waiver → **then** **`qa/semantic-automation.csv`** + manifest. Agents must **not** ask users about **CSV / automation-order waivers** before **`prd-locked`** exists or before Step 0.5 ran in chat.
 
-**Forbidden during Step 0.5 (Q1–Q8):** Scripted copy about **YAML before manual CSV**, **`csv_baseline_waiver_user_quote`**, “say so explicitly in your own words,” or **Forge** forbidding agent paraphrase — that is **`qa-write-scenarios`** **Step 0.0** only (scenario authoring gate after **`qa-analysis.md`** exists). Do **not** paste waiver boilerplate during coverage interrogation.
+**Forbidden during Step 0.5 (Q1–Q8):** Scripted copy about **automation before manual CSV**, **`csv_baseline_waiver_user_quote`**, “say so explicitly in your own words,” or **Forge** forbidding agent paraphrase — that is **`qa-manual-test-cases-from-prd`** / **`/qa-write`** **only** when that flow is active (after **`qa-analysis.md`** exists). Do **not** paste waiver boilerplate during coverage interrogation.
 
 ---
 
@@ -51,15 +51,15 @@ allowed-tools:
 | "I'll skip the brain load — I remember the PRD" | Memory is not a brain artifact. The scan, contracts, and tech plans change the picture every time. Load fresh. |
 | "Figma is in frontmatter / PRD — I don't need to ask about design in QA interrogation" | **UI test quality needs traceability from PRD to what testers assert** — but if **planning / intake / tech plans / design/** already documented PRD↔screen↔fixture mapping, **QA must inherit and cite those artifacts**, not duplicate a second full mapping workshop. Use Q8 to **confirm + fill gaps only**. |
 | "QA must rebuild the whole PRD→design matrix from zero every time" | **Violates reuse.** Council, tech plans, `shared-dev-spec`, `prd-locked` design fields, and `design/` exist precisely so downstream phases do not re-specify. Q8 is **verify completeness for test authoring**, not replace planning. |
-| "I'll write `qa-analysis.md` with Q1–Q8 marked confirmed from PRD alone — user wasn't available" | **Invalid.** Step 0.5 requires interrogation **completed in chat** (**sequential / adaptive** per this skill) with real answers or explicit risk-accept. Frontmatter **`test_types` / `surfaces`** copied from defaults without a user turn is **not** confirmation — downstream YAML will claim false legitimacy. |
-| "I'll paste the entire Q1–Q8 in one message **and** append **`AskQuestion`** *How should we proceed…* with options that overlap Q3/Q4 or bundle **CSV/YAML waiver**" | **Invalid UX + wrong gate.** One **primary** interaction model per turn; **waivers** belong to **`qa-write-scenarios`** / **`qa-manual-test-cases-from-prd`**, not **`qa-prd-analysis`**. **Sequential** turns only — never wall + unrelated modal. |
+| "I'll write `qa-analysis.md` with Q1–Q8 marked confirmed from PRD alone — user wasn't available" | **Invalid.** Step 0.5 requires interrogation **completed in chat** (**sequential / adaptive** per this skill) with real answers or explicit risk-accept. Frontmatter **`test_types` / `surfaces`** copied from defaults without a user turn is **not** confirmation — downstream automation rows will claim false legitimacy. |
+| "I'll paste the entire Q1–Q8 in one message **and** append **`AskQuestion`** *How should we proceed…* with options that overlap Q3/Q4 or bundle **CSV / automation-order waiver**" | **Invalid UX + wrong gate.** One **primary** interaction model per turn; **waivers** belong to **`qa-manual-test-cases-from-prd`** / **`/qa-write`**, not **`qa-prd-analysis`**. **Sequential** turns only — never wall + unrelated modal. |
 | "I'll put **Q1** (full test-type checklist) in the chat message **and** use **`AskQuestion`** / **Questions** for *approve task-id / prd-locked / what next?*" | **Invalid — dual prompt.** **One turn = one primary question.** Prerequisite confirmation (**task-id**, draft **`prd-locked`**) is **turn A only** (widget **or** numbered options — **no** Q1 in that message). **Q1** is **turn B only** (full checklist — **no** second widget on another topic). See **`docs/forge-one-step-horizon.md`** **No bundled unrelated decisions** (Cursor example). |
 | "I'll paste the **full** Q4 (or Qn) block in **chat** **and** repeat the **same** full text in **`AskQuestion`**" | **Invalid — duplicate read.** **Chat** holds the long list + question **once**; **`AskQuestion`** = **short** title + **options** only — **`docs/forge-one-step-horizon.md`** **Chat vs `AskQuestion` / Questions widget**. |
 | "I'll offer **single bulk**, **approve recommendations**, or **hybrid** so the user can skip the back-and-forth" | **Invalid for Step 0.5.** Interrogation is **mandatorily sequential and interactive** — no menu to bypass dialogue. Speed is not a substitute for doubt closure. |
 | "I must ask Q2 verbatim even though Q1 already fixed surfaces and depth" | **Invalid.** **Adaptive reconciliation** — skip or shorten template prompts when already answered; ask **net-new** doubts instead. |
 | "I'll ask Q1 using only **Full / Lean / Custom** (or similar presets) **without** showing the full test-type checklist" | **Invalid.** The human must **see** every category (functional, non-functional, security, accessibility rows) to choose or waive — presets **hide capability**. Show the **full fenced Q1 menu** below first; optional presets **below** the menu are OK as shortcuts **after** visibility. |
-| "I'll prepend *Why eval YAML isn't written yet* / *orphan automation* between every Step 0.5 answer" | **Invalid UX — repo-wide norm.** **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**. That copy is **reference** or **skip-ahead refusal** only — **not** between Q1→Q2→Q3. Stay on the **current** question; one-line forward pointers at handoff only when the skill says so. |
-| "I'll narrate the path *QA analysis → CSV → eval YAML → /qa-run* in every Q1–Q8 message so the user sees the ‘big picture’" | **Invalid.** **`using-forge`** — **do not** mention downstream stages unless **immediate** next dependency or user asked. Step 0.5 stays **coverage-only**; **`manual-test-cases.csv`** is the **next** artifact after **`qa-analysis.md`** — name it **only** when closing Step 0.5 / handing off, **not** before every answer. |
+| "I'll prepend *Why semantic machine eval isn't ready yet* / *orphan automation* between every Step 0.5 answer" | **Invalid UX — repo-wide norm.** **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**. That copy is **reference** or **skip-ahead refusal** only — **not** between Q1→Q2→Q3. Stay on the **current** question; one-line forward pointers at handoff only when the skill says so. |
+| "I'll narrate the path *QA analysis → CSV → semantic automation → /qa-run* in every Q1–Q8 message so the user sees the ‘big picture’" | **Invalid.** **`using-forge`** — **do not** mention downstream stages unless **immediate** next dependency or user asked. Step 0.5 stays **coverage-only**; **`manual-test-cases.csv`** is the **next** artifact after **`qa-analysis.md`** — name it **only** when closing Step 0.5 / handing off, **not** before every answer. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -99,9 +99,9 @@ Before marking this skill complete:
 ## Cross-References
 
 - **`brain-read`** — prerequisite skill; ensures product topology, PRD, tech plans, and SCAN.json are loaded before this analysis begins.
-- **`qa-write-scenarios`** — downstream skill; consumes `qa-analysis.md` written here to generate the maximum-count eval YAML scenario set. **Prerequisite order:** see **`qa-write-scenarios`** **Step −1** (never prompt eval/CSV waiver before **`prd-locked`** + this interrogation).
+- **`qa-manual-test-cases-from-prd`** — consumes **`qa-analysis.md`** to produce **`manual-test-cases.csv`**; **`qa-semantic-csv-orchestrate`** later maps automation from the same analysis where applicable.
 - **`qa-pipeline-orchestrate`** — the orchestrator that invokes this skill at QA-P2 (scenario generation phase).
-- **`eval-scenario-format`** — the canonical YAML schema that the coverage plan in Step 6 must anticipate (scenario IDs, test_type fields, surface routing).
+- **`docs/semantic-eval-csv.md`** — **Surface** / **Intent** coverage in Step 6 should anticipate how rows will map to automation (**web**, **api**, …).
 
 ---
 
@@ -144,7 +144,7 @@ KEEP ASKING UNTIL ZERO AMBIGUITIES REMAIN — NOT UNTIL YOU'VE ASKED EXACTLY EIG
 - **Full Q1–Q8 wall + a second meta `AskQuestion` (*How should we proceed…*) in the same turn** — STOP. Overloads the human and makes the modal incoherent (**Step 0.5**).
 - **`design_source` / Figma / `figma_file_key` filled in `qa-analysis.md` frontmatter or body but the user never saw Q8 in chat** — STOP. Copying keys from **`prd-locked.md`** or Confluence **does not** replace the **Q8** question: the human must still **confirm** authoritative design source, reuse path, or **N/A** in thread.
 - **Web/app in scope but neither inherited mapping citations nor Q8 gap-fill recorded** — STOP. Either planning already owns PRD↔UI traceability (cite it) or Q8 must supply it.
-- **`qa-analysis.md` claims Q1–Q8 "confirmed" but there was no Step 0.5 chat turn** — STOP. Analysis is **invalid** for downstream **`qa-write-scenarios`** strict gates; re-run interrogation or mark body **`PROVISIONAL — interrogation not completed in chat`** and do not treat frontmatter as user-approved.
+- **`qa-analysis.md` claims Q1–Q8 "confirmed" but there was no Step 0.5 chat turn** — STOP. Analysis is **invalid** for downstream **`/qa-write`** / **`qa-semantic-csv-orchestrate`** strict gates; re-run interrogation or mark body **`PROVISIONAL — interrogation not completed in chat`** and do not treat frontmatter as user-approved.
 
 ---
 
@@ -187,8 +187,6 @@ cat "$BRAIN/products/$SLUG/codebase/index.md" 2>/dev/null
 # 7. Existing QA artifacts (avoid duplication)
 ls "$BRAIN/prds/$TASK/qa/" 2>/dev/null
 cat "$BRAIN/prds/$TASK/qa/manual-test-cases.csv" 2>/dev/null
-ls "$BRAIN/prds/$TASK/eval/" 2>/dev/null
-
 # 8. Design / UI source (when PRD or frontmatter references UI — do not skip if figma_file_key or design_intake exists)
 ls "$BRAIN/prds/$TASK/design/" 2>/dev/null
 for f in "$BRAIN/prds/$TASK/design/"*.md; do [ -f "$f" ] && echo "=== $f ===" && cat "$f"; done
@@ -199,7 +197,7 @@ After reading, build an internal summary:
 - **Product terms** — if **`terminology.md`** exists, note `status` / `open_doubts` and which **canonical** names to use in **Q1–Q8** and downstream **Expected result** text ([docs/terminology-review.md](../../docs/terminology-review.md) — not [forge-glossary](../forge-glossary/SKILL.md))
 - Surfaces present in product (from product.md)
 - **PRD ↔ design / UI mapping already captured elsewhere** — `tech-plans/*.md` (components, routes, testids), `shared-dev-spec.md`, `prd-locked.md` design / Q9 anchors, `design/*.md`, Confluence/PRD tables linked in lock — note **paths + whether traceability is complete enough for test steps**
-- Existing test coverage (from qa/ and eval/)
+- Existing test coverage (from **`qa/`** — manual CSV, semantic automation, logs)
 - Contracts and SLAs in play (response time, data retention, error codes)
 - Architecture complexity (from scan — Tier 1 hubs = highest-risk surfaces)
 
@@ -233,8 +231,8 @@ The human must **see Q1–Q7 and Q8 (when UI in scope)** in the **chat thread** 
 **Forbidden**
 
 - Pasting **full** Q1–Q8 in one message, or offering **single bulk / approve-all-recommendations / hybrid** flows — **not allowed**.  
-- A **second** blocking prompt in the same turn that **duplicates** coverage choices or bundles **CSV/YAML waiver** (that belongs to **`qa-write-scenarios`** / **`qa-manual-test-cases-from-prd`** after `qa-analysis.md`).
-- **Pipeline horizon in every turn** — do **not** restate *…then manual CSV, then `eval/*.yaml`, then `/qa-run`…* while asking Q1–Q8. Per **`using-forge`**: mention **only** the **immediate** next dependency; full chain lives in **README** / **commands**, not repeated in chat.
+- A **second** blocking prompt in the same turn that **duplicates** coverage choices or bundles **CSV / automation-order waiver** (that belongs to **`qa-manual-test-cases-from-prd`** / **`/qa-write`** after `qa-analysis.md`).
+- **Pipeline horizon in every turn** — do **not** restate *…then manual CSV, then `qa/semantic-automation.csv`, then `/qa-run`…* while asking Q1–Q8. Per **`using-forge`**: mention **only** the **immediate** next dependency; full chain lives in **README** / **commands**, not repeated in chat.
 
 **After** all dimensions are closed: if brain vs answers still disagree, **one** short clarification turn is OK — still **not** a full template dump.
 
@@ -422,7 +420,7 @@ Design & UI (maps PRD language to what testers assert on screen):
   c) **End-to-end flow** — ordered steps from entry (e.g. login) through the assertion (e.g. banner visible on home), including **where** copy/layout must match design vs PRD prose only.
   d) **Fixtures** — which seeded users / tokens / DB rows are required so the UI can reach each state (blacklisted, overdue, L2 only, etc.)?
 
-If Figma MCP or design files are unavailable: record **CONTEXT_GAP** and the minimum **user-supplied** screenshots or testids needed before writing UI eval YAML or manual web rows.
+If Figma MCP or design files are unavailable: record **CONTEXT_GAP** and the minimum **user-supplied** screenshots or testids needed before writing UI automation rows or manual web rows.
 ```
 
 ---
@@ -619,7 +617,7 @@ git -C ~/forge/brain commit -m "qa: PRD analysis for <task-id> — types=<list> 
 | All surfaces | `--surface all` | `--surface all` | all drivers |
 | Web + API only | `--surface web,api` | `--surface web,api` | web-cdp + api-http |
 
-**Surface selection in this analysis step** determines which scenario files `qa-write-scenarios` will produce. The `--surface` flag on `/qa-run` then filters which files are executed.
+**Surface selection in this analysis step** determines which **Surface** values appear in **`qa/semantic-automation.csv`** and how hosts filter execution. The **`--surface`** flag on **`/qa-run`** filters which surfaces run.
 
 ---
 

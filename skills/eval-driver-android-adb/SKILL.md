@@ -2,7 +2,7 @@
 name: eval-driver-android-adb
 description: "WHEN: Eval scenario requires Android app interaction or assertion. Eval driver for Android via ADB + UIAutomator. Functions: connect(device_id), launch(package), tap(target), type(text), swipe(direction), assert_element(target), screenshot(), disconnect()."
 type: rigid
-requires: [eval-scenario-format]
+requires: [brain-read]
 version: 1.0.3
 preamble-tier: 3
 triggers:
@@ -40,7 +40,7 @@ The eval-driver-android-adb skill enables:
 
 ## Optional: Appium MCP (host choice)
 
-When an **Appium MCP** server (or similar mobile MCP) is available on the host, the operator may prefer it over **ADB + UIAutomator** for Android eval steps. **Ask explicitly**: use this skill’s **ADB driver** end-to-end, or **delegate Android UI actions to Appium MCP** (document MCP tool names, session/device assumptions, and evidence paths). Either path is valid for **product eval**; pick **one** per task so **`eval-coordinate-multi-surface`** and CI stay aligned.
+When an **Appium MCP** server (or similar mobile MCP) is available on the host, the operator may prefer it over **ADB + UIAutomator** for Android eval steps. **Ask explicitly**: use this skill’s **ADB driver** end-to-end, or **delegate Android UI actions to Appium MCP** (document MCP tool names, session/device assumptions, and evidence paths). Either path is valid for **product eval**; pick **one** per task so **`qa-semantic-csv-orchestrate`** and CI stay aligned.
 
 ## Anti-Pattern Preamble: Why Android Eval Drivers Silently Fail
 
@@ -146,7 +146,7 @@ If **`emulator`** is missing, or **`emulator -list-avds`** is empty and no USB d
 
 ### 5b. Optional: Appium MCP / Appium server (host choice)
 
-If the human chooses **Appium** over raw ADB UIAutomator (per **CLAUDE.md** D5 — **ask** first): follow upstream **[appium/appium-mcp](https://github.com/appium/appium-mcp)** for MCP wiring; **`npm i -g appium`** may require **Node** — if **`npm`** / **`node`** missing, tell user to install **Node LTS**, then retry. **Do not** **`sudo`** in-agent for system-wide installs; document failures in **`qa/logs/`**. Align with **`eval-coordinate-multi-surface`** so one path is selected per task.
+If the human chooses **Appium** over raw ADB UIAutomator (per **CLAUDE.md** D5 — **ask** first): follow upstream **[appium/appium-mcp](https://github.com/appium/appium-mcp)** for MCP wiring; **`npm i -g appium`** may require **Node** — if **`npm`** / **`node`** missing, tell user to install **Node LTS**, then retry. **Do not** **`sudo`** in-agent for system-wide installs; document failures in **`qa/logs/`**. Align with **`qa-semantic-csv-orchestrate`** so one path is selected per task.
 
 ### 6. Unbiased expectation
 

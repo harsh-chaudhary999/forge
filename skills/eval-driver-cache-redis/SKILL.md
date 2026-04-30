@@ -2,7 +2,7 @@
 name: eval-driver-cache-redis
 description: "WHEN: Eval scenario requires cache state verification against Redis. Functions: connect(), execute(command), verify(key, assertion), teardown()."
 type: rigid
-requires: [brain-read, eval-scenario-format]
+requires: [brain-read]
 version: 1.0.0
 preamble-tier: 3
 triggers:
@@ -953,7 +953,7 @@ const cleanup = async () => {
 
 - **eval-driver-api-http** — HTTP trigger for cache-busting endpoints
 - **eval-product-stack-up** — Bring up Redis before eval
-- **eval-coordinate-multi-surface** — Coordinate Redis eval with API/DB assertions
+- **qa-semantic-csv-orchestrate** — Coordinate Redis eval with API/DB assertions in **`qa/semantic-automation.csv`**
 - **deploy-driver-docker-compose** — Redis service definition
 - **reasoning-as-infra** — Cache architecture patterns, TTL tuning, eviction policies
 - **contract-cache** — Negotiate cache contracts with services

@@ -49,7 +49,8 @@ jobs:
           path: forge
           sparse-checkout: |
             tools/verify/verify_forge_task.py
-            tools/verify/eval_yaml_stdlib.py
+            tools/verify/forge_paths.py
+            tools/verify/semantic_csv.py
             tools/verify/phase_ledger.py
             tools/verify/shared_spec_policy.py
             tools/verify/shared_spec_checklist.json
@@ -62,7 +63,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install verify extras (eval YAML schema)
+      - name: Install verify extras (optional PyYAML for drift/spec helpers)
         run: pip install -r forge/tools/verify/requirements-verify.txt
 
       - name: Verify Forge task
@@ -100,7 +101,6 @@ jobs:
             --brain "${GITHUB_WORKSPACE}" \
             --task-id "${FORGE_TASK_ID}" \
             --require-log \
-            --validate-eval-yaml \
             ${EXTRA}
           DRIFT_EXTRA=""
           if [ "${FORGE_DRIFT_STRICT:-}" = "true" ]; then DRIFT_EXTRA="--strict"; fi

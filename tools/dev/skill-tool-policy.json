@@ -226,14 +226,6 @@
       "path": "dream-retrospect-post-pr/SKILL.md",
       "type": "flexible"
     },
-    "eval-coordinate-multi-surface": {
-      "allowed_tools": [
-        "Bash"
-      ],
-      "hard_gate": false,
-      "path": "eval-coordinate-multi-surface/SKILL.md",
-      "type": "rigid"
-    },
     "eval-driver-android-adb": {
       "allowed_tools": [
         "Bash",
@@ -326,26 +318,6 @@
       ],
       "hard_gate": false,
       "path": "eval-product-stack-up/SKILL.md",
-      "type": "rigid"
-    },
-    "eval-scenario-format": {
-      "allowed_tools": [
-        "Bash",
-        "Edit",
-        "mcp__*"
-      ],
-      "hard_gate": false,
-      "path": "eval-scenario-format/SKILL.md",
-      "type": "rigid"
-    },
-    "eval-translate-english": {
-      "allowed_tools": [
-        "Bash",
-        "Write",
-        "AskUserQuestion"
-      ],
-      "hard_gate": false,
-      "path": "eval-translate-english/SKILL.md",
       "type": "rigid"
     },
     "forge-brain-layout": {
@@ -643,18 +615,6 @@
       ],
       "hard_gate": false,
       "path": "qa-semantic-csv-orchestrate/SKILL.md",
-      "type": "rigid"
-    },
-    "qa-write-scenarios": {
-      "allowed_tools": [
-        "Bash",
-        "Read",
-        "Write",
-        "AskUserQuestion",
-        "mcp__*"
-      ],
-      "hard_gate": false,
-      "path": "qa-write-scenarios/SKILL.md",
       "type": "rigid"
     },
     "reasoning-as-app-frontend": {

@@ -2,7 +2,7 @@
 name: eval-driver-bus-kafka
 description: "WHEN: Eval scenario requires Kafka message verification. Functions: connect(), produce(topic, message), consume(topic, assertion), verify(topic, schema), teardown()."
 type: rigid
-requires: [brain-read, eval-scenario-format]
+requires: [brain-read]
 version: 1.0.0
 preamble-tier: 3
 triggers:
@@ -809,7 +809,7 @@ Before marking eval pass for any Kafka-backed feature:
 
 - **eval-driver-api-http** — HTTP trigger for message-producing endpoints
 - **eval-product-stack-up** — Bring up Kafka broker before eval
-- **eval-coordinate-multi-surface** — Coordinate Kafka eval with API/DB assertions
+- **qa-semantic-csv-orchestrate** — Coordinate Kafka eval with API/DB assertions in **`qa/semantic-automation.csv`**
 - **deploy-driver-docker-compose** — Kafka + ZooKeeper service definition
 - **reasoning-as-infra** — Event bus architecture patterns and partition sizing
 - **contract-event-bus** — Negotiate event bus contracts for Kafka topics

@@ -1,6 +1,6 @@
 ---
 stage: build
-description: Context injected during Forge build phase (P3.5*/P4.0-*) — TDD, worktrees, QA CSV, eval YAML, review
+description: Context injected during Forge build phase (P3.5*/P4.0-*) — TDD, worktrees, QA CSV, semantic machine eval, review
 ---
 
 # Forge — Build Stage
@@ -24,7 +24,7 @@ These three gates must ALL be satisfied before `[P4.1-DISPATCH]` is logged:
 | Gate | Log marker | Artifact |
 |---|---|---|
 | QA CSV approved | `[P4.0-QA-CSV] approved=yes` | `prds/<id>/qa/manual-test-cases.csv` |
-| Eval YAML written | `[P4.0-EVAL-YAML] scenarios=N` | `prds/<id>/eval/*.yaml` |
+| Semantic machine eval | `[P4.0-SEMANTIC-EVAL]` | `prds/<id>/qa/semantic-automation.csv` + valid `qa/semantic-eval-manifest.json` |
 | TDD RED confirmed | `[P4.0-TDD-RED]` | Failing test output observed |
 
 **Do NOT log `[P4.1-DISPATCH]` until all three are present.**
@@ -34,7 +34,7 @@ These three gates must ALL be satisfied before `[P4.1-DISPATCH]` is logged:
 1. `forge-worktree-gate` — verify worktree exists before any edit
 2. `worktree-per-project-per-task` — create isolated worktree per repo per task
 3. `qa-prd-analysis` → `qa-manual-test-cases-from-prd` — QA CSV gate (get user approval)
-4. `eval-scenario-format` + `eval-translate-english` — write eval YAML scenarios
+4. `qa-semantic-csv-orchestrate` — **`qa/semantic-automation.csv`**, manifest, run log (`docs/semantic-eval-csv.md`)
 5. `forge-tdd` — TDD iron law (write test → watch FAIL → implement → watch PASS)
 6. `tech-plan-write-per-project` → `tech-plan-self-review` — per-repo plans
 7. `forge-trust-code` — spec-reviewer + code-quality-reviewer (read the diff, not the report)
@@ -45,7 +45,7 @@ These three gates must ALL be satisfied before `[P4.1-DISPATCH]` is logged:
 - **"I'll write the test after I know the implementation works"** — This is not TDD. Test must be written BEFORE any implementation code and observed to FAIL on the first run.
 - **"The spec-reviewer can trust my summary of what changed"** — It cannot. `forge-trust-code` reads the actual diff. Summaries are not evidence.
 - **"QA CSV is optional, we can skip it this time"** — If `forge_qa_csv_before_eval: true` in product.md or if this is a `/forge` run, it is mandatory. No exceptions.
-- **"Eval YAML can be written after implementation"** — Eval YAML is a gate, not an afterthought. It must exist and be logged before dispatch.
+- **"Semantic automation can wait until after implementation"** — State 4b requires a valid manifest + coherent CSV before dispatch; do not treat machine eval as an afterthought.
 
 ## Subagent Dispatch Rules
 
@@ -56,4 +56,4 @@ These three gates must ALL be satisfied before `[P4.1-DISPATCH]` is logged:
 
 ## Next Gate
 
-All of `[P4.0-QA-CSV]`, `[P4.0-EVAL-YAML]`, `[P4.0-TDD-RED]` logged → log `[P4.1-DISPATCH]` → switch to eval phase.
+All of `[P4.0-QA-CSV]`, `[P4.0-SEMANTIC-EVAL]`, `[P4.0-TDD-RED]` logged → log `[P4.1-DISPATCH]` → switch to eval phase.

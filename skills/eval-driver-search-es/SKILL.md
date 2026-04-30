@@ -2,7 +2,7 @@
 name: eval-driver-search-es
 description: "WHEN: Eval scenario requires search index state verification. Eval driver for Elasticsearch via REST. Functions: connect(), index(doc), search(query), verify(assertion), teardown()."
 type: rigid
-requires: [brain-read, eval-scenario-format]
+requires: [brain-read]
 version: 1.0.0
 preamble-tier: 3
 triggers:
@@ -857,7 +857,7 @@ Before marking eval pass for any Elasticsearch-backed feature:
 
 - **eval-driver-api-http** — HTTP trigger for search-indexing endpoints
 - **eval-product-stack-up** — Bring up Elasticsearch cluster before eval
-- **eval-coordinate-multi-surface** — Coordinate Elasticsearch eval with API/DB assertions
+- **qa-semantic-csv-orchestrate** — Coordinate Elasticsearch eval with API/DB assertions in **`qa/semantic-automation.csv`**
 - **deploy-driver-docker-compose** — Elasticsearch service definition
 - **reasoning-as-infra** — Search architecture patterns, sharding strategy, analyzer tuning
 - **contract-search** — Negotiate search contracts (field names, query DSL semantics)

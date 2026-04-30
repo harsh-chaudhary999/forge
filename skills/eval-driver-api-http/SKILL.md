@@ -2,7 +2,7 @@
 name: eval-driver-api-http
 description: "WHEN: Eval scenario requires HTTP API request/response verification. Minimal HTTP driver for eval. Functions: setup(config), call(method, path, body), verify(response, assertion), teardown()."
 type: rigid
-requires: [eval-scenario-format]
+requires: [brain-read]
 version: 1.0.1
 preamble-tier: 3
 triggers:
@@ -39,13 +39,13 @@ EVERY HTTP EVAL ASSERTION VERIFIES SPECIFIC STATUS CODE, RESPONSE BODY FIELDS, A
 
 When YAML declares **`driver: api-http`** (or equivalent) and **`baseUrl` / env** resolve to a **reachable** API host, the agent **must** execute scenarios through this skill’s contract — **`setup` → `call` → `verify` → `teardown`** (or a **documented** bash/HTTP script that **matches** the same assertions, status, and body checks — not looser than **`verify`**).
 
-**Forbidden:** Marking API eval **pass/fail** using **only** informal **`curl`** one-liners while skipping **`eval-coordinate-multi-surface`** dispatch to this driver when the stack is up — that is a **process skip**, not a system constraint. **Log** request/response summaries (status, key headers, body snippet) under **`~/forge/brain/prds/<task-id>/qa/logs/eval-preflight-<ISO8601>.log`** or per-run HTTP trace (**redact** **`Authorization`**, API keys).
+**Forbidden:** Marking API eval **pass/fail** using **only** informal **`curl`** one-liners while skipping **`qa-semantic-csv-orchestrate`** / host dispatch to this driver when the stack is up — that is a **process skip**, not a system constraint. **Log** request/response summaries (status, key headers, body snippet) under **`~/forge/brain/prds/<task-id>/qa/logs/eval-preflight-<ISO8601>.log`** or per-run HTTP trace (**redact** **`Authorization`**, API keys).
 
 ## Red Flags — STOP
 
 If you notice any of these, STOP and do not proceed:
 
-- **`curl` smoke alone substitutes for `driver: api-http` scenarios** — STOP. Run **`eval-driver-api-http`** (via **`eval-coordinate-multi-surface`**) so **`expected.status`** / body assertions are enforced consistently. Informal probes may **supplement** debugging; they **do not replace** driver execution when the API is reachable.
+- **`curl` smoke alone substitutes for `driver: api-http` steps** — STOP. Run **`eval-driver-api-http`** (via **`qa-semantic-csv-orchestrate`** or the host runner) so status / body assertions are enforced consistently. Informal probes may **supplement** debugging; they **do not replace** driver execution when the API is reachable.
 - **Assertion checks only that status code is 2xx without verifying response body** — A 200 OK with an empty body or error payload in the body is not a passing eval. STOP. Every assertion must verify specific response body fields.
 - **Timeout is set to the driver default without consulting P95 latency data** — Default timeouts (5000ms) may mask slow endpoints or cause false timeouts on valid but slower responses. STOP. Set timeout to observed P95 latency + 50% buffer for each endpoint.
 - **`teardown()` is not called after scenario completes** — An HTTP driver with open keep-alive connections will prevent subsequent scenarios from connecting to the same port. STOP. Always call `teardown()` in all paths.

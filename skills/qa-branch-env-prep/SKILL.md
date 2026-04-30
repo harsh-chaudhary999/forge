@@ -96,7 +96,7 @@ Before marking this skill complete:
 - **`brain-read`** — prerequisite skill that loads product.md and brain artifacts this skill depends on. When **`~/forge/brain/prds/<task-id>/terminology.md`** exists, it is the per-task product term reference for **manifest** copy and human-readable branch labels ([docs/terminology-review.md](../../docs/terminology-review.md)); optional for env prep **mechanics**.
 - **`qa-pipeline-orchestrate`** — invokes this skill as phase QA-P3; the orchestrator's HARD-GATE checks for the manifest and `.eval-env` this skill produces. **Step 0.0** host discovery is the **authoritative** input so run mode matches hardware; QA-P5 driver preflight **re-checks** (**safety net**).
 - **`eval-product-stack-up`** — downstream skill that reads `.eval-env` to set service environment variables before starting local services.
-- **`eval-coordinate-multi-surface`** — eval executor that sources `.eval-env` at runtime to resolve `{{ BASE_URL }}`, `{{ DEVICE_ID }}`, and other scenario variables.
+- **`qa-semantic-csv-orchestrate`** / host runners — execute **`qa/semantic-automation.csv`**; `.eval-env` may still resolve `{{ BASE_URL }}`, `{{ DEVICE_ID }}`, and other variables for local runs.
 
 ---
 
@@ -191,7 +191,7 @@ Record the answer as `run_mode: url-only | branch-local | branch-code-validate |
 
 **For `url-only`:** Skip Steps 2–4. Proceed directly to Step 5 (write `.eval-env`).
 
-**For `branch-local`:** Follow the full workflow (Steps 1–8). Then invoke `eval-product-stack-up` + `eval-coordinate-multi-surface`.
+**For `branch-local`:** Follow the full workflow (Steps 1–8). Then invoke `eval-product-stack-up` + `qa-semantic-csv-orchestrate` / `run_semantic_csv_eval.py`.
 
 **For `branch-code-validate`:** Follow Steps 1–4 (checkout), then execute Step 4b (run test suite per repo). Skip Step 5 env write (no drivers needed). Proceed directly to Step 7 (manifest) and Step 8 (log gate).
 

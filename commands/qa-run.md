@@ -1,16 +1,16 @@
 ---
 name: qa-run
-description: "Partial slice — execute existing machine-eval artifacts against named branches and a target environment. Requires eval/*.yaml and/or a valid qa/semantic-eval-manifest.json (+ qa/semantic-automation.csv when applicable) per docs/forge-task-verification.md — not YAML-only. Chains: branch checkout → env config → stack-up → multi-surface drivers → verdict."
+description: "Partial slice — execute existing machine-eval artifacts against named branches and a target environment. Requires a valid qa/semantic-eval-manifest.json and qa/semantic-automation.csv per docs/forge-task-verification.md. Chains: branch checkout → env config → stack-up → drivers → verdict."
 ---
 
-**Input:** **`eval/*.yaml`** **and/or** the **semantic** artifacts under **`qa/`** ( **`semantic-eval-manifest.json`**, **`semantic-automation.csv`** ) per **`docs/forge-task-verification.md`** and **`docs/semantic-eval-csv.md`** — whichever **`qa-pipeline-orchestrate`** will execute for this task. Does not read **`manual-test-cases.csv`**. Optional: read **`~/forge/brain/prds/<task-id>/terminology.md`** when present so **verdicts** and **run reports** use **canonical** product labels ([docs/terminology-review.md](../docs/terminology-review.md)).
+**Input:** **`qa/semantic-eval-manifest.json`**, **`qa/semantic-automation.csv`**, and **`qa/semantic-eval-run.log`** (when produced) per **`docs/forge-task-verification.md`** and **`docs/semantic-eval-csv.md`** — as **`qa-pipeline-orchestrate`** executes for this task. Does not read **`manual-test-cases.csv`**. Optional: read **`~/forge/brain/prds/<task-id>/terminology.md`** when present so **verdicts** and **run reports** use **canonical** product labels ([docs/terminology-review.md](../docs/terminology-review.md)).
 
-Invoke **`qa-pipeline-orchestrate`** starting at **Phase QA-P3** (branch prep) to execute eval scenarios that already exist in brain.
+Invoke **`qa-pipeline-orchestrate`** starting at **Phase QA-P3** (branch prep) to execute scenarios that already exist in brain.
 
 ## What this does
 
 ```
-existing machine-eval inputs in brain (eval/*.yaml and/or qa/semantic-eval-manifest.json + semantic automation per docs)
+existing semantic machine-eval inputs in brain (qa/semantic-automation.csv + manifest per docs)
   → checkout named feature branches (with confirmation)
   → write .eval-env (runtime overrides for drivers)
   → start product stack in dependency order (local mode)
@@ -44,8 +44,8 @@ existing machine-eval inputs in brain (eval/*.yaml and/or qa/semantic-eval-manif
 
 ## Prerequisites
 
-- **`qa-write-scenarios` Step −1** satisfied **before** `/qa-write`: **`prd-locked.md`**, **`qa-prd-analysis`** + **`qa-analysis.md`**, then **`manual-test-cases.csv`** or documented waiver where policy requires — see **`skills/qa-write-scenarios/SKILL.md`**. `/qa-run` assumes upstream authoring order was respected.
-- **Machine-eval inputs present:** **`~/forge/brain/prds/<task-id>/eval/*.yaml`** **and/or** valid **`~/forge/brain/prds/<task-id>/qa/semantic-eval-manifest.json`** (with **`qa/semantic-automation.csv`** when the manifest implies semantic CSV — see **`docs/forge-task-verification.md`**). YAML-only is **not** required when the semantic path is authoritative for the task.
+- **`/qa-write` ordering** satisfied **before** `/qa-run`: **`prd-locked.md`**, **`qa-prd-analysis`** + **`qa-analysis.md`**, then **`manual-test-cases.csv`** or documented waiver where policy requires — see **`commands/qa-write.md`** and **`skills/qa-pipeline-orchestrate/SKILL.md`**. `/qa-run` assumes upstream authoring order was respected.
+- **Machine-eval inputs present:** valid **`~/forge/brain/prds/<task-id>/qa/semantic-eval-manifest.json`** with coherent **`qa/semantic-automation.csv`** — see **`docs/forge-task-verification.md`**.
 - **`~/forge/brain/products/<slug>/product.md`** — for repo paths and service start commands
 - For Android: `adb devices` shows connected device or running emulator
 - For iOS: simulator running (`xcrun simctl list | grep Booted`) or Appium MCP configured
@@ -83,10 +83,10 @@ Do not manually declare a fix GREEN without a verified re-run. The report must s
 Do NOT declare the feature ready to merge on a RED or YELLOW **product** verdict after drivers ran. **`NOT_EXECUTED`** means no product verdict yet — obtain GREEN after a real **`/qa-run`** against an environment. Fix → re-run → GREEN is the only valid path to merge readiness.
 </HARD-GATE>
 
-**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns, **no defensive downstream-gate narration** mid-elicitation — **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**); **one blocking affordance per unrelated fork** (no bundled prose obligations); **no dual prompts** — **never** **`AskQuestion`** / **Questions** widget on **one** topic **and** a **long markdown question** on **another** in the **same** message; **no chat–widget duplicate** — long lists / same question body **once** in **chat**; **`AskQuestion`** = **short** title + **options** only (**`docs/forge-one-step-horizon.md`** **Chat vs `AskQuestion` / Questions widget**); **headline / first § = immediate next artifact** — **not** *What unlocks eval YAML*, **eval `*.yaml`**, or Step −1 **as the main heading** when **manual CSV** / **`qa-manual-test-cases-from-prd`** / **`qa-prd-analysis`** is still the next gate (**`docs/forge-one-step-horizon.md`** **Headline = immediate next step**); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns, **no defensive downstream-gate narration** mid-elicitation — **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**); **one blocking affordance per unrelated fork** (no bundled prose obligations); **no dual prompts** — **never** **`AskQuestion`** / **Questions** widget on **one** topic **and** a **long markdown question** on **another** in the **same** message; **no chat–widget duplicate** — long lists / same question body **once** in **chat**; **`AskQuestion`** = **short** title + **options** only (**`docs/forge-one-step-horizon.md`** **Chat vs `AskQuestion` / Questions widget**); **headline / first § = immediate next artifact** — **not** *What unlocks machine eval*, **`qa/semantic-automation.csv`**, or the full ordering table **as the main heading** when **manual CSV** / **`qa-manual-test-cases-from-prd`** / **`qa-prd-analysis`** is still the next gate (**`docs/forge-one-step-horizon.md`** **Headline = immediate next step**); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
 
 **Forge plugin scope:** Skills from `skills/`; brain from `~/forge/brain/`; repo paths from `product.md`.
 
 **vs `/eval`:** `/eval` is the forge delivery pipeline eval gate (State P4.4, requires State 4b artifacts). `/qa-run` is standalone — works without a full conductor run, targets any branch, generates its report independently.
 
-**vs `/qa`:** `/qa-run` assumes eval YAML already exists. `/qa` writes scenarios first then runs them.
+**vs `/qa`:** `/qa` authors **`qa/semantic-automation.csv`** (via pipeline phases) then runs them; `/qa-run` executes artifacts that already exist.

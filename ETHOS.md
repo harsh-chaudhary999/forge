@@ -29,7 +29,7 @@ Nothing ships without passing the sequence in order:
 
 Partial pipelines are not shippable. A PR that skipped eval is not "90% done" — it is zero percent done on the gate that catches production failures. There are no half-gates.
 
-**Not a literal CI DAG:** The numbered list above is **conceptual** (all of it must happen before merge; order can overlap in real work — e.g. eval YAML and TDD RED interleave in **State 4b**). The **authoritative** sequencing, log markers, and human gates are defined in **[`skills/conductor-orchestrate/SKILL.md`](skills/conductor-orchestrate/SKILL.md)** and `~/forge/brain/prds/<task-id>/conductor.log` — not by re-sorting this list in isolation.
+**Not a literal CI DAG:** The numbered list above is **conceptual** (all of it must happen before merge; order can overlap in real work — e.g. semantic machine eval and TDD RED interleave in **State 4b**). The **authoritative** sequencing, log markers, and human gates are defined in **[`skills/conductor-orchestrate/SKILL.md`](skills/conductor-orchestrate/SKILL.md)** and `~/forge/brain/prds/<task-id>/conductor.log` — not by re-sorting this list in isolation.
 
 ---
 

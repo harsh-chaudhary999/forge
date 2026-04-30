@@ -1,29 +1,26 @@
 # Semantic automation CSV (NL-first eval)
 
-## Why this path exists (exploration before frozen YAML)
+## CSV execution results
 
-**Driver YAML** (`eval-scenario-format`) is **declarative**: it names concrete **actions, targets, URLs, selectors, payloads** your stack can resolve. That information often **does not exist** until after **exploratory execution** — you have run against a real stack, a real build, or a real device and discovered what is actually on screen and on the wire.
+The machine-eval deliverable is **`qa/semantic-automation.csv`** executed through **`tools/run_semantic_csv_eval.py`** (or host automation), producing **`qa/semantic-eval-manifest.json`** + **`qa/semantic-eval-run.log`** — results that CI, **`[P4.0-SEMANTIC-EVAL]`**, and **`eval-judge`** consume.
 
-If process **requires** `eval/*.yaml` **before** the environment is knowable, teams produce **placeholder or fiction YAML** to satisfy a gate. That is the failure mode the semantic path fixes.
+## Why NL-first
 
-**Intended order of operations:**
+Concrete **URLs, selectors, and payloads** often only become known **after** running against a real stack. **`qa/semantic-automation.csv`** records **Intent** per step and **DependsOn** ordering; the host layer (MCP, CDP, ADB, HTTP, SQL — per **CLAUDE.md** D5) maps **Surface** to tools. **`qa/manual-test-cases.csv`** remains the human acceptance inventory that **`forge-tdd`** traces for RED/GREEN tests.
 
-1. **Acceptance inventory** where policy requires it — **`qa/manual-test-cases.csv`** (what must be true), not pre-encoded automation.
-2. **Exploratory / NL-driven runs** — **`qa/semantic-automation.csv`** + host drivers (MCP, CDP, ADB, …) so execution can **discover** real behavior and **DependsOn** order without committing fake locators.
-3. **Optional hardening** — once routes, health endpoints, and UI structure are **known**, add or replace with **`eval/*.yaml`** for **deterministic regression** and CI-shaped runs.
+**Intended order:**
 
-`verify_forge_task.py` treats a **valid** `qa/semantic-eval-manifest.json` (and CSV when `kind: semantic-csv-eval`) as **first-class** machine-eval evidence — not a waiver of “real” eval, but an honest record when YAML would be fiction.
+1. **`qa/manual-test-cases.csv`** where policy requires it (acceptance inventory).
+2. **`qa/semantic-automation.csv`** + host drivers → **`semantic-eval-manifest.json`** + **`semantic-eval-run.log`**.
+3. Log **`[P4.0-SEMANTIC-EVAL]`** in **`conductor.log`** after manifest + run log are written.
+
+`verify_forge_task.py` requires a **valid** `qa/semantic-eval-manifest.json` (and CSV coherence when **`kind: semantic-csv-eval`**).
 
 ---
 
-Machine-eval paths in Forge:
-
-| Path | Artifact | When |
-|------|-----------|------|
-| Declarative | `prds/<task-id>/eval/*.yaml` | Drivers with explicit locators — **`eval-scenario-format`** |
-| Semantic | `prds/<task-id>/qa/semantic-automation.csv` + `qa/semantic-eval-manifest.json` | NL **`Intent`** per step, **`DependsOn`** ordering, optional trace to **`manual-test-cases.csv`** **`Id`** |
-
-`tools/verify/verify_forge_task.py` accepts **either** YAML scenarios **or** a valid **`qa/semantic-eval-manifest.json`** (see **`docs/forge-task-verification.md`**). If manifest **`kind`** is **`semantic-csv-eval`**, the semantic CSV file **must** exist and parse cleanly.
+| Path | Artifact |
+|------|-----------|
+| **Semantic** | `qa/semantic-automation.csv` + `qa/semantic-eval-manifest.json` + `qa/semantic-eval-run.log` |
 
 ## File layout
 
@@ -41,21 +38,21 @@ Machine-eval paths in Forge:
 |--------|-------------|
 | **Id** | Stable step id (unique). Referenced by **DependsOn**. |
 | **Surface** | One of: `web`, `api`, `mysql`, `redis`, `es`, `kafka`, `ios`, `android` (aliases like `web-cdp` → `web`, `api-http` → `api` — see **`tools/verify/semantic_csv.py`** `SURFACE_ALIASES`). |
-| **Intent** | Natural-language instruction for the host automation layer (MCP browser, ADB, HTTP client, SQL — **not** pre-encoded selectors in this file). |
+| **Intent** | Natural-language instruction for the host automation layer. |
 
 **Optional**
 
 | Column | Description |
 |--------|-------------|
-| **DependsOn** | Comma-separated **Id** values. Steps with unmet or failed dependencies are **SKIPPED** at run time (runner responsibility). Order is validated as a **DAG** (no cycles); execution order is topological. |
-| **TraceToCsvId** | Optional **`Id`** from **`qa/manual-test-cases.csv`** for traceability (same task). |
+| **DependsOn** | Comma-separated **Id** values. Steps with unmet or failed dependencies are **SKIPPED** at run time. Order is validated as a **DAG** (no cycles). |
+| **TraceToCsvId** | Optional **`Id`** from **`qa/manual-test-cases.csv`** for traceability. |
 | **ExpectedHint** | Optional substring or short hint for assertions / screenshots — interpreted by the host driver. |
 
 ## Host drivers (operator machine)
 
-Forge plugin code does **not** ship LangChain-style orchestrators (**CLAUDE.md** D5). Semantic execution uses **host-local** drivers:
+Forge plugin code does **not** ship LangChain-style orchestrators (**CLAUDE.md** D5). Semantic execution uses **host-local** drivers documented in **`eval-driver-*`** skills:
 
-- **Web:** Chrome DevTools / Playwright / Puppeteer / **browser MCP** — ask the operator which path before locking tooling.
+- **Web:** CDP / Playwright / **browser MCP** — ask the operator which path.
 - **Android:** **ADB** vs **Appium MCP** — ask before committing.
 - **iOS:** **XCTest** / simulator — macOS host.
 
@@ -70,7 +67,7 @@ python3 tools/verify/run_semantic_csv_eval.py --task-id MY-TASK --brain ~/forge/
 python3 tools/verify/run_semantic_csv_eval.py --task-id MY-TASK --brain ~/forge/brain --dry-run
 ```
 
-Log **`[P4.0-SEMANTIC-EVAL]`** in **`conductor.log`** after a successful run (same ordering role as **`[P4.0-EVAL-YAML]`**).
+Log **`[P4.0-SEMANTIC-EVAL]`** in **`conductor.log`** after manifest + **`semantic-eval-run.log`** are written.
 
 ## Skill
 

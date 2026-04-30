@@ -1,32 +1,34 @@
 # Forge task verification (machine checks)
 
-Forge’s **skills** and **agents** enforce Phase 4 ordering **procedurally**. This document describes an **optional machine layer**: small **Python** tools that fail CI (or pre-push) when the **brain** is missing required artifacts, `conductor.log` ordering is wrong, or text has **drifted** between PRD and eval/QA files.
+Forge’s **skills** and **agents** enforce Phase 4 ordering **procedurally**. This document describes an **optional machine layer**: small **Python** tools that fail CI (or pre-push) when the **brain** is missing required artifacts, `conductor.log` ordering is wrong, or text has **drifted** between PRD and QA / semantic automation files.
+
+**Machine-eval evidence:** **`qa/semantic-automation.csv`** → run (**`tools/run_semantic_csv_eval.py`**) → **`qa/semantic-eval-manifest.json`** (+ **`qa/semantic-eval-run.log`** when produced). **`verify_forge_task.py` requires a valid manifest.**
 
 ## Tools
 
 | Script | Purpose |
 |--------|---------|
-| [`tools/verify_forge_task.py`](../tools/verify_forge_task.py) (shim → [`verify/verify_forge_task.py`](../tools/verify/verify_forge_task.py)) | Gates: **`eval/*.yaml`** **or** valid [`qa/semantic-eval-manifest.json`](#semantic-eval-manifest-no-fiction-yaml); when **`qa/semantic-automation.csv`** exists or manifest **`kind`** is **`semantic-csv-eval`**, CSV parse + **DependsOn** DAG (**`tools/verify/semantic_csv.py`**); log order; QA CSV; design evidence; optional PRD headings; timestamps; single-task brain; optional tech-plan structure |
-| [`tools/run_semantic_csv_eval.py`](../tools/run_semantic_csv_eval.py) (shim → [`verify/run_semantic_csv_eval.py`](../tools/verify/run_semantic_csv_eval.py)) | Validates **`qa/semantic-automation.csv`**, writes **`semantic-eval-manifest.json`** + **`semantic-eval-run.log`** — see [**Semantic automation CSV**](../docs/semantic-eval-csv.md) |
-| [`tools/verify/eval_yaml_stdlib.py`](../tools/verify/eval_yaml_stdlib.py) | Used internally when PyYAML is absent — best-effort eval YAML shape checks |
-| [`tools/verify/forge_drift_check.py`](../tools/verify/forge_drift_check.py) | Heuristic: **Success Criteria** bullets from `prd-locked.md` appear as substrings in `eval/*` + `qa/manual-test-cases.csv` (stdlib only) |
+| [`tools/verify_forge_task.py`](../tools/verify_forge_task.py) (shim → [`verify/verify_forge_task.py`](../tools/verify/verify_forge_task.py)) | Gates: valid [`qa/semantic-eval-manifest.json`](#semantic-eval-manifest-and-csv-execution-results) (+ CSV when **`kind: semantic-csv-eval`**); CSV parse + **DependsOn** DAG when semantic CSV applies (**`tools/verify/semantic_csv.py`**); **`[P4.0-SEMANTIC-EVAL]`** log order vs dispatch; QA CSV; design evidence; optional PRD headings; timestamps; single-task brain; optional tech-plan structure |
+| [`tools/run_semantic_csv_eval.py`](../tools/run_semantic_csv_eval.py) (shim → [`verify/run_semantic_csv_eval.py`](../tools/verify/run_semantic_csv_eval.py)) | **CSV execution:** validates **`qa/semantic-automation.csv`**, writes **`semantic-eval-manifest.json`** + per-step **`semantic-eval-run.log`** — see [**Semantic automation CSV**](../docs/semantic-eval-csv.md) |
+| [`tools/verify/forge_drift_check.py`](../tools/verify/forge_drift_check.py) | Heuristic: **Success Criteria** bullets from `prd-locked.md` appear as substrings in `qa/semantic-automation.csv` / manifest / run log + `qa/manual-test-cases.csv` |
 | [`tools/verify/verify_tech_plans.py`](../tools/verify/verify_tech_plans.py) | Tech plan headings / `### 1b.2a` placement / `REVIEW_PASS` gate markers — used by **`--strict-tech-plans`**; optional **`--strict-0c-inventory`** adds GAP-row + multi-source citation checks |
 | [`tools/verify/append_phase_ledger.py`](../tools/verify/append_phase_ledger.py) | Append one **`phase-ledger.jsonl`** row with **SHA256** for listed task-relative files |
 | [`tools/verify/phase_ledger.py`](../tools/verify/phase_ledger.py) | Ledger schema + validation (used by verify and append CLI) |
 | [`tools/verify/shared_spec_policy.py`](../tools/verify/shared_spec_policy.py) + [`shared_spec_checklist.json`](../tools/verify/shared_spec_checklist.json) | **`--check-shared-spec`** anchors + TBD/TODO scan |
 | [`tools/dev/lint_skill_allowed_tools.py`](../tools/dev/lint_skill_allowed_tools.py) | CI: rigid skills must declare **`allowed-tools`**; optional **`--write-policy`** → [`skill-tool-policy.json`](../tools/dev/skill-tool-policy.json) |
 
-**PyYAML** (optional, recommended in CI): [`tools/verify/requirements-verify.txt`](../tools/verify/requirements-verify.txt). When installed, `--validate-eval-yaml` uses full YAML parse + the same shape rules; otherwise the stdlib helper runs.
-
 **Brain root:** Python CLIs accept **`--brain`**, else **`FORGE_BRAIN`** or **`FORGE_BRAIN_PATH`** (either works), then default **`~/forge/brain`**. Hooks (`session-start.cjs`, `prompt-submit.cjs`) honor the same two env vars.
 
 <a id="semantic-eval-manifest-no-fiction-yaml"></a>
+<a id="semantic-eval-manifest-and-csv-execution-results"></a>
 
-## Semantic eval manifest (no fiction YAML)
+## Semantic eval manifest and CSV execution results
 
-**Status:** `tools/verify/verify_forge_task.py` accepts a valid [**semantic-eval-manifest**](#semantic-eval-manifest-no-fiction-yaml) **or** at least one `eval/*.yaml`. Conductor should log **`[P4.0-SEMANTIC-EVAL]`** when using semantic-only automation.
+**Machine-eval story:** Run **`qa/semantic-automation.csv`** through **`tools/run_semantic_csv_eval.py`** (or host drivers wired by **`qa-semantic-csv-orchestrate`**). Persist **`qa/semantic-eval-manifest.json`** + **`qa/semantic-eval-run.log`** — **CSV execution results** CI and **`eval-judge`** treat as evidence.
 
-**Path:** `prds/<task-id>/qa/semantic-eval-manifest.json` (task-relative).
+**Status:** `tools/verify/verify_forge_task.py` **requires** a valid [**semantic-eval-manifest**](#semantic-eval-manifest-and-csv-execution-results). Log **`[P4.0-SEMANTIC-EVAL]`** for State 4b.
+
+**Path:** `prds/<task-id>/qa/semantic-eval-manifest.json` (task-relative). **`qa/semantic-eval-run.log`** lives alongside it (JSON lines per step — reproducible execution trace).
 
 **Minimal JSON (validated by `verify_forge_task.py`):**
 
@@ -38,26 +40,23 @@ Forge’s **skills** and **agents** enforce Phase 4 ordering **procedurally**. T
 | `kind` | yes | Non-empty string, e.g. `semantic-csv-eval`. |
 | `outcome` | optional | `pass`, `fail`, or `yellow` — honest results satisfy “not empty fiction”; merge policy may still require `pass`. |
 
-**Conductor marker:** log **`[P4.0-SEMANTIC-EVAL]`** when semantic automation is recorded (same ordering role as **`[P4.0-EVAL-YAML]`** vs **`[P4.1-DISPATCH]`** — first of those two markers wins for line-order checks).
+**Conductor marker:** log **`[P4.0-SEMANTIC-EVAL]`** after a valid manifest exists; it must precede **`[P4.1-DISPATCH]`** in **`conductor.log`**. **`verify_forge_task.py`** does not yet require **`semantic-eval-run.log`** on disk; commit it whenever the runner wrote it.
 
-**Gate JSON ledger** (`gates/*.json`): gate id **`P4.0-SEMANTIC-EVAL`** satisfies the same presence slot as **`P4.0-EVAL-YAML`** when ledger mode is used.
-
-**Relationship to YAML:** Teams may ship **only** this manifest + logs **or** keep **declarative YAML** for deterministic regression — not both required unless policy says so.
+**Gate JSON ledger** (`gates/*.json`): gate id **`P4.0-SEMANTIC-EVAL`** is required for dispatch readiness.
 
 ## What `verify_forge_task.py` checks
 
 | Check | When it fails |
 |--------|----------------|
 | **Task directory** | `prds/<task-id>/` missing under `--brain` |
-| **Eval YAML or semantic manifest** | Neither `eval/*.yaml|yml` nor valid `qa/semantic-eval-manifest.json` (see [Semantic eval manifest](#semantic-eval-manifest-no-fiction-yaml)) |
+| **Semantic manifest (+ CSV when required)** | Invalid or missing `qa/semantic-eval-manifest.json` (see [Semantic manifest + CSV execution results](#semantic-eval-manifest-and-csv-execution-results)) |
 | **Semantic automation CSV** | `qa/semantic-automation.csv` present → must parse and have acyclic **DependsOn**; manifest **`kind: semantic-csv-eval`** requires that CSV file (see [semantic-eval-csv.md](semantic-eval-csv.md)) |
-| **`--validate-eval-yaml`** | Each eval file: root `scenario`, non-empty `steps`, each step `id` / `driver` / `action` / non-empty `expected` (PyYAML if available, else `eval_yaml_stdlib`) |
 | **`--check-prd-sections`** | `prd-locked.md` missing `# PRD Locked`, mandatory `**…**` lock blocks from intake, or UI-ish **Repos Affected** without **Design / UI** / `design_ui_scope: not applicable` |
 | **`--require-conductor-timestamps`** | Any non-comment line containing a `[P…]` phase token lacks a leading ISO-8601 timestamp (see `conductor-orchestrate` **Log Format**) |
 | **`--strict-single-task-brain`** | More than one `prds/*/conductor.log` exists (combine with **`--allow-multi-task-brain`** to opt out) |
 | **Gate ledger path** | **`--gates-dir`** optional: defaults to `prds/<task-id>/gates/` when that directory exists; if an explicit `--gates-dir` path is missing, the task-local `gates/` is used instead (**INFO** on stderr) |
 | **`forge_qa_csv_before_eval: true`** | Resolved `products/<slug>/product.md` (via `--product` or `prd-locked.md` **Product:** matching `name:`) — requires data rows in `qa/manual-test-cases.csv` |
-| **Log order** | If `conductor.log` exists: first `[P4.1-DISPATCH]` must not appear before the **earlier** of `[P4.0-EVAL-YAML]` or `[P4.0-SEMANTIC-EVAL]`; with QA flag, `[P4.0-QA-CSV]` … `approved=yes` must precede that automation line |
+| **Log order** | If `conductor.log` exists: first `[P4.1-DISPATCH]` must not appear before `[P4.0-SEMANTIC-EVAL]`; with QA flag, `[P4.0-QA-CSV]` … `approved=yes` must precede that line |
 | **Net-new design** | If `prd-locked.md` indicates **design_new_work: yes** and no `design_waiver` … `prd_only`: requires files under `design/` and/or `[DESIGN-INGEST]` before first `[P4.1-DISPATCH]` when a log exists; if the log is missing, **design/** must be non-empty |
 | **`--strict-tdd`** | `[P4.0-TDD-RED]` must appear before the first `[P4.1-DISPATCH]` |
 | **`--strict-tech-plans`** | When `prds/<task-id>/tech-plans/*.md` exist (excluding `HUMAN_SIGNOFF.md` / `README.md`): each plan must include canonical headings (`### 1b.0`, `### 1b.0b`, `### 1b.2`, `### 1b.2a`, `### 1b.6`), **`### 1b.2a` after** `### 1b.5` / `#### 1b.5b`, a **`Section 1c`** marker, and — if **`Tech plan status: REVIEW_PASS`** — the literals **`<!-- FORGE-GATE:SECTION-0C-INVENTORY:v1 -->`** and **`<!-- FORGE-GATE:CODE-RECROSS:v1 -->`** (see **`skills/tech-plan-self-review/SKILL.md`** Section 0c and **`skills/tech-plan-write-per-project/SKILL.md`** Section 1c). Implemented by [`tools/verify/verify_tech_plans.py`](../tools/verify/verify_tech_plans.py). |
@@ -81,14 +80,13 @@ export FORGE_BRAIN=~/forge/brain
 python3 tools/verify_forge_task.py --task-id add-2fa --brain ~/forge/brain --product shopapp --strict-tdd
 ```
 
-**Recommended CI bundle** (after `pip install -r tools/verify/requirements-verify.txt`):
+**Recommended CI bundle** (optional `pip install -r tools/verify/requirements-verify.txt` for drift/spec helpers):
 
 ```bash
 python3 tools/verify_forge_task.py \
   --task-id add-2fa \
   --brain ~/forge/brain \
-  --require-log \
-  --validate-eval-yaml
+  --require-log
 ```
 
 **Optional stricter flags** (enable per team; see `forge-brain-guard` env vars):
@@ -107,18 +105,16 @@ When more than one task has `conductor.log` and strict mode is off, the tool pri
 
 Append-only JSONL at **`prds/<task-id>/phase-ledger.jsonl`**. Each line is one object: **`schema_version`**, **`task_id`**, **`phase_marker`**, **`recorded_at`**, **`artifacts`** (array of **`{ "relpath", "sha256" }`** relative to the task directory), optional **`note`**.
 
-Record after you commit eval files (or any artifacts you want attested):
-
 ```bash
 python3 tools/append_phase_ledger.py --brain ~/forge/brain --task-id add-2fa \
-  --phase '[P4.0-EVAL-YAML]' --artifacts eval/smoke.yaml,eval/api.yaml
+  --phase '[P4.0-SEMANTIC-EVAL]' --artifacts qa/semantic-eval-manifest.json,qa/semantic-eval-run.log,qa/semantic-automation.csv
 ```
 
 ## Drift check (`forge_drift_check.py`)
 
 Brain-repo CI: copy or adapt [`.github/workflows/forge-brain-guard.yml`](../.github/workflows/forge-brain-guard.yml). Set **`FORGE_TASK_ID`** and **`FORGE_TOOLS_REPO`** (`owner/repo` for the sparse checkout of Forge `tools/`).
 
-Extracts bullet lines under **`**Success Criteria:**`** in `prd-locked.md` and checks each (length ≥ 12) appears as a **substring** (case-insensitive) in concatenated `eval/*.yaml|yml|json` and `qa/manual-test-cases.csv`. Without **`--strict`**, missing matches are **WARN** only and exit **0**. With **`--strict`**, exit **1**.
+Extracts bullet lines under **`**Success Criteria:**`** in `prd-locked.md` and checks each (length ≥ 12) appears as a **substring** (case-insensitive) in concatenated semantic QA/automation text and `qa/manual-test-cases.csv`. Without **`--strict`**, missing matches are **WARN** only and exit **0**. With **`--strict`**, exit **1**.
 
 ```bash
 python3 tools/forge_drift_check.py --task-id add-2fa --brain ~/forge/brain
@@ -133,7 +129,8 @@ Sparse checkout should include at least:
 
 ```text
 tools/verify/verify_forge_task.py
-tools/verify/eval_yaml_stdlib.py
+tools/verify/forge_paths.py
+tools/verify/semantic_csv.py
 tools/verify/phase_ledger.py
 tools/verify/shared_spec_policy.py
 tools/verify/shared_spec_checklist.json
@@ -144,7 +141,6 @@ tools/verify/verify_tech_plans.py
 
 ## Limits
 
-- **`--validate-eval-yaml`** / stdlib helper: validates **shape**, not that URLs, selectors, or drivers match your stack.
 - **`--check-prd-sections`**: template-oriented; unusual PRD layouts may need follow-up in intake, not silent loosening of checks.
 - **`forge_drift_check`**: substring heuristic — short or generic bullets may false-pass; long nuanced bullets may false-fail.
 - **`shared_spec_checklist.json`**: must stay aligned with council template edits; loosen or extend the list when the normative spec outline changes.

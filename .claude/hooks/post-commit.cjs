@@ -15,12 +15,12 @@
  *
  * Gate JSON schema:
  * {
- *   "gate_id":      "P4.0-EVAL-YAML",
+ *   "gate_id":      "P4.0-SEMANTIC-EVAL",
  *   "task_id":      "task-2025-04-21",
  *   "satisfied_at": "2025-04-21T10:30:00Z",
  *   "commit_sha":   "abc123...",
  *   "evidence": {
- *     "log_line":   "[P4.0-EVAL-YAML] task_id=... scenarios=3",
+ *     "log_line":   "[P4.0-SEMANTIC-EVAL] task_id=...",
  *     "conductor_log": "prds/task-id/conductor.log"
  *   },
  *   "status": "satisfied"
@@ -205,7 +205,9 @@ try {
  */
 const GATE_MARKERS = [
   { pattern: /\[P4\.0-QA-CSV\].*approved=yes/,   id: 'P4.0-QA-CSV' },
-  { pattern: /\[P4\.0-EVAL-YAML\]/,              id: 'P4.0-EVAL-YAML' },
+  { pattern: /\[P4\.0-SEMANTIC-EVAL\]/,           id: 'P4.0-SEMANTIC-EVAL' },
+  /** Legacy machine-eval marker — gate ledger parity with pre-semantic brains */
+  { pattern: /\[P4\.0-EVAL-YAML\]/,               id: 'P4.0-EVAL-YAML' },
   { pattern: /\[P4\.0-TDD-RED\]/,                id: 'P4.0-TDD-RED' },
   { pattern: /\[P4\.1-DISPATCH\]/,               id: 'P4.1-DISPATCH' },
   { pattern: /\[P4\.4-EVAL-GREEN\]/,             id: 'P4.4-EVAL-GREEN' },

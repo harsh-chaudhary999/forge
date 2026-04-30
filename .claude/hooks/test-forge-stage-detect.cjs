@@ -35,7 +35,7 @@ test('P4.4-EVAL-RED maps to eval not pr', () => {
 });
 
 test('P4.0 maps to build', () => {
-  assert.strictEqual(markerToStage('[P4.0-EVAL-YAML]'), 'build');
+  assert.strictEqual(markerToStage('[P4.0-SEMANTIC-EVAL]'), 'build');
 });
 
 test('P5 maps to pr', () => {

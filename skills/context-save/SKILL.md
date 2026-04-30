@@ -2,7 +2,7 @@
 name: context-save
 description: "WHEN: You need to save working context — decisions made, git state, remaining work — so any future session can resume without losing state. Invoke when asked to 'save progress', 'save state', 'checkpoint', or before ending a long session."
 type: flexible
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 2
 triggers:
   - "save progress"
@@ -136,6 +136,13 @@ files_modified: <MODIFIED>
 
 - <item 1>
 - <item 2>
+
+## Eval / Phase 4.4 path state (when mid-eval — YAML vs semantic)
+
+- **path:** `yaml` | `semantic` | `both` | `unknown`
+- **semantic-eval-manifest.json outcome (last known):** pass | fail | yellow | not-written
+- **semantic-eval-run.log failed step ids (if any):** <ids or none>
+- **Notes:** <e.g. stack-up status, branch SHAs, env vars for rerun>
 
 ## Notes
 

@@ -1,9 +1,9 @@
 ---
 name: self-heal-locate-fault
-description: "WHEN: An eval scenario has failed. Parse eval output, trace the failure chain backwards to the root service, and collect logs and state as evidence."
+description: "WHEN: An eval scenario has failed. Parse YAML driver eval output or semantic qa/semantic-eval-run.log, trace the failure chain backwards to the root service, and collect logs and state as evidence."
 type: rigid
 requires: [brain-read]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "locate the fault"
@@ -131,13 +131,24 @@ When an eval scenario fails, this skill diagnoses which service caused the failu
 ## Overview
 
 The skill performs three sequential operations:
-1. **Parse Eval Output** — Extract failure step, error message, and context
+1. **Route + parse failure evidence** — YAML/driver tables **or** semantic **`semantic-eval-run.log`** (see below)
 2. **Identify Fault** — Determine which service/component failed
 3. **Collect Evidence** — Gather logs, stack traces, request/response bodies, and state
 
+## Eval path: YAML drivers vs semantic (HARD-GATE)
+
+| Path | Primary failure artifact | Do **not** use |
+|------|--------------------------|------------------|
+| **Pre-semantic** (no manifest yet) | N/A — do not self-heal until **`qa-semantic-csv-orchestrate`** has produced **`semantic-eval-run.log`**. | N/A |
+| **Semantic** (`qa/semantic-automation.csv` + manifest) | **`~/forge/brain/prds/<task-id>/qa/semantic-eval-run.log`** (plus **`qa/semantic-eval-manifest.json`** **`outcome`**) | Driver YAML scenario dumps — they may **not exist** |
+
+**Semantic RED:** If **`qa/semantic-eval-manifest.json`** has **`outcome: fail`** (or Phase 4.4 semantic branch returned RED), **open `qa/semantic-eval-run.log` first.** Format: comment header lines (`# …`, `task_id=…`, `driver=…`), then **one JSON object per line** per semantic step. Parse each line with **`jq`** or a small script; locate objects where **`status`** is **`FAILED`**, **`ERROR`**, or non-success; read **`id`**, **`surface`**, **`intent`**, and any **`error`** / **`message`** fields.
+
+**Trace Surface → service:** Map **`surface`** values (**Web**, **API**, **Android**, …) to repos/services via **`~/forge/brain/products/<slug>/product.md`** Projects / roles — same mental model as drivers, but evidence starts in the **log JSON**, not HTTP/DB driver rows.
+
 ## Algorithm
 
-### Parse Eval Output
+### Parse YAML / driver eval output
 
 Read the eval scenario output and extract:
 - **Scenario name**: Which eval scenario failed
@@ -155,6 +166,16 @@ Input: eval-output.log or eval-result.json
 ├── Check for assertion/validation failures
 └── Extract error context and surrounding steps
 ```
+
+### Parse semantic eval output (`semantic-eval-run.log`)
+
+**When:** Semantic Phase 4.4 path failed; **`eval/`** may have **no** matching driver transcript.
+
+1. Read **`qa/semantic-eval-run.log`** under the task’s **`qa/`** folder.
+2. Skip non-JSON lines (comments starting with **`#`**, **`task_id=`**, **`driver=`**, blanks).
+3. For **each JSON line**, inspect **`id`**, **`status`**, **`surface`**, **`reason`**, **`error`**, **`message`**, **`intent`**.
+4. Treat **`SKIPPED`** with **`dependency_not_passed`** as cascade — the **first** non-PASS step in topological order is often the root; still verify upstream **`DependsOn`** in **`semantic-automation.csv`**.
+5. Cross-reference failed **`id`** with **`qa/semantic-automation.csv`** for **Intent** text and dependencies.
 
 ### Identify Fault
 
@@ -691,6 +712,7 @@ START: Fault Fingerprint Type Identified?
 
 Before handing fault diagnosis to self-heal-triage:
 
+- [ ] **Eval path known** — YAML drivers vs **semantic** (`semantic-eval-run.log`); semantic RED **must** cite failed step **`id`**s from JSON lines
 - [ ] Failure chain traced backwards from failing assertion to root service (not just last log entry)
 - [ ] Request ID used to correlate logs across services
 - [ ] Exception stack unwrapped to root cause (not stopped at user-facing error message)
@@ -699,6 +721,9 @@ Before handing fault diagnosis to self-heal-triage:
 - [ ] Fault diagnosis written in structured YAML format
 
 ## Cross-References
+
+- **`qa-semantic-csv-orchestrate`**, **`docs/semantic-eval-csv.md`** — semantic CSV schema and runner.
+- **`eval-judge`** § Semantic path — verdict from manifest + log.
 
 ### Related Skills
 

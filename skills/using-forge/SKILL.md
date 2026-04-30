@@ -2,7 +2,7 @@
 name: using-forge
 description: "Bootstrap skill — inlined by session-start hook for every Forge-supported host (Claude Code, Cursor, Gemini CLI, JetBrains AI, Codex, Copilot CLI, IDX, Antigravity, OpenCode, etc.)"
 type: rigid
-version: 1.0.20
+version: 1.0.21
 preamble-tier: 4
 triggers:
   - "how to use forge"
@@ -65,6 +65,7 @@ Use this **whenever** the human must answer **more than one** distinct thing bef
 
 - **Transcript-first:** the **assistant message** (markdown) must show **what** is being asked **before** or **with** the interactive affordance — not only a modal, not only `~/forge/brain/` (**chat-visible**). Auditable approval lives in the thread; brain files are the durable record **after** that.
 - **Chat vs widget deduplication (same fork — Cursor / `AskQuestion`):** The **long** context (Q4 feature list, Q1 checklist, etc.) belongs **in chat** **once**. **`AskQuestion`** / **Questions** should pass a **short** title + **discrete options** — **not** a **verbatim** second copy of the entire same prompt (**`docs/forge-one-step-horizon.md`** **Chat vs `AskQuestion` / Questions widget**). Reading the **same** paragraph in **both** panes is invalid UX; **empty** chat + **only** modal still fails transcript-first.
+- **Headline = immediate next artifact (message structure):** The **first** **`##` heading**, bold lead, or opening sentence must name the **single next** gate from the active skill’s ordering table (**e.g.** **`qa-write-scenarios`** **Step −1** **first failing row**) — usually **`manual-test-cases.csv`** / **`qa-manual-test-cases-from-prd`** or **`qa-prd-analysis`**, **not** eval YAML when CSV is still open. **Forbidden:** **`## What unlocks eval YAML`** or Step −1 **as the chat title** when the blocker is **manual CSV**. Step −1 prose lives in **`SKILL.md`** for reference; the **headline** follows **first failing row**. **`docs/forge-one-step-horizon.md`** — **Headline = immediate next step**.
 
 **How (dialogue mechanics — skill-agnostic):**
 

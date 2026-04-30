@@ -3,7 +3,7 @@ name: qa-write-scenarios
 description: "WHEN: qa-prd-analysis is complete and you need to write the maximum possible number of executable eval YAML scenarios — one per test type × surface × scenario variant. No gaps. No shortcuts."
 type: rigid
 requires: [brain-read, qa-prd-analysis, eval-scenario-format]
-version: 2.5.6
+version: 2.5.7
 preamble-tier: 3
 triggers:
   - "write eval scenarios"
@@ -52,7 +52,7 @@ Generates the **maximum possible number of executable eval YAML scenarios** from
 | "I'll write scenarios from memory" | Memory drifts from the PRD. Read prd-locked.md, tech-plans, and qa-analysis.md fresh on every invocation. |
 | "I'll generate eval YAML before manual CSV — PRD is enough" | **Automation without an approved human baseline is orphan automation.** You cannot faithfully prioritize coverage or trace YAML rows to acceptance IDs until **`manual-test-cases.csv`** exists (skill **`qa-manual-test-cases-from-prd`** through approval). YAML then maps journeys to those rows where applicable. |
 | "`qa-analysis.md` + CSV is enough — I won't re-open tech plans or contracts" | **`qa-analysis.md` prioritizes types/surfaces; concrete routes, payloads, cache keys, and error codes live in shared-dev-spec, tech-plans, and contracts.** Shallow YAML repeats generic steps. Use the same primary-source bundle as **`qa-manual-test-cases-from-prd`** Step 1b (see Step 0.1 below). |
-| "I'll drop a Python/bash generator in `eval/` to emit YAML" | **`eval/` is only for driver-readable `*.yaml` (and manifests).** Generators like `_generate_scenarios.py` are not part of Forge, confuse CI/review, and usually produce **`preconditions: []`**, **few or generic `steps`**, and **no** concrete `target` / payloads. Author YAML by hand from **prd-locked + tech plans + contracts** (or use **repo-local** `tools/` **outside** `eval/` if you must codegen, then **delete**). **Never** commit `eval/_generate*.py` without team agreement. |
+| "I'll drop a Python/bash generator in `eval/` to emit YAML" | **`eval/` is only for driver-readable `*.yaml` (and manifests).** Generators like `_generate_scenarios.py` or **task-specific** names (**`_generate_reverification_eval.py`**, `_generate_<feature>_eval.py`) are **not** part of Forge — they are usually written for **speed**, then **left in `eval/`** by mistake. They confuse CI/review and usually produce **`preconditions: []`**, **few or generic `steps`**, and **no** concrete `target` / payloads. Author YAML by hand from **prd-locked + tech plans + contracts** (or use **repo-local** `tools/` **outside** `eval/` if you must codegen, then **delete** the generator or move it to **`tools/`** — **never** commit `eval/_generate*.py` without team agreement). |
 | "Manual CSV is only Summary + Expected — full steps are optional" | **Invalid — upstream skill.** **`qa-manual-test-cases-from-prd`** requires **numbered Description steps** and explicit **Preconditions** when state ≠ default; “plain” rows are **rejected** at sample review. |
 | "Eval YAML is title + one expected string — preconditions: [] and one vague step" | **Invalid.** **`eval-scenario-format`** requires **`steps`** with **concrete** driver actions and assertions; **`preconditions`** filled for auth/stateful/UI journeys (**Anti-Pattern 3a**). Thin YAML is not executable eval. |
 | "Prerequisites are missing — I'll open with a blocking prompt about eval YAML / CSV waiver" | **Violates dependency order.** The **first** interaction must not be the **last** gate (automation-only waiver). Walk **forward** from **`prd-locked.md`** → **`qa-prd-analysis`** (**sequential interactive** Step 0.5 per **`using-forge`** / **`qa-prd-analysis`**) → **`manual-test-cases.csv`** (or waiver **after** PRD+QA exist). See **Step −1** below. |
@@ -612,7 +612,31 @@ Write `~/forge/brain/prds/<task-id>/qa/scenarios-manifest.md`:
 ## Surfaces N/A
 - ios: not in PRD scope (confirmed in qa-analysis.md Q2)
 - kafka: no event bus in tech plans
+
+## CONTEXT_GAP
+*(Omit this section entirely when there are no gaps; otherwise table below — each **open** row must be closed via **Step 6.5** or updated to **resolved** / **risk-accepted** / **deferred-with-owner**.)*
+
+| gap_id | missing | brain path / scenario ids affected | status |
+|---|---|---|---|
+| GAP-001 | concrete POST payload for /api/x | SC-API-POS-002 | open |
 ```
+
+If **`CONTEXT_GAP`** has **any** row with **status ≠ resolved|risk-accepted|deferred-with-owner**, proceed to **Step 6.5** — **do not** log **Step 7** as complete for a “ready to run” claim.
+
+---
+
+## Step 6.5 — CONTEXT_GAP closure (interactive) (HARD-GATE when non-empty)
+
+**When:** `scenarios-manifest.md` lists **open** **CONTEXT_GAP** rows, or eval YAML / manifest still references **TODO** / ungrounded targets that were logged as gaps.
+
+**Why:** Gaps are not footnotes — each one blocks **trustworthy** execution until the human supplies **concrete** grounding or an explicit **risk-accept** / **defer** decision.
+
+1. **One gap per assistant turn** — do **not** list five gaps and ask for all answers in prose (**`using-forge`** **Multi-question elicitation**; **one primary topic** per message).
+2. For the **current** gap, use **`AskUserQuestion`** / **`AskQuestion`** (or **numbered options + stop**) with **discrete** options, e.g.: (a) user **pastes** the missing spec / route / payload; (b) user **points** to a brain path that now contains the answer; (c) **Risk-accept** with **owner + date** (log in manifest); (d) **Defer** with **named follow-up** and still log.
+3. After each answer, **update** the affected **`eval/*.yaml`**, **manifest** table row **status**, and any **CSV** traceability — then move to the **next** gap.
+4. Repeat until **CONTEXT_GAP** is **empty** or every row is **resolved** / **risk-accepted** / **deferred-with-owner** (no **open** rows).
+
+**Forbidden:** Closing the skill with a **bulleted wall** of “please fill these gaps” **without** blocking interactive prompts — that fails **Interactive human input** in **`using-forge`**.
 
 ---
 
@@ -630,6 +654,7 @@ git -C ~/forge/brain commit -m "qa: scenarios for <task-id> — <N> total, types
 - [ ] Count audit passed — no confirmed type has 0 scenarios for in-scope features
 - [ ] No `TODO`, `TBD`, or placeholder targets anywhere
 - [ ] Coverage matrix written and complete
+- [ ] **`CONTEXT_GAP`** in **`scenarios-manifest.md`** is **none** or **Step 6.5** closure completed (**no** **`open`** rows)
 - [ ] `scenarios-manifest.md` committed
 - [ ] `[QA-SCENARIOS]` logged with total count
 

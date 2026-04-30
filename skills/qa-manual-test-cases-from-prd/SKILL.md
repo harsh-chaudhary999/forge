@@ -3,7 +3,7 @@ name: qa-manual-test-cases-from-prd
 description: "WHEN: You need atomic manual QA test cases in CSV from a PRD plus optional existing suite and knowledge base, with estimation, reuse/deprecation tracking, review, and a final report — any product, any TMS."
 type: rigid
 requires: [qa-prd-analysis, brain-read, brain-write]
-version: 1.3.9
+version: 1.4.1
 preamble-tier: 3
 triggers:
   - "generate test cases"
@@ -68,6 +68,8 @@ Approved manual test cases are **acceptance inventory**: they define *what* must
 | "Summary + Expected Result are enough — testers know how to execute" | **Invalid.** **Description** must be **numbered action steps** (`1.` … `2.` …) per field rules — **not** a vague paragraph. **Summary** is one line; **execution lives in Description** (+ **Preconditions** for setup). |
 | "I'll pipe rows from a throwaway script without validating steps and preconditions" | **Invalid.** Scripts often emit **thin** rows; every row must pass **Description** / **Preconditions** HARD-GATEs **before** samples approval. **Never** commit **`eval/_generate*.py`**-style junk under **`qa/`** as the CSV source of truth. |
 | "Preconditions can be empty / TBD — we'll fill later" | **Invalid** for any case that is **not** default anonymous happy path. Undocumented setup → **`CONTEXT_GAP`** or **blocking** user clarification **before** final rows — see **Preconditions — explicit coverage**. |
+| "`coverage_depth: comprehensive` but I'll ship an 8-column CSV with no **Preconditions** header — setup can live only in Description" | **Invalid.** **Preconditions column — mandatory for comprehensive** — comprehensive runs **must** expose setup in its own column; burying setup only inside **Description** fails review and hides the **highest-signal** field. |
+| "I'll leave **Preconditions** cells **blank** for default happy path when the column exists" | **Invalid.** Use **`None`** or **`N/A — default happy path`** — **blank** is ambiguous vs forgotten setup (**Field rules**). |
 | "Summary is a cryptic title — EQ low FRS, BVA edge, PRD14 — testers know what we mean" | **Invalid.** **Summary** must be **plain English** understandable by a **QA reader who did not author the PRD** within **one or two reads** — see **Summary — readability (HARD-GATE)**. Internal codes belong expanded once + **`terminology.md`** alignment. |
 | "I'll ship 50–80 one-line summaries — row count proves coverage" | **Invalid.** **High count of unreadable rows is worse than fewer complete rows.** Coverage is proven by **traceability + executable Description**, not title spam. Inflate count without steps → rework and hides real gaps. |
 
@@ -78,6 +80,7 @@ Approved manual test cases are **acceptance inventory**: they define *what* must
 ```
 EACH TEST CASE TESTS EXACTLY ONE VERIFIABLE OUTCOME; EVERY ROW HAS A SOURCE (PRD | KB | REGRESSION | …); BEFORE STEP 5, RE-LOAD THE FULL REQUIREMENT BUNDLE (STEP 1b) — NOT JUST qa-analysis.md; EVERY NEW ROW MUST BE ANCHORABLE TO A PRD BULLET, SPEC SECTION, TECH-PLAN TASK, OR CONTRACT CLAUSE; DO NOT APPEND ROWS TO THE CSV UNTIL STEP 3 (SAMPLES) IS APPROVED — AND NEVER SKIP STEP 7 COUNT APPROVAL BEFORE THE FINAL REPORT (STEP 8). FOR TEAMS THAT OPT IN (forge_qa_csv_before_eval: true), THIS CSV MUST BE APPROVED BEFORE EVAL YAML AND BEFORE TDD FEATURE WORK SO RED TESTS AND P4.4 EXECUTION TRACE TO THE SAME ACCEPTANCE SET.
 DESCRIPTION IS NEVER “PLAIN PROSE SUMMARY.” UI/API CASES: DESCRIPTION MUST CONTAIN NUMBERED STEPS (1. Navigate… OR 1. Call …); PRECONDITIONS EXPLICIT (COLUMN OR “Preconditions:” LEAD-IN) WHEN STATE ≠ DEFAULT HAPPY PATH; SUMMARY+EXPECTED ALONE WITHOUT EXECUTABLE STEPS IS REJECTED AT SAMPLE REVIEW.
+WHEN qa-analysis.md HAS coverage_depth: comprehensive, CSV HEADER MUST INCLUDE “Preconditions” (AND “Source”) — NOT 8-COLUMN-ONLY; PRECONDITIONS CELL PER ROW = EXPLICIT SETUP OR “None” / “N/A — default happy path”, NEVER BLANK SILENCE.
 SUMMARY MUST READ AS PLAIN ENGLISH TO A NEW QA READER (NO ACRONYM SOUP / INTERNAL TICKET SHORTHAND WITHOUT DEFINITION); A LIST OF CUTE TITLES WITHOUT NUMBERED DESCRIPTION IS NOT A TEST SUITE — FIX BEFORE STEP 3 APPROVAL.
 ```
 
@@ -90,6 +93,8 @@ SUMMARY MUST READ AS PLAIN ENGLISH TO A NEW QA READER (NO ACRONYM SOUP / INTERNA
 - **Multiple verification points in one Expected Result** — STOP. Split into atomic cases.
 - **Deprecation labels applied in TMS without user sign-off on uncertain cases** — STOP. List for review first.
 - **Generating Step 5 rows from memory or from `qa-analysis.md` alone** — STOP. Complete **Step 1b** (fresh read of prd-locked, shared-dev-spec, tech-plans, contracts, scan index when present).
+- **`qa-analysis.md`** has **`coverage_depth: comprehensive`** (or equivalent maximum-coverage commitment in body) **but** the CSV uses **only** the **8 base columns** — STOP. Add **`Source`** + **`Preconditions`** columns per **Preconditions column — mandatory for comprehensive**.
+- **`Preconditions`** column **present** but **blank** cells on rows that are **not** obviously default-only — STOP. Use explicit **`None`** / **`N/A — default happy path`** or fill setup; **blank ≠ documented default**.
 
 ## Configuration (set once per task — ask if missing)
 
@@ -129,7 +134,15 @@ SUMMARY MUST READ AS PLAIN ENGLISH TO A NEW QA READER (NO ACRONYM SOUP / INTERNA
 ```
 
 - If **`Preconditions`** is **absent** as a column: put preconditions in the **Description** cell only (see **Description** row below).
-- If **`Preconditions`** is **present**: that cell holds **setup state**; **Description** is **numbered action steps only** (start with `1. Navigate…` for UI). Do **not** duplicate the full precondition paragraph in both columns. Use `None` (or `N/A — default happy path`) when the case assumes only baseline authenticated user / default config with **no** special seed, flags, or prior workflow.
+- If **`Preconditions`** is **present**: that cell holds **setup state**; **Description** is **numbered action steps only** (start with `1. Navigate…` for UI). Do **not** duplicate the full precondition paragraph in both columns. Use `None` (or `N/A — default happy path`) when the case assumes only baseline authenticated user / default config with **no** special seed, flags, or prior workflow. **Forbidden:** **blank** Preconditions when the column exists — empty reads as *unknown*, not *default*; always write **`None`** / **`N/A — default happy path`** for true baseline-only cases.
+
+### Preconditions column — mandatory for comprehensive (HARD-GATE)
+
+When **`~/forge/brain/prds/<task-id>/qa/qa-analysis.md`** frontmatter has **`coverage_depth: comprehensive`**, **or** the interrogation body commits this task to **full / maximum / matrix** coverage (same intent as comprehensive), the CSV **must** use a header that includes **`"Source"`** and **`"Preconditions"`** — i.e. **not** an **8-column-only** file. Setup is the **highest-signal** field for reproducibility; it must be **scannable** without parsing long **Description** cells.
+
+**Lean / non-comprehensive runs:** The **`Preconditions`** column may remain **omitted** if the team chose a minimal header; non-default setup **still** must appear via **`Preconditions:`** lead-in at the start of **Description** (**Field rules**).
+
+**Reviewer signal:** Step 3 **samples** for comprehensive tasks **must** already show the **full header** (with **`Preconditions`**). If samples use **only** eight columns while **`coverage_depth: comprehensive`**, **STOP** — fix header **before** bulk Step 5.
 
 ### Preconditions — explicit coverage (HARD-GATE)
 
@@ -167,7 +180,7 @@ If an agent only fills **Summary** and **Expected Result**, **Description** is *
 | **Id** | Unique: `TC-<FeatureSlug>-<NNN>` (use your project’s slug, not a fixed vendor prefix). |
 | **Platform** | One of: `Web`, `iOS`, `Android`, `API`, or project-defined labels — **consistent** within the file. |
 | **Summary** | Single-sentence purpose; one verification focus. **Readability (HARD-GATE):** A **manual tester or reviewer** who understands the product area but **not** your team’s Slack shorthand must grasp **what** is being exercised **without** opening five other rows. Use **full phrases**, not acronym piles (**EQ**, **FRS**, **BVA**, **PRD14**) unless you **spell out** on first use in that Summary or rely on **canonical names** from **`~/forge/brain/prds/<task-id>/terminology.md`** ([docs/terminology-review.md](../../docs/terminology-review.md)). **Forbidden:** titles that read like **internal smoke codes** (*SMOKE: GET …* alone with no user-visible intent). **Summary complements Description** — if Summary is vague, the row fails review even when Description exists. |
-| **Preconditions** (optional column) | When present: concise setup — auth + data + flags + environment references. Must align with **Description** steps. |
+| **Preconditions** (optional column **unless comprehensive**) | **If `coverage_depth: comprehensive`** in **`qa-analysis.md`**: column is **required** in header — see **Preconditions column — mandatory for comprehensive**. When present: concise setup — auth + data + flags + environment references. Must align with **Description** steps. **No blank cells** when the column exists — use **`None`** / **`N/A — default happy path`** for true default-only cases. |
 | **Description** | **Numbered** step list — **this is where execution lives** (not only Summary). **HARD-GATE:** For UI, step **1** must be navigation: `1. Navigate to <platform base URL> …` using configured URLs. **Forbidden:** a single sentence like *“User verifies reverification flow”* with **no** `1.` / `2.` steps — that row is **not** a test case. **If no `Preconditions` column:** when the case depends on non-default **account/data/flag** state, begin the cell with `Preconditions: <explicit setup>.` then `1. Navigate…`. Map screens/selectors to **`qa-prd-analysis` Q8** / design when applicable. No line breaks inside the CSV cell; use spaces between steps. **Append** at end: `EXPECTED RESULT: <same text as Expected Result column>`. |
 | **Expected Result** | **One** outcome; must **match** the `EXPECTED RESULT:` appendix in Description character-for-character. |
 | **Automatable** | `Yes` \| `No` \| `Partial`. |
@@ -181,7 +194,7 @@ If an agent only fills **Summary** and **Expected Result**, **Description** is *
 "Id","Platform","Summary","Description","Expected Result","Automatable","Type","Feature Categorization","Source","Preconditions"
 ```
 
-**Comprehensive / maximum-coverage runs:** Prefer **`Source` + `Preconditions`** in the header so **setup and test data** are **scannable** without parsing long **Description** cells — required fields stay eight; **Preconditions** holds seeds, accounts, flags; **Description** stays **numbered steps** + **`EXPECTED RESULT:`** appendix.
+**Comprehensive / maximum-coverage runs:** **`Source` + `Preconditions`** in the header are **mandatory** (not merely preferred) when **`coverage_depth: comprehensive`** — see **Preconditions column — mandatory for comprehensive**. **Preconditions** holds seeds, accounts, flags; **Description** stays **numbered steps** + **`EXPECTED RESULT:`** appendix.
 
 ### CSV mechanics
 
@@ -211,8 +224,9 @@ If an agent only fills **Summary** and **Expected Result**, **Description** is *
 3. Ingest `<KB_PATH>` if present; note rules not stated in the PRD.
 4. Synthesize: gaps, reuse, deprecated candidates, conflicts.
 5. **MANDATORY:** Ask the user **all** clarifying questions; get verbatim answers. For **discrete** clarifications (yes/no, pick scope, approve assumption), use **blocking interactive prompts** per **`skills/using-forge`** (**`AskQuestion`** / **numbered options + stop**); open-ended follow-ups may be plain chat after those forks resolve.
-6. **MANDATORY:** Confirm **new feature vs change to existing** — quote the user.
-7. **Preconditions pass:** From PRD + contracts + tech plans, list **starting states** each case will need (roles, seeded entities, flags, environments). Where the doc is silent or ambiguous on **how** testers establish that state — **stop** and elicit answers with **blocking prompts** (same as item 5); do **not** bake guessed seeds into CSV.
+6. **MANDATORY:** **Read `qa-analysis.md`** for **`coverage_depth`**. If **`comprehensive`** (or equivalent maximum-coverage commitment), **lock** the planned CSV header to include **`Source`** + **`Preconditions`** columns — **Preconditions column — mandatory for comprehensive**. Do **not** plan an **8-column-only** deliverable for that task.
+7. **MANDATORY:** Confirm **new feature vs change to existing** — quote the user.
+8. **Preconditions pass:** From PRD + contracts + tech plans, list **starting states** each case will need (roles, seeded entities, flags, environments). Where the doc is silent or ambiguous on **how** testers establish that state — **stop** and elicit answers with **blocking prompts** (same as item 5); do **not** bake guessed seeds into CSV.
 
 ### Step 1b — Full requirement context reload (HARD-GATE before Step 5)
 
@@ -268,8 +282,8 @@ Deliver:
 ### Step 3 — Rules acknowledgment and samples
 
 1. State `<VALIDATION_CODE>` from the team’s rule doc (user must supply the code string — there is no global Forge default).
-2. Complete checklist: 8 fields (+ **Source** / **Preconditions** if using optionals), navigation first, **explicit preconditions** (column or `Preconditions:` lead-in), Expected Result duality, quoting, atomicity — and **Summary readability** (**stranger QA** bar: understandable without tribal acronyms — see **Summary** field rule).
-3. Present **exactly two** sample rows in final CSV shape — one **PRD-sourced**, one **KB-sourced** if possible. At least **one** sample must demonstrate **non-trivial preconditions** (or explicitly state **`None` / default baseline**) so reviewers see the pattern. **Samples must not** be **title-only** — both must include full **Description** numbered steps so the human can reject **acronym-soup** Summaries **before** bulk generation.
+2. Complete checklist: 8 fields; if **`coverage_depth: comprehensive`**, **Source** + **Preconditions** columns are **not** optional — see **Preconditions column — mandatory for comprehensive**. Otherwise: 8 fields (+ **Source** / **Preconditions** if using optionals). Navigation first, **explicit preconditions** (column or `Preconditions:` lead-in), **no blank Preconditions** when the column exists (use **`None`** / **`N/A — default happy path`** for default-only), Expected Result duality, quoting, atomicity — and **Summary readability** (**stranger QA** bar: understandable without tribal acronyms — see **Summary** field rule).
+3. Present **exactly two** sample rows in final CSV shape — one **PRD-sourced**, one **KB-sourced** if possible. **When comprehensive:** samples **must** use the **full header** including **`Preconditions`** (and **`Source`**). At least **one** sample must demonstrate **non-trivial preconditions** (or explicitly state **`None` / default baseline**) so reviewers see the pattern. **Samples must not** be **title-only** — both must include full **Description** numbered steps so the human can reject **acronym-soup** Summaries **before** bulk generation.
 4. **HARD-GATE:** **Wait for explicit user approval** before Step 4.
 
 ### Step 4 — Reusable cases (reference list)
@@ -288,9 +302,9 @@ List IDs/keys from `<EXISTING_TESTS>` that are reusable (not copied into the new
 **Pre-batch:** Confirm Step 1b was executed this session. Each new row must be **anchorable**: you can name **one** of — PRD section/bullet, `shared-dev-spec` heading, tech-plan task id line, contract section, or KB rule (for `Source=KB`). If you cannot anchor, **do not add the row** — clarify in Step 2 style or record gap.
 
 1. Ensure `<OUTPUT_CSV>` directory exists (`qa/` under task).
-2. Write UTF-8 CSV with header; append in **batches** to avoid tool limits.
+2. Write UTF-8 CSV with header; append in **batches** to avoid tool limits. If **`coverage_depth: comprehensive`**, header **must** include **`Source`** and **`Preconditions`** — **do not** write 8-column-only CSV.
 3. **Every** new row: populate **Source** (`PRD` / `KB` / …). Prefer **`Feature Categorization`** / **Summary** text that reflects **actual** names from tech plans and contracts (routes, fields), not generic placeholders.
-4. **Every** new row: **preconditions written** — either **`Preconditions`** column (if that header is present) **or** `Preconditions:` prefix inside **Description**. Rows that need special setup must **not** ship with vague setup text; unresolved setup → **`CONTEXT_GAP`** or user clarification **before** the CSV is treated as approved.
+4. **Every** new row: **preconditions written** — either **`Preconditions`** column (if that header is present) **or** `Preconditions:` prefix inside **Description**. When the **`Preconditions`** column exists, **never** leave the cell **blank** for “default” — write **`None`** or **`N/A — default happy path`**. Rows that need special setup must **not** ship with vague setup text; unresolved setup → **`CONTEXT_GAP`** or user clarification **before** the CSV is treated as approved.
 
 ### Step 6 — Final review pass
 
@@ -308,7 +322,7 @@ Re-walk **prd-locked + shared-dev-spec + tech-plans + contracts** (Step 1b set) 
 After count approval, deliver a summary with:
 
 - **Sources consulted** — bullet list of brain paths whose content informed row text (minimum: `prd-locked.md`, `qa-analysis.md`, every `tech-plans/*.md` read, `shared-dev-spec.md` if present, `contracts/*.md` if read, `product.md`, scan `index.md` if used).
-- **`CONTEXT_GAP` entries** — any required artifact that was missing or stale and how it was handled; include **precondition** gaps (e.g. seed/flag undefined after user could not answer).
+- **`CONTEXT_GAP` entries** — any required artifact that was missing or stale and how it was handled; include **precondition** gaps (e.g. seed/flag undefined after user could not answer). If **any** gap is still **open** (unresolved, not risk-accepted, not deferred-with-owner), you **must** run **CONTEXT_GAP closure (interactive)** below **before** treating the suite as **execution-ready** — not only listing gaps in the report.
 - Total reusable (Step 4).
 - Total deprecated (Step 4.5) + reasons + replacements.
 - Total new in CSV; split **Source=PRD** vs **Source=KB** counts.
@@ -324,6 +338,18 @@ After count approval, deliver a summary with:
 
 Commit to brain when your workflow uses git-backed brain.
 
+### CONTEXT_GAP closure (interactive) (HARD-GATE when list non-empty)
+
+**When:** Step 8’s **`CONTEXT_GAP` section** lists **one or more** unresolved items, **or** `manual-test-cases.csv` / preconditions still depend on **unknown** seeds, flags, or missing specs that were recorded as gaps during Step 5–6.
+
+**Do not** end the session with a **prose-only** *“please provide X, Y, Z”* list — that is not **interactive** (**`using-forge`** **Interactive human input**).
+
+1. **One gap per assistant turn** — same norm as **`qa-prd-analysis`** sequential elicitation: **no** multi-gap essay + *reply in chat* without **`AskQuestion`**.
+2. For the **current** gap, use **`AskUserQuestion`** / **`AskQuestion`** (or **numbered options + stop**) with **discrete** options, e.g.: (a) user **supplies** the missing value (seed id, admin path, flag default, contract section); (b) user **authorizes** a **brain write** with pasted content; (c) **Risk-accept** with **owner + date** (log in **`TEST_SUITE_REPORT.md`**); (d) **Defer** with **named** follow-up and **log** — still one **blocking** choice per turn.
+3. After each answer, **update** **`manual-test-cases.csv`** (Preconditions / Description) and **remove or mark resolved** that gap in the report. Continue until **no** **open** **CONTEXT_GAP** remains **or** the user **explicitly** approves shipping with **only** **risk-accepted** / **deferred** rows (via **one** summary **`AskQuestion`** after per-gap turns have been offered).
+
+**Why this exists:** Gaps in **test cases** are the **highest-risk** omissions — they look like coverage but are not reproducible. Interactive closure forces **traceable** resolution.
+
 ## Edge Cases
 
 1. **API-only feature** — Navigation step becomes “Invoke `<METHOD> <URL>` …”; base URLs may be API host.
@@ -337,6 +363,7 @@ Commit to brain when your workflow uses git-backed brain.
 - [ ] `qa-prd-analysis` artifact exists and is referenced
 - [ ] **Step 1b** full bundle re-read completed before Step 5; Step 8 lists **Sources consulted** + **CONTEXT_GAP** (or explicit “none”)
 - [ ] User approved samples (Step 3) and final count (Step 7)
-- [ ] CSV validates: 8 columns, optional Source, quoting, navigation rule, EXPECTED RESULT appendix
+- [ ] CSV validates: 8 columns + **`Source`** + **`Preconditions`** when **`coverage_depth: comprehensive`**; else optional **Source** / **Preconditions** per **Preconditions column — mandatory for comprehensive**; **no blank Preconditions** when column present; quoting, navigation rule, EXPECTED RESULT appendix
 - [ ] Atomicity spot-check: random 10% of rows read for split violations
 - [ ] Report (Step 8) delivered
+- [ ] If **CONTEXT_GAP** was non-empty: **CONTEXT_GAP closure (interactive)** completed — **no** unresolved open gaps without explicit human **risk-accept** / **defer** per **`using-forge`**

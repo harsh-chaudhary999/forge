@@ -1,0 +1,3 @@
+Id,Surface,Intent,DependsOn,TraceToCsvId,ExpectedHint
+step-api-health,api,"GET /health returns 200 with JSON body containing status ok",,,response contains status
+step-web-login,web,"Open app root; confirm login form is visible",step-api-health,TC-001,heading or form login

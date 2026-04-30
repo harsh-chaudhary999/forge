@@ -18,6 +18,8 @@ allowed-tools:
 
 # Eval Driver: Web UI via Chrome DevTools Protocol (CDP)
 
+**Runner dispatch:** **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** routes **`Surface: web`** rows in **`qa/semantic-automation.csv`** to this driver. Do not invoke this skill directly unless you are implementing or debugging the runner.
+
 Automates browser interactions and state inspection using Chrome DevTools Protocol. Provides a programmatic interface for launching headless Chrome, navigating URLs, interacting with UI elements, capturing screenshots, and extracting DOM state.
 
 ## Human input (all hosts)

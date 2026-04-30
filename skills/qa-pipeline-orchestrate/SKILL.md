@@ -185,7 +185,7 @@ Log:
 
 Invoke `qa-prd-analysis` first (**sequential interactive** Step 0.5; reads PRD, maps surfaces, writes `qa/qa-analysis.md` to brain).
 Complete **`qa-manual-test-cases-from-prd`** so **`qa/manual-test-cases.csv`** has ≥1 approved data row — **unless** `qa-analysis.md` frontmatter waives (see **`qa-manual-test-cases-from-prd`**).
-Then invoke **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** to produce **`qa/semantic-automation.csv`**, **`semantic-eval-manifest.json`**, **`semantic-eval-run.log`** (**`docs/semantic-eval-csv.md`**). Product **unit/integration tests** come from **`forge-tdd`** driven by tech plans + CSV — not driver YAML.
+Then invoke **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** to produce **`qa/semantic-automation.csv`**, **`semantic-eval-manifest.json`**, **`semantic-eval-run.log`** (**`docs/semantic-eval-csv.md`**). Product **unit/integration tests** come from **`forge-tdd`** driven by tech plans and semantic / manual CSV rows.
 
 **HARD-GATE:** Do not advance to QA-P3 until:
 - `~/forge/brain/prds/<task-id>/qa/qa-analysis.md` exists
@@ -332,7 +332,7 @@ If verdict **RED** and Jira MCP is configured: after **`self-heal-triage`**, opt
 
 **Product terminology (optional in report):** If **`~/forge/brain/prds/<task-id>/terminology.md`** exists, set YAML frontmatter **`terminology_status:`** to its frontmatter **`status`** (e.g. `draft` \| `review` \| `locked`) and optionally **`terminology_open_doubts:`** to **`none`** \| **`pending`** (or omit if unknown). Aids **DRIFT** audits when QA runs surface copy conflicts.
 
-**Execution vs product verdict:** Use **`execution_scope: full`** when drivers ran. Use **`execution_scope: static_only`** when only YAML/schema validation (or manifest writes) occurred — set **`product_verdict: null`** and **`pipeline_verdict: NOT_EXECUTED`** (do **not** put **YELLOW** here). **`verdict`** in frontmatter may duplicate **`product_verdict`** for backward compatibility when **`execution_scope: full`**.
+**Execution vs product verdict:** Use **`execution_scope: full`** when drivers ran. Use **`execution_scope: static_only`** when only CSV/schema validation (or manifest writes) occurred — set **`product_verdict: null`** and **`pipeline_verdict: NOT_EXECUTED`** (do **not** put **YELLOW** here). **`verdict`** in frontmatter may duplicate **`product_verdict`** for backward compatibility when **`execution_scope: full`**.
 
 ```markdown
 ---

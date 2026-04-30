@@ -54,7 +54,7 @@ class TestVerifyDetailed(unittest.TestCase):
 
 
 class TestSemanticEvalManifest(unittest.TestCase):
-    def test_manifest_only_passes_eval_gate(self) -> None:
+    def test_manifest_passes_eval_gate(self) -> None:
         with tempfile.TemporaryDirectory() as brain_s:
             brain = Path(brain_s)
             tid = "x-task"
@@ -105,18 +105,21 @@ class TestSemanticEvalManifest(unittest.TestCase):
 
 
 class TestConductorLogOrdering(unittest.TestCase):
+    def _valid_manifest(self, task_dir: Path, tid: str) -> None:
+        (task_dir / "qa").mkdir(parents=True, exist_ok=True)
+        (task_dir / "qa" / "semantic-eval-manifest.json").write_text(
+            f'{{"schema_version":1,"task_id":"{tid}",'
+            f'"recorded_at":"2026-04-29T00:00:00Z","kind":"k","outcome":"pass"}}\n',
+            encoding="utf-8",
+        )
+        (task_dir / "prd-locked.md").write_text("# PRD Locked\n", encoding="utf-8")
+
     def test_dispatch_before_semantic_eval_fails(self) -> None:
         with tempfile.TemporaryDirectory() as brain_s:
             brain = Path(brain_s)
             tid = "bad-order"
             task_dir = brain / "prds" / tid
-            (task_dir / "qa").mkdir(parents=True)
-            (task_dir / "qa" / "semantic-eval-manifest.json").write_text(
-                '{"schema_version":1,"task_id":"bad-order",'
-                '"recorded_at":"2026-04-29T00:00:00Z","kind":"k","outcome":"pass"}\n',
-                encoding="utf-8",
-            )
-            (task_dir / "prd-locked.md").write_text("# PRD Locked\n", encoding="utf-8")
+            self._valid_manifest(task_dir, tid)
             (task_dir / "conductor.log").write_text(
                 "2026-04-29T00:00:00Z [P4.1-DISPATCH]\n"
                 "2026-04-29T00:01:00Z [P4.0-SEMANTIC-EVAL]\n",
@@ -133,6 +136,53 @@ class TestConductorLogOrdering(unittest.TestCase):
                 any("[P4.1-DISPATCH]" in e and "[P4.0-SEMANTIC-EVAL]" in e for e in errs),
                 errs,
             )
+
+    def test_dispatch_without_semantic_eval_line_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as brain_s:
+            brain = Path(brain_s)
+            tid = "no-p40"
+            task_dir = brain / "prds" / tid
+            self._valid_manifest(task_dir, tid)
+            (task_dir / "conductor.log").write_text(
+                "2026-04-29T00:00:00Z [P4.1-DISPATCH]\n",
+                encoding="utf-8",
+            )
+            errs, _warns = vft.verify_detailed(
+                brain=brain,
+                task_id=tid,
+                product_slug=None,
+                strict_tdd=False,
+                require_log=True,
+            )
+            self.assertTrue(
+                any("no [P4.0-SEMANTIC-EVAL]" in e for e in errs),
+                errs,
+            )
+
+    def test_semantic_eval_before_dispatch_passes_log_order(self) -> None:
+        with tempfile.TemporaryDirectory() as brain_s:
+            brain = Path(brain_s)
+            tid = "good-order"
+            task_dir = brain / "prds" / tid
+            self._valid_manifest(task_dir, tid)
+            (task_dir / "conductor.log").write_text(
+                "2026-04-29T00:00:00Z [P4.0-SEMANTIC-EVAL]\n"
+                "2026-04-29T00:01:00Z [P4.1-DISPATCH]\n",
+                encoding="utf-8",
+            )
+            errs, _warns = vft.verify_detailed(
+                brain=brain,
+                task_id=tid,
+                product_slug=None,
+                strict_tdd=False,
+                require_log=True,
+            )
+            order_errs = [
+                e
+                for e in errs
+                if "[P4.1-DISPATCH]" in e and "[P4.0-SEMANTIC-EVAL]" in e and "before" in e
+            ]
+            self.assertEqual(order_errs, [], errs)
 
 
 if __name__ == "__main__":

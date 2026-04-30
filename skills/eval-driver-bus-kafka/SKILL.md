@@ -15,6 +15,8 @@ allowed-tools:
 
 # eval-driver-bus-kafka
 
+**Runner dispatch:** **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** routes **`Surface: kafka`** rows in **`qa/semantic-automation.csv`** to this driver. Do not invoke this skill directly unless you are implementing or debugging the runner.
+
 Evaluation driver for Apache Kafka using the wire protocol. Produces and consumes messages during evaluation, with support for offset management, message verification, schema validation, and idempotency checks.
 
 ## Anti-Pattern Preamble: Kafka Eval Failures You Will Hit

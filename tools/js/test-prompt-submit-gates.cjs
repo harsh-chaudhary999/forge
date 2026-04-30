@@ -174,9 +174,13 @@ assert('no QA log → null',
   resolveQAPipelineGate(''),
   null);
 
-assert('QA-P1 loaded → generate scenarios',
+assert('QA-P1 loaded → qa-prd-analysis then [QA-P2-SCENARIOS] (Phase QA-P2 authors semantic CSV)',
   resolveQAPipelineGate('[QA-P1-LOAD] task_id=X'),
-  'Brain loaded');
+  'qa-prd-analysis');
+
+assert('QA-P1 hint does not bundle semantic CSV authoring into QA-P1',
+  resolveQAPipelineGate('[QA-P1-LOAD] task_id=X').includes('semantic-automation') ? 'BAD' : 'OK',
+  'OK');
 
 assert('QA-P2 scenarios written → branch/env prep (incl. branch-code-validate in hint)',
   resolveQAPipelineGate('[QA-P1-LOAD]\n[QA-P2-SCENARIOS] total=87'),

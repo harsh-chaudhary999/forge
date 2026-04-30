@@ -18,6 +18,8 @@ allowed-tools:
 
 # eval-driver-android-adb Skill
 
+**Runner dispatch:** **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** routes **`Surface: android`** rows in **`qa/semantic-automation.csv`** to this driver. Do not invoke this skill directly unless you are implementing or debugging the runner.
+
 **Phase 3.4: Eval Driver for Android via ADB + UIAutomator**
 
 This skill provides a complete Android mobile app automation driver using Android Debug Bridge (ADB) and UIAutomator. It enables programmatic interaction with Android devices and emulators for eval scenarios, testing, and automation.

@@ -174,9 +174,9 @@ function resolveQAPipelineGate(logContent) {
     return `QA NEXT GATE: Scenarios written — invoke qa-branch-env-prep (ask run mode: url-only / branch-local / branch-code-validate / branch-tracking), then log [QA-BRANCH-ENV].`;
   }
 
-  // Brain loaded — generate scenarios
+  // Brain loaded — analysis next (Phase QA-P2 authors semantic CSV; do not bundle into QA-P1)
   if (has(GATE_PATTERNS.QA_P1_LOAD)) {
-    return `QA NEXT GATE: Brain loaded — invoke qa-prd-analysis then author qa/semantic-automation.csv + manifest (qa-semantic-csv-orchestrate), then log [QA-P2-SCENARIOS].`;
+    return `QA NEXT GATE: Brain loaded — invoke qa-prd-analysis, then log [QA-P2-SCENARIOS].`;
   }
 
   return null;

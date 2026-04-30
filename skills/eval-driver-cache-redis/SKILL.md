@@ -15,6 +15,8 @@ allowed-tools:
 
 # Eval Driver: Redis Cache (RESP Protocol)
 
+**Runner dispatch:** **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** routes **`Surface: redis`** rows in **`qa/semantic-automation.csv`** to this driver. Do not invoke this skill directly unless you are implementing or debugging the runner.
+
 Evaluation driver for Redis cache state verification during test execution. Supports Redis RESP protocol, command execution, TTL verification, and atomic assertions.
 
 ## HARD-GATE: Anti-Pattern Preambles

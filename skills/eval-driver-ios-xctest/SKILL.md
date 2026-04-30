@@ -17,6 +17,8 @@ allowed-tools:
 
 # eval-driver-ios-xctest Skill
 
+**Runner dispatch:** **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** routes **`Surface: ios`** rows in **`qa/semantic-automation.csv`** to this driver. Do not invoke this skill directly unless you are implementing or debugging the runner.
+
 **Phase 3.4: Eval Driver for iOS via XCTest + xcrun simctl**
 
 This skill provides a complete iOS app automation driver using XCTest UI Testing framework and `xcrun simctl` for simulator control. It enables programmatic interaction with iOS simulators and devices for eval scenarios.

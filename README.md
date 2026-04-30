@@ -477,7 +477,7 @@ Each file under **`commands/`** has YAML **`name:`** + **`description:`**, optio
 | **`/forge-test`** | **Meta** — **`forge-self-test`** on **bundled seed** product (validates **this** repo), **not** your product’s **`/forge`**. |
 | **`/forge-install`** | Show install paths for supported IDEs. |
 | **`/qa`** | **Standalone QA pipeline** — brain load → scenario generation (all test types) → branch checkout → stack-up → multi-surface exec → verdict. Independent of `/forge`. |
-| **`/qa-write`** | **Partial** — author **`qa/semantic-automation.csv`** + manifest (**`qa-semantic-csv-orchestrate`**, **`docs/semantic-eval-csv.md`**). |
+| **`/qa-write`** | **Partial** — author **`qa/semantic-automation.csv`** + manifest (**`qa-semantic-csv-orchestrate`**, **`docs/semantic-eval-csv.md`**); align machine steps to **`manual-test-cases.csv`** via **`TraceToCsvId`** where applicable (**`commands/qa-write.md`**). |
 | **`/qa-run`** | **Partial** — execute existing scenarios against named branches + env (`qa-branch-env-prep` → stack-up → drivers → `eval-judge`). |
 | **`/doctor`** | **Meta** — run **`scripts/forge-doctor.sh`**: plugin layout + Claude hooks symlink + **`settings.json`** forge hook counts + Cursor **`forge.mdc`** freshness. |
 | **`/evidence-bundle`** | **Utility** — **`tools/forge_evidence_bundle.py`**: tar.gz + manifest for **`prds/<task-id>/`** (audit handoff). |

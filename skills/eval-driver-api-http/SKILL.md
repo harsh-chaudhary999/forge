@@ -15,6 +15,8 @@ allowed-tools:
 
 # eval-driver-api-http Skill
 
+**Runner dispatch:** **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** routes **`Surface: api`** rows in **`qa/semantic-automation.csv`** to this driver. Do not invoke this skill directly unless you are implementing or debugging the runner.
+
 **Minimal HTTP Driver for Eval**
 
 This skill provides a minimal HTTP driver for evaluating API endpoints. It handles HTTP request/response cycles for basic eval scenarios. Full multi-surface eval support will be implemented in later phases.

@@ -16,6 +16,8 @@ allowed-tools:
 
 # Eval Driver: MySQL
 
+**Runner dispatch:** **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** routes **`Surface: mysql`** rows in **`qa/semantic-automation.csv`** to this driver. Do not invoke this skill directly unless you are implementing or debugging the runner.
+
 Provides a complete driver for executing and verifying SQL queries against MySQL databases during e2e evaluation. Enables deterministic testing of database state, data integrity, and query results in eval scenarios.
 
 ## Anti-Pattern Preamble: MySQL Eval Failures You Will Hit

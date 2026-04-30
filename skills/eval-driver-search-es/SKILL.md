@@ -15,6 +15,8 @@ allowed-tools:
 
 # Elasticsearch Eval Driver
 
+**Runner dispatch:** **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** routes **`Surface: es`** rows in **`qa/semantic-automation.csv`** to this driver. Do not invoke this skill directly unless you are implementing or debugging the runner.
+
 REST-based evaluation driver for Elasticsearch search index testing. Verifies search state, query results, and data consistency.
 
 ## HARD-GATE: Anti-Pattern Preambles

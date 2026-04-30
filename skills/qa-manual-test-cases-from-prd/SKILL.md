@@ -3,7 +3,7 @@ name: qa-manual-test-cases-from-prd
 description: "WHEN: You need atomic manual QA test cases in CSV from a PRD plus optional existing suite and knowledge base, with estimation, reuse/deprecation tracking, review, and a final report — any product, any TMS."
 type: rigid
 requires: [qa-prd-analysis, brain-read, brain-write]
-version: 1.3.6
+version: 1.3.8
 preamble-tier: 3
 triggers:
   - "generate test cases"
@@ -65,6 +65,11 @@ Approved manual test cases are **acceptance inventory**: they define *what* must
 | "We'll publish the CSV after developers start" | When **`forge_qa_csv_before_eval: true`**, the CSV is **before** eval YAML and **before** TDD feature work — late CSV means rework and eval that does not match what RED asserted. |
 | "`qa-analysis.md` is enough — I don't need prd-locked / tech plans / contracts again" | **`qa-analysis.md` is an index and interrogation record, not a substitute for primary sources.** Rows must trace to **prd-locked**, **shared-dev-spec**, **tech-plans**, and **contracts** where those contain the actual acceptance rules, routes, and edge cases. Re-load the full task bundle before Step 5 (see Step 1b). |
 | "User hasn't locked PRD — I'll ask about eval YAML / waiver anyway" | **Violates Step −1.** Fix **`prd-locked`** (**`/intake`**) and **`qa-prd-analysis`** first; this skill comes **after** those. |
+| "Summary + Expected Result are enough — testers know how to execute" | **Invalid.** **Description** must be **numbered action steps** (`1.` … `2.` …) per field rules — **not** a vague paragraph. **Summary** is one line; **execution lives in Description** (+ **Preconditions** for setup). |
+| "I'll pipe rows from a throwaway script without validating steps and preconditions" | **Invalid.** Scripts often emit **thin** rows; every row must pass **Description** / **Preconditions** HARD-GATEs **before** samples approval. **Never** commit **`eval/_generate*.py`**-style junk under **`qa/`** as the CSV source of truth. |
+| "Preconditions can be empty / TBD — we'll fill later" | **Invalid** for any case that is **not** default anonymous happy path. Undocumented setup → **`CONTEXT_GAP`** or **blocking** user clarification **before** final rows — see **Preconditions — explicit coverage**. |
+| "Summary is a cryptic title — EQ low FRS, BVA edge, PRD14 — testers know what we mean" | **Invalid.** **Summary** must be **plain English** understandable by a **QA reader who did not author the PRD** within **one or two reads** — see **Summary — readability (HARD-GATE)**. Internal codes belong expanded once + **`terminology.md`** alignment. |
+| "I'll ship 50–80 one-line summaries — row count proves coverage" | **Invalid.** **High count of unreadable rows is worse than fewer complete rows.** Coverage is proven by **traceability + executable Description**, not title spam. Inflate count without steps → rework and hides real gaps. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -72,6 +77,8 @@ Approved manual test cases are **acceptance inventory**: they define *what* must
 
 ```
 EACH TEST CASE TESTS EXACTLY ONE VERIFIABLE OUTCOME; EVERY ROW HAS A SOURCE (PRD | KB | REGRESSION | …); BEFORE STEP 5, RE-LOAD THE FULL REQUIREMENT BUNDLE (STEP 1b) — NOT JUST qa-analysis.md; EVERY NEW ROW MUST BE ANCHORABLE TO A PRD BULLET, SPEC SECTION, TECH-PLAN TASK, OR CONTRACT CLAUSE; DO NOT APPEND ROWS TO THE CSV UNTIL STEP 3 (SAMPLES) IS APPROVED — AND NEVER SKIP STEP 7 COUNT APPROVAL BEFORE THE FINAL REPORT (STEP 8). FOR TEAMS THAT OPT IN (forge_qa_csv_before_eval: true), THIS CSV MUST BE APPROVED BEFORE EVAL YAML AND BEFORE TDD FEATURE WORK SO RED TESTS AND P4.4 EXECUTION TRACE TO THE SAME ACCEPTANCE SET.
+DESCRIPTION IS NEVER “PLAIN PROSE SUMMARY.” UI/API CASES: DESCRIPTION MUST CONTAIN NUMBERED STEPS (1. Navigate… OR 1. Call …); PRECONDITIONS EXPLICIT (COLUMN OR “Preconditions:” LEAD-IN) WHEN STATE ≠ DEFAULT HAPPY PATH; SUMMARY+EXPECTED ALONE WITHOUT EXECUTABLE STEPS IS REJECTED AT SAMPLE REVIEW.
+SUMMARY MUST READ AS PLAIN ENGLISH TO A NEW QA READER (NO ACRONYM SOUP / INTERNAL TICKET SHORTHAND WITHOUT DEFINITION); A LIST OF CUTE TITLES WITHOUT NUMBERED DESCRIPTION IS NOT A TEST SUITE — FIX BEFORE STEP 3 APPROVAL.
 ```
 
 ## Red Flags — STOP
@@ -139,15 +146,29 @@ EACH TEST CASE TESTS EXACTLY ONE VERIFIABLE OUTCOME; EVERY ROW HAS A SOURCE (PRD
 
 **Human clarification (blocking):** If the PRD or brain artifacts **do not** specify how to reach the starting state (e.g. “suspended recruiter” with no suspension mechanism documented), use **`AskUserQuestion`** / **`AskQuestion`** / **numbered options + stop** per **`using-forge`** — **before** writing final CSV rows that assume that state. **Forbidden:** silent placeholders like *“appropriate test user”* without definition agreed in chat or KB.
 
+### Where test data lives (no extra column in the 8-column base)
+
+The **8 required columns** do not include a separate **“Test data”** field — data is **distributed** so importers stay standard:
+
+| Kind of data | Where it goes |
+|---|---|
+| **Roles, accounts, tokens, org/tenant** | **`Preconditions`** column **or** `Preconditions: …` lead-in at start of **Description** |
+| **Seeded entities** (user id, job id, fixture name, queue depth) | **Preconditions** (how seed was created or **CONTEXT_GAP** if unknown) |
+| **Feature flags / config / environment** | **Preconditions** + **Platform** + step **1** URL scope |
+| **Inputs during the flow** (strings typed, files uploaded, API JSON bodies) | **Inside numbered Description steps** — e.g. `3. Enter subject line "Suspicious pattern — review"` or `2. POST body {"recruiterId":"..."}` |
+| **Expected payloads / error codes** | **Expected Result** + final step assertion text |
+
+If an agent only fills **Summary** and **Expected Result**, **Description** is **missing test steps and input data** — that violates this skill.
+
 ### Field rules
 
 | Field | Rule |
 |---|---|
 | **Id** | Unique: `TC-<FeatureSlug>-<NNN>` (use your project’s slug, not a fixed vendor prefix). |
 | **Platform** | One of: `Web`, `iOS`, `Android`, `API`, or project-defined labels — **consistent** within the file. |
-| **Summary** | Single-sentence purpose; one verification focus. |
+| **Summary** | Single-sentence purpose; one verification focus. **Readability (HARD-GATE):** A **manual tester or reviewer** who understands the product area but **not** your team’s Slack shorthand must grasp **what** is being exercised **without** opening five other rows. Use **full phrases**, not acronym piles (**EQ**, **FRS**, **BVA**, **PRD14**) unless you **spell out** on first use in that Summary or rely on **canonical names** from **`~/forge/brain/prds/<task-id>/terminology.md`** ([docs/terminology-review.md](../../docs/terminology-review.md)). **Forbidden:** titles that read like **internal smoke codes** (*SMOKE: GET …* alone with no user-visible intent). **Summary complements Description** — if Summary is vague, the row fails review even when Description exists. |
 | **Preconditions** (optional column) | When present: concise setup — auth + data + flags + environment references. Must align with **Description** steps. |
-| **Description** | **Numbered** step list. **HARD-GATE:** For UI, step **1** must be navigation: `1. Navigate to <platform base URL> …` using configured URLs. **If no `Preconditions` column:** when the case depends on non-default **account/data/flag** state, begin the cell with `Preconditions: <explicit setup>.` then `1. Navigate…`. Map screens/selectors to **`qa-prd-analysis` Q8** / design when applicable. No line breaks inside the CSV cell; use spaces between steps. **Append** at end: `EXPECTED RESULT: <same text as Expected Result column>`. |
+| **Description** | **Numbered** step list — **this is where execution lives** (not only Summary). **HARD-GATE:** For UI, step **1** must be navigation: `1. Navigate to <platform base URL> …` using configured URLs. **Forbidden:** a single sentence like *“User verifies reverification flow”* with **no** `1.` / `2.` steps — that row is **not** a test case. **If no `Preconditions` column:** when the case depends on non-default **account/data/flag** state, begin the cell with `Preconditions: <explicit setup>.` then `1. Navigate…`. Map screens/selectors to **`qa-prd-analysis` Q8** / design when applicable. No line breaks inside the CSV cell; use spaces between steps. **Append** at end: `EXPECTED RESULT: <same text as Expected Result column>`. |
 | **Expected Result** | **One** outcome; must **match** the `EXPECTED RESULT:` appendix in Description character-for-character. |
 | **Automatable** | `Yes` \| `No` \| `Partial`. |
 | **Type** | e.g. `Positive`, `Negative`, `Edge Case`, `API`, `Security`, `Performance`, `Smoke`, `Sanity`, `Regression`, … |
@@ -169,6 +190,12 @@ EACH TEST CASE TESTS EXACTLY ONE VERIFIABLE OUTCOME; EVERY ROW HAS A SOURCE (PRD
 
 - **One test case = one primary verification.**
 - Split when: multiple unrelated assertions, multiple integrations independently testable, multiple error classes, or multiple user goals.
+
+### Row count vs usefulness (non-negotiable)
+
+- **A large CSV full of one-line Summary titles** (even if unique) **without** numbered **Description** steps and clear **Expected Result** is **not** acceptable output — it wastes reviewers’ time and **cannot** be executed.
+- **Do not optimize for headline count.** Prefer **fewer rows with complete steps** over **dozens of stub titles** that **sound** comprehensive but are **not** runnable prose.
+- At **Step 3 (samples)** and **Step 7 (count)**, if the human says cases are **unreadable** or **too thin**, **stop** — rewrite Summaries and Descriptions per **Field rules** before arguing about numeric targets.
 
 ## Workflow (sequential — do not skip steps)
 
@@ -238,8 +265,8 @@ Deliver:
 ### Step 3 — Rules acknowledgment and samples
 
 1. State `<VALIDATION_CODE>` from the team’s rule doc (user must supply the code string — there is no global Forge default).
-2. Complete checklist: 8 fields (+ **Source** / **Preconditions** if using optionals), navigation first, **explicit preconditions** (column or `Preconditions:` lead-in), Expected Result duality, quoting, atomicity.
-3. Present **exactly two** sample rows in final CSV shape — one **PRD-sourced**, one **KB-sourced** if possible. At least **one** sample must demonstrate **non-trivial preconditions** (or explicitly state **`None` / default baseline**) so reviewers see the pattern.
+2. Complete checklist: 8 fields (+ **Source** / **Preconditions** if using optionals), navigation first, **explicit preconditions** (column or `Preconditions:` lead-in), Expected Result duality, quoting, atomicity — and **Summary readability** (**stranger QA** bar: understandable without tribal acronyms — see **Summary** field rule).
+3. Present **exactly two** sample rows in final CSV shape — one **PRD-sourced**, one **KB-sourced** if possible. At least **one** sample must demonstrate **non-trivial preconditions** (or explicitly state **`None` / default baseline**) so reviewers see the pattern. **Samples must not** be **title-only** — both must include full **Description** numbered steps so the human can reject **acronym-soup** Summaries **before** bulk generation.
 4. **HARD-GATE:** **Wait for explicit user approval** before Step 4.
 
 ### Step 4 — Reusable cases (reference list)
@@ -270,7 +297,8 @@ Re-walk **prd-locked + shared-dev-spec + tech-plans + contracts** (Step 1b set) 
 
 1. Count rows in `<OUTPUT_CSV>` (excluding header).
 2. Compare to Step 2 **total new** estimate; explain material variance.
-3. **HARD-GATE:** Ask user to approve final count **before** Step 8.
+3. **Quality over headline count:** If the user is **dissatisfied** with the suite — **too many shallow titles**, **unreadable Summaries**, or **too few** *meaningful* executable cases — **do not** defend the integer alone. **Merge, rewrite Summaries, split/merge rows**, and add missing **Description** depth until the user agrees the suite is **runnable**, then re-approve count.
+4. **HARD-GATE:** Ask user to approve final count **before** Step 8.
 
 ### Step 8 — Final report
 

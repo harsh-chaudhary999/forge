@@ -3,7 +3,7 @@ name: eval-scenario-format
 description: "WHEN: Writing eval scenarios for a new PRD or feature. Defines the YAML format — driver action, target, expected result — for multi-surface eval execution."
 type: rigid
 requires: [brain-read]
-version: 1.1.2
+version: 1.1.4
 preamble-tier: 3
 triggers:
   - "format eval scenario"
@@ -18,6 +18,10 @@ allowed-tools:
 # Eval Scenario Format
 
 **Related (manual QA backlog):** For **atomic manual test cases** in CSV (PRD → spreadsheet / TMS import), use **`qa-manual-test-cases-from-prd`** after **`qa-prd-analysis`** (**`using-forge`** **Multi-question elicitation** / Step 0.5). This skill defines **YAML for automated eval drivers** only.
+
+**CSV vs eval YAML — independence vs order:** The **files are not one artifact.** CSV is a **human/manual** case inventory (spreadsheet / TMS); **`eval/*.yaml`** is **machine-executable** scenario format for drivers — different consumers, no runtime coupling (eval does not ingest CSV). Forge still specifies **`qa-write-scenarios` Step −1**: **`manual-test-cases.csv`** approved **or** a **documented waiver** in **`qa-analysis.md`** **before** bulk **`eval/*.yaml`** — that is **process / governance** (avoid orphan automation, optional traceability by CSV **`Id`** **where rows map**), **not** “YAML is generated from CSV.” Assistants often mention **both** in one sentence as a **task checklist**, not as tight logical coupling.
+
+**Executable scenarios (not placeholders):** Each scenario MUST have **`steps:`** with at least **one** concrete driver action (navigate, request, assert, …) and **`expected`** / assertions where the format requires them — **not** only a scenario title and a vague expectation. **`preconditions:`** MUST list **named** setup for journeys that are not cold-start anonymous (**see Anti-Pattern 3a**); **`preconditions: []`** is **wrong** for typical logged-in or seeded-state UI/API flows. Throwaway codegen scripts that emit empty preconditions and stub steps are **rejected** artifacts.
 
 **Product terminology:** When **`~/forge/brain/prds/<task-id>/terminology.md`** exists, **`expected`** strings and scenario titles should use **canonical** product terms ([docs/terminology-review.md](../../docs/terminology-review.md)). If **`qa-write-scenarios`** or legacy YAML predates a rename, add a **Revision** row in **`terminology.md`** (preferred) or append to optional **`qa/terminology-drift-log.md`** ([docs/templates/terminology-drift-log.md](../../docs/templates/terminology-drift-log.md)) — **not** in **`qa/scenarios-manifest.md`** (that file is coverage/inventory only). Then align YAML or the term sheet — do not silently assert obsolete labels.
 

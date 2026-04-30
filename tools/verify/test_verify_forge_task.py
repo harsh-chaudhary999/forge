@@ -104,5 +104,36 @@ class TestSemanticEvalManifest(unittest.TestCase):
             self.assertTrue(any("Need valid" in e and "semantic-eval-manifest" in e for e in errs))
 
 
+class TestConductorLogOrdering(unittest.TestCase):
+    def test_dispatch_before_semantic_eval_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as brain_s:
+            brain = Path(brain_s)
+            tid = "bad-order"
+            task_dir = brain / "prds" / tid
+            (task_dir / "qa").mkdir(parents=True)
+            (task_dir / "qa" / "semantic-eval-manifest.json").write_text(
+                '{"schema_version":1,"task_id":"bad-order",'
+                '"recorded_at":"2026-04-29T00:00:00Z","kind":"k","outcome":"pass"}\n',
+                encoding="utf-8",
+            )
+            (task_dir / "prd-locked.md").write_text("# PRD Locked\n", encoding="utf-8")
+            (task_dir / "conductor.log").write_text(
+                "2026-04-29T00:00:00Z [P4.1-DISPATCH]\n"
+                "2026-04-29T00:01:00Z [P4.0-SEMANTIC-EVAL]\n",
+                encoding="utf-8",
+            )
+            errs, _warns = vft.verify_detailed(
+                brain=brain,
+                task_id=tid,
+                product_slug=None,
+                strict_tdd=False,
+                require_log=True,
+            )
+            self.assertTrue(
+                any("[P4.1-DISPATCH]" in e and "[P4.0-SEMANTIC-EVAL]" in e for e in errs),
+                errs,
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

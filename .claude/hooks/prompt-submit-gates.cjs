@@ -18,8 +18,6 @@
 const GATE_PATTERNS = {
   QA_CSV:           /\[P4\.0-QA-CSV\].*approved=yes/,
   SEMANTIC_EVAL:    /\[P4\.0-SEMANTIC-EVAL\]/,
-  /** @deprecated Legacy State 4b marker — still satisfies machine-eval gate during upgrade window */
-  EVAL_YAML_LEGACY: /\[P4\.0-EVAL-YAML\]/,
   TDD_RED:          /\[P4\.0-TDD-RED\]/,
   DISPATCH:         /\[P4\.1-DISPATCH\]/,
   EVAL_GREEN:       /\[P4\.4-EVAL-GREEN\]/,
@@ -97,11 +95,9 @@ function resolveNextGate(logContent) {
     const termSuffix = isTermOpen ? TERMINOLOGY_ALSO_SUFFIX : '';
     const missing = [];
     if (!has(GATE_PATTERNS.QA_CSV)) missing.push('[P4.0-QA-CSV] — run qa-prd-analysis → qa-manual-test-cases-from-prd → get user approval');
-    const machineEvalOk =
-      has(GATE_PATTERNS.SEMANTIC_EVAL) || has(GATE_PATTERNS.EVAL_YAML_LEGACY);
-    if (!machineEvalOk) {
+    if (!has(GATE_PATTERNS.SEMANTIC_EVAL)) {
       missing.push(
-        '[P4.0-SEMANTIC-EVAL] — valid qa/semantic-eval-manifest.json on disk + this log line per docs/forge-task-verification.md (legacy [P4.0-EVAL-YAML] still satisfies this gate when eval/*.yaml exists — see migrations registry)',
+        '[P4.0-SEMANTIC-EVAL] — valid qa/semantic-eval-manifest.json on disk + this log line per docs/forge-task-verification.md',
       );
     }
     if (!has(GATE_PATTERNS.TDD_RED)) missing.push('[P4.0-TDD-RED] — write failing test, observe FAIL before any implementation');

@@ -112,7 +112,7 @@ assert('spec frozen, all 4b, two [TERMINOLOGY] last none → no ALSO (no false p
   'All State 4b gates satisfied',
 );
 
-const doubleLog = 'All 4b done, last line is none, but legacy regex would also match first pending: ';
+const doubleLog = 'All 4b done, last line is none, but naive regex would also match first pending: ';
 assert(
   `${doubleLog} lastTerminologyOpen is false`,
   lastTerminologyOpen(

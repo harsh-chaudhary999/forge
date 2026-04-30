@@ -1,6 +1,6 @@
 ---
 name: eval-driver-ios-xctest
-description: "WHEN: Eval scenario specifies driver=ios-xctest. Eval driver for iOS via XCTest + xcrun simctl. Functions: connect(simulator_id), launch(bundle_id), tap(target), type(text), swipe(direction, element), assert_element(target), screenshot(), disconnect()."
+description: "WHEN: qa-semantic-csv-orchestrate or run_semantic_csv_eval dispatches driver=ios-xctest. iOS via XCTest + xcrun simctl: connect(simulator_id), launch(bundle_id), tap(target), type(text), swipe(direction, element), assert_element(target), screenshot(), disconnect()."
 type: rigid
 requires: [brain-read]
 version: 1.0.2

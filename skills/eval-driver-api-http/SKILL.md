@@ -1,6 +1,6 @@
 ---
 name: eval-driver-api-http
-description: "WHEN: Eval scenario requires HTTP API request/response verification. Minimal HTTP driver for eval. Functions: setup(config), call(method, path, body), verify(response, assertion), teardown()."
+description: "WHEN: qa-semantic-csv-orchestrate or run_semantic_csv_eval dispatches an automation step that requires HTTP API request/response verification. Minimal HTTP driver: setup(config), call(method, path, body), verify(response, assertion), teardown()."
 type: rigid
 requires: [brain-read]
 version: 1.0.1

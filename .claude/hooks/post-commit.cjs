@@ -206,8 +206,6 @@ try {
 const GATE_MARKERS = [
   { pattern: /\[P4\.0-QA-CSV\].*approved=yes/,   id: 'P4.0-QA-CSV' },
   { pattern: /\[P4\.0-SEMANTIC-EVAL\]/,           id: 'P4.0-SEMANTIC-EVAL' },
-  /** Legacy machine-eval marker — gate ledger parity with pre-semantic brains */
-  { pattern: /\[P4\.0-EVAL-YAML\]/,               id: 'P4.0-EVAL-YAML' },
   { pattern: /\[P4\.0-TDD-RED\]/,                id: 'P4.0-TDD-RED' },
   { pattern: /\[P4\.1-DISPATCH\]/,               id: 'P4.1-DISPATCH' },
   { pattern: /\[P4\.4-EVAL-GREEN\]/,             id: 'P4.4-EVAL-GREEN' },

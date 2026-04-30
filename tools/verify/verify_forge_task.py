@@ -3,14 +3,13 @@
 Machine checks for Forge task readiness under a git-backed brain.
 
 Validates (when applicable):
-  - Valid qa/semantic-eval-manifest.json (required machine-eval evidence —
-    docs/forge-task-verification.md).
+  - Machine-eval evidence: valid qa/semantic-eval-manifest.json (State 4b).
   - Optional --check-prd-sections: prd-locked.md mandatory lock headings/fields.
   - Optional --require-conductor-timestamps: conductor.log lines with phase
     markers must start with ISO-8601 (audit trail).
   - Optional --strict-single-task-brain: fail if multiple prds/*/conductor.log
     (use --allow-multi-task-brain to opt out).
-  - conductor.log ordering: [P4.0-SEMANTIC-EVAL] before any [P4.1-DISPATCH]
+  - conductor.log ordering: first [P4.0-SEMANTIC-EVAL] before any [P4.1-DISPATCH]
   - forge_qa_csv_before_eval: true -> qa/manual-test-cases.csv + log order vs eval
   - Net-new design (prd-locked) -> design/ artifacts or [DESIGN-INGEST] before P4.1
   - Optional --strict-tdd: [P4.0-TDD-RED] before first [P4.1-DISPATCH]
@@ -326,8 +325,8 @@ def _semantic_csv_coherence_errors(task_dir: Path, manifest_raw: dict | None) ->
     return errs
 
 
-def _first_automation_line(lines: list[str]) -> int | None:
-    """First machine-eval gate line — [P4.0-SEMANTIC-EVAL]."""
+def _first_semantic_eval_gate_line(lines: list[str]) -> int | None:
+    """First [P4.0-SEMANTIC-EVAL] line in conductor.log (State 4b machine-eval)."""
     return _first_line_number(RE_P40_SEMANTIC_EVAL, lines)
 
 
@@ -479,12 +478,6 @@ def verify_detailed(
         except json.JSONDecodeError:
             manifest_raw = None
     errors.extend(_semantic_csv_coherence_errors(task_dir, manifest_raw))
-    if not has_valid_manifest:
-        errors.append(
-            f"Need valid {_semantic_eval_manifest_path(task_dir)} "
-            "(schema_version, task_id match, recorded_at, kind — State 4b / "
-            "docs/forge-task-verification.md)."
-        )
 
     qa_csv = task_dir / "qa" / "manual-test-cases.csv"
     if require_qa:
@@ -506,6 +499,13 @@ def verify_detailed(
         lines: list[str] = []
     else:
         lines = _read_text(log_path).splitlines()
+
+    if not has_valid_manifest:
+        errors.append(
+            f"Need valid {_semantic_eval_manifest_path(task_dir)} "
+            "(schema_version, task_id match, recorded_at, kind — State 4b / "
+            "docs/forge-task-verification.md)."
+        )
 
     if lines and require_conductor_timestamps:
         errors.extend(_conductor_timestamp_violations(lines))
@@ -545,27 +545,27 @@ def verify_detailed(
         # fall through to conductor.log line checks below only when lines exist.
 
     if lines:
-        ln_automation = _first_automation_line(lines)
+        ln_p40_semantic = _first_semantic_eval_gate_line(lines)
         ln_p41 = _first_line_number(RE_P41_DISPATCH, lines)
         ln_qa_ok = _first_line_number(RE_P40_QA_APPROVED, lines)
         ln_tdd = _first_line_number(RE_P40_TDD_RED, lines)
 
         if not using_ledger:
             # Presence checks via conductor.log (fallback when no ledger)
-            if ln_p41 is not None and ln_automation is None:
+            if ln_p41 is not None and ln_p40_semantic is None:
                 errors.append(
                     "conductor.log has [P4.1-DISPATCH] but no [P4.0-SEMANTIC-EVAL] "
                     "— invalid orchestration."
                 )
 
         # Ordering checks always use conductor.log line numbers (ledger has no line order)
-        if ln_p41 is not None and ln_automation is not None and ln_p41 < ln_automation:
+        if ln_p41 is not None and ln_p40_semantic is not None and ln_p41 < ln_p40_semantic:
             errors.append(
                 f"conductor.log: first [P4.1-DISPATCH] (line {ln_p41}) is before "
-                f"first [P4.0-SEMANTIC-EVAL] (line {ln_automation})."
+                f"first [P4.0-SEMANTIC-EVAL] (line {ln_p40_semantic})."
             )
 
-        if require_qa and ln_automation is not None and not using_ledger:
+        if require_qa and ln_p40_semantic is not None and not using_ledger:
             if ln_qa_ok is None:
                 if RE_P40_QA_SKIPPED.search("\n".join(lines)):
                     errors.append(
@@ -575,12 +575,12 @@ def verify_detailed(
                 else:
                     errors.append(
                         "forge_qa_csv_before_eval: true requires [P4.0-QA-CSV] ... approved=yes "
-                        f"before first automation marker (line {ln_automation})."
+                        f"before first [P4.0-SEMANTIC-EVAL] (line {ln_p40_semantic})."
                     )
-            elif ln_qa_ok >= ln_automation:
+            elif ln_qa_ok >= ln_p40_semantic:
                 errors.append(
                     f"forge_qa_csv_before_eval: true but [P4.0-QA-CSV] approved (line {ln_qa_ok}) "
-                    f"is not before first automation marker (line {ln_automation})."
+                    f"is not before first [P4.0-SEMANTIC-EVAL] (line {ln_p40_semantic})."
                 )
 
         if not using_ledger:

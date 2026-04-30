@@ -1,6 +1,6 @@
 ---
 name: eval-driver-cache-redis
-description: "WHEN: Eval scenario requires cache state verification against Redis. Functions: connect(), execute(command), verify(key, assertion), teardown()."
+description: "WHEN: qa-semantic-csv-orchestrate or run_semantic_csv_eval dispatches an automation step that requires Redis cache state verification. Functions: connect(), execute(command), verify(key, assertion), teardown()."
 type: rigid
 requires: [brain-read]
 version: 1.0.0

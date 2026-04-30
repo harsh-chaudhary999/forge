@@ -1,6 +1,6 @@
 ---
 name: eval-driver-db-mysql
-description: "WHEN: Eval scenario requires database state verification. Executes queries, verifies results. Functions: setup(), execute(query), verify(assertion), teardown()."
+description: "WHEN: qa-semantic-csv-orchestrate or run_semantic_csv_eval dispatches an automation step that requires database state verification. Functions: setup(), execute(query), verify(assertion), teardown()."
 type: rigid
 requires: [brain-read]
 version: 1.0.0

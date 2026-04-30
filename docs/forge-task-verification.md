@@ -156,7 +156,7 @@ tools/verify/verify_tech_plans.py
 1. Run **`python3 tools/lint_skill_allowed_tools.py`** (shim → **`tools/dev/lint_skill_allowed_tools.py`**) in Forge CI (see **`.github/workflows/forge-hooks.yml`**) — fails if any **`type: rigid`** skill lacks **`allowed-tools`**.
 2. Regenerate the committed manifest when skills change:  
    **`python3 tools/dev/lint_skill_allowed_tools.py --write-policy tools/dev/skill-tool-policy.json`**
-3. **Claude Code** (`pre-tool-use.cjs`): when **`~/.forge/.active-skill`** is set, **`hooks/hooks.json`** should register **PreToolUse** for every tool name your host emits (see matcher in that file — alternation of tool names). Then the hook can enforce **`allowed_tools`** from **`tools/dev/skill-tool-policy.json`** (with legacy fallback **`tools/skill-tool-policy.json`**) or **`skills/<name>/SKILL.md`**. **`FORGE_ROOT`** may point at a non-default Forge checkout. **HARD-GATE** entries **deny** disallowed tools; others **ask**. Canary and destructive-pattern checks remain **Bash-only**. Other IDEs need their own wiring if you want the same behavior.
+3. **Claude Code** (`pre-tool-use.cjs`): when **`~/.forge/.active-skill`** is set, **`hooks/hooks.json`** should register **PreToolUse** for every tool name your host emits (see matcher in that file — alternation of tool names). Then the hook can enforce **`allowed_tools`** from **`tools/dev/skill-tool-policy.json`** (with fallback **`tools/skill-tool-policy.json`**) or **`skills/<name>/SKILL.md`**. **`FORGE_ROOT`** may point at a non-default Forge checkout. **HARD-GATE** entries **deny** disallowed tools; others **ask**. Canary and destructive-pattern checks remain **Bash-only**. Other IDEs need their own wiring if you want the same behavior.
 
 ## Hooks
 

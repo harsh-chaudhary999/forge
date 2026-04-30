@@ -1,6 +1,6 @@
 ---
 name: eval-driver-search-es
-description: "WHEN: Eval scenario requires search index state verification. Eval driver for Elasticsearch via REST. Functions: connect(), index(doc), search(query), verify(assertion), teardown()."
+description: "WHEN: qa-semantic-csv-orchestrate or run_semantic_csv_eval dispatches an automation step that requires Elasticsearch index state verification via REST. Functions: connect(), index(doc), search(query), verify(assertion), teardown()."
 type: rigid
 requires: [brain-read]
 version: 1.0.0

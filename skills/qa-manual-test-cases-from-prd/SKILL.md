@@ -3,7 +3,7 @@ name: qa-manual-test-cases-from-prd
 description: "WHEN: You need atomic manual QA test cases in CSV from a PRD plus optional existing suite and knowledge base, with estimation, reuse/deprecation tracking, review, and a final report — any product, any TMS."
 type: rigid
 requires: [qa-prd-analysis, brain-read, brain-write]
-version: 1.3.8
+version: 1.3.9
 preamble-tier: 3
 triggers:
   - "generate test cases"
@@ -181,6 +181,8 @@ If an agent only fills **Summary** and **Expected Result**, **Description** is *
 "Id","Platform","Summary","Description","Expected Result","Automatable","Type","Feature Categorization","Source","Preconditions"
 ```
 
+**Comprehensive / maximum-coverage runs:** Prefer **`Source` + `Preconditions`** in the header so **setup and test data** are **scannable** without parsing long **Description** cells — required fields stay eight; **Preconditions** holds seeds, accounts, flags; **Description** stays **numbered steps** + **`EXPECTED RESULT:`** appendix.
+
 ### CSV mechanics
 
 - Entire row double-quoted; commas between fields.
@@ -194,7 +196,8 @@ If an agent only fills **Summary** and **Expected Result**, **Description** is *
 ### Row count vs usefulness (non-negotiable)
 
 - **A large CSV full of one-line Summary titles** (even if unique) **without** numbered **Description** steps and clear **Expected Result** is **not** acceptable output — it wastes reviewers’ time and **cannot** be executed.
-- **Do not optimize for headline count.** Prefer **fewer rows with complete steps** over **dozens of stub titles** that **sound** comprehensive but are **not** runnable prose.
+- **Do not optimize for headline count** when that means **stub titles**. **Do** produce **large** row counts when **`qa-analysis.md`** (and the PRD/tech-plan bundle) calls for **comprehensive** coverage across **many** surfaces, types, and routes — there is **no Forge maximum** (not 100, not 200). **500+** or **1000+** atomic rows can be **correct** for a large multi-surface slice if each row meets **Field rules** and maps to the coverage matrix.
+- **Under-shipping** because the assistant “doesn’t want too many rows” or hits **soft token anxiety** is **invalid** when the user asked for **maximum** coverage and **`coverage_depth: comprehensive`** — **batch** writes, work **per feature area**, reload Step 1b, then continue until the matrix is satisfied or gaps are explicit (**CONTEXT_GAP**).
 - At **Step 3 (samples)** and **Step 7 (count)**, if the human says cases are **unreadable** or **too thin**, **stop** — rewrite Summaries and Descriptions per **Field rules** before arguing about numeric targets.
 
 ## Workflow (sequential — do not skip steps)

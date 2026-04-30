@@ -3,7 +3,7 @@ name: qa-prd-analysis
 description: "WHEN: Before generating QA test cases from a PRD. Loads ALL brain artifacts first (PRD, tech plans, scan, contracts, product topology), then runs a structured interrogation to lock test types, surfaces, coverage depth, and all open ambiguities before a single scenario is written."
 type: rigid
 requires: [brain-read]
-version: 2.2.7
+version: 2.2.8
 preamble-tier: 3
 triggers:
   - "analyze PRD for QA"
@@ -54,6 +54,7 @@ allowed-tools:
 | "I'll write `qa-analysis.md` with Q1–Q8 marked confirmed from PRD alone — user wasn't available" | **Invalid.** Step 0.5 requires interrogation **completed in chat** (**sequential / adaptive** per this skill) with real answers or explicit risk-accept. Frontmatter **`test_types` / `surfaces`** copied from defaults without a user turn is **not** confirmation — downstream YAML will claim false legitimacy. |
 | "I'll paste the entire Q1–Q8 in one message **and** append **`AskQuestion`** *How should we proceed…* with options that overlap Q3/Q4 or bundle **CSV/YAML waiver**" | **Invalid UX + wrong gate.** One **primary** interaction model per turn; **waivers** belong to **`qa-write-scenarios`** / **`qa-manual-test-cases-from-prd`**, not **`qa-prd-analysis`**. **Sequential** turns only — never wall + unrelated modal. |
 | "I'll put **Q1** (full test-type checklist) in the chat message **and** use **`AskQuestion`** / **Questions** for *approve task-id / prd-locked / what next?*" | **Invalid — dual prompt.** **One turn = one primary question.** Prerequisite confirmation (**task-id**, draft **`prd-locked`**) is **turn A only** (widget **or** numbered options — **no** Q1 in that message). **Q1** is **turn B only** (full checklist — **no** second widget on another topic). See **`docs/forge-one-step-horizon.md`** **No bundled unrelated decisions** (Cursor example). |
+| "I'll paste the **full** Q4 (or Qn) block in **chat** **and** repeat the **same** full text in **`AskQuestion`**" | **Invalid — duplicate read.** **Chat** holds the long list + question **once**; **`AskQuestion`** = **short** title + **options** only — **`docs/forge-one-step-horizon.md`** **Chat vs `AskQuestion` / Questions widget**. |
 | "I'll offer **single bulk**, **approve recommendations**, or **hybrid** so the user can skip the back-and-forth" | **Invalid for Step 0.5.** Interrogation is **mandatorily sequential and interactive** — no menu to bypass dialogue. Speed is not a substitute for doubt closure. |
 | "I must ask Q2 verbatim even though Q1 already fixed surfaces and depth" | **Invalid.** **Adaptive reconciliation** — skip or shorten template prompts when already answered; ask **net-new** doubts instead. |
 | "I'll ask Q1 using only **Full / Lean / Custom** (or similar presets) **without** showing the full test-type checklist" | **Invalid.** The human must **see** every category (functional, non-functional, security, accessibility rows) to choose or waive — presets **hide capability**. Show the **full fenced Q1 menu** below first; optional presets **below** the menu are OK as shortcuts **after** visibility. |

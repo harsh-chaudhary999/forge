@@ -2,7 +2,7 @@
 name: using-forge
 description: "Bootstrap skill — inlined by session-start hook for every Forge-supported host (Claude Code, Cursor, Gemini CLI, JetBrains AI, Codex, Copilot CLI, IDX, Antigravity, OpenCode, etc.)"
 type: rigid
-version: 1.0.19
+version: 1.0.20
 preamble-tier: 4
 triggers:
   - "how to use forge"
@@ -64,6 +64,7 @@ Use this **whenever** the human must answer **more than one** distinct thing bef
 **Where (visibility):**
 
 - **Transcript-first:** the **assistant message** (markdown) must show **what** is being asked **before** or **with** the interactive affordance — not only a modal, not only `~/forge/brain/` (**chat-visible**). Auditable approval lives in the thread; brain files are the durable record **after** that.
+- **Chat vs widget deduplication (same fork — Cursor / `AskQuestion`):** The **long** context (Q4 feature list, Q1 checklist, etc.) belongs **in chat** **once**. **`AskQuestion`** / **Questions** should pass a **short** title + **discrete options** — **not** a **verbatim** second copy of the entire same prompt (**`docs/forge-one-step-horizon.md`** **Chat vs `AskQuestion` / Questions widget**). Reading the **same** paragraph in **both** panes is invalid UX; **empty** chat + **only** modal still fails transcript-first.
 
 **How (dialogue mechanics — skill-agnostic):**
 
@@ -82,7 +83,7 @@ This pattern is **not** QA-specific — it applies on **every** Forge-supported 
 
 **Implements** **Multi-question elicitation** for **coverage** dimensions (templates **Q1–Q8**). **Canonical detail:** `skills/qa-prd-analysis/SKILL.md` **Step 0.5**.
 
-- Same **where / how** as above; plus **forbidden** in this phase: full Q1–Q8 wall in one message; **Q1 in markdown + unrelated `AskQuestion`** (e.g. task-id / **prd-locked** approve) in the **same** turn — **dual prompt** (**`docs/forge-one-step-horizon.md`**); “single bulk / approve all” shortcuts; **CSV / eval-YAML-only waiver** choices (**wrong gate** — use **`qa-write-scenarios`** / **`qa-manual-test-cases-from-prd`** **after** `qa-analysis.md`). **Q1** must show the **full** test-type checklist (not preset-only **Full/Lean** — see **`qa-prd-analysis`** Q1 **HARD-GATE**).
+- Same **where / how** as above; plus **forbidden** in this phase: full Q1–Q8 wall in one message; **Q1 in markdown + unrelated `AskQuestion`** (e.g. task-id / **prd-locked** approve) in the **same** turn — **dual prompt** (**`docs/forge-one-step-horizon.md`**); **full Qn text in chat + identical full Qn in `AskQuestion`** — **deduplicate** (**short** widget title + options **only**); “single bulk / approve all” shortcuts; **CSV / eval-YAML-only waiver** choices (**wrong gate** — use **`qa-write-scenarios`** / **`qa-manual-test-cases-from-prd`** **after** `qa-analysis.md`). **Q1** must show the **full** test-type checklist (not preset-only **Full/Lean** — see **`qa-prd-analysis`** Q1 **HARD-GATE**).
 
 **Downstream references** to “Step 0.5” or “real interrogation” mean: **`qa-analysis.md`** after **Multi-question elicitation** completed for coverage — **`qa-write-scenarios`**, **`qa-manual-test-cases-from-prd`**, **`qa-pipeline-orchestrate`**, **`conductor-orchestrate`**, **`eval-scenario-format`**.
 

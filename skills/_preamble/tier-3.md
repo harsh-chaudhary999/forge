@@ -39,6 +39,8 @@ During **intake**, **council**, **`qa-prd-analysis` Step 0.5**, **tech-plan** ro
 
 **One surface per turn (Cursor):** Do **not** combine a **`Questions`** / **`AskQuestion`** on **task-id** / **prd-locked** approval **with** a **different** long markdown block (**Q1** checklist, intake question, …) in the **same** message — **sequence** two turns. **`docs/forge-one-step-horizon.md`** — **No bundled unrelated decisions**.
 
+**Same question, one pane for prose:** If **chat** already has the **full** Qn list + prompt, **`AskQuestion`** must be a **short** title + **options** — **not** the **same** long block again (**Chat vs `AskQuestion` / Questions widget** in **`docs/forge-one-step-horizon.md`**).
+
 ## Completeness
 
 Do the complete thing. If the spec says "add caching to these 5 endpoints," add it to all 5 — not the first one. If the test suite has 20 failing tests, fix all 20 — not 18. Partial completion is not completion.

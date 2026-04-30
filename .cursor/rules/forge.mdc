@@ -35,6 +35,8 @@ Any **doubt, question, confirmation, or choice** that needs a human answer — i
 
 **No dual prompts:** Do **not** show **`AskQuestion`** / **Questions** for one fork (e.g. approve **task-id** / **prd-locked**) **and** put a **different** long markdown question (e.g. **Q1** test-type checklist) in the **same** assistant message — **one primary question per turn** (**forge-one-step-horizon** **No bundled unrelated decisions**).
 
+**No chat–widget duplicate (same question):** Put the **long** list / prompt in **chat** **once**; the **Questions** UI = **short** title + **options** — **not** the full same block again (**forge-one-step-horizon** **Chat vs `AskQuestion` / Questions widget**).
+
 **In Cursor you MUST:** output chat-visible text so the transcript shows what was asked; then **`AskQuestion`** when choices are discrete.
 
 **Why this breaks more often in Cursor:** no per-message reinjection hook — only **session-start** loads **`using-forge`**.

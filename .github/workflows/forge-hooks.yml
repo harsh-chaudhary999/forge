@@ -12,6 +12,7 @@ on:
       - ".claude/hooks/post-commit.cjs"
       - ".claude/hooks/prompt-submit.cjs"
       - ".claude/hooks/prompt-submit-gates.cjs"
+      - ".claude/hooks/prompt-submit-injection.cjs"
       - ".claude/hooks/forge-stage-detect.cjs"
       - ".claude/hooks/test-forge-stage-detect.cjs"
       - "tools/**/*.py"
@@ -33,6 +34,7 @@ on:
       - ".claude/hooks/post-commit.cjs"
       - ".claude/hooks/prompt-submit.cjs"
       - ".claude/hooks/prompt-submit-gates.cjs"
+      - ".claude/hooks/prompt-submit-injection.cjs"
       - ".claude/hooks/forge-stage-detect.cjs"
       - ".claude/hooks/test-forge-stage-detect.cjs"
       - "tools/**/*.py"
@@ -65,11 +67,17 @@ jobs:
       - name: Prompt submit gate resolution tests
         run: node tools/js/test-prompt-submit-gates.cjs
 
+      - name: Prompt submit injection suppression tests
+        run: node tools/js/test-prompt-submit-injection.cjs
+
       - name: Load prompt-submit gates module (syntax)
         run: node --check .claude/hooks/prompt-submit-gates.cjs
 
       - name: Load prompt-submit hook (syntax)
         run: node --check .claude/hooks/prompt-submit.cjs
+
+      - name: Load prompt-submit-injection module (syntax)
+        run: node --check .claude/hooks/prompt-submit-injection.cjs
 
       - name: Load session-start hook (syntax)
         run: node --check .claude/hooks/session-start.cjs

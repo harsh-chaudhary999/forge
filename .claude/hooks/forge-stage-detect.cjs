@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Forge conductor.log → stage stub name (intake | council | build | eval | pr).
- * Also exports brain path helpers and log discovery: `findMostRecentConductorLog`,
+ * Also exports brain path helpers and log discovery: `findMostRecentConductorLog`
+ * (FORGE_TASK_ID / FORGE_PRD_TASK_ID scoped first, else mtime under prds/*),
  * `findMostRecentQAPipelineLog` (shared by session-start.cjs and prompt-submit.cjs).
  * Used by session-start.cjs in this directory; run test-forge-stage-detect.cjs to verify.
  *
@@ -82,12 +83,29 @@ function forgeBrainSearchPaths() {
 /**
  * Returns the path of the most recently modified conductor.log under
  * brainPath/prds/*, or null if none found.
+ * Same scoping as `findMostRecentQAPipelineLog`: when `FORGE_TASK_ID` or
+ * `FORGE_PRD_TASK_ID` is set and `brainPath/prds/<id>/conductor.log` exists,
+ * returns that path without scanning every task (avoids O(N) stat per prompt).
  * @param {string} brainPath
  * @returns {string|null}
  */
 function findMostRecentConductorLog(brainPath) {
   const prdsDir = path.join(brainPath, 'prds');
   if (!fs.existsSync(prdsDir)) return null;
+
+  const debug = (m) => {
+    if (process.env.FORGE_HOOKS_DEBUG === '1') console.error(`[conductor.log] ${m}`);
+  };
+
+  const envTaskId = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
+  if (envTaskId) {
+    const scopedLog = path.join(prdsDir, envTaskId.trim(), 'conductor.log');
+    if (fs.existsSync(scopedLog)) {
+      debug(`scoped by FORGE_TASK_ID=${envTaskId} → ${scopedLog}`);
+      return scopedLog;
+    }
+  }
+
   let mostRecentLog = null;
   let mostRecentMtime = 0;
   try {
@@ -107,6 +125,73 @@ function findMostRecentConductorLog(brainPath) {
 }
 
 /**
+ * One pass per brain for UserPromptSubmit: same path selection as
+ * `findMostRecentConductorLog` (scoped → mtime), but reads every existing
+ * `conductor.log` under prds into memory once so suppress + next-gate do not
+ * re-stat or re-read the same file.
+ *
+ * @param {string} brainPath
+ * @returns {{ primaryPath: string|null, primaryContent: string|null, entries: Array<{path: string, content: string, mtimeMs: number}> }}
+ */
+function loadConductorLogBundle(brainPath) {
+  const prdsDir = path.join(brainPath, 'prds');
+  if (!fs.existsSync(prdsDir)) {
+    return { primaryPath: null, primaryContent: null, entries: [] };
+  }
+
+  const envTaskIdRaw = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
+  const envTaskId = envTaskIdRaw ? String(envTaskIdRaw).trim() : '';
+
+  if (envTaskId) {
+    const scoped = path.join(prdsDir, envTaskId, 'conductor.log');
+    if (fs.existsSync(scoped)) {
+      try {
+        const stat = fs.statSync(scoped);
+        const content = fs.readFileSync(scoped, 'utf-8');
+        return {
+          primaryPath: scoped,
+          primaryContent: content,
+          entries: [{ path: scoped, content, mtimeMs: stat.mtimeMs }],
+        };
+      } catch (_) {
+        return { primaryPath: null, primaryContent: null, entries: [] };
+      }
+    }
+  }
+
+  const entries = [];
+  try {
+    for (const taskDir of fs.readdirSync(prdsDir)) {
+      const logPath = path.join(prdsDir, taskDir, 'conductor.log');
+      if (!fs.existsSync(logPath)) continue;
+      try {
+        const stat = fs.statSync(logPath);
+        const content = fs.readFileSync(logPath, 'utf-8');
+        entries.push({ path: logPath, content, mtimeMs: stat.mtimeMs });
+      } catch (_) {
+        // skip unreadable
+      }
+    }
+  } catch (_) {
+    return { primaryPath: null, primaryContent: null, entries: [] };
+  }
+
+  if (entries.length === 0) {
+    return { primaryPath: null, primaryContent: null, entries: [] };
+  }
+
+  let best = entries[0];
+  for (let i = 1; i < entries.length; i += 1) {
+    if (entries[i].mtimeMs > best.mtimeMs) best = entries[i];
+  }
+  return {
+    primaryPath: best.path,
+    primaryContent: best.content,
+    entries,
+  };
+}
+
+/**
  * Resolves `brainPath/prds/<task-id>/qa-pipeline.log` (standalone QA /qa-run flow).
  * Same scoping as `findMostRecentConductorLog`: prefer `FORGE_TASK_ID` or
  * `FORGE_PRD_TASK_ID` when the scoped file exists; else newest mtime under prds/*.
@@ -123,7 +208,7 @@ function findMostRecentQAPipelineLog(brainPath) {
 
   const envTaskId = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
   if (envTaskId) {
-    const scopedLog = path.join(prdsDir, envTaskId, 'qa-pipeline.log');
+    const scopedLog = path.join(prdsDir, envTaskId.trim(), 'qa-pipeline.log');
     if (fs.existsSync(scopedLog)) {
       debug(`scoped by FORGE_TASK_ID=${envTaskId} → ${scopedLog}`);
       return scopedLog;
@@ -154,5 +239,6 @@ module.exports = {
   detectStageFromLogContent,
   forgeBrainSearchPaths,
   findMostRecentConductorLog,
+  loadConductorLogBundle,
   findMostRecentQAPipelineLog,
 };

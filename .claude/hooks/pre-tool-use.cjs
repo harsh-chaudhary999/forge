@@ -37,15 +37,15 @@
  *
  * Skill gate: when ~/.forge/.active-skill contains a skill name, allowed-tools are
  * taken from the policy JSON if that file exists; else parsed from
- * skills/<name>/SKILL.md. Wire PreToolUse in hooks/hooks.json for each tool name
- * you want enforced (see matcher alternation there).
+ * skills/<name>/SKILL.md. Default hooks/hooks.json wires PreToolUse only for tools
+ * that participate in freeze scope, skill gate, or Bash-like destructive/canary
+ * checks (see matcher there). Tools not listed there do not run this hook.
  */
 
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const CASE_INSENSITIVE_FS = process.platform === 'win32' || process.platform === 'darwin';
-let CACHED_CANARY_TOKEN = null;
 
 // Read tool call from stdin
 let input = '';
@@ -72,7 +72,7 @@ if (!toolName) {
   process.exit(0);
 }
 
-const isBash = toolName === 'Bash';
+const isBashShell = toolName === 'Bash' || toolName === 'Shell';
 
 // ── Freeze scope check ────────────────────────────────────────────────────
 // If ~/.forge/.freeze exists, block Edit/Write/NotebookEdit/StrReplace to paths outside
@@ -264,8 +264,8 @@ if (activeSkill) {
   }
 }
 
-// Canary + destructive-pattern checks are Bash-only
-if (!isBash) {
+// Canary + destructive-pattern checks are Bash/Shell-only
+if (!isBashShell) {
   process.exit(0);
 }
 
@@ -285,17 +285,12 @@ const canaryDisabled =
 const CANARY_FILE = path.join(os.homedir(), '.forge', '.canary');
 let canaryToken = '';
 if (!canaryDisabled) {
-  if (CACHED_CANARY_TOKEN !== null) {
-    canaryToken = CACHED_CANARY_TOKEN;
-  } else {
-    try {
-      if (fs.existsSync(CANARY_FILE)) {
-        canaryToken = fs.readFileSync(CANARY_FILE, 'utf-8').trim();
-      }
-    } catch (_) {
-      // Canary file unreadable — skip check silently
+  try {
+    if (fs.existsSync(CANARY_FILE)) {
+      canaryToken = fs.readFileSync(CANARY_FILE, 'utf-8').trim();
     }
-    CACHED_CANARY_TOKEN = canaryToken;
+  } catch (_) {
+    // Canary file unreadable — skip check silently
   }
 }
 

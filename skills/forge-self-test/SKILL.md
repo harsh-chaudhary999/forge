@@ -957,7 +957,7 @@ Ready for Phase 4 (Eval)
    ├─ `qa/semantic-eval-run.log` **committed** whenever the runner wrote it (reproducible trace — do not omit from git if produced)
    └─ **`python3 tools/verify_forge_task.py --task-id <task-id> --brain <brain-root>`** exits **0** (machine gate — CI parity)
 
-8. Invoke: **review-readiness** (`skills/review-readiness/SKILL.md`)
+8. Invoke: [**review-readiness**](/skills/review-readiness/SKILL.md)
    Pre-PR gate **before** Phase 5: spec frozen, eval GREEN evidence, QA CSV coverage where policy requires, brain committed, no WIP commits, terminology checks (six checks in skill). **Do not** open **`/pr-set-coordinate`** until review-readiness passes.
 ```
 
@@ -971,7 +971,7 @@ Ready for Phase 4 (Eval)
 - ✅ **`qa/semantic-eval-manifest.json`**: **`outcome: pass`** (aligned with GREEN claim)
 - ✅ **`qa/semantic-eval-run.log`** present in git when the runner produced it
 - ✅ **`verify_forge_task.py`** exit code **0** for that task + brain
-- ✅ **review-readiness**: all checks in **`skills/review-readiness/SKILL.md`** pass (pre-PR gate before Phase 5)
+- ✅ [**review-readiness**](/skills/review-readiness/SKILL.md): all six checks pass (pre-PR gate before Phase 5)
 
 **Expected Output:**
 ```

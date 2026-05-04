@@ -110,11 +110,12 @@ class TestMainCli(unittest.TestCase):
             self.assertIn("ERROR", stderr.getvalue())
 
     def test_no_success_criteria_bullets_exits_0_with_info(self) -> None:
+        # Bullet text must be length < 12 (_extract_success_criteria_bullets); "elevenchars" is 11.
         with tempfile.TemporaryDirectory() as b:
             brain = Path(b)
             task = self._brain_task(brain, "t2")
             (task / "prd-locked.md").write_text(
-                "# PRD Locked\n\n**Product:** X\n**Success Criteria:**\n- x\n",
+                "# PRD Locked\n\n**Product:** X\n**Success Criteria:**\n- elevenchars\n",
                 encoding="utf-8",
             )
             stdout = io.StringIO()

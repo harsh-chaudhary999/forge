@@ -35,6 +35,10 @@
  * above this hook (…/forge). Used to load tools/dev/skill-tool-policy.json
  * (fallback: tools/skill-tool-policy.json) when present.
  *
+ * Active skill: ~/.forge/.active-skill (skill basename). Session-start also uses
+ * ~/.forge/.active-skill-tier (optional 1–4); it can write that file after parsing
+ * SKILL.md — see skills/using-forge/SKILL.md and session-start.cjs header.
+ *
  * Skill gate: when ~/.forge/.active-skill contains a skill name, allowed-tools are
  * taken from the policy JSON if that file exists; else parsed from
  * skills/<name>/SKILL.md. Default hooks/hooks.json wires PreToolUse only for tools

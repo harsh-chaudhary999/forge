@@ -169,6 +169,13 @@ Council and subagents **do not** share your live chat. They only see **what is w
 | **`FORGE_HOOKS_DEBUG=1`** | Log conductor.log path + resolved stage to stderr (hook diagnostics). |
 | **`FORGE_DISABLE_CANARY=1`** | Skip writing **`~/.forge/.canary`** and skip canary-in-command checks in **`pre-tool-use`** (trusted local only). |
 
+**Optional local skill lock (Claude Code hooks):**
+
+| File | Role |
+|------|------|
+| **`~/.forge/.active-skill`** | Basename of the skill directory under **`skills/`** — **`pre-tool-use.cjs`** uses it with **`allowed-tools`** when PreToolUse is wired for those tools. |
+| **`~/.forge/.active-skill-tier`** | Single line **`1`–`4`** matching that skill’s **`preamble-tier`** in **`SKILL.md`** frontmatter. **`session-start.cjs`** reads this first (fast); if missing, it parses **`SKILL.md`** once and **writes** this file so the next session avoids reading the full skill file. When setting **`active-skill`** manually, sync **`echo N > ~/.forge/.active-skill-tier`** or rely on the next session-start write after **`SKILL.md`** parse. |
+
 Stage resolution uses the **last** `[P…]` marker in the chosen log; implementation: **`.claude/hooks/forge-stage-detect.cjs`**. Run **`node .claude/hooks/test-forge-stage-detect.cjs`** (from repo root) to verify mapping after edits.
 
 ## Anti-Pattern Enforcement (HARD-GATE)

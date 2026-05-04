@@ -40,7 +40,7 @@ const path = require('path');
 const {
   forgeBrainSearchPaths,
   loadConductorLogBundle,
-  findMostRecentQAPipelineLog,
+  loadQAPipelineLogBundle,
 } = require(path.join(__dirname, 'forge-stage-detect.cjs'));
 
 const { resolveNextGate, resolveQAPipelineGate } = require(path.join(
@@ -48,7 +48,7 @@ const { resolveNextGate, resolveQAPipelineGate } = require(path.join(
   'prompt-submit-gates.cjs',
 ));
 
-const { shouldSuppressGateInjectionPure } = require(path.join(__dirname, 'prompt-submit-injection.cjs'));
+const { shouldSuppressFromConductorMergeState } = require(path.join(__dirname, 'prompt-submit-injection.cjs'));
 
 /** Evaluated once per process — env-based paths rarely change mid-session. */
 const BRAIN_PATHS = forgeBrainSearchPaths();
@@ -68,6 +68,13 @@ function computeGateInjection() {
     String(process.env.FORGE_DISABLE_GATE_INJECTION).trim() === '1';
 
   const anyBrainRootExists = BRAIN_PATHS.some((p) => fs.existsSync(p));
+
+  if (injectionDisabled) {
+    return { suppress: true, nextGate: null };
+  }
+  if (!anyBrainRootExists) {
+    return { suppress: true, nextGate: null };
+  }
 
   const taskIdRaw = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
   const taskIdEnvSet = !!(taskIdRaw && String(taskIdRaw).trim());
@@ -103,12 +110,7 @@ function computeGateInjection() {
     primaryBodiesForSuppress = primaryContent !== null ? [primaryContent] : [];
   }
 
-  const suppress = shouldSuppressGateInjectionPure({
-    injectionDisabled,
-    anyBrainRootExists,
-    taskIdEnvSet,
-    conductorLogBodies: primaryBodiesForSuppress,
-  });
+  const suppress = shouldSuppressFromConductorMergeState(taskIdEnvSet, primaryBodiesForSuppress);
 
   if (suppress) {
     return { suppress: true, nextGate: null };
@@ -126,17 +128,12 @@ function computeGateInjection() {
       }
     }
 
-    const qaLogPath = findMostRecentQAPipelineLog(brainPath);
-    if (qaLogPath) {
-      try {
-        const qaContent = fs.readFileSync(qaLogPath, 'utf-8');
-        const qaGate = resolveQAPipelineGate(qaContent);
-        if (qaGate) {
-          nextGate = qaGate;
-          break;
-        }
-      } catch (e) {
-        log(`Failed to read qa-pipeline.log: ${e.message}`);
+    const qaBundle = loadQAPipelineLogBundle(brainPath);
+    if (qaBundle && qaBundle.primaryContent) {
+      const qaGate = resolveQAPipelineGate(qaBundle.primaryContent);
+      if (qaGate) {
+        nextGate = qaGate;
+        break;
       }
     }
   }

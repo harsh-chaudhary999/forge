@@ -39,8 +39,9 @@
  *   FORGE_BRAIN / FORGE_BRAIN_PATH — brain root override (either name)
  *   FORGE_TASK_ID / FORGE_PRD_TASK_ID — task-scoped conductor.log
  *   FORGE_PREAMBLE_TIER       — 1–4; if set, overrides. If unset: reads ~/.forge/.active-skill-tier
- *     (single integer line; cheap — prefer writers of /.active-skill to sync this file); else
- *     parses `preamble-tier` from skills/<name>/SKILL.md frontmatter for /.active-skill; else 2
+ *     (single line 1–4); else parses `preamble-tier` from skills/<name>/SKILL.md for /.active-skill.
+ *     After a SKILL.md parse, this hook writes ~/.forge/.active-skill-tier so the next session
+ *     avoids reading the full SKILL.md (pair with ~/.forge/.active-skill).
  *   FORGE_SUPPRESS_MULTI_TASK_WARN=1 — always skip the multi-task conductor.log stderr WARN
  *   ~/.forge/.multi-task-warned      — after the first unscoped multi-log WARN, this file is written;
  *     subsequent session starts do not repeat the warning
@@ -66,8 +67,10 @@ const {
   detectStageFromLogContent,
   findLastPhaseMarker,
   forgeBrainSearchPaths,
-  findMostRecentConductorLog,
+  collectConductorLogIndex,
 } = require(path.join(__dirname, 'forge-stage-detect.cjs'));
+// Primary path from `collectConductorLogIndex` matches `findMostRecentConductorLog` /
+// `loadConductorLogBundle(...).primaryPath` — one stat pass per call here.
 
 // Configuration
 const SKILL_FILE = path.join(__dirname, '..', 'skills', 'using-forge', 'SKILL.md');
@@ -101,6 +104,18 @@ function die(message) {
  * else `preamble-tier` in skills/<name>/SKILL.md frontmatter.
  * @returns {{ tier: number, activeSkill: string } | null}
  */
+function writeActiveSkillTierCache(tier) {
+  try {
+    if (!fs.existsSync(FORGE_RUNTIME_DIR)) {
+      fs.mkdirSync(FORGE_RUNTIME_DIR, { recursive: true, mode: 0o700 });
+    }
+    fs.writeFileSync(ACTIVE_SKILL_TIER_FILE, `${tier}\n`, { encoding: 'utf-8', mode: 0o600 });
+    log(`Wrote ${ACTIVE_SKILL_TIER_FILE} (preamble tier cache — pair with ~/.forge/.active-skill)`);
+  } catch (e) {
+    log(`Could not write ${ACTIVE_SKILL_TIER_FILE}: ${e.message}`);
+  }
+}
+
 function resolvePreambleTierFromActiveSkill() {
   try {
     const p = path.join(FORGE_RUNTIME_DIR, '.active-skill');
@@ -129,7 +144,9 @@ function resolvePreambleTierFromActiveSkill() {
     if (!m) return null;
     const n = parseInt(m[1], 10);
     if (Number.isNaN(n)) return null;
-    return { tier: Math.min(4, Math.max(1, n)), activeSkill: name };
+    const tier = Math.min(4, Math.max(1, n));
+    writeActiveSkillTierCache(tier);
+    return { tier, activeSkill: name };
   } catch (_) {
     return null;
   }
@@ -218,48 +235,47 @@ function generateCanary() {
 // ==================== Stage Detection ====================
 
 /**
- * Count task directories under brain/prds that contain a conductor.log.
- */
-function countTaskConductorLogs(brainPath) {
-  const prdsDir = path.join(brainPath, 'prds');
-  if (!fs.existsSync(prdsDir)) return 0;
-  let n = 0;
-  try {
-    for (const taskDir of fs.readdirSync(prdsDir)) {
-      const logPath = path.join(prdsDir, taskDir, 'conductor.log');
-      if (fs.existsSync(logPath)) n += 1;
-    }
-  } catch (_) {
-    return 0;
-  }
-  return n;
-}
-
-/**
  * Resolves conductor.log: FORGE_TASK_ID / FORGE_PRD_TASK_ID first, else mtime.
+ * One `collectConductorLogIndex` pass supplies both the task count and the mtime winner.
  */
 function resolveConductorLogPath(brainPath) {
+  const { statEntries } = collectConductorLogIndex(brainPath);
+  const nWithLog = statEntries.length;
+
+  function primaryPathFromIndex() {
+    if (statEntries.length === 0) return null;
+    let best = statEntries[0];
+    for (let i = 1; i < statEntries.length; i += 1) {
+      if (statEntries[i].mtimeMs > best.mtimeMs) best = statEntries[i];
+    }
+    return best.path;
+  }
+
   const taskIdRaw = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
-  const nWithLog = countTaskConductorLogs(brainPath);
   if (taskIdRaw) {
     const taskId = String(taskIdRaw).trim();
     if (!/^[\w.-]+$/.test(taskId)) {
       log(`Ignoring invalid FORGE_TASK_ID/FORGE_PRD_TASK_ID: ${taskId}`);
     } else {
-    const scoped = path.join(brainPath, 'prds', taskId, 'conductor.log');
-    if (fs.existsSync(scoped)) {
-      log(`conductor.log selection: task-scoped (FORGE_TASK_ID) → ${scoped}`);
-      return scoped;
-    }
-    log(
-      `FORGE_TASK_ID/FORGE_PRD_TASK_ID=${taskId} but missing ${scoped} — falling back to mtime heuristic`,
-    );
-    if (nWithLog > 1) {
-      console.error(
-        `[session-start] WARN: ${nWithLog} prds/*/conductor.log files exist; ` +
-          `FORGE_TASK_ID points to a missing log — mtime fallback may pick the wrong task.`,
+      const scoped = path.join(brainPath, 'prds', taskId, 'conductor.log');
+      if (fs.existsSync(scoped)) {
+        log(`conductor.log selection: task-scoped (FORGE_TASK_ID) → ${scoped}`);
+        return scoped;
+      }
+      log(
+        `FORGE_TASK_ID/FORGE_PRD_TASK_ID=${taskId} but missing ${scoped} — falling back to mtime heuristic`,
       );
-    }
+      if (nWithLog > 1) {
+        console.error(
+          `[session-start] WARN: ${nWithLog} prds/*/conductor.log files exist; ` +
+            `FORGE_TASK_ID points to a missing log — mtime fallback may pick the wrong task.`,
+        );
+      }
+      const fb = primaryPathFromIndex();
+      if (fb) {
+        log(`conductor.log selection: mtime fallback → ${fb}`);
+      }
+      return fb;
     }
   } else if (nWithLog > 1 && shouldEmitMultiTaskUnscopedWarn()) {
     console.error(
@@ -269,7 +285,8 @@ function resolveConductorLogPath(brainPath) {
     );
     acknowledgeMultiTaskUnscopedWarn();
   }
-  const fallback = findMostRecentConductorLog(brainPath);
+
+  const fallback = primaryPathFromIndex();
   if (fallback) {
     log(`conductor.log selection: mtime fallback → ${fallback}`);
   }

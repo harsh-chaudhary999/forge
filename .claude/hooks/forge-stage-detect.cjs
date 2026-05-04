@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
  * Forge conductor.log → stage stub name (intake | council | build | eval | pr).
- * Also exports brain path helpers and log discovery: `findMostRecentConductorLog`
- * (FORGE_TASK_ID / FORGE_PRD_TASK_ID scoped first, else mtime under prds/*),
- * `findMostRecentQAPipelineLog` (shared by session-start.cjs and prompt-submit.cjs).
+ * Also exports brain path helpers and log discovery: conductor (`collectConductorLogIndex`,
+ * `findMostRecentConductorLog`, `loadConductorLogBundle`) and QA pipeline (`collectQAPipelineLogIndex`,
+ * `findMostRecentQAPipelineLog`, `loadQAPipelineLogBundle`) — selection rules stay paired between
+ * path-only and read helpers.
  * Used by session-start.cjs in this directory; run test-forge-stage-detect.cjs to verify.
  *
  * Rule: take the LAST [P…] phase marker in the log (document order), then map it.
@@ -81,6 +82,51 @@ function forgeBrainSearchPaths() {
 }
 
 /**
+ * Stats every candidate conductor.log (scoped single path or all tasks).
+ * Shared by `findMostRecentConductorLog` (path only) and `loadConductorLogBundle`
+ * (reads bodies) so selection rules cannot drift.
+ * @param {string} brainPath
+ * @returns {{ statEntries: Array<{ path: string, mtimeMs: number }> }}
+ */
+function collectConductorLogIndex(brainPath) {
+  const prdsDir = path.join(brainPath, 'prds');
+  if (!fs.existsSync(prdsDir)) return { statEntries: [] };
+
+  const debug = (m) => {
+    if (process.env.FORGE_HOOKS_DEBUG === '1') console.error(`[conductor.log] ${m}`);
+  };
+
+  const envTaskIdRaw = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
+  const envTaskId = envTaskIdRaw ? String(envTaskIdRaw).trim() : '';
+
+  if (envTaskId) {
+    const scopedLog = path.join(prdsDir, envTaskId, 'conductor.log');
+    if (fs.existsSync(scopedLog)) {
+      try {
+        const stat = fs.statSync(scopedLog);
+        debug(`scoped by FORGE_TASK_ID=${envTaskId} → ${scopedLog}`);
+        return { statEntries: [{ path: scopedLog, mtimeMs: stat.mtimeMs }] };
+      } catch (_) {
+        return { statEntries: [] };
+      }
+    }
+  }
+
+  const statEntries = [];
+  try {
+    for (const taskDir of fs.readdirSync(prdsDir)) {
+      const logPath = path.join(prdsDir, taskDir, 'conductor.log');
+      if (!fs.existsSync(logPath)) continue;
+      try {
+        const stat = fs.statSync(logPath);
+        statEntries.push({ path: logPath, mtimeMs: stat.mtimeMs });
+      } catch (_) {}
+    }
+  } catch (_) {}
+  return { statEntries };
+}
+
+/**
  * Returns the path of the most recently modified conductor.log under
  * brainPath/prds/*, or null if none found.
  * Same scoping as `findMostRecentQAPipelineLog`: when `FORGE_TASK_ID` or
@@ -90,92 +136,38 @@ function forgeBrainSearchPaths() {
  * @returns {string|null}
  */
 function findMostRecentConductorLog(brainPath) {
-  const prdsDir = path.join(brainPath, 'prds');
-  if (!fs.existsSync(prdsDir)) return null;
-
-  const debug = (m) => {
-    if (process.env.FORGE_HOOKS_DEBUG === '1') console.error(`[conductor.log] ${m}`);
-  };
-
-  const envTaskId = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
-  if (envTaskId) {
-    const scopedLog = path.join(prdsDir, envTaskId.trim(), 'conductor.log');
-    if (fs.existsSync(scopedLog)) {
-      debug(`scoped by FORGE_TASK_ID=${envTaskId} → ${scopedLog}`);
-      return scopedLog;
-    }
+  const { statEntries } = collectConductorLogIndex(brainPath);
+  if (statEntries.length === 0) return null;
+  let best = statEntries[0];
+  for (let i = 1; i < statEntries.length; i += 1) {
+    if (statEntries[i].mtimeMs > best.mtimeMs) best = statEntries[i];
   }
-
-  let mostRecentLog = null;
-  let mostRecentMtime = 0;
-  try {
-    for (const taskDir of fs.readdirSync(prdsDir)) {
-      const logPath = path.join(prdsDir, taskDir, 'conductor.log');
-      if (!fs.existsSync(logPath)) continue;
-      try {
-        const stat = fs.statSync(logPath);
-        if (stat.mtimeMs > mostRecentMtime) {
-          mostRecentMtime = stat.mtimeMs;
-          mostRecentLog = logPath;
-        }
-      } catch (_) {}
-    }
-  } catch (_) {}
-  return mostRecentLog;
+  return best.path;
 }
 
 /**
  * One pass per brain for UserPromptSubmit: same path selection as
- * `findMostRecentConductorLog` (scoped → mtime), but reads every existing
- * `conductor.log` under prds into memory once so suppress + next-gate do not
- * re-stat or re-read the same file.
+ * `findMostRecentConductorLog` via `collectConductorLogIndex`, then reads each
+ * log once so suppress + next-gate do not duplicate I/O.
  *
  * @param {string} brainPath
  * @returns {{ primaryPath: string|null, primaryContent: string|null, entries: Array<{path: string, content: string, mtimeMs: number}> }}
  */
 function loadConductorLogBundle(brainPath) {
-  const prdsDir = path.join(brainPath, 'prds');
-  if (!fs.existsSync(prdsDir)) {
+  const { statEntries } = collectConductorLogIndex(brainPath);
+  if (statEntries.length === 0) {
     return { primaryPath: null, primaryContent: null, entries: [] };
-  }
-
-  const envTaskIdRaw = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
-  const envTaskId = envTaskIdRaw ? String(envTaskIdRaw).trim() : '';
-
-  if (envTaskId) {
-    const scoped = path.join(prdsDir, envTaskId, 'conductor.log');
-    if (fs.existsSync(scoped)) {
-      try {
-        const stat = fs.statSync(scoped);
-        const content = fs.readFileSync(scoped, 'utf-8');
-        return {
-          primaryPath: scoped,
-          primaryContent: content,
-          entries: [{ path: scoped, content, mtimeMs: stat.mtimeMs }],
-        };
-      } catch (_) {
-        return { primaryPath: null, primaryContent: null, entries: [] };
-      }
-    }
   }
 
   const entries = [];
-  try {
-    for (const taskDir of fs.readdirSync(prdsDir)) {
-      const logPath = path.join(prdsDir, taskDir, 'conductor.log');
-      if (!fs.existsSync(logPath)) continue;
-      try {
-        const stat = fs.statSync(logPath);
-        const content = fs.readFileSync(logPath, 'utf-8');
-        entries.push({ path: logPath, content, mtimeMs: stat.mtimeMs });
-      } catch (_) {
-        // skip unreadable
-      }
+  for (const se of statEntries) {
+    try {
+      const content = fs.readFileSync(se.path, 'utf-8');
+      entries.push({ path: se.path, content, mtimeMs: se.mtimeMs });
+    } catch (_) {
+      // skip unreadable
     }
-  } catch (_) {
-    return { primaryPath: null, primaryContent: null, entries: [] };
   }
-
   if (entries.length === 0) {
     return { primaryPath: null, primaryContent: null, entries: [] };
   }
@@ -192,6 +184,52 @@ function loadConductorLogBundle(brainPath) {
 }
 
 /**
+ * Stats every candidate `qa-pipeline.log` (scoped one path or all tasks).
+ * Shared by `findMostRecentQAPipelineLog` and `loadQAPipelineLogBundle` (one scan + one read).
+ * @param {string} brainPath
+ * @returns {{ statEntries: Array<{ path: string, mtimeMs: number }> }}
+ */
+function collectQAPipelineLogIndex(brainPath) {
+  const prdsDir = path.join(brainPath, 'prds');
+  if (!fs.existsSync(prdsDir)) return { statEntries: [] };
+
+  const debug = (m) => {
+    if (process.env.FORGE_HOOKS_DEBUG === '1') console.error(`[qa-pipeline.log] ${m}`);
+  };
+
+  const envTaskIdRaw = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
+  const envTaskId = envTaskIdRaw ? String(envTaskIdRaw).trim() : '';
+
+  if (envTaskId) {
+    const scopedLog = path.join(prdsDir, envTaskId, 'qa-pipeline.log');
+    if (fs.existsSync(scopedLog)) {
+      try {
+        const st = fs.statSync(scopedLog);
+        debug(`scoped by FORGE_TASK_ID=${envTaskId} → ${scopedLog}`);
+        return { statEntries: [{ path: scopedLog, mtimeMs: st.mtimeMs }] };
+      } catch (_) {
+        return { statEntries: [] };
+      }
+    }
+  }
+
+  const statEntries = [];
+  try {
+    for (const taskId of fs.readdirSync(prdsDir)) {
+      const logPath = path.join(prdsDir, taskId, 'qa-pipeline.log');
+      if (!fs.existsSync(logPath)) continue;
+      try {
+        const mtime = fs.statSync(logPath).mtimeMs;
+        statEntries.push({ path: logPath, mtimeMs: mtime });
+      } catch (_) {}
+    }
+  } catch (e) {
+    debug(`scan error: ${e.message}`);
+  }
+  return { statEntries };
+}
+
+/**
  * Resolves `brainPath/prds/<task-id>/qa-pipeline.log` (standalone QA /qa-run flow).
  * Same scoping as `findMostRecentConductorLog`: prefer `FORGE_TASK_ID` or
  * `FORGE_PRD_TASK_ID` when the scoped file exists; else newest mtime under prds/*.
@@ -199,38 +237,37 @@ function loadConductorLogBundle(brainPath) {
  * @returns {string|null}
  */
 function findMostRecentQAPipelineLog(brainPath) {
-  const prdsDir = path.join(brainPath, 'prds');
-  if (!fs.existsSync(prdsDir)) return null;
-
-  const debug = (m) => {
-    if (process.env.FORGE_HOOKS_DEBUG === '1') console.error(`[qa-pipeline.log] ${m}`);
-  };
-
-  const envTaskId = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
-  if (envTaskId) {
-    const scopedLog = path.join(prdsDir, envTaskId.trim(), 'qa-pipeline.log');
-    if (fs.existsSync(scopedLog)) {
-      debug(`scoped by FORGE_TASK_ID=${envTaskId} → ${scopedLog}`);
-      return scopedLog;
-    }
+  const { statEntries } = collectQAPipelineLogIndex(brainPath);
+  if (statEntries.length === 0) return null;
+  let best = statEntries[0];
+  for (let i = 1; i < statEntries.length; i += 1) {
+    if (statEntries[i].mtimeMs > best.mtimeMs) best = statEntries[i];
   }
+  if (process.env.FORGE_HOOKS_DEBUG === '1' && statEntries.length > 1) {
+    console.error(`[qa-pipeline.log] mtime fallback → ${best.path} (set FORGE_TASK_ID for deterministic scoping)`);
+  }
+  return best.path;
+}
 
-  let best = null;
+/**
+ * Primary QA pipeline log path + content — same selection as `findMostRecentQAPipelineLog`
+ * but avoids a second directory scan before read (pairs with `collectQAPipelineLogIndex`).
+ * @param {string} brainPath
+ * @returns {{ primaryPath: string, primaryContent: string }|null}
+ */
+function loadQAPipelineLogBundle(brainPath) {
+  const { statEntries } = collectQAPipelineLogIndex(brainPath);
+  if (statEntries.length === 0) return null;
+  let best = statEntries[0];
+  for (let i = 1; i < statEntries.length; i += 1) {
+    if (statEntries[i].mtimeMs > best.mtimeMs) best = statEntries[i];
+  }
   try {
-    for (const taskId of fs.readdirSync(prdsDir)) {
-      const logPath = path.join(prdsDir, taskId, 'qa-pipeline.log');
-      if (!fs.existsSync(logPath)) continue;
-      const mtime = fs.statSync(logPath).mtimeMs;
-      if (!best || mtime > best.mtime) best = { path: logPath, mtime };
-    }
-  } catch (e) {
-    debug(`scan error: ${e.message}`);
+    const primaryContent = fs.readFileSync(best.path, 'utf-8');
+    return { primaryPath: best.path, primaryContent };
+  } catch (_) {
+    return null;
   }
-  if (best) {
-    debug(`mtime fallback → ${best.path} (set FORGE_TASK_ID for deterministic scoping)`);
-    return best.path;
-  }
-  return null;
 }
 
 module.exports = {
@@ -238,7 +275,10 @@ module.exports = {
   markerToStage,
   detectStageFromLogContent,
   forgeBrainSearchPaths,
+  collectConductorLogIndex,
   findMostRecentConductorLog,
   loadConductorLogBundle,
+  collectQAPipelineLogIndex,
   findMostRecentQAPipelineLog,
+  loadQAPipelineLogBundle,
 };

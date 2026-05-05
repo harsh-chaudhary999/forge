@@ -21,8 +21,8 @@ NO EVAL SCENARIO RUNS AGAINST A PARTIAL STACK. EVERY ASSERTION VERIFIES SPECIFIC
 
 1. `forge-eval-gate` — verifies implementation is complete before eval opens
 2. `eval-product-stack-up` — brings up ALL services in dependency order, waits for all health checks
-3. **Either** `eval-coordinate-multi-surface` **(YAML `eval/*.yaml` scenarios)** **or** `qa-semantic-csv-orchestrate` / `tools/run_semantic_csv_eval.py` **(semantic CSV path — no YAML)** — Phase 4.4 must record **`[P4.4-EVAL-GREEN]`** via **`eval-judge`** on drivers **or** manifest+log per `eval-judge` § Semantic path
-4. Select drivers per surface (**YAML path only**):
+3. **`qa-semantic-csv-orchestrate`** / `tools/run_semantic_csv_eval.py` **(semantic CSV — manifest + run.log)** — Phase 4.4 records **`[P4.4-EVAL-GREEN] path=semantic`** via **`eval-judge`** § Semantic path. Repo **unit tests** are from **`forge-tdd`**, not driver YAML.
+4. If the host maps **Surface** in **`qa/semantic-automation.csv`** to tools, use the matching **`eval-driver-***`** skills as the runner documentation.
    - API: `eval-driver-api-http`
    - Database: `eval-driver-db-mysql`
    - Cache: `eval-driver-cache-redis`
@@ -45,7 +45,7 @@ NO EVAL SCENARIO RUNS AGAINST A PARTIAL STACK. EVERY ASSERTION VERIFIES SPECIFIC
 
 - **"Stack is probably up from last time"** — Always verify. Run `eval-product-stack-up` fresh. Stale stacks cause false positives.
 - **"Status 2xx is sufficient for an API assertion"** — It is not. Assert specific field values, content-type, and response shape.
-- **"One surface passed, that's enough for now"** — All surfaces in the eval YAML must pass. Partial eval is not eval.
+- **"One surface passed, that's enough for now"** — All **manifest rows** (semantic path) or **all mapped surfaces** in the run must pass. Partial eval is not eval.
 - **"The self-heal found the bug, I'll fix it and claim GREEN without re-running"** — Fix + re-run is mandatory. GREEN requires all scenarios to pass on the same run after the fix.
 - **"teardown() can be skipped if the scenario passes"** — teardown() is called in ALL paths. A passing scenario with no teardown leaves state that contaminates the next run.
 
@@ -55,4 +55,4 @@ Maximum 3 self-heal iterations per scenario (`self-heal-loop-cap`). If still RED
 
 ## Next Gate
 
-YAML: all scenarios GREEN in single run → `eval-judge` emits GREEN → log `[P4.4-EVAL-GREEN]`. Semantic: manifest **`outcome: pass`** after stack-up run → `eval-judge` § Semantic path → log **`[P4.4-EVAL-GREEN] path=semantic`**. Then switch to PR phase.
+**Semantic (default):** manifest **`outcome: pass`** after stack-up run → `eval-judge` § Semantic path → log **`[P4.4-EVAL-GREEN] path=semantic`**. **Legacy out-of-band YAML** (if used outside Forge orchestration): all scenarios GREEN in single run → `eval-judge` emits GREEN → log `[P4.4-EVAL-GREEN]`. Then switch to PR phase.

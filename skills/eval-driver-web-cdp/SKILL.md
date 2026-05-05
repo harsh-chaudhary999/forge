@@ -1,8 +1,8 @@
 ---
 name: eval-driver-web-cdp
-description: "WHEN: Eval scenario requires web UI interaction or assertion. Automates browser via Chrome DevTools Protocol. Functions: launch(), navigate(), interact(click/type/scroll), screenshot(), getDOM(), teardown()."
+description: "WHEN: qa-semantic-csv-orchestrate or run_semantic_csv_eval dispatches an automation step that requires web UI interaction or assertion. Chrome DevTools Protocol: launch(), navigate(), interact(click/type/scroll), screenshot(), getDOM(), teardown()."
 type: rigid
-requires: [brain-read, eval-scenario-format]
+requires: [brain-read]
 version: 1.0.2
 preamble-tier: 3
 triggers:
@@ -17,6 +17,8 @@ allowed-tools:
 ---
 
 # Eval Driver: Web UI via Chrome DevTools Protocol (CDP)
+
+**Runner dispatch:** **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** routes **`Surface: web`** rows in **`qa/semantic-automation.csv`** to this driver. Do not invoke this skill directly unless you are implementing or debugging the runner.
 
 Automates browser interactions and state inspection using Chrome DevTools Protocol. Provides a programmatic interface for launching headless Chrome, navigating URLs, interacting with UI elements, capturing screenshots, and extracting DOM state.
 

@@ -17,8 +17,6 @@
 
 const GATE_PATTERNS = {
   QA_CSV:           /\[P4\.0-QA-CSV\].*approved=yes/,
-  EVAL_YAML:        /\[P4\.0-EVAL-YAML\]/,
-  /** Alternative or supplementary State 4b machine-eval log marker — may coexist with [P4.0-EVAL-YAML]; see docs/forge-task-verification.md */
   SEMANTIC_EVAL:    /\[P4\.0-SEMANTIC-EVAL\]/,
   TDD_RED:          /\[P4\.0-TDD-RED\]/,
   DISPATCH:         /\[P4\.1-DISPATCH\]/,
@@ -97,8 +95,10 @@ function resolveNextGate(logContent) {
     const termSuffix = isTermOpen ? TERMINOLOGY_ALSO_SUFFIX : '';
     const missing = [];
     if (!has(GATE_PATTERNS.QA_CSV)) missing.push('[P4.0-QA-CSV] — run qa-prd-analysis → qa-manual-test-cases-from-prd → get user approval');
-    if (!has(GATE_PATTERNS.EVAL_YAML) && !has(GATE_PATTERNS.SEMANTIC_EVAL)) {
-      missing.push('[P4.0-EVAL-YAML] or [P4.0-SEMANTIC-EVAL] — write eval/*.yaml scenarios or qa/semantic-eval-manifest.json + log line per docs/forge-task-verification.md');
+    if (!has(GATE_PATTERNS.SEMANTIC_EVAL)) {
+      missing.push(
+        '[P4.0-SEMANTIC-EVAL] — valid qa/semantic-eval-manifest.json on disk + this log line per docs/forge-task-verification.md',
+      );
     }
     if (!has(GATE_PATTERNS.TDD_RED)) missing.push('[P4.0-TDD-RED] — write failing test, observe FAIL before any implementation');
 
@@ -151,7 +151,7 @@ function resolveQAPipelineGate(logContent) {
 
   // Stack up done — start execution
   if (has(GATE_PATTERNS.QA_P4_STACK)) {
-    return `QA NEXT GATE: Stack is up — invoke eval-coordinate-multi-surface with scenario files from brain/prds/<task-id>/eval/ and log [QA-P5-EXEC].`;
+    return `QA NEXT GATE: Stack is up — invoke qa-semantic-csv-orchestrate / tools/run_semantic_csv_eval.py for qa/semantic-automation.csv, then log [QA-P5-EXEC].`;
   }
 
   // Code validate complete — go straight to verdict (skip P4/P5)
@@ -174,9 +174,9 @@ function resolveQAPipelineGate(logContent) {
     return `QA NEXT GATE: Scenarios written — invoke qa-branch-env-prep (ask run mode: url-only / branch-local / branch-code-validate / branch-tracking), then log [QA-BRANCH-ENV].`;
   }
 
-  // Brain loaded — generate scenarios
+  // Brain loaded — analysis next (Phase QA-P2 authors semantic CSV; do not bundle into QA-P1)
   if (has(GATE_PATTERNS.QA_P1_LOAD)) {
-    return `QA NEXT GATE: Brain loaded — invoke qa-prd-analysis → qa-write-scenarios to generate eval YAML, then log [QA-P2-SCENARIOS].`;
+    return `QA NEXT GATE: Brain loaded — invoke qa-prd-analysis, then log [QA-P2-SCENARIOS].`;
   }
 
   return null;

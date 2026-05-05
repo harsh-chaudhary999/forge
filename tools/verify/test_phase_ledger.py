@@ -19,10 +19,10 @@ class TestPhaseLedger(unittest.TestCase):
     def test_append_and_verify_hash(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             td = Path(tmp) / "prds" / "t1"
-            (td / "eval").mkdir(parents=True)
-            f = td / "eval" / "x.yaml"
-            f.write_text("scenario: a\nsteps:\n  - id: s\n    driver: d\n    action: a\n    expected:\n      k: 1\n", encoding="utf-8")
-            e = pl.build_entry("t1", "[P4.0-EVAL-YAML]", ["eval/x.yaml"], td)
+            (td / "qa").mkdir(parents=True)
+            f = td / "qa" / "semantic-automation.csv"
+            f.write_text("StepId,Surface,Intent,NaturalLanguageStep,DependsOn\n1,api,smoke,GET /health — 200,0\n", encoding="utf-8")
+            e = pl.build_entry("t1", "[P4.0-SEMANTIC-EVAL]", ["qa/semantic-automation.csv"], td)
             pl.append_entry(td, e)
             self.assertEqual(pl.verify_ledger(td, verify_hashes=False, task_id_expected="t1"), [])
             self.assertEqual(pl.verify_ledger(td, verify_hashes=True, task_id_expected="t1"), [])

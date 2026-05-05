@@ -1164,7 +1164,7 @@ This skill supports:
 - **eval-driver-db-mysql** - MySQL evaluation driver (for database service health checks)
 - **eval-driver-cache-redis** - Redis evaluation driver (for cache service health checks)
 - **eval-driver-api-http** - HTTP API evaluation (for health endpoint testing, response validation)
-- **eval-coordinate-multi-surface** - Multi-service eval coordination (for testing entire stacks)
+- **qa-semantic-csv-orchestrate** — Multi-service eval coordination via **`qa/semantic-automation.csv`** (for testing entire stacks)
 
 ### Related Brain Documents
 - **brain-read** - Product topology and project metadata (for understanding service dependencies)

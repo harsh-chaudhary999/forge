@@ -2,7 +2,7 @@
 name: forge-glossary
 description: "WHEN: You encounter an unfamiliar Forge term and need its canonical definition."
 type: reference
-version: 1.0.12
+version: 1.0.13
 preamble-tier: 1
 triggers:
   - "what does X mean"
@@ -49,7 +49,7 @@ Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the
 
 ### Defensive downstream-gate narration
 
-**Definition:** Assistant prose whose **primary job** is to explain why a **later** gate or artifact does not exist yet (*eval YAML isn’t written yet*, *orphan automation*, pasting a full **`qa-write-scenarios` Step −1** chain, merge previews) **while** the human is still answering **earlier** phase questions.
+**Definition:** Assistant prose whose **primary job** is to explain why a **later** gate or artifact does not exist yet (*semantic manifest isn’t ready yet*, *orphan automation*, pasting a full **State 4b** chain, merge previews) **while** the human is still answering **earlier** phase questions.
 
 **Usage Context:** **Forbidden** as default filler **between** sequential elicitation turns — **any** Forge phase (**intake**, **`qa-prd-analysis`**, council, planning, …). **Allowed:** static **`commands/`** / **`README`** / **`SKILL.md`** tables; **skip-ahead refusal** (first missing prerequisite + next action); user **explicitly** asked *why* or *full order*.
 
@@ -142,6 +142,42 @@ Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the
 **What It's NOT:** Not unit testing — it's integration testing at scale. Not optional; all critical scenarios must pass. Not local — assumes full multi-service stack is running. Not quick fixes during eval — failures require escalation to `self-heal` loop.
 
 **Cross-References:** Enforced by `forge-eval-gate` (HARD-GATE). Uses eval drivers: `eval-driver-api-http`, `eval-driver-db-mysql`, `eval-driver-cache-redis`, `eval-driver-bus-kafka`, `eval-driver-search-es`, `eval-driver-web-cdp`, `eval-driver-ios-xctest`, `eval-driver-android-adb`. Output feeds into `Self-Heal` (RED verdict) or `Review` (GREEN/YELLOW verdict).
+
+---
+
+### Semantic eval path
+
+**Definition:** The **Forge** machine-eval path: **`qa/semantic-automation.csv`** executed to produce **`qa/semantic-eval-manifest.json`** + **`qa/semantic-eval-run.log`** (**CSV execution results**) — NL-first steps + **DependsOn** DAG. Orchestrated by **`qa-semantic-csv-orchestrate`** / **`tools/run_semantic_csv_eval.py`**. **`eval-judge`** reads manifest + **`semantic-eval-run.log`**.
+
+**Usage Context:** Gates **`verify_forge_task.py`**, **`review-readiness`**, **`prompt-submit-gates`** (**`[P4.0-SEMANTIC-EVAL]`** / **`[P4.4-EVAL-GREEN] path=semantic`**). Self-heal uses **`semantic-eval-run.log`** JSON lines as primary evidence on RED — not driver tables.
+
+**Cross-References:** [docs/semantic-eval-csv.md](../../docs/semantic-eval-csv.md), [docs/forge-task-verification.md](../../docs/forge-task-verification.md), **`qa-semantic-csv-orchestrate`**, **`eval-judge`** § Semantic path.
+
+---
+
+### semantic-automation.csv
+
+**Definition:** Task-local CSV under **`~/forge/brain/prds/<task-id>/qa/semantic-automation.csv`** defining semantic automation steps (**Id**, **Surface**, **Intent**, **DependsOn**, …) per [docs/semantic-eval-csv.md](../../docs/semantic-eval-csv.md). Validated by **`tools/verify/semantic_csv.py`**.
+
+**What It's NOT:** Not **`manual-test-cases.csv`** (human TMS-style acceptance).
+
+---
+
+### semantic-eval-manifest.json
+
+**Definition:** JSON under **`~/forge/brain/prds/<task-id>/qa/semantic-eval-manifest.json`** recording **`schema_version`**, **`task_id`**, **`kind`** (e.g. **`semantic-csv-eval`**), **`outcome`** (**`pass`** | **`fail`** | **`yellow`**), **`recorded_at`**. **Required** for machine verification. **`semantic-eval-run.log`** holds per-step JSON lines for the run.
+
+---
+
+### [P4.0-SEMANTIC-EVAL]
+
+**Definition:** **`conductor.log`** marker logged after valid **`qa/semantic-eval-manifest.json`** exists on disk — **State 4b** machine-eval gate. **`qa/semantic-eval-run.log`** is the per-step **CSV execution trace**; commit it with the manifest whenever the runner produced it. Parsed by **`prompt-submit-gates.cjs`** (**`GATE_PATTERNS.SEMANTIC_EVAL`**).
+
+---
+
+### semantic-csv-eval (`kind`)
+
+**Definition:** Value for **`kind`** in **`semantic-eval-manifest.json`** when the manifest describes **semantic CSV** automation. **`verify_forge_task.py`** expects **`qa/semantic-automation.csv`** when this **`kind`** is set.
 
 ---
 
@@ -371,7 +407,7 @@ Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the
 
 **What It's NOT:** Not unit tests. Not mocks. Not local-only — drivers assume services are running. Not hardcoded to one service — drivers are reusable across products.
 
-**Cross-References:** Eval drivers: `eval-driver-api-http`, `eval-driver-db-mysql`, `eval-driver-cache-redis`, `eval-driver-bus-kafka`, `eval-driver-search-es`, `eval-driver-web-cdp`, `eval-driver-ios-xctest`, `eval-driver-android-adb`. Deploy drivers: `deploy-driver-pm2-ssh`, `deploy-driver-docker-compose`, `deploy-driver-local-process`, `deploy-driver-systemd`. Coordinated by `eval-coordinate-multi-surface`, `eval-product-stack-up`.
+**Cross-References:** Eval drivers: `eval-driver-api-http`, `eval-driver-db-mysql`, `eval-driver-cache-redis`, `eval-driver-bus-kafka`, `eval-driver-search-es`, `eval-driver-web-cdp`, `eval-driver-ios-xctest`, `eval-driver-android-adb`. Deploy drivers: `deploy-driver-pm2-ssh`, `deploy-driver-docker-compose`, `deploy-driver-local-process`, `deploy-driver-systemd`. Stack-up: `eval-product-stack-up`. Semantic execution: `qa-semantic-csv-orchestrate`.
 
 ---
 

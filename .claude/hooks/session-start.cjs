@@ -38,7 +38,13 @@
  * Environment:
  *   FORGE_BRAIN / FORGE_BRAIN_PATH — brain root override (either name)
  *   FORGE_TASK_ID / FORGE_PRD_TASK_ID — task-scoped conductor.log
- *   FORGE_PREAMBLE_TIER       — 1–4 (default 2); missing tier file skips preamble slice
+ *   FORGE_PREAMBLE_TIER       — 1–4; if set, overrides. If unset: reads ~/.forge/.active-skill-tier
+ *     (single line 1–4); else parses `preamble-tier` from skills/<name>/SKILL.md for /.active-skill.
+ *     After a SKILL.md parse, this hook writes ~/.forge/.active-skill-tier so the next session
+ *     avoids reading the full SKILL.md (pair with ~/.forge/.active-skill).
+ *   FORGE_SUPPRESS_MULTI_TASK_WARN=1 — always skip the multi-task conductor.log stderr WARN
+ *   ~/.forge/.multi-task-warned      — after the first unscoped multi-log WARN, this file is written;
+ *     subsequent session starts do not repeat the warning
  *   FORGE_HOOKS_DEBUG=1       — stderr traces (selection + stage)
  *   FORGE_DISABLE_CANARY=1    — skip writing ~/.forge/.canary (pre-tool-use skips check too)
  *
@@ -61,8 +67,10 @@ const {
   detectStageFromLogContent,
   findLastPhaseMarker,
   forgeBrainSearchPaths,
-  findMostRecentConductorLog,
+  collectConductorLogIndex,
 } = require(path.join(__dirname, 'forge-stage-detect.cjs'));
+// Primary path from `collectConductorLogIndex` matches `findMostRecentConductorLog` /
+// `loadConductorLogBundle(...).primaryPath` — one stat pass per call here.
 
 // Configuration
 const SKILL_FILE = path.join(__dirname, '..', 'skills', 'using-forge', 'SKILL.md');
@@ -70,7 +78,13 @@ const STAGES_DIR = path.join(__dirname, '..', 'skills', 'using-forge', 'stages')
 const PREAMBLE_DIR = path.join(__dirname, '..', 'skills', '_preamble');
 const FORGE_RUNTIME_DIR = path.join(os.homedir(), '.forge');
 const CANARY_FILE = path.join(FORGE_RUNTIME_DIR, '.canary');
+const MULTI_TASK_WARN_SENTINEL = path.join(FORGE_RUNTIME_DIR, '.multi-task-warned');
+const ACTIVE_SKILL_TIER_FILE = path.join(FORGE_RUNTIME_DIR, '.active-skill-tier');
+const SKILL_SKILLS_DIR = path.join(__dirname, '..', 'skills');
 const DEFAULT_PREAMBLE_TIER = 2;
+
+/** @type {{ source: 'default' | 'env' | 'skill', tier: number, activeSkill: string | null }} */
+let preambleTierMeta = { source: 'default', tier: DEFAULT_PREAMBLE_TIER, activeSkill: null };
 
 function log(message) {
   if (process.env.FORGE_HOOKS_DEBUG === '1') {
@@ -85,14 +99,105 @@ function die(message) {
   process.exit(1);
 }
 
-function resolvePreambleTier() {
-  const raw = process.env.FORGE_PREAMBLE_TIER;
-  if (raw === undefined || String(raw).trim() === '') {
-    return DEFAULT_PREAMBLE_TIER;
+/**
+ * Reads preamble tier for ~/.forge/.active-skill: prefer ~/.forge/.active-skill-tier (one line),
+ * else `preamble-tier` in skills/<name>/SKILL.md frontmatter.
+ * @returns {{ tier: number, activeSkill: string } | null}
+ */
+function writeActiveSkillTierCache(tier) {
+  try {
+    if (!fs.existsSync(FORGE_RUNTIME_DIR)) {
+      fs.mkdirSync(FORGE_RUNTIME_DIR, { recursive: true, mode: 0o700 });
+    }
+    fs.writeFileSync(ACTIVE_SKILL_TIER_FILE, `${tier}\n`, { encoding: 'utf-8', mode: 0o600 });
+    log(`Wrote ${ACTIVE_SKILL_TIER_FILE} (preamble tier cache — pair with ~/.forge/.active-skill)`);
+  } catch (e) {
+    log(`Could not write ${ACTIVE_SKILL_TIER_FILE}: ${e.message}`);
   }
-  const n = parseInt(String(raw).trim(), 10);
-  if (Number.isNaN(n)) return DEFAULT_PREAMBLE_TIER;
-  return Math.min(4, Math.max(1, n));
+}
+
+function resolvePreambleTierFromActiveSkill() {
+  try {
+    const p = path.join(FORGE_RUNTIME_DIR, '.active-skill');
+    if (!fs.existsSync(p)) return null;
+    const name = fs.readFileSync(p, 'utf-8').trim();
+    if (!/^[a-zA-Z0-9_-]+$/.test(name)) return null;
+
+    if (fs.existsSync(ACTIVE_SKILL_TIER_FILE)) {
+      try {
+        const line = fs.readFileSync(ACTIVE_SKILL_TIER_FILE, 'utf-8').trim().split(/\r?\n/)[0];
+        const n = parseInt(line, 10);
+        if (!Number.isNaN(n) && n >= 1 && n <= 4) {
+          return { tier: Math.min(4, Math.max(1, n)), activeSkill: name };
+        }
+      } catch (_) {
+        // fall through to SKILL.md
+      }
+    }
+
+    const skillPath = path.join(SKILL_SKILLS_DIR, name, 'SKILL.md');
+    if (!fs.existsSync(skillPath)) return null;
+    const raw = fs.readFileSync(skillPath, 'utf-8');
+    const fmMatch = raw.match(/^---\n([\s\S]*?)\n---/);
+    if (!fmMatch) return null;
+    const m = fmMatch[1].match(/^\s*preamble-tier:\s*(\d+)\s*$/m);
+    if (!m) return null;
+    const n = parseInt(m[1], 10);
+    if (Number.isNaN(n)) return null;
+    const tier = Math.min(4, Math.max(1, n));
+    writeActiveSkillTierCache(tier);
+    return { tier, activeSkill: name };
+  } catch (_) {
+    return null;
+  }
+}
+
+function resolvePreambleTierWithMeta() {
+  const raw = process.env.FORGE_PREAMBLE_TIER;
+  if (raw !== undefined && String(raw).trim() !== '') {
+    const n = parseInt(String(raw).trim(), 10);
+    if (!Number.isNaN(n)) {
+      const tier = Math.min(4, Math.max(1, n));
+      preambleTierMeta = { source: 'env', tier, activeSkill: null };
+      return tier;
+    }
+  }
+  const fromSkill = resolvePreambleTierFromActiveSkill();
+  if (fromSkill) {
+    preambleTierMeta = { source: 'skill', tier: fromSkill.tier, activeSkill: fromSkill.activeSkill };
+    return fromSkill.tier;
+  }
+  preambleTierMeta = { source: 'default', tier: DEFAULT_PREAMBLE_TIER, activeSkill: null };
+  return DEFAULT_PREAMBLE_TIER;
+}
+
+function shouldEmitMultiTaskUnscopedWarn() {
+  if (
+    process.env.FORGE_SUPPRESS_MULTI_TASK_WARN &&
+    String(process.env.FORGE_SUPPRESS_MULTI_TASK_WARN).trim() === '1'
+  ) {
+    return false;
+  }
+  try {
+    if (fs.existsSync(MULTI_TASK_WARN_SENTINEL)) return false;
+  } catch (_) {
+    // treat as "may emit"
+  }
+  return true;
+}
+
+function acknowledgeMultiTaskUnscopedWarn() {
+  try {
+    if (!fs.existsSync(FORGE_RUNTIME_DIR)) {
+      fs.mkdirSync(FORGE_RUNTIME_DIR, { recursive: true, mode: 0o700 });
+    }
+    fs.writeFileSync(MULTI_TASK_WARN_SENTINEL, `${new Date().toISOString()}\n`, {
+      encoding: 'utf-8',
+      mode: 0o600,
+    });
+  } catch (_) {
+    // non-fatal
+  }
 }
 
 function loadPreamble(tier) {
@@ -130,57 +235,58 @@ function generateCanary() {
 // ==================== Stage Detection ====================
 
 /**
- * Count task directories under brain/prds that contain a conductor.log.
- */
-function countTaskConductorLogs(brainPath) {
-  const prdsDir = path.join(brainPath, 'prds');
-  if (!fs.existsSync(prdsDir)) return 0;
-  let n = 0;
-  try {
-    for (const taskDir of fs.readdirSync(prdsDir)) {
-      const logPath = path.join(prdsDir, taskDir, 'conductor.log');
-      if (fs.existsSync(logPath)) n += 1;
-    }
-  } catch (_) {
-    return 0;
-  }
-  return n;
-}
-
-/**
  * Resolves conductor.log: FORGE_TASK_ID / FORGE_PRD_TASK_ID first, else mtime.
+ * One `collectConductorLogIndex` pass supplies both the task count and the mtime winner.
  */
 function resolveConductorLogPath(brainPath) {
+  const { statEntries } = collectConductorLogIndex(brainPath);
+  const nWithLog = statEntries.length;
+
+  function primaryPathFromIndex() {
+    if (statEntries.length === 0) return null;
+    let best = statEntries[0];
+    for (let i = 1; i < statEntries.length; i += 1) {
+      if (statEntries[i].mtimeMs > best.mtimeMs) best = statEntries[i];
+    }
+    return best.path;
+  }
+
   const taskIdRaw = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
-  const nWithLog = countTaskConductorLogs(brainPath);
   if (taskIdRaw) {
     const taskId = String(taskIdRaw).trim();
     if (!/^[\w.-]+$/.test(taskId)) {
       log(`Ignoring invalid FORGE_TASK_ID/FORGE_PRD_TASK_ID: ${taskId}`);
     } else {
-    const scoped = path.join(brainPath, 'prds', taskId, 'conductor.log');
-    if (fs.existsSync(scoped)) {
-      log(`conductor.log selection: task-scoped (FORGE_TASK_ID) → ${scoped}`);
-      return scoped;
-    }
-    log(
-      `FORGE_TASK_ID/FORGE_PRD_TASK_ID=${taskId} but missing ${scoped} — falling back to mtime heuristic`,
-    );
-    if (nWithLog > 1) {
-      console.error(
-        `[session-start] WARN: ${nWithLog} prds/*/conductor.log files exist; ` +
-          `FORGE_TASK_ID points to a missing log — mtime fallback may pick the wrong task.`,
+      const scoped = path.join(brainPath, 'prds', taskId, 'conductor.log');
+      if (fs.existsSync(scoped)) {
+        log(`conductor.log selection: task-scoped (FORGE_TASK_ID) → ${scoped}`);
+        return scoped;
+      }
+      log(
+        `FORGE_TASK_ID/FORGE_PRD_TASK_ID=${taskId} but missing ${scoped} — falling back to mtime heuristic`,
       );
+      if (nWithLog > 1) {
+        console.error(
+          `[session-start] WARN: ${nWithLog} prds/*/conductor.log files exist; ` +
+            `FORGE_TASK_ID points to a missing log — mtime fallback may pick the wrong task.`,
+        );
+      }
+      const fb = primaryPathFromIndex();
+      if (fb) {
+        log(`conductor.log selection: mtime fallback → ${fb}`);
+      }
+      return fb;
     }
-    }
-  } else if (nWithLog > 1) {
+  } else if (nWithLog > 1 && shouldEmitMultiTaskUnscopedWarn()) {
     console.error(
       '[session-start] WARN: multiple prds/*/conductor.log files; FORGE_TASK_ID / ' +
         'FORGE_PRD_TASK_ID unset — stage injection follows newest mtime and may be wrong. ' +
         'Export FORGE_TASK_ID=<active-task-id>.',
     );
+    acknowledgeMultiTaskUnscopedWarn();
   }
-  const fallback = findMostRecentConductorLog(brainPath);
+
+  const fallback = primaryPathFromIndex();
   if (fallback) {
     log(`conductor.log selection: mtime fallback → ${fallback}`);
   }
@@ -298,11 +404,16 @@ try {
 generateCanary();
 
 // Prepend shared preamble to session context
-const preambleTier = resolvePreambleTier();
+const preambleTier = resolvePreambleTierWithMeta();
 const preambleContent = loadPreamble(preambleTier);
 const preamblePrefix = preambleContent
   ? `${preambleContent}\n\n---\n\n`
   : '';
+
+const tierHint =
+  preambleTierMeta.source === 'skill' && preambleTierMeta.activeSkill
+    ? `\n\n*(Forge: preamble tier ${preambleTier} from active skill \`${preambleTierMeta.activeSkill}\` — see ~/.forge/.active-skill-tier or preamble-tier in SKILL.md; override with FORGE_PREAMBLE_TIER.)*\n`
+    : '';
 
 const stageNote = stageLabel !== 'full'
   ? `[Forge Session — Stage: ${stageLabel.toUpperCase()}]\n\n`
@@ -310,14 +421,14 @@ const stageNote = stageLabel !== 'full'
 
 const resumeBlock = activeLogPath ? buildResumeChecklist(activeLogPath) : '';
 
-const wrappedContent = `<EXTREMELY_IMPORTANT>
+const criticalBlock = `<EXTREMELY_IMPORTANT>
 ${stageNote}${resumeBlock}${preamblePrefix}${contentToInject}
 </EXTREMELY_IMPORTANT>`;
 
 const output = {
   hookSpecificOutput: {
     hookEventName: 'SessionStart',
-    additionalContext: wrappedContent,
+    additionalContext: criticalBlock + tierHint,
   },
 };
 

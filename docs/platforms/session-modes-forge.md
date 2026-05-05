@@ -15,7 +15,7 @@ Forge is **host-agnostic**: the same pipeline runs in Cursor, Claude Code, Antig
 
 **Rule of thumb:** If the step **writes or locks** `~/forge/brain/prds/<task-id>/` **contract** artifacts (`prd-locked.md`, `shared-dev-spec.md`, approved tech plans), bias toward **planning-style**. If the step **changes product repos** or **runs the product stack**, bias toward **execution-style**.
 
-Forge gates (State 4b, `eval/*.yaml`, TDD, etc.) apply **regardless** of host session style.
+Forge gates (State 4b, `qa/semantic-automation.csv` + manifest, TDD, etc.) apply **regardless** of host session style.
 
 ### Blocking interactive prompts (same on every host)
 

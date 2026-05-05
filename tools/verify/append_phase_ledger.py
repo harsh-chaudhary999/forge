@@ -7,8 +7,8 @@ Editor-agnostic — run from any shell after materializing files under prds/<tas
 Example:
   python3 tools/append_phase_ledger.py \\
     --brain ~/forge/brain --task-id add-2fa \\
-    --phase '[P4.0-EVAL-YAML]' \\
-    --artifacts eval/smoke.yaml,eval/api.yaml
+    --phase '[P4.0-SEMANTIC-EVAL]' \\
+    --artifacts qa/semantic-automation.csv,qa/semantic-eval-manifest.json
 """
 
 from __future__ import annotations
@@ -36,11 +36,11 @@ def main() -> int:
         help="Brain root (default $FORGE_BRAIN or $FORGE_BRAIN_PATH or ~/forge/brain)",
     )
     p.add_argument("--task-id", required=True)
-    p.add_argument("--phase", required=True, help='Phase marker text, e.g. "[P4.0-EVAL-YAML]"')
+    p.add_argument("--phase", required=True, help='Phase marker text, e.g. "[P4.0-SEMANTIC-EVAL]"')
     p.add_argument(
         "--artifacts",
         default="",
-        help="Comma-separated paths relative to prds/<task-id>/ (e.g. eval/smoke.yaml)",
+        help="Comma-separated paths relative to prds/<task-id>/ (e.g. qa/semantic-automation.csv)",
     )
     p.add_argument(
         "--artifact",
@@ -58,7 +58,7 @@ def main() -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
     if not _PHASE_RE.match(args.phase.strip()):
-        print(f"ERROR: --phase must look like [P4.0-EVAL-YAML], got {args.phase!r}", file=sys.stderr)
+        print(f"ERROR: --phase must look like [P4.0-SEMANTIC-EVAL], got {args.phase!r}", file=sys.stderr)
         return 1
     task_dir = brain / "prds" / task_id
     if not task_dir.is_dir():

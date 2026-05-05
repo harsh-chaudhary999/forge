@@ -1,9 +1,9 @@
 ---
 name: self-heal-triage
-description: "WHEN: An eval scenario has failed and a fault has been located. Classify the failure type — flaky, bad test, real bug, or environment — with evidence and confidence score."
+description: "WHEN: An eval scenario has failed and a fault has been located. Classify the failure — flaky, bad test, real bug, or environment — for YAML driver runs or semantic `semantic-eval-run.log` / manifest outcomes, with evidence and confidence score."
 type: rigid
 requires: [brain-read]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "triage eval failure"
@@ -145,6 +145,23 @@ If you notice any of these, STOP and do not proceed:
 
 ## Purpose
 Automatically classify test and system failures into one of four categories to enable rapid remediation. Each classification provides evidence, confidence scoring, and a suggested action.
+
+## Semantic path (Phase 4.4) — triage without driver payloads
+
+**When:** **`self-heal-locate-fault`** traced RED using **`qa/semantic-eval-run.log`** (JSON lines) and **`qa/semantic-eval-manifest.json`**.
+
+**Evidence priority:**
+1. **`semantic-eval-run.log`** — per-step **`status`**, **`error`** / **`message`**, **`surface`**, **`id`**.
+2. **`semantic-automation.csv`** — **`Intent`**, **`DependsOn`**, **`Surface`** for the failed **`id`**.
+3. **`semantic-eval-manifest.json`** **`outcome`** — must align with log; mismatch → treat as **environment / tooling** or incomplete run (**BAD TEST** / harness).
+
+**Classification hints:**
+- **`status: FAILED`** + stack/message pointing at product code → **REAL BUG** on the service mapped from **`surface`** (see **`product.md`**).
+- Assertion text in **`intent`** wrong vs spec but app correct → **BAD TEST** (semantic row or expectation drift).
+- Empty **`semantic-eval-run.log`** but **`outcome: fail`** → **ENVIRONMENT** or aborted runner; gather host/driver logs.
+- Intermittent passes across re-runs with same manifest → **FLAKY** (driver or external dependency).
+
+Do **not** require YAML scenario IDs — use semantic **`id`** fields consistently.
 
 ## Classification Categories
 
@@ -819,10 +836,14 @@ START: Classification complete, confidence score calculated
 
 ## Cross-References
 
+- **`self-heal-locate-fault`** — **Semantic path triage** depends on its parse of **`semantic-eval-run.log`**.
+- **`eval-judge`**, **`qa-semantic-csv-orchestrate`**, [docs/semantic-eval-csv.md](../../docs/semantic-eval-csv.md)
+
 ## Checklist
 
 Before routing to a fix strategy:
 
+- [ ] **Source artifact identified** — driver payload vs **`semantic-eval-run.log`** JSON lines
 - [ ] Failure message and error type extracted from eval output
 - [ ] At least 3 data points collected before classifying as flaky (not single-occurrence)
 - [ ] Classification supported by primary evidence pattern (timeout, assertion, exception, connection)

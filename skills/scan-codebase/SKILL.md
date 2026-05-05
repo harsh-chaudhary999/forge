@@ -142,7 +142,7 @@ codebase/
   gotchas.md            # Documented edge cases, TODOs, FIXMEs, test-case-named edge cases
 ```
 
-**Consumer contract:** Phases that pick *where* to work (council, tech plans, eval YAML, design notes) should read **`index.md`**, **`modules/*.md`**, **`api-surface.md`**, and **`SCAN.json` here first**, then open paths under the product clones. Do not use ad-hoc repo tree exploration as a substitute when this tree exists and is fresh; refresh with **`/scan <slug>`** if stale or absent.
+**Consumer contract:** Phases that pick *where* to work (council, tech plans, semantic machine-eval targets, design notes) should read **`index.md`**, **`modules/*.md`**, **`api-surface.md`**, and **`SCAN.json` here first**, then open paths under the product clones. Do not use ad-hoc repo tree exploration as a substitute when this tree exists and is fresh; refresh with **`/scan <slug>`** if stale or absent.
 
 ---
 

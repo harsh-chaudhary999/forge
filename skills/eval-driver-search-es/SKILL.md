@@ -1,8 +1,8 @@
 ---
 name: eval-driver-search-es
-description: "WHEN: Eval scenario requires search index state verification. Eval driver for Elasticsearch via REST. Functions: connect(), index(doc), search(query), verify(assertion), teardown()."
+description: "WHEN: qa-semantic-csv-orchestrate or run_semantic_csv_eval dispatches an automation step that requires Elasticsearch index state verification via REST. Functions: connect(), index(doc), search(query), verify(assertion), teardown()."
 type: rigid
-requires: [brain-read, eval-scenario-format]
+requires: [brain-read]
 version: 1.0.0
 preamble-tier: 3
 triggers:
@@ -14,6 +14,8 @@ allowed-tools:
 ---
 
 # Elasticsearch Eval Driver
+
+**Runner dispatch:** **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** routes **`Surface: es`** rows in **`qa/semantic-automation.csv`** to this driver. Do not invoke this skill directly unless you are implementing or debugging the runner.
 
 REST-based evaluation driver for Elasticsearch search index testing. Verifies search state, query results, and data consistency.
 
@@ -857,7 +859,7 @@ Before marking eval pass for any Elasticsearch-backed feature:
 
 - **eval-driver-api-http** — HTTP trigger for search-indexing endpoints
 - **eval-product-stack-up** — Bring up Elasticsearch cluster before eval
-- **eval-coordinate-multi-surface** — Coordinate Elasticsearch eval with API/DB assertions
+- **qa-semantic-csv-orchestrate** — Coordinate Elasticsearch eval with API/DB assertions in **`qa/semantic-automation.csv`**
 - **deploy-driver-docker-compose** — Elasticsearch service definition
 - **reasoning-as-infra** — Search architecture patterns, sharding strategy, analyzer tuning
 - **contract-search** — Negotiate search contracts (field names, query DSL semantics)

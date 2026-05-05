@@ -1,8 +1,8 @@
 ---
 name: eval-driver-ios-xctest
-description: "WHEN: Eval scenario specifies driver=ios-xctest. Eval driver for iOS via XCTest + xcrun simctl. Functions: connect(simulator_id), launch(bundle_id), tap(target), type(text), swipe(direction, element), assert_element(target), screenshot(), disconnect()."
+description: "WHEN: qa-semantic-csv-orchestrate or run_semantic_csv_eval dispatches driver=ios-xctest. iOS via XCTest + xcrun simctl: connect(simulator_id), launch(bundle_id), tap(target), type(text), swipe(direction, element), assert_element(target), screenshot(), disconnect()."
 type: rigid
-requires: [eval-scenario-format]
+requires: [brain-read]
 version: 1.0.2
 preamble-tier: 3
 triggers:
@@ -16,6 +16,8 @@ allowed-tools:
 ---
 
 # eval-driver-ios-xctest Skill
+
+**Runner dispatch:** **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** routes **`Surface: ios`** rows in **`qa/semantic-automation.csv`** to this driver. Do not invoke this skill directly unless you are implementing or debugging the runner.
 
 **Phase 3.4: Eval Driver for iOS via XCTest + xcrun simctl**
 

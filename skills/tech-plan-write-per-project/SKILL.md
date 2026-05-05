@@ -517,13 +517,13 @@ Tech plans are **not one-shot** documents. They go through **review → revise �
 5. **Conductor logging** (when orchestrated): emit **`[TECH-PLAN-REVIEW]`** and **`[TECH-PLAN-XALIGN]`** lines as specified in **`conductor-orchestrate`** State 4.
 
 6. **Human go-ahead (pipeline phase — after agent loops, before State 4b)**  
-   Automated **`tech-plan-self-review` PASS** + **`XALIGN` PASS** are **not** the same as stakeholder acceptance. **Before** eval YAML / RED (State 4b), a **human** must record one of:
+   Automated **`tech-plan-self-review` PASS** + **`XALIGN` PASS** are **not** the same as stakeholder acceptance. **Before** semantic machine eval / RED (State 4b), a **human** must record one of:
    - **`~/forge/brain/prds/<task-id>/tech-plans/HUMAN_SIGNOFF.md`** from **`docs/tech-plan-human-signoff.template.md`** with **`status: approved`** (or **`changes_requested`** → revise plans → re-run steps 3–5 → new signoff), **or**
    - **`status: waived`** with actor + reason (solo / unattended policy only).  
    Append the same decision as a **revision-log row** in each affected `tech-plans/<repo>.md` for traceability.  
    **Conductor** logs **`[TECH-PLAN-HUMAN] task_id=<id> status=APPROVED|CHANGES_REQUESTED|WAIVED`**. **No State 4b** until **`APPROVED`** or documented **`WAIVED`**.
 
-**Interconnection (no gaps):** `intake` → `parity` (spec-freeze Step 0) → **frozen** `shared-dev-spec` → **Section 0** doubt log → **Section 1b** (data, reuse, design, API map, unknowns) → **Section 1c** (agent review + XALIGN) → **`HUMAN_SIGNOFF.md`** → **State 4b** (QA CSV / eval YAML / RED) → implementation. Skipping a box forwards **hidden** gaps backward into cheaper phases — forbidden.
+**Interconnection (no gaps):** `intake` → `parity` (spec-freeze Step 0) → **frozen** `shared-dev-spec` → **Section 0** doubt log → **Section 1b** (data, reuse, design, API map, unknowns) → **Section 1c** (agent review + XALIGN) → **`HUMAN_SIGNOFF.md`** → **State 4b** (QA CSV / semantic automation + manifest / RED) → implementation. Skipping a box forwards **hidden** gaps backward into cheaper phases — forbidden.
 
 ---
 

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Drift check: surface text in prd-locked.md that may be missing from eval / QA artifacts.
+Drift check: surface text in prd-locked.md that may be missing from semantic automation
+and manual QA CSV text under ``qa/``.
 
 Heuristic only — not a substitute for human review. Helps catch renamed journeys,
-stale PRD text, or eval scenarios that never referenced acceptance language.
+stale PRD text, or automation rows that never referenced acceptance language.
 
 Usage:
   python3 tools/forge_drift_check.py --task-id <id> --brain ~/forge/brain
@@ -44,12 +45,15 @@ def _extract_success_criteria_bullets(prd_text: str) -> list[str]:
     return out
 
 
-def _combined_eval_text(eval_dir: Path) -> str:
-    if not eval_dir.is_dir():
+def _combined_semantic_automation_text(task_dir: Path) -> str:
+    """qa/semantic-automation.csv, semantic-eval-manifest.json, semantic-eval-run.log."""
+    qa = task_dir / "qa"
+    if not qa.is_dir():
         return ""
     parts: list[str] = []
-    for p in sorted(eval_dir.iterdir()):
-        if p.suffix.lower() in (".yaml", ".yml", ".json"):
+    for name in ("semantic-automation.csv", "semantic-eval-manifest.json", "semantic-eval-run.log"):
+        p = qa / name
+        if p.is_file():
             try:
                 parts.append(_read(p))
             except OSError as exc:
@@ -58,6 +62,12 @@ def _combined_eval_text(eval_dir: Path) -> str:
 
 
 def _combined_qa_text(qa_csv: Path) -> str:
+    """Lowercase body of ``qa/manual-test-cases.csv``, or empty when the file is absent.
+
+    Absence is normal when intake/policy waived manual QA CSV — the drift haystack is then
+    semantic automation files only (``_combined_semantic_automation_text``). Intentionally
+    silent (no WARN): callers combine semantic + manual text regardless.
+    """
     if not qa_csv.is_file():
         return ""
     try:
@@ -67,7 +77,7 @@ def _combined_qa_text(qa_csv: Path) -> str:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Drift check: PRD success criteria vs eval/QA text.")
+    ap = argparse.ArgumentParser(description="Drift check: PRD success criteria vs QA / semantic automation text.")
     ap.add_argument("--task-id", required=True)
     ap.add_argument("--brain", default=None)
     ap.add_argument(
@@ -93,7 +103,9 @@ def main() -> int:
         print("INFO: No **Success Criteria:** bullets found (or section missing); nothing to drift-check.")
         return 0
 
-    hay = _combined_eval_text(task_dir / "eval") + "\n" + _combined_qa_text(task_dir / "qa" / "manual-test-cases.csv")
+    hay = _combined_semantic_automation_text(task_dir) + "\n" + _combined_qa_text(
+        task_dir / "qa" / "manual-test-cases.csv"
+    )
     hay_cf = hay.casefold()
     missing: list[str] = []
     for b in bullets:
@@ -102,11 +114,14 @@ def main() -> int:
             missing.append(b)
 
     if not missing:
-        print(f"OK: {len(bullets)} success-criteria bullet(s) have substring matches in eval/QA text.")
+        print(f"OK: {len(bullets)} success-criteria bullet(s) have substring matches in QA / semantic automation text.")
         return 0
 
     for m in missing:
-        print(f"WARN: Success criterion not found in eval/*.yaml nor qa/manual-test-cases.csv:\n  - {m[:200]}", file=sys.stderr)
+        print(
+            f"WARN: Success criterion not found in qa/semantic-*.csv|manifest|log nor qa/manual-test-cases.csv:\n  - {m[:200]}",
+            file=sys.stderr,
+        )
     if args.strict:
         print("ERROR: --strict drift check failed.", file=sys.stderr)
         return 1

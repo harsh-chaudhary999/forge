@@ -34,7 +34,7 @@ allowed-tools:
 | "I already know what tests to write, I'll code first" | You don't. Writing code first blinds you to edge cases. Test first clarifies. |
 | "The test infrastructure is broken, I'll work around it" | STOP. Report BLOCKED. Don't workaround. Fix or escalate. |
 | "I wrote a test that passes but it doesn't actually test anything" | Weak tests are worse than no tests. Test must verify behavior, not just syntax. |
-| "RED tests only mirror the tech plan, not approved QA cases" | When **`qa/manual-test-cases.csv`** exists for the task, RED should **map to those atomic rows** (or explicitly document gaps). Otherwise TDD and **P4.4 eval YAML** drift from the acceptance inventory the team signed. |
+| "RED tests only mirror the tech plan, not approved QA cases" | When **`qa/manual-test-cases.csv`** exists for the task, RED should **map to those atomic rows** (or explicitly document gaps). Otherwise TDD and **P4.4 semantic machine eval** drift from the acceptance inventory the team signed. |
 
 ---
 

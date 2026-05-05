@@ -7,7 +7,7 @@ Small, repo-local utilities shipped with Forge. The main maintained package here
 | Directory | Purpose |
 |-----------|---------|
 | **[`scan_forge/`](scan_forge/)** | Python package: phases 1, 3.5, 4, 5, 56, 57, CLI; smoke data is generated at runtime by `verify_smoke.py` — see **[`scan_forge/README.md`](scan_forge/README.md)** for phase map and module guide. |
-| **[`verify/`](verify/)** | Machine verification: task/brain gates (`verify_forge_task.py`, `verify_tech_plans.py`, `verify_scan_outputs.py`, eval YAML helpers, drift, shared-spec, phase ledger, `requirements-verify.txt`, unit tests). |
+| **[`verify/`](verify/)** | Machine verification: task/brain gates (`verify_forge_task.py`, `verify_tech_plans.py`, `verify_scan_outputs.py`, semantic CSV coherence, drift, shared-spec, phase ledger, `requirements-verify.txt`, unit tests). |
 | **[`scan/`](scan/)** | Scan **CLI and helpers** (not the `scan_forge` package): `forge_scan.py`, `forge_codebase_search.py`, `forge_graph_query.py`, `forge_adjacency_scan.py`, `scan_bench.py`, `adjacency-seed-patterns.txt`. |
 | **[`dev/`](dev/)** | Maintainer tooling: `lint_skill_allowed_tools.py`, `skill-tool-policy.json`, tests. |
 | **[`ops/`](ops/)** | Operator utilities: `forge_evidence_bundle.py`, `brain_restore_deleted.py`. |
@@ -21,11 +21,10 @@ Small, repo-local utilities shipped with Forge. The main maintained package here
 |----------------------|---------|
 | [`forge_scan.py`](forge_scan.py) → [`scan/forge_scan.py`](scan/forge_scan.py) | CLI entry: prepends `tools/` on `sys.path` and runs `scan_forge.cli` |
 | [`verify_scan_outputs.py`](verify_scan_outputs.py) → [`verify/verify_scan_outputs.py`](verify/verify_scan_outputs.py) | Standalone check: same rules as `scan_forge.verify_brain_codebase`. **`forge_scan.py` runs verify automatically** (3 retries) after writing `index.md`; set **`FORGE_SCAN_SKIP_VERIFY=1`** only for emergency triage |
-| [`verify_forge_task.py`](verify_forge_task.py) → [`verify/verify_forge_task.py`](verify/verify_forge_task.py) | **Machine gate:** eval YAML (`--validate-eval-yaml`), `qa/semantic-automation.csv` coherence, `conductor.log` order, QA/design gates, optional tech-plan / shared-spec / phase-ledger flags — see **[`docs/forge-task-verification.md`](../docs/forge-task-verification.md)** |
+| [`verify_forge_task.py`](verify_forge_task.py) → [`verify/verify_forge_task.py`](verify/verify_forge_task.py) | **Machine gate:** `qa/semantic-automation.csv` + `qa/semantic-eval-manifest.json` coherence, `conductor.log` order, QA/design gates, optional tech-plan / shared-spec / phase-ledger flags — see **[`docs/forge-task-verification.md`](../docs/forge-task-verification.md)** |
 | [`run_semantic_csv_eval.py`](run_semantic_csv_eval.py) → [`verify/run_semantic_csv_eval.py`](verify/run_semantic_csv_eval.py) | Validates **`qa/semantic-automation.csv`**, writes **`semantic-eval-manifest.json`** — **[`docs/semantic-eval-csv.md`](../docs/semantic-eval-csv.md)** |
 | [`verify_tech_plans.py`](verify_tech_plans.py) → [`verify/verify_tech_plans.py`](verify/verify_tech_plans.py) | **Tech plan structure:** canonical Section **1b** headings, **`### 1b.2a` after** wire maps, **`REVIEW_PASS`** FORGE-GATE comments |
-| [`forge_drift_check.py`](forge_drift_check.py) → [`verify/forge_drift_check.py`](verify/forge_drift_check.py) | **Drift:** `prd-locked.md` **Success Criteria** vs `eval/*` + QA CSV (**stdlib**; optional **`--strict`**) |
-| [`verify/eval_yaml_stdlib.py`](verify/eval_yaml_stdlib.py) | Best-effort eval scenario shape without PyYAML (imported by `verify_forge_task`; no top-level shim) |
+| [`forge_drift_check.py`](forge_drift_check.py) → [`verify/forge_drift_check.py`](verify/forge_drift_check.py) | **Drift:** `prd-locked.md` **Success Criteria** vs semantic QA artifacts + manual CSV (**stdlib**; optional **`--strict`**) |
 | [`append_phase_ledger.py`](append_phase_ledger.py) → [`verify/append_phase_ledger.py`](verify/append_phase_ledger.py), [`verify/phase_ledger.py`](verify/phase_ledger.py) | Append-only **`phase-ledger.jsonl`** with per-file **SHA256** |
 | [`verify/shared_spec_policy.py`](verify/shared_spec_policy.py) + [`verify/shared_spec_checklist.json`](verify/shared_spec_checklist.json) | **`verify_forge_task.py --check-shared-spec`** |
 | [`lint_skill_allowed_tools.py`](lint_skill_allowed_tools.py) → [`dev/lint_skill_allowed_tools.py`](dev/lint_skill_allowed_tools.py) | CI: rigid **`allowed-tools`**; **`--write-policy`** → [`dev/skill-tool-policy.json`](dev/skill-tool-policy.json) (**`pre-tool-use.cjs`** loads `tools/dev/skill-tool-policy.json`, with legacy fallback `tools/skill-tool-policy.json`) |
@@ -46,8 +45,8 @@ From the **Forge repo root**:
 
 ```bash
 python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain
-# stricter (PyYAML): pip install -r tools/verify/requirements-verify.txt
-python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain --require-log --validate-eval-yaml
+# optional deps: pip install -r tools/verify/requirements-verify.txt
+python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain --require-log
 ```
 
 See **[`docs/forge-task-verification.md`](../docs/forge-task-verification.md)** and **[`.github/workflows/forge-brain-guard.yml`](../.github/workflows/forge-brain-guard.yml)** (template for your brain repo).

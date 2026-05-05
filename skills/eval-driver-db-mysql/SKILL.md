@@ -1,8 +1,8 @@
 ---
 name: eval-driver-db-mysql
-description: "WHEN: Eval scenario requires database state verification. Executes queries, verifies results. Functions: setup(), execute(query), verify(assertion), teardown()."
+description: "WHEN: qa-semantic-csv-orchestrate or run_semantic_csv_eval dispatches an automation step that requires database state verification. Functions: setup(), execute(query), verify(assertion), teardown()."
 type: rigid
-requires: [brain-read, eval-scenario-format]
+requires: [brain-read]
 version: 1.0.0
 preamble-tier: 3
 triggers:
@@ -15,6 +15,8 @@ allowed-tools:
 ---
 
 # Eval Driver: MySQL
+
+**Runner dispatch:** **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** routes **`Surface: mysql`** rows in **`qa/semantic-automation.csv`** to this driver. Do not invoke this skill directly unless you are implementing or debugging the runner.
 
 Provides a complete driver for executing and verifying SQL queries against MySQL databases during e2e evaluation. Enables deterministic testing of database state, data integrity, and query results in eval scenarios.
 

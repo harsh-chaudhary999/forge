@@ -1,8 +1,8 @@
 ---
 name: eval-driver-cache-redis
-description: "WHEN: Eval scenario requires cache state verification against Redis. Functions: connect(), execute(command), verify(key, assertion), teardown()."
+description: "WHEN: qa-semantic-csv-orchestrate or run_semantic_csv_eval dispatches an automation step that requires Redis cache state verification. Functions: connect(), execute(command), verify(key, assertion), teardown()."
 type: rigid
-requires: [brain-read, eval-scenario-format]
+requires: [brain-read]
 version: 1.0.0
 preamble-tier: 3
 triggers:
@@ -14,6 +14,8 @@ allowed-tools:
 ---
 
 # Eval Driver: Redis Cache (RESP Protocol)
+
+**Runner dispatch:** **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** routes **`Surface: redis`** rows in **`qa/semantic-automation.csv`** to this driver. Do not invoke this skill directly unless you are implementing or debugging the runner.
 
 Evaluation driver for Redis cache state verification during test execution. Supports Redis RESP protocol, command execution, TTL verification, and atomic assertions.
 
@@ -953,7 +955,7 @@ const cleanup = async () => {
 
 - **eval-driver-api-http** — HTTP trigger for cache-busting endpoints
 - **eval-product-stack-up** — Bring up Redis before eval
-- **eval-coordinate-multi-surface** — Coordinate Redis eval with API/DB assertions
+- **qa-semantic-csv-orchestrate** — Coordinate Redis eval with API/DB assertions in **`qa/semantic-automation.csv`**
 - **deploy-driver-docker-compose** — Redis service definition
 - **reasoning-as-infra** — Cache architecture patterns, TTL tuning, eviction policies
 - **contract-cache** — Negotiate cache contracts with services

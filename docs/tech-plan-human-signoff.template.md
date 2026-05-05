@@ -22,7 +22,7 @@ When **status** is `changes_requested`, list concrete edits expected in which `t
 
 ## Approval — `approved`
 
-I confirm the elaborative tech plans for the repos listed above match delivery intent and frozen `shared-dev-spec` / contracts. **Product terminology** (`terminology.md`) is acknowledged where applicable (`product_terminology_ack: "yes"` or `"not_applicable"` with reason in **Waiver** below if needed). **Go ahead** to State 4b (eval YAML, RED, …).
+I confirm the elaborative tech plans for the repos listed above match delivery intent and frozen `shared-dev-spec` / contracts. **Product terminology** (`terminology.md`) is acknowledged where applicable (`product_terminology_ack: "yes"` or `"not_applicable"` with reason in **Waiver** below if needed). **Go ahead** to State 4b (semantic machine eval, RED, …).
 
 ## Waiver — `waived`
 

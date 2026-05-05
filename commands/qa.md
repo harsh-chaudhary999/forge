@@ -9,7 +9,7 @@ Invoke the **`qa-pipeline-orchestrate`** skill to run the **complete QA pipeline
 
 ```
 brain artifacts (PRD + tech plans)
-  → generate eval scenarios (web / API / Android / iOS / DB / cache)
+  → semantic automation rows (web / API / Android / iOS / DB / cache) per docs/semantic-eval-csv.md
   → checkout named feature branches
   → configure test environment
   → start product stack (local) or target existing stack (remote)
@@ -34,11 +34,11 @@ If automation cannot run (no stack, no env), the pipeline uses **`NOT_EXECUTED`*
 
 ## Prerequisites
 
-Same **forward order** as **`/qa-write`**: **`prd-locked`** → **`qa-prd-analysis`** (**`using-forge`** **Multi-question elicitation** / Step 0.5) → **`manual-test-cases.csv`** (or valid waiver) before treating scenario generation as grounded — see **`qa-write-scenarios`** **Step −1**. Council / tech plans **help** but are **not** Step −1 gates. If **`/intake`** isn’t used, see **`commands/qa-write.md`** and **`using-forge`** **Coupling, prerequisites, and alternatives**. Do not open with eval/CSV waiver prompts when upstream artifacts are missing.
+Same **forward order** as **`/qa-write`**: **`prd-locked`** → **`qa-prd-analysis`** (**`using-forge`** **Multi-question elicitation** / Step 0.5) → **`manual-test-cases.csv`** (or valid waiver) before treating automation as grounded — see **`commands/qa-write.md`**. Council / tech plans **help** but are **not** ordering-table gates. If **`/intake`** isn’t used, see **`commands/qa-write.md`** and **`using-forge`** **Coupling, prerequisites, and alternatives**. Do not open with automation/CSV waiver prompts when upstream artifacts are missing.
 
-**Product terms:** When **`terminology.md`** exists for the task, **`qa-prd-analysis`** / **`qa-manual-test-cases-from-prd`** / **`qa-write-scenarios`** load it so **expected results** and steps use **canonical** names — see [docs/terminology-review.md](../docs/terminology-review.md).
+**Product terms:** When **`terminology.md`** exists for the task, **`qa-prd-analysis`** / **`qa-manual-test-cases-from-prd`** / **`qa-semantic-csv-orchestrate`** load it so **expected results** and steps use **canonical** names — see [docs/terminology-review.md](../docs/terminology-review.md).
 
-- **`~/forge/brain/prds/<task-id>/prd-locked.md`** — locked PRD (**`/intake`** default; alternatives in **`qa-write-scenarios`** Step −1)
+- **`~/forge/brain/prds/<task-id>/prd-locked.md`** — locked PRD (**`/intake`** default; alternatives documented in **`commands/qa-write.md`**)
 - **`~/forge/brain/products/<slug>/product.md`** — product topology with repo paths
 - For local mode: services must be startable via the `start` commands in `product.md`
 - For Android: ADB connected device or emulator (`adb devices`)
@@ -48,11 +48,11 @@ Same **forward order** as **`/qa-write`**: **`prd-locked`** → **`qa-prd-analys
 
 | Command | What it runs |
 |---|---|
-| `/qa` | Full pipeline: write **eval YAML** + branch prep + execute + judge |
-| `/qa-write` | **Eval YAML only** (`eval/*.yaml` for automated drivers). Does **not** write `manual-test-cases.csv` — that skill path is **`qa-manual-test-cases-from-prd`** after **`qa-prd-analysis`**. |
-| `/qa-run` | Execution only (requires existing **`eval/*.yaml`** — e.g. after `/qa-write`) |
+| `/qa` | Full pipeline: author/refresh **`qa/semantic-automation.csv`** + manifest, branch prep, execute, judge |
+| `/qa-write` | **Semantic machine-eval only** (`qa/semantic-automation.csv` + manifest per **`docs/semantic-eval-csv.md`**). Does **not** write `manual-test-cases.csv` — that path is **`qa-manual-test-cases-from-prd`** after **`qa-prd-analysis`**. |
+| `/qa-run` | Execution only (requires existing **`qa/semantic-eval-manifest.json`** + **`qa/semantic-automation.csv`** — e.g. after `/qa-write`) |
 
-**YAML vs CSV:** **`eval/*.yaml`** = machine-runnable checks. **`qa/manual-test-cases.csv`** = manual/TMS baseline from **`qa-manual-test-cases-from-prd`** — not produced by `/qa` or `/qa-write`.
+**Semantic CSV vs manual CSV:** **`qa/semantic-automation.csv`** = machine step definitions. **`qa/manual-test-cases.csv`** = human/TMS baseline from **`qa-manual-test-cases-from-prd`** — not the same file as semantic automation.
 
 ## Pass `entrypoint = full (/qa)` to `qa-pipeline-orchestrate`
 
@@ -70,7 +70,7 @@ Use `/qa` when you want to verify a feature branch independently of whether the 
 A RED verdict from `/qa` must not be manually overridden. Fix the failing code and re-run `/qa-run` to obtain a verified GREEN before merging.
 </HARD-GATE>
 
-**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns, **no defensive downstream-gate narration** mid-elicitation — **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**); **one blocking affordance per unrelated fork** (no bundled prose obligations); **no dual prompts** — **never** **`AskQuestion`** / **Questions** widget on **one** topic **and** a **long markdown question** on **another** in the **same** message; **no chat–widget duplicate** — long lists / same question body **once** in **chat**; **`AskQuestion`** = **short** title + **options** only (**`docs/forge-one-step-horizon.md`** **Chat vs `AskQuestion` / Questions widget**); **headline / first § = immediate next artifact** — **not** *What unlocks eval YAML*, **eval `*.yaml`**, or Step −1 **as the main heading** when **manual CSV** / **`qa-manual-test-cases-from-prd`** / **`qa-prd-analysis`** is still the next gate (**`docs/forge-one-step-horizon.md`** **Headline = immediate next step**); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns, **no defensive downstream-gate narration** mid-elicitation — **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**); **one blocking affordance per unrelated fork** (no bundled prose obligations); **no dual prompts** — **never** **`AskQuestion`** / **Questions** widget on **one** topic **and** a **long markdown question** on **another** in the **same** message; **no chat–widget duplicate** — long lists / same question body **once** in **chat**; **`AskQuestion`** = **short** title + **options** only (**`docs/forge-one-step-horizon.md`** **Chat vs `AskQuestion` / Questions widget**); **headline / first § = immediate next artifact** — **not** *What unlocks machine eval*, **`qa/semantic-automation.csv`**, or Step −1 **as the main heading** when **manual CSV** / **`qa-manual-test-cases-from-prd`** / **`qa-prd-analysis`** is still the next gate (**`docs/forge-one-step-horizon.md`** **Headline = immediate next step**); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
 
 **Forge plugin scope:** Skills from `skills/`; brain artifacts from `~/forge/brain/`; repos from `product.md` paths.
 

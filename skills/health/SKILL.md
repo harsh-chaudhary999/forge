@@ -66,6 +66,8 @@ else
 fi
 ```
 
+**Optional — active skill files (`~/.forge/`):** If **`~/.forge/.active-skill`** exists for **`pre-tool-use`** policy, pair **`~/.forge/.active-skill-tier`** (one line **`1`–`4`**) with that skill’s **`preamble-tier`** so **`session-start`** does not re-read a large **`SKILL.md`** every startup. **`session-start`** writes **`.active-skill-tier`** automatically after it parses frontmatter once; manual setups should **`echo N > ~/.forge/.active-skill-tier`** or document that the first session pays one full read. See **`skills/using-forge/SKILL.md`** (*Claude Code session-start hook*).
+
 **Check 3 — Skills symlink:**
 
 ```bash

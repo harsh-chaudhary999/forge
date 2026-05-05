@@ -1,8 +1,8 @@
 ---
 name: eval-driver-bus-kafka
-description: "WHEN: Eval scenario requires Kafka message verification. Functions: connect(), produce(topic, message), consume(topic, assertion), verify(topic, schema), teardown()."
+description: "WHEN: qa-semantic-csv-orchestrate or run_semantic_csv_eval dispatches an automation step that requires Kafka message verification. Functions: connect(), produce(topic, message), consume(topic, assertion), verify(topic, schema), teardown()."
 type: rigid
-requires: [brain-read, eval-scenario-format]
+requires: [brain-read]
 version: 1.0.0
 preamble-tier: 3
 triggers:
@@ -14,6 +14,8 @@ allowed-tools:
 ---
 
 # eval-driver-bus-kafka
+
+**Runner dispatch:** **`qa-semantic-csv-orchestrate`** / **`run_semantic_csv_eval.py`** routes **`Surface: kafka`** rows in **`qa/semantic-automation.csv`** to this driver. Do not invoke this skill directly unless you are implementing or debugging the runner.
 
 Evaluation driver for Apache Kafka using the wire protocol. Produces and consumes messages during evaluation, with support for offset management, message verification, schema validation, and idempotency checks.
 
@@ -809,7 +811,7 @@ Before marking eval pass for any Kafka-backed feature:
 
 - **eval-driver-api-http** — HTTP trigger for message-producing endpoints
 - **eval-product-stack-up** — Bring up Kafka broker before eval
-- **eval-coordinate-multi-surface** — Coordinate Kafka eval with API/DB assertions
+- **qa-semantic-csv-orchestrate** — Coordinate Kafka eval with API/DB assertions in **`qa/semantic-automation.csv`**
 - **deploy-driver-docker-compose** — Kafka + ZooKeeper service definition
 - **reasoning-as-infra** — Event bus architecture patterns and partition sizing
 - **contract-event-bus** — Negotiate event bus contracts for Kafka topics

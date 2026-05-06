@@ -47,7 +47,7 @@ function log(message) {
 
 // Validate project is a git repo
 const gitDir = path.join(PROJECT_ROOT, '.git');
-if (!fs.existsSync(gitDir) && !fs.existsSync(path.join(PROJECT_ROOT, '.git'))) {
+if (!fs.existsSync(gitDir)) {
   die(`Not a git repo: ${PROJECT_ROOT}`);
 }
 

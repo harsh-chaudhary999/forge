@@ -114,24 +114,30 @@ function computeGateInjection() {
     return { suppress: true, nextGate: null };
   }
 
+  // One injection slot: when both conductor (Forge) and qa-pipeline surfaces have a next step,
+  // concatenate Forge first then QA so parallel /forge + /qa-run pressure stays visible — not
+  // silently dropped because conductor resolved first.
   let nextGate = null;
   for (const brainPath of BRAIN_PATHS) {
     if (!fs.existsSync(brainPath)) continue;
     const bundle = bundleByBrain.get(brainPath);
-    if (bundle && bundle.primaryContent) {
-      const g = resolveNextGate(bundle.primaryContent);
-      if (g) {
-        nextGate = g;
-        break;
-      }
+    if (!bundle) continue;
+
+    let forgeG = null;
+    if (bundle.primaryContent) {
+      forgeG = resolveNextGate(bundle.primaryContent);
+    }
+    let qaG = null;
+    if (bundle.qaPrimaryContent) {
+      qaG = resolveQAPipelineGate(bundle.qaPrimaryContent);
     }
 
-    if (bundle && bundle.qaPrimaryContent) {
-      const qaGate = resolveQAPipelineGate(bundle.qaPrimaryContent);
-      if (qaGate) {
-        nextGate = qaGate;
-        break;
-      }
+    if (forgeG || qaG) {
+      const parts = [];
+      if (forgeG) parts.push(forgeG);
+      if (qaG) parts.push(qaG);
+      nextGate = parts.join('\n\n');
+      break;
     }
   }
 

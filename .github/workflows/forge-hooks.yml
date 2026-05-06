@@ -95,7 +95,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install optional verify requirements (stdlib-only if empty)
         run: pip install -r tools/verify/requirements-verify.txt
@@ -113,7 +113,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: rigid skills must declare allowed-tools
         run: python3 tools/dev/lint_skill_allowed_tools.py

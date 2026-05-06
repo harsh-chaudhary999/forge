@@ -53,6 +53,23 @@ verify_merged_skills_root() {
   return 0
 }
 
+verify_no_nested_copy_dirs() {
+  local root="$1"
+  local label="${2:-$root}"
+  local bad=0
+  local dirs=(skills agents commands hooks .cursor-plugin .claude-plugin)
+
+  for d in "${dirs[@]}"; do
+    if [[ -d "${root}/${d}/${d}" ]]; then
+      echo "ERROR [${label}]: nested ${root}/${d}/${d} exists — re-run install.sh (copy destination was not replaced cleanly)." >&2
+      bad=1
+    fi
+  done
+
+  [[ "${bad}" -eq 0 ]] && echo "OK [${label}]: no nested copied dirs (skills/skills, commands/commands, hooks/hooks, …)"
+  return "${bad}"
+}
+
 # Claude Code hooks/hooks.json runs node "${CLAUDE_PLUGIN_ROOT}/.claude/hooks/*.cjs"
 verify_claude_plugin_layout() {
   local root="$1"
@@ -128,6 +145,7 @@ run_one() {
   local r="$1"
   local lbl="$2"
   verify_merged_skills_root "$r" "$lbl"
+  verify_no_nested_copy_dirs "$r" "$lbl"
   if [[ "${lbl}" == "claude-code" ]] && [[ -d "${r}/skills" ]]; then
     verify_claude_plugin_layout "${r}" || return 1
   fi
@@ -158,6 +176,7 @@ case "${PLATFORM}" in
   cursor)
     cr="${HOME}/.cursor/plugins/local/forge"
     verify_merged_skills_root "${cr}" "cursor"
+    verify_no_nested_copy_dirs "${cr}" "cursor"
     if [[ -d "${cr}/skills" ]]; then
       verify_plugin_tools_scanner "${cr}" "cursor" || exit 1
     fi
@@ -165,6 +184,7 @@ case "${PLATFORM}" in
   claude-code)
     cc="${HOME}/.claude/plugins/cache/forge-plugin/forge/${FORGE_VERSION}"
     verify_merged_skills_root "${cc}" "claude-code"
+    verify_no_nested_copy_dirs "${cc}" "claude-code"
     if [[ -d "${cc}/skills" ]]; then
       verify_claude_plugin_layout "${cc}" || exit 1
       verify_plugin_tools_scanner "${cc}" "claude-code" || exit 1
@@ -177,6 +197,7 @@ case "${PLATFORM}" in
       exit 0
     fi
     verify_merged_skills_root "${oc}" "opencode"
+    verify_no_nested_copy_dirs "${oc}" "opencode"
     ;;
   "")
     echo "Usage: $0 --platform cursor|claude-code|opencode | --root DIR | --all" >&2

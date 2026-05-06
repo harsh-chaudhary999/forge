@@ -96,7 +96,9 @@ install_claude_code() {
   echo "Installing for Claude Code..."
   mkdir -p "${plugin_dir}"
 
-  rm -rf "${plugin_dir}/skills"
+  # Always replace copied directories to avoid nested paths on re-install
+  # (e.g. commands/commands, hooks/hooks, .claude-plugin/.claude-plugin).
+  rm -rf "${plugin_dir}/skills" "${plugin_dir}/agents" "${plugin_dir}/hooks" "${plugin_dir}/commands" "${plugin_dir}/.claude-plugin"
   cp -r "${FORGE_DIR}/skills"                "${plugin_dir}/skills"
   cp -r "${FORGE_DIR}/agents"                "${plugin_dir}/agents"
   cp -r "${FORGE_DIR}/hooks"                 "${plugin_dir}/hooks"
@@ -281,9 +283,9 @@ install_cursor() {
   echo "Installing for Cursor..."
   mkdir -p "${plugin_dir}"
 
-  # Replace skills wholesale so stale layouts (e.g. accidental skills/skills/) cannot persist
-  # after a merge-style cp.
-  rm -rf "${plugin_dir}/skills"
+  # Replace copied directories wholesale so stale layouts (e.g. commands/commands,
+  # hooks/hooks, .cursor-plugin/.cursor-plugin) cannot persist after repeated installs.
+  rm -rf "${plugin_dir}/skills" "${plugin_dir}/agents" "${plugin_dir}/commands" "${plugin_dir}/hooks" "${plugin_dir}/.cursor-plugin" "${plugin_dir}/tools"
   cp -r "${FORGE_DIR}/skills"             "${plugin_dir}/skills"
   cp -r "${FORGE_DIR}/agents"             "${plugin_dir}/agents"
   cp -r "${FORGE_DIR}/commands"           "${plugin_dir}/commands"
@@ -292,7 +294,6 @@ install_cursor() {
   copy_optional_file "${FORGE_DIR}/AGENTS.md" "${plugin_dir}/AGENTS.md"
   cp -r "${FORGE_DIR}/.cursor-plugin"     "${plugin_dir}/.cursor-plugin"
   # Same as Claude install: full scanner so /scan works without a separate Forge clone on PATH
-  rm -rf "${plugin_dir}/tools"
   cp -r "${FORGE_DIR}/tools"              "${plugin_dir}/tools"
   copy_optional_file "${FORGE_DIR}/package.json" "${plugin_dir}/package.json"
 

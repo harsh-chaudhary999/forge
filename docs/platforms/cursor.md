@@ -110,6 +110,26 @@ Same issue as other merged-tree installs — see **[`plugin-skill-layout.md`](pl
 bash scripts/verify-forge-plugin-install.sh --platform cursor
 ```
 
+### Commands missing in Cursor or Cursor CLI agent after reinstall (macOS/common)
+
+If installs were repeated with an older `install.sh`, your local plugin copy may contain nested paths like:
+
+- `~/.cursor/plugins/local/forge/commands/commands/*.md`
+- `~/.cursor/plugins/local/forge/hooks/hooks/*`
+- `~/.cursor/plugins/local/forge/.cursor-plugin/.cursor-plugin/plugin.json`
+
+This can leave Cursor reading stale manifests/commands.
+
+Fix:
+
+```bash
+cd ~/forge
+bash scripts/install.sh --platform cursor
+bash scripts/verify-forge-plugin-install.sh --platform cursor
+```
+
+Then fully restart Cursor (and Cursor CLI sessions) so the refreshed plugin layout is loaded.
+
 **`.cursorrules` not loading:**
 - Verify the file exists at repo root: `ls -la .cursorrules`
 - Restart Cursor after adding the file

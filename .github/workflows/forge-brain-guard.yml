@@ -51,6 +51,7 @@ jobs:
             tools/verify/verify_forge_task.py
             tools/verify/forge_paths.py
             tools/verify/semantic_csv.py
+            tools/verify/tdd_csv_trace.py
             tools/verify/phase_ledger.py
             tools/verify/shared_spec_policy.py
             tools/verify/shared_spec_checklist.json

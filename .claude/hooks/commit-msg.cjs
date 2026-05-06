@@ -4,11 +4,11 @@
  * commit-msg.cjs
  *
  * MESSAGE ENFORCER
- * Validates commit message format: task-ID required, summary line length, body structure
+ * Validates commit message format: task traceability, summary line length, body structure
  * Fires before commit is finalized (last chance to reject invalid messages)
  *
  * Why this matters:
- * Every commit must be trackable to a task. Without task-ID in message,
+ * Every commit must be trackable to a task (subject, body, or FORGE_TASK_ID); otherwise
  * brain/inbox can't correlate commits to tasks, dreamer can't score decisions,
  * and cross-project tracking breaks. This is the last defense.
  *
@@ -120,22 +120,32 @@ if (/^(v\d+\.\d+\.\d+|release:|RELEASE:|version:)/i.test(firstLine)) {
   allow();
 }
 
-// Edge case: conventional commits (feat:, fix:, docs:, chore:, refactor:, test:, etc.)
-// The forge repo itself uses conventional commits; tracked projects may also prefer this.
+// Conventional commits (feat:, fix:, …) still need task traceability: task-NNN in the full
+// message (subject, scope, or body) or FORGE_TASK_ID / FORGE_PRD_TASK_ID for this commit.
 const conventionalCommitPattern = /^(feat|fix|docs|chore|refactor|test|style|perf|ci|build|revert)(\(.+\))?!?:\s+\S+/i;
 const isConventional = conventionalCommitPattern.test(firstLine);
 
-// Validate first line has task-ID (format: task-NNN or task-NNNN)
-// Allow formats: task-123, TASK-123, [task-123], (task-123)
 const taskIdPattern = /task-[\w-]+/i;
+const envTask = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID || '';
+const taskFromEnv = Boolean(envTask && taskIdPattern.test(envTask));
+
 if (!taskIdPattern.test(firstLine) && !isConventional) {
   die(
     `Summary line missing task-ID or conventional commit prefix.\n` +
-    `  Found: "${firstLine}"\n` +
-    `  Accepted formats:\n` +
-    `    task-NNN: summary  (e.g., "task-123: fix login bug")\n` +
-    `    feat: summary      (e.g., "feat: add 2fa support")\n` +
-    `    fix(scope): summary`
+      `  Found: "${firstLine}"\n` +
+      `  Accepted formats:\n` +
+      `    task-NNN: summary  (e.g., "task-123: fix login bug")\n` +
+      `    feat(task-NNN): summary   or   feat: summary with task-NNN in the body/footer\n` +
+      `    fix(scope): summary`
+  );
+}
+
+if (isConventional && !taskIdPattern.test(trimmed) && !taskFromEnv) {
+  die(
+    `Conventional commit missing task traceability.\n` +
+      `  Include task-NNN in the subject (e.g. feat(task-123-auth): …), anywhere in the body, ` +
+      `or set FORGE_TASK_ID / FORGE_PRD_TASK_ID when committing.\n` +
+      `  Found (first line): "${firstLine}"`
   );
 }
 
@@ -148,8 +158,6 @@ if (firstLine.length > 100) {
   );
 }
 
-// Validate summary line has meaningful text after task-ID
-// Pattern: task-NNN: [something meaningful]
 const summaryPattern = /^task-[\w-]+:\s+\S+/i;
 if (!summaryPattern.test(firstLine) && !isConventional) {
   die(

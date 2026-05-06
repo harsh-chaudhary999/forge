@@ -38,6 +38,7 @@ const VERBOSE = parseInt(process.argv[3] || '0', 10) === 1;
 
 // Configuration
 const FILENAME_PATTERNS = [
+  /(^|\/)\.env$/,           // Base .env (common leak; not .env.example)
   /\.env\.local/,           // Local env files with secrets
   /\.env\.development\.local/,
   /\.env\.production/,      // Production secrets
@@ -48,10 +49,10 @@ const FILENAME_PATTERNS = [
   /\.pem$/,
   /\.key$/,
 ];
-// password / api_key: assignment-shaped only — bare keywords match identifiers (validatePassword), docs, tests.
+// password / api_key: assignment-shaped — quoted OR unquoted (.env-style PASSWORD=secret).
 const CONTENT_PATTERNS = [
-  /(?<!\w)password\s*[:=]\s*["'][^"']{6,}/i,
-  /(?<!\w)api[-_]key\s*[:=]\s*["'][^"']{10,}/i,
+  /(?<!\w)password\s*[:=]\s*(?:["'][^"']{6,}|\s*(?=[^\s"'#])\S{6,})/i,
+  /(?<!\w)api[-_]key\s*[:=]\s*(?:["'][^"']{10,}|\s*(?=[^\s"'#])\S{10,})/i,
   /aws[-_]access[-_]key/i,   // AWS credentials
   /aws[-_]secret/i,
   /oauth[-_]token/i,         // OAuth tokens

@@ -25,6 +25,9 @@ Validates (when applicable):
     plus REVIEW_PASS Section 0c semantic rails (no GAP last column; cite
     Confluence mirror / touchpoints / QA CSV when those files exist — see
     tools/verify_tech_plans.py).
+  - Optional --verify-tdd-csv-trace: ``# forge-tdd:`` markers in scanned tests must
+    reference Ids from qa/manual-test-cases.csv or qa/semantic-automation.csv; Required=yes
+    manual rows need a marker (see tools/tdd_csv_trace.py).
 
 Core checks use stdlib only (product.md may mix markdown headings with YAML).
 
@@ -62,6 +65,7 @@ from forge_paths import default_brain_root, sanitize_task_id
 from phase_ledger import LEDGER_NAME, verify_ledger
 from semantic_csv import validate_semantic_automation_file
 from shared_spec_policy import validate_shared_spec
+from tdd_csv_trace import verify_tdd_csv_trace
 
 
 RE_PRD_LOCKED_HEADING = re.compile(r"(?m)^#\s+PRD\s+Locked\s*$", re.IGNORECASE)
@@ -397,6 +401,7 @@ def verify(
     strict_single_task_brain: bool = False,
     strict_tech_plans: bool = False,
     strict_0c_inventory: bool = False,
+    verify_tdd_csv_trace: bool = False,
 ) -> list[str]:
     errors, _warnings = verify_detailed(
         brain=brain,
@@ -416,6 +421,7 @@ def verify(
         strict_single_task_brain=strict_single_task_brain,
         strict_tech_plans=strict_tech_plans,
         strict_0c_inventory=strict_0c_inventory,
+        verify_tdd_csv_trace=verify_tdd_csv_trace,
     )
     return errors
 
@@ -438,6 +444,7 @@ def verify_detailed(
     strict_single_task_brain: bool = False,
     strict_tech_plans: bool = False,
     strict_0c_inventory: bool = False,
+    verify_tdd_csv_trace: bool = False,
 ) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -666,6 +673,9 @@ def verify_detailed(
                 )
             )
 
+    if verify_tdd_csv_trace:
+        errors.extend(verify_tdd_csv_trace(task_dir))
+
     return errors, warnings
 
 
@@ -771,6 +781,15 @@ def main() -> int:
             "source-confluence.md, touchpoints/*.md, or qa/manual-test-cases.csv exist."
         ),
     )
+    p.add_argument(
+        "--verify-tdd-csv-trace",
+        action="store_true",
+        help=(
+            "Require # forge-tdd: <id> markers in scanned tests to reference manual or "
+            "semantic-automation Ids; Required=yes manual rows must have a marker "
+            "(see docs/forge-task-verification.md)."
+        ),
+    )
     args = p.parse_args()
 
     brain = Path(args.brain).expanduser() if args.brain else default_brain_root()
@@ -806,6 +825,7 @@ def main() -> int:
         strict_single_task_brain=strict_single,
         strict_tech_plans=bool(args.strict_tech_plans or args.strict_0c_inventory),
         strict_0c_inventory=args.strict_0c_inventory,
+        verify_tdd_csv_trace=args.verify_tdd_csv_trace,
     )
     for w in warns:
         print(f"WARN: {w}", file=sys.stderr)

@@ -10,7 +10,8 @@ Forge’s **skills** and **agents** enforce Phase 4 ordering **procedurally**. T
 |--------|---------|
 | [`tools/verify_forge_task.py`](../tools/verify_forge_task.py) (shim → [`verify/verify_forge_task.py`](../tools/verify/verify_forge_task.py)) | Gates: valid [`qa/semantic-eval-manifest.json`](#semantic-eval-manifest-and-csv-execution-results) (+ CSV when **`kind: semantic-csv-eval`**); CSV parse + **DependsOn** DAG when semantic CSV applies (**`tools/verify/semantic_csv.py`**); **`[P4.0-SEMANTIC-EVAL]`** log order vs dispatch; QA CSV; design evidence; optional PRD headings; timestamps; single-task brain; optional tech-plan structure |
 | [`tools/run_semantic_csv_eval.py`](../tools/run_semantic_csv_eval.py) (shim → [`verify/run_semantic_csv_eval.py`](../tools/verify/run_semantic_csv_eval.py)) | **CSV execution:** validates **`qa/semantic-automation.csv`**, writes **`semantic-eval-manifest.json`** + per-step **`semantic-eval-run.log`** — see [**Semantic automation CSV**](../docs/semantic-eval-csv.md) |
-| [`tools/verify/forge_drift_check.py`](../tools/verify/forge_drift_check.py) | Heuristic: **Success Criteria** bullets from `prd-locked.md` appear as substrings in `qa/semantic-automation.csv` / manifest / run log + `qa/manual-test-cases.csv` |
+| [`tools/verify/forge_drift_check.py`](../tools/verify/forge_drift_check.py) | Heuristic: **Success Criteria** bullets from `prd-locked.md` appear as substrings in `qa/semantic-automation.csv` / manifest / run log + `qa/manual-test-cases.csv` + (by default) `# forge-tdd:` lines from scanned tests |
+| [`tools/verify/tdd_csv_trace.py`](../tools/verify/tdd_csv_trace.py) | **`--verify-tdd-csv-trace`:** `# forge-tdd: <id>` in scanned tests must reference **`qa/manual-test-cases.csv`** or **`qa/semantic-automation.csv`** Ids; **`Required=yes`** manual rows require a marker |
 | [`tools/verify/verify_tech_plans.py`](../tools/verify/verify_tech_plans.py) | Tech plan headings / `### 1b.2a` placement / `REVIEW_PASS` gate markers — used by **`--strict-tech-plans`**; optional **`--strict-0c-inventory`** adds GAP-row + multi-source citation checks |
 | [`tools/verify/append_phase_ledger.py`](../tools/verify/append_phase_ledger.py) | Append one **`phase-ledger.jsonl`** row with **SHA256** for listed task-relative files |
 | [`tools/verify/phase_ledger.py`](../tools/verify/phase_ledger.py) | Ledger schema + validation (used by verify and append CLI) |
@@ -65,6 +66,7 @@ Forge’s **skills** and **agents** enforce Phase 4 ordering **procedurally**. T
 | **`--validate-phase-ledger`** | If **`phase-ledger.jsonl`** exists, every line is valid JSON with **`schema_version`**, **`task_id`**, **`phase_marker`**, **`recorded_at`**, **`artifacts`** |
 | **`--require-phase-ledger`** | **`phase-ledger.jsonl`** must exist |
 | **`--phase-ledger-verify-hashes`** | Re-hash each **`artifacts[].relpath`** under the task dir and compare to **`sha256`** |
+| **`--verify-tdd-csv-trace`** | Scans **`test_*.py`** / **`*_test.py`** under `prds/<task-id>/` (or paths in **`qa/tdd-scan-paths.txt`** only). Each **`# forge-tdd: <token>`** must match an **Id** from **`qa/manual-test-cases.csv`** or **`qa/semantic-automation.csv`**. Rows with **`Required`** = yes/true/1/y must have at least one such marker. See **`skills/forge-tdd/SKILL.md`** (CSV trace markers). |
 
 If **`conductor.log`** is absent, **log ordering** checks are skipped by default (warning only). Use **`--require-log`** to fail when the log is missing.
 
@@ -98,6 +100,7 @@ python3 tools/verify_forge_task.py \
 - `--strict-0c-inventory` (stricter Section 0c — pair with human self-review)
 - `--check-shared-spec`
 - `--validate-phase-ledger` / `--require-phase-ledger` / `--phase-ledger-verify-hashes`
+- `--verify-tdd-csv-trace`
 
 When more than one task has `conductor.log` and strict mode is off, the tool prints a **stderr WARN** — set **`FORGE_TASK_ID`** in hooks and CI (see `using-forge`).
 
@@ -131,6 +134,7 @@ Sparse checkout should include at least:
 tools/verify/verify_forge_task.py
 tools/verify/forge_paths.py
 tools/verify/semantic_csv.py
+tools/verify/tdd_csv_trace.py
 tools/verify/phase_ledger.py
 tools/verify/shared_spec_policy.py
 tools/verify/shared_spec_checklist.json

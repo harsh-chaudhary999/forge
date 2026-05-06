@@ -193,26 +193,29 @@ def parse_semantic_automation_csv(path: Path) -> tuple[list[SemanticStep], list[
     return steps, errs
 
 
-def parse_manual_test_case_ids(path: Path) -> tuple[set[str], list[str]]:
+def parse_manual_test_cases_full(path: Path) -> tuple[set[str], set[str], list[str]]:
     """
-    Parse qa/manual-test-cases.csv for Id / TestId column.
-    Returns (ids, errors). Errors include duplicate Ids and unreadable files.
+    Parse qa/manual-test-cases.csv: all Ids and subset marked Required=yes/true/1/y.
+    Returns (all_ids, required_ids, errors). If the file is missing, returns three empties.
+    If there is no **Required** column, required_ids is empty (no required-row enforcement).
     """
     errs: list[str] = []
+    required_ids: set[str] = set()
     if not path.is_file():
-        return set(), [f"Missing {path}"]
+        return set(), set(), []
+
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError as exc:
-        return set(), [f"{path}: cannot read ({exc})"]
+        return set(), set(), [f"{path}: cannot read ({exc})"]
 
     lines = text.splitlines()
     if not lines:
-        return set(), [f"{path.name}: empty file"]
+        return set(), set(), [f"{path.name}: empty file"]
 
     reader = csv.DictReader(lines)
     if not reader.fieldnames:
-        return set(), [f"{path.name}: no header row"]
+        return set(), set(), [f"{path.name}: no header row"]
 
     norm_to_original: dict[str, str] = {}
     for h in reader.fieldnames:
@@ -224,7 +227,7 @@ def parse_manual_test_case_ids(path: Path) -> tuple[set[str], list[str]]:
         else:
             norm_to_original[key] = h
     if errs:
-        return set(), errs
+        return set(), set(), errs
 
     id_key = None
     if "id" in norm_to_original:
@@ -232,9 +235,11 @@ def parse_manual_test_case_ids(path: Path) -> tuple[set[str], list[str]]:
     elif "testid" in norm_to_original:
         id_key = norm_to_original["testid"]
     else:
-        return set(), [
+        return set(), set(), [
             f"{path.name}: missing Id column (need Id or TestId) for TraceToCsvId validation"
         ]
+
+    req_key = norm_to_original.get("required")
 
     seen_row: dict[str, int] = {}
     row_num = 1
@@ -252,8 +257,23 @@ def parse_manual_test_case_ids(path: Path) -> tuple[set[str], list[str]]:
             )
         else:
             seen_row[tid] = row_num
+        if req_key:
+            rv = (row.get(req_key) or "").strip().lower()
+            if rv in ("yes", "true", "1", "y"):
+                required_ids.add(tid)
 
-    return set(seen_row.keys()), errs
+    return set(seen_row.keys()), required_ids, errs
+
+
+def parse_manual_test_case_ids(path: Path) -> tuple[set[str], list[str]]:
+    """
+    Parse qa/manual-test-cases.csv for Id / TestId column.
+    Returns (ids, errors). Errors include duplicate Ids and unreadable files.
+    """
+    if not path.is_file():
+        return set(), [f"Missing {path}"]
+    ids, _req, errs = parse_manual_test_cases_full(path)
+    return ids, errs
 
 
 def validate_depends_closure(steps: list[SemanticStep]) -> list[str]:

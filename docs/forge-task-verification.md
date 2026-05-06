@@ -80,7 +80,7 @@ export FORGE_BRAIN=~/forge/brain
 python3 tools/verify_forge_task.py --task-id add-2fa --brain ~/forge/brain --product shopapp --strict-tdd
 ```
 
-**Recommended CI bundle** (optional `pip install -r tools/verify/requirements-verify.txt` for drift/spec helpers):
+**Recommended CI bundle** (optional `pip install -r tools/verify/requirements-verify.txt` when that file lists extras — otherwise stdlib-only):
 
 ```bash
 python3 tools/verify_forge_task.py \

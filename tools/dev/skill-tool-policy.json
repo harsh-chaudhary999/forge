@@ -510,7 +510,7 @@
       "path": "learn/SKILL.md",
       "type": "flexible"
     },
-    "migrations-registry": {
+    "migrations": {
       "allowed_tools": [
         "Read"
       ],

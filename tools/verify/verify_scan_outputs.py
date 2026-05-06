@@ -17,9 +17,11 @@ import argparse
 import sys
 from pathlib import Path
 
-_TOOLS = Path(__file__).resolve().parent
-if str(_TOOLS) not in sys.path:
-    sys.path.insert(0, str(_TOOLS))
+_TOOLS_DIR = Path(__file__).resolve().parent
+_REPO_TOOLS = _TOOLS_DIR.parent  # …/forge/tools — scan_forge lives here
+for _p in (_REPO_TOOLS, _TOOLS_DIR):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 _IMPORT_ERR: Exception | None = None
 try:

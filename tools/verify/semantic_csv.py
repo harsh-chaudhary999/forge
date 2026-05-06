@@ -193,6 +193,69 @@ def parse_semantic_automation_csv(path: Path) -> tuple[list[SemanticStep], list[
     return steps, errs
 
 
+def parse_manual_test_case_ids(path: Path) -> tuple[set[str], list[str]]:
+    """
+    Parse qa/manual-test-cases.csv for Id / TestId column.
+    Returns (ids, errors). Errors include duplicate Ids and unreadable files.
+    """
+    errs: list[str] = []
+    if not path.is_file():
+        return set(), [f"Missing {path}"]
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        return set(), [f"{path}: cannot read ({exc})"]
+
+    lines = text.splitlines()
+    if not lines:
+        return set(), [f"{path.name}: empty file"]
+
+    reader = csv.DictReader(lines)
+    if not reader.fieldnames:
+        return set(), [f"{path.name}: no header row"]
+
+    norm_to_original: dict[str, str] = {}
+    for h in reader.fieldnames:
+        if h is None:
+            continue
+        key = _norm_header(h)
+        if key in norm_to_original and norm_to_original[key] != h:
+            errs.append(f"{path.name}: duplicate header mapping for {key!r}")
+        else:
+            norm_to_original[key] = h
+    if errs:
+        return set(), errs
+
+    id_key = None
+    if "id" in norm_to_original:
+        id_key = norm_to_original["id"]
+    elif "testid" in norm_to_original:
+        id_key = norm_to_original["testid"]
+    else:
+        return set(), [
+            f"{path.name}: missing Id column (need Id or TestId) for TraceToCsvId validation"
+        ]
+
+    seen_row: dict[str, int] = {}
+    row_num = 1
+    for row in reader:
+        row_num += 1
+        if not row or all(not (v or "").strip() for v in row.values()):
+            continue
+        tid = (row.get(id_key) or "").strip()
+        if not tid:
+            errs.append(f"{path.name} row {row_num}: empty Id")
+            continue
+        if tid in seen_row:
+            errs.append(
+                f"{path.name}: duplicate manual Id {tid!r} (rows {seen_row[tid]} and {row_num})"
+            )
+        else:
+            seen_row[tid] = row_num
+
+    return set(seen_row.keys()), errs
+
+
 def validate_depends_closure(steps: list[SemanticStep]) -> list[str]:
     """Unknown dependency ids and cycles are errors."""
     errs: list[str] = []
@@ -237,11 +300,41 @@ def topological_order(steps: list[SemanticStep]) -> tuple[list[SemanticStep] | N
     return out, None
 
 
-def validate_semantic_automation_file(path: Path) -> list[str]:
-    """Parse + dependency validation; empty list means OK."""
+def validate_semantic_automation_file(
+    path: Path,
+    *,
+    manual_test_cases_csv: Path | None = None,
+) -> list[str]:
+    """Parse + dependency validation + optional traceability vs manual QA CSV; empty list means OK."""
     steps, parse_errs = parse_semantic_automation_csv(path)
     errs = list(parse_errs)
     if errs:
         return errs
     errs.extend(validate_depends_closure(steps))
+
+    if manual_test_cases_csv is not None:
+        if manual_test_cases_csv.is_file():
+            manual_ids, manual_errs = parse_manual_test_case_ids(manual_test_cases_csv)
+            errs.extend(manual_errs)
+            if not manual_errs:
+                for s in steps:
+                    if s.id in manual_ids:
+                        errs.append(
+                            "semantic-automation: "
+                            f"Id {s.id!r} collides with an Id in manual-test-cases.csv "
+                            "— use distinct semantic step ids"
+                        )
+                    tid = s.trace_to_csv_id
+                    if tid and tid not in manual_ids:
+                        errs.append(
+                            "semantic-automation: "
+                            f"row {s.source_row} Id={s.id!r}: TraceToCsvId {tid!r} "
+                            "not found in manual-test-cases.csv"
+                        )
+        elif any(s.trace_to_csv_id for s in steps):
+            errs.append(
+                "semantic-automation: TraceToCsvId is set but "
+                f"{manual_test_cases_csv.name} is missing — cannot verify traceability"
+            )
+
     return errs

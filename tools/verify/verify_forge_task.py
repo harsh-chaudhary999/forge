@@ -37,7 +37,7 @@ Usage (brain repo checked out as cwd, Forge path explicit):
 Usage (with gate JSON ledger from post-commit.cjs):
   python3 tools/verify_forge_task.py --task-id my-feature --brain ~/forge/brain --gates-dir ~/forge/brain/prds/my-feature/gates
 
-Drift (PRD success criteria vs eval/QA text):
+Drift (PRD success criteria vs semantic QA / manual CSV text):
   python3 tools/forge_drift_check.py --task-id my-feature --brain ~/forge/brain [--strict]
 
 Phase ledger (append-only JSONL + SHA256):
@@ -48,6 +48,7 @@ Phase ledger (append-only JSONL + SHA256):
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import re
 import sys
@@ -312,12 +313,17 @@ def _semantic_csv_coherence_errors(task_dir: Path, manifest_raw: dict | None) ->
     """
     When qa/semantic-automation.csv exists, validate parse + DependsOn DAG.
     When manifest kind is semantic-csv-eval, require that CSV file to exist.
+    When qa/manual-test-cases.csv exists, cross-check TraceToCsvId and Id collisions.
     """
     errs: list[str] = []
     csv_path = _semantic_automation_csv_path(task_dir)
     kind = manifest_raw.get("kind") if isinstance(manifest_raw, dict) else None
+    manual_csv = task_dir / "qa" / "manual-test-cases.csv"
+    manual_arg = manual_csv if manual_csv.is_file() else None
     if csv_path.is_file():
-        errs.extend(validate_semantic_automation_file(csv_path))
+        errs.extend(
+            validate_semantic_automation_file(csv_path, manual_test_cases_csv=manual_arg)
+        )
     elif kind == "semantic-csv-eval":
         errs.append(
             f"semantic-eval-manifest.json kind semantic-csv-eval requires {_semantic_automation_csv_path(task_dir)}"
@@ -333,8 +339,14 @@ def _first_semantic_eval_gate_line(lines: list[str]) -> int | None:
 def _csv_data_rows(csv_path: Path) -> int:
     if not csv_path.is_file():
         return 0
-    lines = [ln.strip() for ln in _read_text(csv_path).splitlines() if ln.strip()]
-    return max(0, len(lines) - 1)  # assume one header row
+    try:
+        with csv_path.open(encoding="utf-8", errors="replace", newline="") as fh:
+            rows = list(csv.reader(fh))
+    except OSError:
+        return 0
+    if not rows:
+        return 0
+    return max(0, len(rows) - 1)
 
 
 def _design_file_count(design_dir: Path) -> int:

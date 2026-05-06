@@ -63,7 +63,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install verify extras (optional PyYAML for drift/spec helpers)
+      - name: Install optional verify requirements (stdlib-only if empty)
         run: pip install -r forge/tools/verify/requirements-verify.txt
 
       - name: Verify Forge task

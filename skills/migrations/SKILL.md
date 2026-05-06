@@ -1,5 +1,5 @@
 ---
-name: migrations-registry
+name: migrations
 description: "WHEN: You need to consult or update the global skill migration registry used for cross-skill breaking changes."
 type: reference
 version: 1.0.0

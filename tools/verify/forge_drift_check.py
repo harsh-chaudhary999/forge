@@ -28,20 +28,30 @@ def _read(p: Path) -> str:
 
 
 def _extract_success_criteria_bullets(prd_text: str) -> list[str]:
+    # Next PRD field lines look like ``**Product:**`` (bold label + colon inside emphasis).
     m = re.search(
-        r"(?ms)\*\*Success Criteria:\*\*\s*\n(.*?)(?=\n\*\*[A-Za-z /()]+\*\*:|\n---|\Z)",
+        r"(?ms)\*\*Success Criteria:\*\*\s*\n(.*?)(?=\n\*\*.+?\*\*[\s\n]|\n---|\Z)",
         prd_text,
     )
     if not m:
         return []
     block = m.group(1)
     out: list[str] = []
+    current: list[str] = []
     for line in block.splitlines():
-        line = line.strip()
-        if line.startswith("- ") or line.startswith("* "):
-            t = line.lstrip("-* ").strip()
-            if len(t) >= 12:
-                out.append(t)
+        stripped = line.strip()
+        if stripped.startswith("- ") or stripped.startswith("* "):
+            if current:
+                joined = " ".join(current).strip()
+                if len(joined) >= 12:
+                    out.append(joined)
+            current = [stripped.lstrip("-* ").strip()]
+        elif current and stripped:
+            current.append(stripped)
+    if current:
+        joined = " ".join(current).strip()
+        if len(joined) >= 12:
+            out.append(joined)
     return out
 
 

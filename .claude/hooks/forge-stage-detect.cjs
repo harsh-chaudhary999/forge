@@ -337,7 +337,8 @@ function collectUnifiedPromptGateIndices(brainPath) {
     scanAllBoth(conductorStatEntries, qaStatEntries);
   } else {
     if (!haveCond) scanAllConductors(conductorStatEntries);
-    if (!haveQa) scanAllQa(qaStatEntries);
+    // Task-scoped mode: never substitute another task's qa-pipeline.log when this task's is absent.
+    if (!haveQa && !envTaskId) scanAllQa(qaStatEntries);
   }
 
   return { conductorStatEntries, qaStatEntries };

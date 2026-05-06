@@ -97,10 +97,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install PyYAML (eval scenario validation tests)
+      - name: Install optional verify requirements (stdlib-only if empty)
         run: pip install -r tools/verify/requirements-verify.txt
 
-      - name: verify_forge_task + eval stdlib unit tests
+      - name: verify_forge_task + tools/verify stdlib unit tests
         run: |
           set -e
           python3 -m unittest discover -s tools/verify -p "test_*.py" -v

@@ -1,8 +1,10 @@
 # Semantic automation CSV (NL-first eval)
 
-## CSV execution results
+## Authoring vs execution
 
-The machine-eval deliverable is **`qa/semantic-automation.csv`** executed through **`tools/run_semantic_csv_eval.py`** (or host automation), producing **`qa/semantic-eval-manifest.json`** + **`qa/semantic-eval-run.log`** — results that CI, **`[P4.0-SEMANTIC-EVAL]`**, and **`eval-judge`** consume.
+**Authoring:** **`qa-semantic-csv-orchestrate`** (skill) produces or updates **`qa/semantic-automation.csv`** from the brain/PRD context.
+
+**Execution:** That CSV is then run through **`tools/run_semantic_csv_eval.py`** (or host automation), producing **`qa/semantic-eval-manifest.json`** + **`qa/semantic-eval-run.log`** — the artifacts CI, **`[P4.0-SEMANTIC-EVAL]`**, and **`eval-judge`** consume.
 
 ## Why NL-first
 

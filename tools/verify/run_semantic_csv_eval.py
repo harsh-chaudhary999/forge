@@ -16,7 +16,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -44,6 +46,27 @@ def _relative_under_task(task_dir: Path, path: Path) -> str:
         return str(path)
 
 
+def _atomic_write_text(path: Path, text: str, *, encoding: str = "utf-8") -> None:
+    """Write *text* to *path* via a same-directory temp file + os.replace (atomic on POSIX)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        dir=str(path.parent),
+    )
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "w", encoding=encoding) as fh:
+            fh.write(text)
+        os.replace(tmp_path, path)
+    except BaseException:
+        try:
+            tmp_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
+
+
 def _write_run_log(
     path: Path,
     *,
@@ -62,7 +85,7 @@ def _write_run_log(
     ]
     for r in step_results:
         lines.append(json.dumps(r, ensure_ascii=False))
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    _atomic_write_text(path, "\n".join(lines) + "\n")
 
 
 def _noop_run(ordered: list[SemanticStep], *, dry_run: bool) -> tuple[list[dict], str]:
@@ -153,7 +176,7 @@ def run_pipeline(
 
     qa.mkdir(parents=True, exist_ok=True)
     manifest_path = qa / "semantic-eval-manifest.json"
-    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    _atomic_write_text(manifest_path, json.dumps(manifest, indent=2) + "\n")
 
     log_path = qa / "semantic-eval-run.log"
     _write_run_log(

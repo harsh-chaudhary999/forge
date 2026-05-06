@@ -36,6 +36,20 @@ class TestExtractSuccessCriteriaBullets(unittest.TestCase):
             ["User can complete checkout with a saved payment method"],
         )
 
+    def test_multiline_bullet_joins_continuation_lines(self) -> None:
+        text = (
+            "# PRD Locked\n\n"
+            "**Success Criteria:**\n"
+            "- User can complete checkout with\n"
+            "  a saved payment method\n"
+            "**Product:** X\n"
+        )
+        got = fdc._extract_success_criteria_bullets(text)
+        self.assertEqual(
+            got,
+            ["User can complete checkout with a saved payment method"],
+        )
+
     def test_missing_section_returns_empty(self) -> None:
         self.assertEqual(fdc._extract_success_criteria_bullets("# PRD Locked\n"), [])
 

@@ -177,7 +177,7 @@ install_claude_code() {
     });
 
     replaceForgeHook('PreToolUse', {
-      matcher: 'Bash|Read|Write|Edit|StrReplace|Grep|Glob|SemanticSearch|CodebaseSearch|WebFetch|WebSearch|Task|Delete|ReadLints|EditNotebook|NotebookEdit|TodoWrite|Shell|GenerateImage|AskQuestion|AskUserQuestion|SwitchMode|AwaitShell|call_mcp_tool|fetch_mcp_resource|ListMcpResources',
+      matcher: 'Bash|Read|Write|Edit|StrReplace|Grep|Glob|SemanticSearch|CodebaseSearch|WebFetch|WebSearch|Task|Delete|ReadLints|EditNotebook|NotebookEdit|TodoWrite|Shell|GenerateImage|AskQuestion|AskUserQuestion|SwitchMode|AwaitShell|mcp__',
       hooks: [{type: 'command', command: 'node \"' + hooksDir + '/pre-tool-use.cjs\"', async: false}]
     });
 

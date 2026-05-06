@@ -176,15 +176,6 @@ def main() -> int:
 
     if args.write_policy:
         out = Path(args.write_policy).expanduser().resolve()
-        root_resolved = root.resolve()
-        try:
-            out.relative_to(root_resolved)
-        except ValueError:
-            print(
-                f"ERROR: --write-policy must stay within repository root: {root_resolved}",
-                file=sys.stderr,
-            )
-            return 2
         out.parent.mkdir(parents=True, exist_ok=True)
         pol = collect_policy(skills_root)
         out.write_text(json.dumps(pol, indent=2, sort_keys=True) + "\n", encoding="utf-8")

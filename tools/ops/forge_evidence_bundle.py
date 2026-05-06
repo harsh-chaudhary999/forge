@@ -10,11 +10,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import tarfile
 from datetime import datetime, timezone
 from pathlib import Path as P
+
+_TASK_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
 def git_rev(repo: P) -> str:
@@ -40,8 +43,13 @@ def main() -> int:
     )
     args = ap.parse_args()
 
+    task_id = str(args.task_id).strip()
+    if not task_id or "/" in task_id or "\\" in task_id or ".." in task_id or not _TASK_ID_RE.match(task_id):
+        print(f"ERROR: unsafe or invalid --task-id: {args.task_id!r}", file=sys.stderr)
+        return 1
+
     brain: P = args.brain.expanduser().resolve()
-    task_dir = brain / "prds" / args.task_id
+    task_dir = brain / "prds" / task_id
     if not task_dir.is_dir():
         print(f"ERROR: {task_dir} not found", file=sys.stderr)
         return 1

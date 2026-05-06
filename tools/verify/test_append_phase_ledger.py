@@ -118,6 +118,53 @@ class TestAppendPhaseLedgerCli(unittest.TestCase):
             self.assertEqual(first.get("phase_marker"), "[P4.0-SEMANTIC-EVAL]")
             self.assertEqual(second.get("phase_marker"), "[P4.1-DISPATCH]")
 
+    def test_verify_ledger_flags_out_of_order_after_two_appends(self) -> None:
+        """Append higher P-rank first, then lower — verify_ledger must report out-of-order."""
+        with tempfile.TemporaryDirectory() as tmp:
+            brain = Path(tmp)
+            tid = "ledger-order"
+            td = brain / "prds" / tid
+            (td / "qa").mkdir(parents=True)
+            a = td / "qa" / "semantic-automation.csv"
+            b = td / "qa" / "semantic-eval-manifest.json"
+            a.write_text("Id,Surface,Intent\nx,api,y\n", encoding="utf-8")
+            b.write_text('{"schema_version":1}\n', encoding="utf-8")
+
+            self.assertEqual(
+                _run_append(
+                    brain=brain,
+                    task_id=tid,
+                    phase="[P4.1-DISPATCH]",
+                    artifacts="qa/semantic-automation.csv",
+                ).returncode,
+                0,
+            )
+            self.assertEqual(
+                _run_append(
+                    brain=brain,
+                    task_id=tid,
+                    phase="[P4.0-TDD-RED]",
+                    artifacts="qa/semantic-eval-manifest.json",
+                ).returncode,
+                0,
+            )
+
+            errs = pl.verify_ledger(td, verify_hashes=False, task_id_expected=tid)
+            self.assertTrue(any("out of order" in e.lower() for e in errs), errs)
+
+    def test_missing_task_dir_exits_with_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            brain = Path(tmp)
+            (brain / "prds").mkdir(parents=True)
+            r = _run_append(
+                brain=brain,
+                task_id="no-such-task",
+                phase="[P4.0-SEMANTIC-EVAL]",
+                artifacts="qa/x.csv",
+            )
+            self.assertEqual(r.returncode, 1, r.stderr + r.stdout)
+            self.assertIn("task dir missing", r.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

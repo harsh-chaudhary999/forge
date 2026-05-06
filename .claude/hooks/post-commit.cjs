@@ -246,12 +246,6 @@ function writeGateArtifact(gateId, taskId, logLine, conductorLogRelPath) {
 
   const artifactPath = path.join(gatesDir, `${gateId}.json`);
 
-  // Don't overwrite an existing gate artifact (gates are immutable once satisfied)
-  if (fs.existsSync(artifactPath)) {
-    log(`Gate artifact already exists: ${artifactPath} — skipping`);
-    return;
-  }
-
   const artifact = {
     gate_id: gateId,
     task_id: taskId,
@@ -264,10 +258,17 @@ function writeGateArtifact(gateId, taskId, logLine, conductorLogRelPath) {
     status: 'satisfied',
   };
 
+  const payload = JSON.stringify(artifact, null, 2) + '\n';
+
+  // Atomic create: O_CREAT|O_EXCL — no TOCTOU vs concurrent hooks; no partial file visible as "exists".
   try {
-    fs.writeFileSync(artifactPath, JSON.stringify(artifact, null, 2) + '\n', 'utf-8');
+    fs.writeFileSync(artifactPath, payload, { encoding: 'utf-8', flag: 'wx' });
     log(`Gate artifact written: ${artifactPath}`);
   } catch (e) {
+    if (e && e.code === 'EEXIST') {
+      log(`Gate artifact already exists: ${artifactPath} — skipping`);
+      return;
+    }
     log(`Failed to write gate artifact ${artifactPath}: ${e.message}`);
   }
 }

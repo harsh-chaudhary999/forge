@@ -48,9 +48,10 @@ const FILENAME_PATTERNS = [
   /\.pem$/,
   /\.key$/,
 ];
+// password / api_key: assignment-shaped only — bare keywords match identifiers (validatePassword), docs, tests.
 const CONTENT_PATTERNS = [
-  /password/i,               // Hardcoded passwords
-  /api[-_]key/i,             // API keys
+  /(?<!\w)password\s*[:=]\s*["'][^"']{6,}/i,
+  /(?<!\w)api[-_]key\s*[:=]\s*["'][^"']{10,}/i,
   /aws[-_]access[-_]key/i,   // AWS credentials
   /aws[-_]secret/i,
   /oauth[-_]token/i,         // OAuth tokens

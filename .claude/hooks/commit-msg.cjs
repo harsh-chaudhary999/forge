@@ -74,6 +74,7 @@ function allow() {
 // ==================== End Edge Case Definitions ====================
 
 function log(message) {
+  if (process.env.FORGE_HOOKS_DEBUG !== '1') return;
   const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
   console.error(`[${timestamp}] ${message}`);
 }

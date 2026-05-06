@@ -65,7 +65,7 @@ from forge_paths import default_brain_root, sanitize_task_id
 from phase_ledger import LEDGER_NAME, verify_ledger
 from semantic_csv import validate_semantic_automation_file
 from shared_spec_policy import validate_shared_spec
-from tdd_csv_trace import verify_tdd_csv_trace
+from tdd_csv_trace import verify_tdd_csv_trace as _run_tdd_csv_trace
 
 
 RE_PRD_LOCKED_HEADING = re.compile(r"(?m)^#\s+PRD\s+Locked\s*$", re.IGNORECASE)
@@ -674,7 +674,7 @@ def verify_detailed(
             )
 
     if verify_tdd_csv_trace:
-        errors.extend(verify_tdd_csv_trace(task_dir))
+        errors.extend(_run_tdd_csv_trace(task_dir))
 
     return errors, warnings
 

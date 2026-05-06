@@ -126,7 +126,7 @@ python3 tools/forge_drift_check.py --task-id add-2fa --brain ~/forge/brain --str
 
 ## CI (brain repository)
 
-See [`.github/workflows/forge-brain-guard.yml`](../.github/workflows/forge-brain-guard.yml). Variables: **`FORGE_TASK_ID`** (required), **`FORGE_TOOLS_REPO`** (required — Forge GitHub repo for sparse checkout), plus optional **`FORGE_STRICT_TDD`**, **`FORGE_STRICT_TECH_PLANS`**, **`FORGE_CHECK_PRD_SECTIONS`**, **`FORGE_STRICT_SINGLE_TASK`**, **`FORGE_REQUIRE_CONDUCTOR_TIMESTAMPS`**, **`FORGE_DRIFT_STRICT`**, **`FORGE_CHECK_SHARED_SPEC`**, **`FORGE_VALIDATE_PHASE_LEDGER`**, **`FORGE_REQUIRE_PHASE_LEDGER`**, **`FORGE_PHASE_LEDGER_VERIFY_HASHES`** (wire to matching `verify_forge_task.py` flags).
+See [`.github/workflows/forge-brain-guard.yml`](../.github/workflows/forge-brain-guard.yml). Variables: **`FORGE_TASK_ID`** (required), **`FORGE_TOOLS_REPO`** (required — Forge GitHub repo for sparse checkout), plus optional **`FORGE_STRICT_TDD`**, **`FORGE_STRICT_TECH_PLANS`**, **`FORGE_CHECK_PRD_SECTIONS`**, **`FORGE_STRICT_SINGLE_TASK`**, **`FORGE_REQUIRE_CONDUCTOR_TIMESTAMPS`**, **`FORGE_DRIFT_STRICT`**, **`FORGE_CHECK_SHARED_SPEC`**, **`FORGE_VALIDATE_PHASE_LEDGER`**, **`FORGE_REQUIRE_PHASE_LEDGER`**, **`FORGE_PHASE_LEDGER_VERIFY_HASHES`**, **`FORGE_VERIFY_TDD_CSV_TRACE`** (wire to matching `verify_forge_task.py` flags).
 
 Sparse checkout should include at least:
 

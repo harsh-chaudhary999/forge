@@ -46,7 +46,6 @@ const { resolveNextGate, resolveQAPipelineGate } = require(path.join(
   __dirname,
   'prompt-submit-gates.cjs',
 ));
-
 const { shouldSuppressFromConductorMergeState } = require(path.join(__dirname, 'prompt-submit-injection.cjs'));
 
 /** Evaluated once per process — env-based paths rarely change mid-session. */

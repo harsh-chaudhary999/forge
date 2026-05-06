@@ -62,7 +62,12 @@ def collect_tdd_scan_py_files(task_dir: Path) -> tuple[list[Path], list[str]]:
                 for pat in ("test_*.py", "*_test.py"):
                     found.update(p.rglob(pat))
             elif "*" in line or "?" in line:
-                found.update(task_dir.glob(line))
+                for match in task_dir.glob(line):
+                    try:
+                        match.resolve().relative_to(td_resolved)
+                        found.add(match)
+                    except ValueError:
+                        errs.append(f"tdd-scan-paths.txt: glob match escapes task dir: {match}")
             elif p.is_file() and p.suffix.lower() == ".py":
                 found.add(p)
 

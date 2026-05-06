@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 import unittest
@@ -30,6 +31,22 @@ class TestManualRequiredColumn(unittest.TestCase):
             self.assertEqual(errs, [], errs)
             self.assertEqual(all_ids, {"TC-1", "TC-2"})
             self.assertEqual(req, {"TC-1"})
+
+
+class TestCollectTddScanPyFiles(unittest.TestCase):
+    def test_tdd_scan_paths_outside_task_dir_errors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            td = Path(tmp) / "prds" / "t1"
+            qa = td / "qa"
+            qa.mkdir(parents=True)
+            outside = Path(tmp) / "outside_tests"
+            outside.mkdir()
+            (outside / "test_ext.py").write_text("# forge-tdd: TC-1\n", encoding="utf-8")
+            rel = os.path.relpath(outside, td)
+            (qa / "tdd-scan-paths.txt").write_text(f"{rel}\n", encoding="utf-8")
+            files, errs = tct.collect_tdd_scan_py_files(td)
+            self.assertEqual(files, [])
+            self.assertTrue(any("escapes task dir" in e for e in errs), errs)
 
 
 class TestVerifyTddCsvTrace(unittest.TestCase):

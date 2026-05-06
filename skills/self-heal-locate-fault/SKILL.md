@@ -158,6 +158,8 @@ Forge machine-eval is **semantic CSV + manifest + run log** only. **Do not** loo
 4. Treat **`SKIPPED`** with **`dependency_not_passed`** as cascade — the **first** non-PASS step in topological order is often the root; still verify upstream **`DependsOn`** in **`semantic-automation.csv`**.
 5. Cross-reference failed **`id`** with **`qa/semantic-automation.csv`** for **Intent** text and dependencies.
 
+**When:** Semantic Phase 4.4 path failed; **`eval/`** may have **no** matching driver transcript — rely on the steps above (semantic log only).
+
 ### Identify Fault
 
 Map the failure to a service or component using causal reasoning:

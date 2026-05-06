@@ -15,6 +15,7 @@
 #   FORGE_VALIDATE_PHASE_LEDGER=true — --validate-phase-ledger
 #   FORGE_REQUIRE_PHASE_LEDGER=true — --require-phase-ledger
 #   FORGE_PHASE_LEDGER_VERIFY_HASHES=true — --phase-ledger-verify-hashes
+#   FORGE_VERIFY_TDD_CSV_TRACE=true — --verify-tdd-csv-trace
 # Required: FORGE_TOOLS_REPO = owner/repo where Forge is hosted (e.g. your-org/forge).
 
 name: Forge brain guard
@@ -62,7 +63,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install optional verify requirements (stdlib-only if empty)
         run: pip install -r forge/tools/verify/requirements-verify.txt
@@ -81,6 +82,7 @@ jobs:
           FORGE_REQUIRE_PHASE_LEDGER: ${{ vars.FORGE_REQUIRE_PHASE_LEDGER }}
           FORGE_PHASE_LEDGER_VERIFY_HASHES: ${{ vars.FORGE_PHASE_LEDGER_VERIFY_HASHES }}
           FORGE_DRIFT_STRICT: ${{ vars.FORGE_DRIFT_STRICT }}
+          FORGE_VERIFY_TDD_CSV_TRACE: ${{ vars.FORGE_VERIFY_TDD_CSV_TRACE }}
         run: |
           set -euo pipefail
           if [ -z "${FORGE_TASK_ID:-}" ]; then
@@ -98,6 +100,7 @@ jobs:
           if [ "${FORGE_VALIDATE_PHASE_LEDGER:-}" = "true" ]; then EXTRA="${EXTRA} --validate-phase-ledger"; fi
           if [ "${FORGE_REQUIRE_PHASE_LEDGER:-}" = "true" ]; then EXTRA="${EXTRA} --require-phase-ledger"; fi
           if [ "${FORGE_PHASE_LEDGER_VERIFY_HASHES:-}" = "true" ]; then EXTRA="${EXTRA} --phase-ledger-verify-hashes"; fi
+          if [ "${FORGE_VERIFY_TDD_CSV_TRACE:-}" = "true" ]; then EXTRA="${EXTRA} --verify-tdd-csv-trace"; fi
           python3 forge/tools/verify/verify_forge_task.py \
             --brain "${GITHUB_WORKSPACE}" \
             --task-id "${FORGE_TASK_ID}" \

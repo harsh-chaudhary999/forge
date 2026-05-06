@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Drift check: surface text in prd-locked.md that may be missing from semantic automation
-and manual QA CSV text under ``qa/``.
+Drift check: surface text in prd-locked.md that may be missing from semantic automation,
+manual QA CSV text under ``qa/``, and (by default) ``# forge-tdd:`` marker lines from
+scanned tests under the task (same roots as ``tdd_csv_trace.py``).
 
 Heuristic only — not a substitute for human review. Helps catch renamed journeys,
 stale PRD text, or automation rows that never referenced acceptance language.
@@ -21,6 +22,7 @@ import sys
 from pathlib import Path
 
 from forge_paths import default_brain_root, sanitize_task_id
+from tdd_csv_trace import combined_forge_tdd_marker_haystack
 
 
 def _read(p: Path) -> str:
@@ -28,20 +30,30 @@ def _read(p: Path) -> str:
 
 
 def _extract_success_criteria_bullets(prd_text: str) -> list[str]:
+    # Next PRD field lines look like ``**Product:**`` (bold label + colon inside emphasis).
     m = re.search(
-        r"(?ms)\*\*Success Criteria:\*\*\s*\n(.*?)(?=\n\*\*[A-Za-z /()]+\*\*:|\n---|\Z)",
+        r"(?ms)\*\*Success Criteria:\*\*\s*\n(.*?)(?=\n\*\*.+?\*\*[\s\n]|\n---|\Z)",
         prd_text,
     )
     if not m:
         return []
     block = m.group(1)
     out: list[str] = []
+    current: list[str] = []
     for line in block.splitlines():
-        line = line.strip()
-        if line.startswith("- ") or line.startswith("* "):
-            t = line.lstrip("-* ").strip()
-            if len(t) >= 12:
-                out.append(t)
+        stripped = line.strip()
+        if stripped.startswith("- ") or stripped.startswith("* "):
+            if current:
+                joined = " ".join(current).strip()
+                if len(joined) >= 12:
+                    out.append(joined)
+            current = [stripped.lstrip("-* ").strip()]
+        elif current and stripped:
+            current.append(stripped)
+    if current:
+        joined = " ".join(current).strip()
+        if len(joined) >= 12:
+            out.append(joined)
     return out
 
 
@@ -85,6 +97,11 @@ def main() -> int:
         action="store_true",
         help="Exit 1 when any success-criterion bullet is absent from eval+QA text",
     )
+    ap.add_argument(
+        "--skip-tdd-marker-hay",
+        action="store_true",
+        help="Do not include # forge-tdd: lines from scanned tests in the drift haystack",
+    )
     args = ap.parse_args()
     brain = Path(args.brain).expanduser() if args.brain else default_brain_root()
     try:
@@ -106,6 +123,10 @@ def main() -> int:
     hay = _combined_semantic_automation_text(task_dir) + "\n" + _combined_qa_text(
         task_dir / "qa" / "manual-test-cases.csv"
     )
+    if not args.skip_tdd_marker_hay:
+        tdd_h = combined_forge_tdd_marker_haystack(task_dir)
+        if tdd_h.strip():
+            hay += "\n" + tdd_h
     hay_cf = hay.casefold()
     missing: list[str] = []
     for b in bullets:

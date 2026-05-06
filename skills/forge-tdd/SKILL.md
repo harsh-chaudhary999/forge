@@ -2,7 +2,7 @@
 name: forge-tdd
 description: "WHEN: About to write any production code. HARD-GATE: Iron law - write test first, watch fail, write minimal code, watch pass. No exceptions."
 type: rigid
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "write test first"
@@ -78,6 +78,23 @@ If you notice any of these, STOP and do not proceed:
    - If test runs at all but crashes → infrastructure issue (escalate BLOCKED)
 
 **Success Criterion:** Red test fails with clear, meaningful error.
+
+### CSV / semantic trace markers (machine verification)
+
+When **`qa/manual-test-cases.csv`** exists for the task, tie each RED test to an acceptance **Id** and/or a **`qa/semantic-automation.csv`** step **Id** using a comment the verifier scans:
+
+```python
+def test_valid_login_succeeds(self):
+    # forge-tdd: TC-001 (manual-test-cases.csv)
+    # forge-tdd: step-login (semantic-automation.csv)
+    ...
+```
+
+- Use the exact **Id** values from those CSVs (first token after `# forge-tdd:`). Parenthetical hints are optional.
+- Optional **`Required`** column on the manual CSV (`yes` / `true` / `1` / `y`) means **at least one** scanned test must include `# forge-tdd: <that Id>`.
+- Tests are discovered under **`~/forge/brain/prds/<task-id>/`**: all **`test_*.py`** and **`*_test.py`**, or only paths/globs listed in **`qa/tdd-scan-paths.txt`** (one entry per line, relative to the task dir).
+- **`python3 tools/verify/verify_forge_task.py --verify-tdd-csv-trace`** fails the build when markers reference unknown ids or required rows lack markers.
+- **`forge_drift_check.py`** adds these `# forge-tdd:` lines to the success-criteria haystack by default (use **`--skip-tdd-marker-hay`** to omit them).
 
 ### GREEN — Write Minimal Code, Watch It Pass
 

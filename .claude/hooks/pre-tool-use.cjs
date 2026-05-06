@@ -172,7 +172,13 @@ if (process.env.FORGE_ROOT) {
   }
 }
 
-function resolveSkillAllowedTools(skillKey, skillFilePath, skillContent) {
+/**
+ * Policy JSON is tried first. `loadSkillContent` is only called when SKILL.md must be parsed.
+ * @param {string} skillKey
+ * @param {string} skillFilePath
+ * @param {() => string} loadSkillContent sync loader — must return file text or ''
+ */
+function resolveSkillAllowedTools(skillKey, skillFilePath, loadSkillContent) {
   const policyCandidates = [
     path.join(forgeRoot, 'tools', 'dev', 'skill-tool-policy.json'),
     path.join(forgeRoot, 'tools', 'skill-tool-policy.json'),
@@ -197,6 +203,7 @@ function resolveSkillAllowedTools(skillKey, skillFilePath, skillContent) {
   if (!fs.existsSync(skillFilePath)) {
     return { allowedTools: [], isHardGate: false, source: null };
   }
+  const skillContent = typeof loadSkillContent === 'function' ? loadSkillContent() : '';
   const fmMatch = skillContent.match(/^---\n([\s\S]*?)\n---/);
   if (!fmMatch) {
     return { allowedTools: [], isHardGate: false, source: null };
@@ -226,18 +233,20 @@ if (activeSkill) {
     process.exit(0);
   }
   const skillFile = path.join(forgeRoot, 'skills', activeSkill, 'SKILL.md');
-  let skillContent = '';
-  try {
-    if (fs.existsSync(skillFile)) {
-      skillContent = fs.readFileSync(skillFile, 'utf-8');
+  function loadActiveSkillContent() {
+    try {
+      if (fs.existsSync(skillFile)) {
+        return fs.readFileSync(skillFile, 'utf-8');
+      }
+    } catch (_) {
+      // unreadable
     }
-  } catch (_) {
-    skillContent = '';
+    return '';
   }
   const { allowedTools, isHardGate, source } = resolveSkillAllowedTools(
     activeSkill,
     skillFile,
-    skillContent,
+    loadActiveSkillContent,
   );
   const toolAllowed = allowedTools.some(entry =>
     entry.endsWith('*') ? toolName.startsWith(entry.slice(0, -1)) : entry === toolName,

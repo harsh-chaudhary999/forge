@@ -278,7 +278,7 @@ console.log('='.repeat(60));
 console.log('\nHooks installed:');
 console.log('  • session-start          — Bootstraps Forge at session start (via plugin)');
 console.log('  • post-commit            — Tracks commits in brain/inbox/');
-console.log('  • commit-msg             — Validates commit message format (task-ID required)');
+console.log('  • commit-msg             — Validates task traceability + message shape');
 console.log('  • pre-commit             — Scans staged content for secrets and large files');
 console.log('  • post-rewrite           — Updates brain state after rebase/amend');
 console.log('  • post-merge             — Consolidates brain state after merge to main');

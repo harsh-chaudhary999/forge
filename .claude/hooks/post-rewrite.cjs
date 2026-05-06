@@ -93,8 +93,7 @@ if (!fs.existsSync(INBOX_DIR)) {
 let oldNewMappings = {};
 const FULL_SHA_RE = /^[a-f0-9]{40}$/i;
 
-// For amend: read from stdin
-// For rebase: build mapping from git reflog
+// For amend and rebase: read old/new full SHAs from stdin (git passes one pair per line).
 if (REWRITE_TYPE === 'amend') {
   const stdin = require('fs').readFileSync(0, 'utf-8');
   const lines = stdin.trim().split('\n');
@@ -106,10 +105,14 @@ if (REWRITE_TYPE === 'amend') {
     }
   }
 } else if (REWRITE_TYPE === 'rebase') {
-  // For rebase, try to extract mappings from git log
-  // This is complex - for now, just log that rebase happened
-  log(`Rebase detected - SHA mappings would require git reflog parsing`);
-  log(`(This is a best-effort update - manual verification recommended)`);
+  const stdin = require('fs').readFileSync(0, 'utf-8');
+  for (const line of stdin.trim().split('\n')) {
+    const [oldSha, newSha] = line.split(/\s+/);
+    if (oldSha && newSha && FULL_SHA_RE.test(oldSha) && FULL_SHA_RE.test(newSha)) {
+      oldNewMappings[oldSha] = newSha;
+      log(`SHA rewrite: ${oldSha.substring(0, 8)} → ${newSha.substring(0, 8)}`);
+    }
+  }
 }
 
 if (Object.keys(oldNewMappings).length === 0) {
@@ -141,22 +144,11 @@ try {
 
     // Replace old SHAs with new SHAs in the file
     for (const [oldSha, newSha] of Object.entries(oldNewMappings)) {
-      // Look for SHA in various formats: full, abbreviated, in fields
       const escaped = oldSha.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const anyRef = new RegExp(`\\b${escaped}\\b`, 'g');
-      const commitRef = new RegExp(`(commit\\s*:\\s*)${escaped}`, 'gi');
-      const shaRef = new RegExp(`(sha\\s*:\\s*)${escaped}`, 'gi');
-
-      if (anyRef.test(newContent)) {
-        newContent = newContent.replace(anyRef, newSha);
-        updated = true;
-      }
-      if (commitRef.test(newContent)) {
-        newContent = newContent.replace(commitRef, `$1${newSha}`);
-        updated = true;
-      }
-      if (shaRef.test(newContent)) {
-        newContent = newContent.replace(shaRef, `$1${newSha}`);
+      const next = newContent.replace(anyRef, newSha);
+      if (next !== newContent) {
+        newContent = next;
         updated = true;
       }
     }

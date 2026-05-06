@@ -189,8 +189,8 @@ def run_phase5(repos: list[Path], scan_tmp: Path, topology=None) -> None:
             for abs_p, rel in const_files:
                 try:
                     lines = abs_p.read_text(encoding="utf-8", errors="replace").splitlines()
-                except OSError:
-                    continue
+                except OSError as exc:
+                    raise OSError(f"phase5 endpoint constants: repo={name} file={rel}: {exc}") from exc
                 for i, ln in enumerate(lines, start=1):
                     m = _ENDPOINT_CONST_RE.search(ln)
                     if not m:
@@ -211,7 +211,10 @@ def run_phase5(repos: list[Path], scan_tmp: Path, topology=None) -> None:
         for s in srcs:
             p = scan_tmp / s
             if p.is_file():
-                parts.append(p.read_text(encoding="utf-8", errors="replace"))
+                try:
+                    parts.append(p.read_text(encoding="utf-8", errors="replace"))
+                except OSError as exc:
+                    raise OSError(f"phase5 consolidate: cannot read {p} ({s}): {exc}") from exc
         (scan_tmp / dst).write_text("".join(parts), encoding="utf-8", errors="replace")
 
     _cat(

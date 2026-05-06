@@ -12,7 +12,7 @@
  * Reads conductor.log from the brain directory (FORGE_BRAIN, FORGE_BRAIN_PATH, or ~/forge/brain)
  * and prepends a targeted "NEXT GATE" reminder based on which gates have been
  * crossed and which are still pending. Log paths and file contents are loaded
- * once per brain via `loadConductorLogBundle` in forge-stage-detect.cjs.
+ * once per brain via `loadBrainPromptBundle` in forge-stage-detect.cjs (conductor + qa index).
  *
  * Static HARD-GATE block suppression (emits no additionalContext):
  *   FORGE_DISABLE_GATE_INJECTION=1
@@ -37,17 +37,15 @@
 
 const fs = require('fs');
 const path = require('path');
-const {
-  forgeBrainSearchPaths,
-  loadConductorLogBundle,
-  loadQAPipelineLogBundle,
-} = require(path.join(__dirname, 'forge-stage-detect.cjs'));
+const { forgeBrainSearchPaths, loadBrainPromptBundle } = require(path.join(
+  __dirname,
+  'forge-stage-detect.cjs',
+));
 
 const { resolveNextGate, resolveQAPipelineGate } = require(path.join(
   __dirname,
   'prompt-submit-gates.cjs',
 ));
-
 const { shouldSuppressFromConductorMergeState } = require(path.join(__dirname, 'prompt-submit-injection.cjs'));
 
 /** Evaluated once per process — env-based paths rarely change mid-session. */
@@ -79,11 +77,11 @@ function computeGateInjection() {
   const taskIdRaw = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
   const taskIdEnvSet = !!(taskIdRaw && String(taskIdRaw).trim());
 
-  /** @type {Map<string, ReturnType<typeof loadConductorLogBundle>>} */
+  /** @type {Map<string, ReturnType<typeof loadBrainPromptBundle>>} */
   const bundleByBrain = new Map();
   for (const brainPath of BRAIN_PATHS) {
     if (!fs.existsSync(brainPath)) continue;
-    bundleByBrain.set(brainPath, loadConductorLogBundle(brainPath));
+    bundleByBrain.set(brainPath, loadBrainPromptBundle(brainPath));
   }
 
   const allConductorBodies = [];
@@ -116,25 +114,30 @@ function computeGateInjection() {
     return { suppress: true, nextGate: null };
   }
 
+  // One injection slot: when both conductor (Forge) and qa-pipeline surfaces have a next step,
+  // concatenate Forge first then QA so parallel /forge + /qa-run pressure stays visible — not
+  // silently dropped because conductor resolved first.
   let nextGate = null;
   for (const brainPath of BRAIN_PATHS) {
     if (!fs.existsSync(brainPath)) continue;
     const bundle = bundleByBrain.get(brainPath);
-    if (bundle && bundle.primaryContent) {
-      const g = resolveNextGate(bundle.primaryContent);
-      if (g) {
-        nextGate = g;
-        break;
-      }
+    if (!bundle) continue;
+
+    let forgeG = null;
+    if (bundle.primaryContent) {
+      forgeG = resolveNextGate(bundle.primaryContent);
+    }
+    let qaG = null;
+    if (bundle.qaPrimaryContent) {
+      qaG = resolveQAPipelineGate(bundle.qaPrimaryContent);
     }
 
-    const qaBundle = loadQAPipelineLogBundle(brainPath);
-    if (qaBundle && qaBundle.primaryContent) {
-      const qaGate = resolveQAPipelineGate(qaBundle.primaryContent);
-      if (qaGate) {
-        nextGate = qaGate;
-        break;
-      }
+    if (forgeG || qaG) {
+      const parts = [];
+      if (forgeG) parts.push(forgeG);
+      if (qaG) parts.push(qaG);
+      nextGate = parts.join('\n\n');
+      break;
     }
   }
 

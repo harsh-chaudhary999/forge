@@ -70,8 +70,8 @@ function allowMerge() {
 
 // ==================== Edge Cases & Fallback Paths ====================
 // Edge Case 1: No task ID found in branch or commit
-//   Action: Log warning, allow merge (might be manual/untracked)
-//   Escalation: If this happens often, update branch naming convention
+//   Action: BLOCK merge — eval gate cannot be scoped without a task id
+//   Escalation: Rename branch (task-<id>-…) or set FORGE_TASK_ID / FORGE_PRD_TASK_ID
 //
 // Edge Case 2: pr-set.md doesn't exist
 //   Action: BLOCK merge - no eval record exists
@@ -121,11 +121,11 @@ if (!taskId) {
   }
 }
 
-// If no task ID found, warn but allow merge (might be a manual merge)
 if (!taskId) {
-  log(`WARNING: No task ID found in branch name "${BRANCH_NAME}" or commit message`);
-  log(`Allowing merge for ${PROJECT_SLUG} (untracked task)`);
-  allowMerge();
+  blockMerge(
+    `No task ID found in branch "${BRANCH_NAME}" or latest commit message.\n` +
+      `Rename the branch to include task-<id> (e.g. feature/task-123-desc), or set FORGE_TASK_ID=<id> / FORGE_PRD_TASK_ID=<id> for this merge.`
+  );
 }
 
 // Check if pr-set.md exists

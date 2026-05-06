@@ -46,6 +46,23 @@ function log(message) {
   console.error(`[${timestamp}] ${message}`);
 }
 
+/** Best-effort atomic replace: write temp in same directory, then rename (avoids truncated inbox on crash). */
+function atomicWriteFileSync(filePath, content) {
+  const dir = path.dirname(filePath);
+  const base = path.basename(filePath);
+  const tmpPath = path.join(dir, `.${base}.${process.pid}.${Date.now()}.tmp`);
+  fs.writeFileSync(tmpPath, content, { encoding: 'utf-8' });
+  try {
+    if (process.platform === 'win32' && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    fs.renameSync(tmpPath, filePath);
+  } catch (e) {
+    try { fs.unlinkSync(tmpPath); } catch (_) { /* best-effort cleanup */ }
+    throw e;
+  }
+}
+
 // ==================== Edge Cases & Fallback Paths ====================
 // Edge Case 1: Merge from single project (simple case)
 //   Action: Consolidate brain state for that project
@@ -91,7 +108,10 @@ if (!fs.existsSync(BRAIN_DIR)) {
 let mergeCommit = '';
 let mergeAuthor = 'unknown';
 let mergeDate = new Date().toISOString();
-let mergedBranch = 'unknown';
+/** Merged-in tip commit (from .git/MERGE_HEAD when present, else `HEAD^2` on a merge commit) — a SHA, not a branch name. */
+let mergeHeadSha = '';
+/** Best-effort ref label for that commit via `git name-rev --name-only` (detached/ambiguous is normal). */
+let mergedSourceRef = 'unknown';
 
 try {
   // Get the merge commit SHA
@@ -108,14 +128,49 @@ try {
     stdio: 'pipe'
   }).trim();
 
-  // Try to get merged branch from MERGE_HEAD (if it exists)
   try {
     const mergeHeadFile = path.join(process.cwd(), '.git', 'MERGE_HEAD');
     if (fs.existsSync(mergeHeadFile)) {
-      mergedBranch = fs.readFileSync(mergeHeadFile, 'utf-8').trim().substring(0, 8);
+      mergeHeadSha = fs.readFileSync(mergeHeadFile, 'utf-8').trim().split(/\s+/)[0];
+      if (mergeHeadSha && /^[a-f0-9]{7,40}$/i.test(mergeHeadSha)) {
+        try {
+          mergedSourceRef = execSync(`git name-rev --name-only ${mergeHeadSha}`, {
+            cwd: process.cwd(),
+            encoding: 'utf-8',
+            stdio: 'pipe',
+          }).trim() || 'unknown';
+        } catch (e) {
+          mergedSourceRef = 'unknown';
+        }
+      }
     }
   } catch (e) {
-    // MERGE_HEAD might not exist, that's okay
+    // MERGE_HEAD might not exist after merge completes — okay
+  }
+
+  // After merge finishes git removes MERGE_HEAD; for a merge commit, second parent is the merged tip.
+  if (!mergeHeadSha) {
+    try {
+      const secondParent = execSync('git rev-parse HEAD^2', {
+        cwd: process.cwd(),
+        encoding: 'utf-8',
+        stdio: 'pipe',
+      }).trim();
+      if (secondParent && /^[a-f0-9]{7,40}$/i.test(secondParent)) {
+        mergeHeadSha = secondParent;
+        try {
+          mergedSourceRef = execSync(`git name-rev --name-only ${mergeHeadSha}`, {
+            cwd: process.cwd(),
+            encoding: 'utf-8',
+            stdio: 'pipe',
+          }).trim() || 'unknown';
+        } catch (e) {
+          mergedSourceRef = 'unknown';
+        }
+      }
+    } catch (e) {
+      // Not a merge commit or single parent — leave mergeHeadSha empty
+    }
   }
 } catch (e) {
   log(`WARNING: Could not get merge metadata: ${e.message}`);
@@ -168,10 +223,16 @@ if (fs.existsSync(INBOX_DIR)) {
       try {
         const content = fs.readFileSync(filePath, 'utf-8');
 
-        // Mark inbox entries as "merged to main"
+        // Only stamp drops for this repo/project (post-commit embeds **Project:** & slug in filename).
+        const slugMatchesProject =
+          content.includes(PROJECT_SLUG) || file.includes(`-${PROJECT_SLUG}-`);
+        if (!slugMatchesProject) {
+          continue;
+        }
+
         if (!content.includes('merged_to_main')) {
           const updatedContent = content + `\nmerged_to_main: ${mergeDate}\n`;
-          fs.writeFileSync(filePath, updatedContent, 'utf-8');
+          atomicWriteFileSync(filePath, updatedContent);
           consolidatedCount += 1;
         } else {
           skippedCount += 1;
@@ -246,7 +307,8 @@ const mergeLogEntry = `${mergeDate} — Merge to main
   project: ${PROJECT_SLUG}
   merge_sha: ${mergeCommit.substring(0, 8)}
   author: ${mergeAuthor}
-  merged_branch: ${mergedBranch}
+  merge_head_sha: ${mergeHeadSha ? mergeHeadSha.substring(0, 8) : 'n/a'}
+  merged_source_ref: ${mergedSourceRef}
   commits: ${mergedCommitCount}
   tasks: ${mergedTasks.join(', ') || 'none'}
   consolidation: ${consolidatedCount} entries updated

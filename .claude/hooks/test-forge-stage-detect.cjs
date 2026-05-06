@@ -9,10 +9,21 @@ const {
   findLastPhaseMarker,
   markerToStage,
   detectStageFromLogContent,
-  findMostRecentConductorLog,
+  collectConductorLogIndex,
   loadConductorLogBundle,
   findMostRecentQAPipelineLog,
+  loadBrainPromptBundle,
 } = require('./forge-stage-detect.cjs');
+
+function conductorPrimaryPathFromIndex(brainPath) {
+  const { statEntries } = collectConductorLogIndex(brainPath);
+  if (statEntries.length === 0) return null;
+  let best = statEntries[0];
+  for (let i = 1; i < statEntries.length; i += 1) {
+    if (statEntries[i].mtimeMs > best.mtimeMs) best = statEntries[i];
+  }
+  return best.path;
+}
 
 function test(name, fn) {
   try {
@@ -55,12 +66,12 @@ test('P3-SPEC-FROZEN build', () => {
   assert.strictEqual(markerToStage('[P3-SPEC-FROZEN]'), 'build');
 });
 
-test('findMostRecentQAPipelineLog is exported (scoping lives with findMostRecentConductorLog)', () => {
+test('findMostRecentQAPipelineLog is exported', () => {
   assert.strictEqual(typeof findMostRecentQAPipelineLog, 'function');
   assert.strictEqual(findMostRecentQAPipelineLog('/nonexistent-brain-xyz-12345'), null);
 });
 
-test('findMostRecentConductorLog prefers FORGE_TASK_ID scoped path over newer mtime', () => {
+test('collectConductorLogIndex primary path prefers FORGE_TASK_ID scoped path over newer mtime', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forge-brain-'));
   try {
     fs.mkdirSync(path.join(tmp, 'prds', 'task-a'), { recursive: true });
@@ -77,7 +88,7 @@ test('findMostRecentConductorLog prefers FORGE_TASK_ID scoped path over newer mt
     try {
       process.env.FORGE_TASK_ID = 'task-a';
       delete process.env.FORGE_PRD_TASK_ID;
-      assert.strictEqual(findMostRecentConductorLog(tmp), logA);
+      assert.strictEqual(conductorPrimaryPathFromIndex(tmp), logA);
     } finally {
       if (prevT === undefined) delete process.env.FORGE_TASK_ID;
       else process.env.FORGE_TASK_ID = prevT;
@@ -164,6 +175,37 @@ test('findMostRecentQAPipelineLog prefers FORGE_TASK_ID scoped path over newer m
       process.env.FORGE_TASK_ID = 'task-a';
       delete process.env.FORGE_PRD_TASK_ID;
       assert.strictEqual(findMostRecentQAPipelineLog(tmp), qaA);
+    } finally {
+      if (prevT === undefined) delete process.env.FORGE_TASK_ID;
+      else process.env.FORGE_TASK_ID = prevT;
+      if (prevP === undefined) delete process.env.FORGE_PRD_TASK_ID;
+      else process.env.FORGE_PRD_TASK_ID = prevP;
+    }
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('loadBrainPromptBundle scoped task: no qa-pipeline.log does not fall back to other tasks', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forge-bundle-qa-scope-'));
+  try {
+    fs.mkdirSync(path.join(tmp, 'prds', 'task-a'), { recursive: true });
+    fs.mkdirSync(path.join(tmp, 'prds', 'task-b'), { recursive: true });
+    const condA = path.join(tmp, 'prds', 'task-a', 'conductor.log');
+    const qaB = path.join(tmp, 'prds', 'task-b', 'qa-pipeline.log');
+    fs.writeFileSync(condA, '[P1]\n', 'utf-8');
+    fs.writeFileSync(qaB, '[QA-SOME OTHER TASK]\n', 'utf-8');
+    const sb = fs.statSync(qaB);
+    fs.utimesSync(qaB, new Date(sb.mtimeMs + 120_000), new Date(sb.mtimeMs + 120_000));
+    const prevT = process.env.FORGE_TASK_ID;
+    const prevP = process.env.FORGE_PRD_TASK_ID;
+    try {
+      process.env.FORGE_TASK_ID = 'task-a';
+      delete process.env.FORGE_PRD_TASK_ID;
+      const b = loadBrainPromptBundle(tmp);
+      assert.strictEqual(b.primaryPath, condA);
+      assert.strictEqual(b.qaPrimaryPath, null);
+      assert.strictEqual(b.qaPrimaryContent, null);
     } finally {
       if (prevT === undefined) delete process.env.FORGE_TASK_ID;
       else process.env.FORGE_TASK_ID = prevT;

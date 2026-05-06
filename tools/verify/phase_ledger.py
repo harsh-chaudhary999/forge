@@ -19,6 +19,8 @@ LEDGER_NAME = "phase-ledger.jsonl"
 CURRENT_SCHEMA = 1
 
 RELPATH_SAFE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._/\-]*$")
+# Primary Forge gate markers like [P4.0-SEMANTIC-EVAL], [P5-DONE]
+_LEDGER_P_RANK = re.compile(r"\[P(\d+)(?:\.(\d+))?")
 
 
 def _utc_now_iso() -> str:
@@ -110,6 +112,13 @@ def _resolved_artifact_path(task_dir: Path, rel: str) -> tuple[Path | None, str 
     return fp, None
 
 
+def _ledger_marker_rank(phase_marker: str) -> tuple[int, int] | None:
+    m = _LEDGER_P_RANK.search(phase_marker)
+    if not m:
+        return None
+    return int(m.group(1)), int(m.group(2) or 0)
+
+
 def verify_ledger(
     task_dir: Path,
     *,
@@ -121,6 +130,7 @@ def verify_ledger(
     if not path.is_file():
         return []
     errs: list[str] = []
+    last_p_rank: tuple[int, int] | None = None
     for i, raw in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), start=1):
         if not raw.strip():
             continue
@@ -142,7 +152,8 @@ def verify_ledger(
             errs.append(
                 f"{LEDGER_NAME} line {i}: task_id {tid!r} does not match expected {task_id_expected!r}"
             )
-        if not obj.get("phase_marker"):
+        pm_raw = obj.get("phase_marker")
+        if not pm_raw:
             errs.append(f"{LEDGER_NAME} line {i}: missing phase_marker")
         if not obj.get("recorded_at"):
             errs.append(f"{LEDGER_NAME} line {i}: missing recorded_at")
@@ -183,6 +194,16 @@ def verify_ledger(
                         f"{LEDGER_NAME} line {i}: sha256 mismatch for {rel!r} "
                         f"(ledger={sha[:12]}… disk={actual[:12]}…)"
                     )
+        if isinstance(pm_raw, str) and pm_raw.strip():
+            rank = _ledger_marker_rank(pm_raw.strip())
+            if rank is not None:
+                if last_p_rank is not None and rank < last_p_rank:
+                    errs.append(
+                        f"{LEDGER_NAME} line {i}: phase_marker {pm_raw.strip()!r} is out of order "
+                        f"(regresses before prior [P…] rank {last_p_rank[0]}.{last_p_rank[1]} "
+                        f"— append order must use non-decreasing P-phase ranks)"
+                    )
+                last_p_rank = rank
     return errs
 
 

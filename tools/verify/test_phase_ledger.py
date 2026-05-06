@@ -60,6 +60,19 @@ class TestPhaseLedger(unittest.TestCase):
             self.assertIsNotNone(msg)
             self.assertIn("escape", msg.lower())
 
+    def test_out_of_order_p_markers_fail(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            td = Path(tmp) / "prds" / "t1"
+            (td / "qa").mkdir(parents=True)
+            f = td / "qa" / "semantic-automation.csv"
+            f.write_text("Id,Surface,Intent\nx,api,y\n", encoding="utf-8")
+            e_late = pl.build_entry("t1", "[P4.1-DISPATCH]", ["qa/semantic-automation.csv"], td)
+            e_early = pl.build_entry("t1", "[P4.0-SEMANTIC-EVAL]", ["qa/semantic-automation.csv"], td)
+            pl.append_entry(td, e_late)
+            pl.append_entry(td, e_early)
+            errs = pl.verify_ledger(td, verify_hashes=False, task_id_expected="t1")
+            self.assertTrue(any("out of order" in x.lower() for x in errs), errs)
+
 
 if __name__ == "__main__":
     unittest.main()

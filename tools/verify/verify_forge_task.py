@@ -25,6 +25,9 @@ Validates (when applicable):
     plus REVIEW_PASS Section 0c semantic rails (no GAP last column; cite
     Confluence mirror / touchpoints / QA CSV when those files exist — see
     tools/verify_tech_plans.py).
+  - Optional --verify-tdd-csv-trace: ``# forge-tdd:`` markers in scanned tests must
+    reference Ids from qa/manual-test-cases.csv or qa/semantic-automation.csv; Required=yes
+    manual rows need a marker (see tools/tdd_csv_trace.py).
 
 Core checks use stdlib only (product.md may mix markdown headings with YAML).
 
@@ -37,7 +40,7 @@ Usage (brain repo checked out as cwd, Forge path explicit):
 Usage (with gate JSON ledger from post-commit.cjs):
   python3 tools/verify_forge_task.py --task-id my-feature --brain ~/forge/brain --gates-dir ~/forge/brain/prds/my-feature/gates
 
-Drift (PRD success criteria vs eval/QA text):
+Drift (PRD success criteria vs semantic QA / manual CSV text):
   python3 tools/forge_drift_check.py --task-id my-feature --brain ~/forge/brain [--strict]
 
 Phase ledger (append-only JSONL + SHA256):
@@ -48,6 +51,7 @@ Phase ledger (append-only JSONL + SHA256):
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import re
 import sys
@@ -61,6 +65,7 @@ from forge_paths import default_brain_root, sanitize_task_id
 from phase_ledger import LEDGER_NAME, verify_ledger
 from semantic_csv import validate_semantic_automation_file
 from shared_spec_policy import validate_shared_spec
+from tdd_csv_trace import verify_tdd_csv_trace as _run_tdd_csv_trace
 
 
 RE_PRD_LOCKED_HEADING = re.compile(r"(?m)^#\s+PRD\s+Locked\s*$", re.IGNORECASE)
@@ -312,12 +317,17 @@ def _semantic_csv_coherence_errors(task_dir: Path, manifest_raw: dict | None) ->
     """
     When qa/semantic-automation.csv exists, validate parse + DependsOn DAG.
     When manifest kind is semantic-csv-eval, require that CSV file to exist.
+    When qa/manual-test-cases.csv exists, cross-check TraceToCsvId and Id collisions.
     """
     errs: list[str] = []
     csv_path = _semantic_automation_csv_path(task_dir)
     kind = manifest_raw.get("kind") if isinstance(manifest_raw, dict) else None
+    manual_csv = task_dir / "qa" / "manual-test-cases.csv"
+    manual_arg = manual_csv if manual_csv.is_file() else None
     if csv_path.is_file():
-        errs.extend(validate_semantic_automation_file(csv_path))
+        errs.extend(
+            validate_semantic_automation_file(csv_path, manual_test_cases_csv=manual_arg)
+        )
     elif kind == "semantic-csv-eval":
         errs.append(
             f"semantic-eval-manifest.json kind semantic-csv-eval requires {_semantic_automation_csv_path(task_dir)}"
@@ -333,8 +343,14 @@ def _first_semantic_eval_gate_line(lines: list[str]) -> int | None:
 def _csv_data_rows(csv_path: Path) -> int:
     if not csv_path.is_file():
         return 0
-    lines = [ln.strip() for ln in _read_text(csv_path).splitlines() if ln.strip()]
-    return max(0, len(lines) - 1)  # assume one header row
+    try:
+        with csv_path.open(encoding="utf-8", errors="replace", newline="") as fh:
+            rows = list(csv.reader(fh))
+    except OSError:
+        return 0
+    if not rows:
+        return 0
+    return max(0, len(rows) - 1)
 
 
 def _design_file_count(design_dir: Path) -> int:
@@ -385,6 +401,7 @@ def verify(
     strict_single_task_brain: bool = False,
     strict_tech_plans: bool = False,
     strict_0c_inventory: bool = False,
+    verify_tdd_csv_trace: bool = False,
 ) -> list[str]:
     errors, _warnings = verify_detailed(
         brain=brain,
@@ -404,6 +421,7 @@ def verify(
         strict_single_task_brain=strict_single_task_brain,
         strict_tech_plans=strict_tech_plans,
         strict_0c_inventory=strict_0c_inventory,
+        verify_tdd_csv_trace=verify_tdd_csv_trace,
     )
     return errors
 
@@ -426,6 +444,7 @@ def verify_detailed(
     strict_single_task_brain: bool = False,
     strict_tech_plans: bool = False,
     strict_0c_inventory: bool = False,
+    verify_tdd_csv_trace: bool = False,
 ) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -654,6 +673,9 @@ def verify_detailed(
                 )
             )
 
+    if verify_tdd_csv_trace:
+        errors.extend(_run_tdd_csv_trace(task_dir))
+
     return errors, warnings
 
 
@@ -759,6 +781,15 @@ def main() -> int:
             "source-confluence.md, touchpoints/*.md, or qa/manual-test-cases.csv exist."
         ),
     )
+    p.add_argument(
+        "--verify-tdd-csv-trace",
+        action="store_true",
+        help=(
+            "Require # forge-tdd: <id> markers in scanned tests to reference manual or "
+            "semantic-automation Ids; Required=yes manual rows must have a marker "
+            "(see docs/forge-task-verification.md)."
+        ),
+    )
     args = p.parse_args()
 
     brain = Path(args.brain).expanduser() if args.brain else default_brain_root()
@@ -794,6 +825,7 @@ def main() -> int:
         strict_single_task_brain=strict_single,
         strict_tech_plans=bool(args.strict_tech_plans or args.strict_0c_inventory),
         strict_0c_inventory=args.strict_0c_inventory,
+        verify_tdd_csv_trace=args.verify_tdd_csv_trace,
     )
     for w in warns:
         print(f"WARN: {w}", file=sys.stderr)

@@ -69,8 +69,8 @@ const {
   forgeBrainSearchPaths,
   collectConductorLogIndex,
 } = require(path.join(__dirname, 'forge-stage-detect.cjs'));
-// Primary path from `collectConductorLogIndex` matches `findMostRecentConductorLog` /
-// `loadConductorLogBundle(...).primaryPath` — one stat pass per call here.
+// Primary path from `collectConductorLogIndex` matches `loadConductorLogBundle` /
+// `loadBrainPromptBundle` conductor selection — one stat pass per call here.
 
 // Configuration
 const SKILL_FILE = path.join(__dirname, '..', 'skills', 'using-forge', 'SKILL.md');
@@ -302,29 +302,31 @@ function tryDetectStage() {
     const logPath = resolveConductorLogPath(brainPath);
     if (!logPath) {
       log(`Brain found at ${brainPath} but no conductor.log — defaulting to intake`);
-      return { stage: 'intake', logPath: null };
+      return { stage: 'intake', logPath: null, logContent: null };
     }
 
     try {
       const logContent = fs.readFileSync(logPath, 'utf-8');
       const stage = detectStageFromLogContent(logContent);
       log(`conductor.log: ${logPath} → stage: ${stage}`);
-      return { stage, logPath };
+      return { stage, logPath, logContent };
     } catch (e) {
       log(`Failed to read conductor.log: ${e.message}`);
     }
   }
 
-  return { stage: null, logPath: null }; // no brain found — use full fallback
+  return { stage: null, logPath: null, logContent: null }; // no brain found — use full fallback
 }
 
 /**
  * Injected when a conductor.log exists — re-anchor after compact / reduce hallucination risk.
+ * Pass logContent from tryDetectStage when available to avoid a second read.
  */
-function buildResumeChecklist(logPath) {
+function buildResumeChecklist(logPath, logContent) {
   let lastMarker = '';
   try {
-    const text = fs.readFileSync(logPath, 'utf-8');
+    const text =
+      logContent !== undefined && logContent !== null ? logContent : fs.readFileSync(logPath, 'utf-8');
     lastMarker = findLastPhaseMarker(text) || '';
   } catch (_) {
     // omit marker line
@@ -352,29 +354,44 @@ if (!fs.existsSync(SKILL_FILE)) {
   die(`using-forge/SKILL.md not found at ${SKILL_FILE}`);
 }
 
-// Edge Case 2: Cannot read SKILL file
-let skillContent = '';
 try {
-  skillContent = fs.readFileSync(SKILL_FILE, 'utf-8');
+  const st = fs.statSync(SKILL_FILE);
+  if (st.size === 0) {
+    die(`using-forge/SKILL.md is empty. Cannot bootstrap.`);
+  }
 } catch (e) {
-  die(`Cannot read using-forge/SKILL.md: ${e.message}`);
+  if (e.code === 'ENOENT') {
+    die(`using-forge/SKILL.md not found at ${SKILL_FILE}`);
+  }
+  die(`Cannot stat using-forge/SKILL.md: ${e.message}`);
 }
 
-// Edge Case 3: SKILL file is empty
-if (!skillContent || skillContent.trim().length === 0) {
-  die(`using-forge/SKILL.md is empty. Cannot bootstrap.`);
+/** Full using-forge bootstrap — load only when stage stub is missing or brain absent. */
+function readUsingForgeSkillMd() {
+  let skillContent = '';
+  try {
+    skillContent = fs.readFileSync(SKILL_FILE, 'utf-8');
+  } catch (err) {
+    die(`Cannot read using-forge/SKILL.md: ${err.message}`);
+  }
+  if (!skillContent || skillContent.trim().length === 0) {
+    die(`using-forge/SKILL.md is empty. Cannot bootstrap.`);
+  }
+  return skillContent;
 }
 
 // ==================== Main Logic ====================
 
-let contentToInject = skillContent; // default: full bootstrap
+let contentToInject = '';
 let stageLabel = 'full';
 let activeLogPath = null;
+let resumeLogContent = null;
 
 try {
   const detected = tryDetectStage();
   const stage = detected.stage;
   activeLogPath = detected.logPath;
+  resumeLogContent = detected.logContent;
 
   if (stage) {
     const stageFile = path.join(STAGES_DIR, `${stage}.md`);
@@ -386,17 +403,23 @@ try {
         log(`Stage-aware injection: ${stage}`);
       } else {
         log(`Stage file for '${stage}' is empty — falling back to full bootstrap`);
+        contentToInject = readUsingForgeSkillMd();
+        stageLabel = 'full';
       }
     } else {
       log(`No stage file found for '${stage}' at ${stageFile} — falling back to full bootstrap`);
+      contentToInject = readUsingForgeSkillMd();
+      stageLabel = 'full';
     }
   } else {
     log('No brain found — using full Forge bootstrap');
+    contentToInject = readUsingForgeSkillMd();
+    stageLabel = 'full';
   }
 } catch (e) {
   // Any detection error → fall back to full bootstrap silently
   log(`Stage detection error (non-fatal): ${e.message} — falling back to full bootstrap`);
-  contentToInject = skillContent;
+  contentToInject = readUsingForgeSkillMd();
   stageLabel = 'full (fallback)';
 }
 
@@ -419,7 +442,7 @@ const stageNote = stageLabel !== 'full'
   ? `[Forge Session — Stage: ${stageLabel.toUpperCase()}]\n\n`
   : '';
 
-const resumeBlock = activeLogPath ? buildResumeChecklist(activeLogPath) : '';
+const resumeBlock = activeLogPath ? buildResumeChecklist(activeLogPath, resumeLogContent) : '';
 
 const criticalBlock = `<EXTREMELY_IMPORTANT>
 ${stageNote}${resumeBlock}${preamblePrefix}${contentToInject}
@@ -435,6 +458,6 @@ const output = {
 process.stdout.write(JSON.stringify(output));
 
 log(`✅ Forge bootstrap loaded [stage: ${stageLabel}]`);
-log(`Injected size: ${contentToInject.length} chars (full: ${skillContent.length} chars)`);
+log(`Injected size: ${contentToInject.length} chars`);
 
 process.exit(0);

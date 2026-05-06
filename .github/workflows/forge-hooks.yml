@@ -95,12 +95,12 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
-      - name: Install PyYAML (eval scenario validation tests)
+      - name: Install optional verify requirements (stdlib-only if empty)
         run: pip install -r tools/verify/requirements-verify.txt
 
-      - name: verify_forge_task + eval stdlib unit tests
+      - name: verify_forge_task + tools/verify stdlib unit tests
         run: |
           set -e
           python3 -m unittest discover -s tools/verify -p "test_*.py" -v
@@ -113,7 +113,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: rigid skills must declare allowed-tools
         run: python3 tools/dev/lint_skill_allowed_tools.py

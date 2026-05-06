@@ -127,6 +127,49 @@ class TestVerifySemanticCoherence(unittest.TestCase):
             self.assertTrue(any("unknown Surface" in e for e in errs), errs)
 
 
+class TestTraceToCsvValidation(unittest.TestCase):
+    def test_trace_must_exist_in_manual_csv(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sem = Path(tmp) / "semantic-automation.csv"
+            man = Path(tmp) / "manual-test-cases.csv"
+            sem.write_text(
+                "Id,Surface,Intent,TraceToCsvId\n"
+                "s1,api,Do thing,TC-404\n",
+                encoding="utf-8",
+            )
+            man.write_text("Id,Title\nTC-1,Real case\n", encoding="utf-8")
+            errs = sc.validate_semantic_automation_file(
+                sem, manual_test_cases_csv=man
+            )
+            self.assertTrue(any("TC-404" in e and "not found" in e for e in errs), errs)
+
+    def test_id_collision_with_manual(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            sem = Path(tmp) / "semantic-automation.csv"
+            man = Path(tmp) / "manual-test-cases.csv"
+            sem.write_text(
+                "Id,Surface,Intent\n"
+                "TC-1,api,Do thing\n",
+                encoding="utf-8",
+            )
+            man.write_text("Id,Title\nTC-1,Acceptance\n", encoding="utf-8")
+            errs = sc.validate_semantic_automation_file(
+                sem, manual_test_cases_csv=man
+            )
+            self.assertTrue(any("collides" in e for e in errs), errs)
+
+    def test_duplicate_manual_id_reported(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            man = Path(tmp) / "manual-test-cases.csv"
+            man.write_text(
+                "Id,Title\nTC-1,A\nTC-1,B\n",
+                encoding="utf-8",
+            )
+            ids, errs = sc.parse_manual_test_case_ids(man)
+            self.assertTrue(any("duplicate manual Id" in e for e in errs), errs)
+            self.assertEqual(ids, {"TC-1"})
+
+
 class TestRunSemanticCsvCli(unittest.TestCase):
     def test_cli_writes_manifest(self) -> None:
         script = _TOOLS_DIR / "run_semantic_csv_eval.py"

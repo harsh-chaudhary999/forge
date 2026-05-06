@@ -1,8 +1,10 @@
 # Semantic automation CSV (NL-first eval)
 
-## CSV execution results
+## Authoring vs execution
 
-The machine-eval deliverable is **`qa/semantic-automation.csv`** executed through **`tools/run_semantic_csv_eval.py`** (or host automation), producing **`qa/semantic-eval-manifest.json`** + **`qa/semantic-eval-run.log`** — results that CI, **`[P4.0-SEMANTIC-EVAL]`**, and **`eval-judge`** consume.
+**Authoring:** **`qa-semantic-csv-orchestrate`** (skill) produces or updates **`qa/semantic-automation.csv`** from the brain/PRD context.
+
+**Execution:** That CSV is then run through **`tools/run_semantic_csv_eval.py`** (or host automation), producing **`qa/semantic-eval-manifest.json`** + **`qa/semantic-eval-run.log`** — the artifacts CI, **`[P4.0-SEMANTIC-EVAL]`**, and **`eval-judge`** consume.
 
 ## Why NL-first
 
@@ -47,7 +49,7 @@ Concrete **URLs, selectors, and payloads** often only become known **after** run
 | Column | Description |
 |--------|-------------|
 | **DependsOn** | Comma-separated **Id** values. Steps with unmet or failed dependencies are **SKIPPED** at run time. Order is validated as a **DAG** (no cycles). |
-| **TraceToCsvId** | Optional **`Id`** from **`qa/manual-test-cases.csv`** for traceability. |
+| **TraceToCsvId** | Optional **`Id`** from **`qa/manual-test-cases.csv`** for traceability (validated against that CSV). RED tests can cite the same ids via **`# forge-tdd: …`** — see **`skills/forge-tdd`** and **`verify_forge_task.py --verify-tdd-csv-trace`**. |
 | **ExpectedHint** | Optional substring or short hint for assertions / screenshots — interpreted by the host driver. |
 
 ## Host drivers (operator machine)

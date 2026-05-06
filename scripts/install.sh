@@ -328,8 +328,15 @@ On every session start: read ~/.cursor/plugins/local/forge/skills/using-forge/SK
 RULES
   fi
 
+  # Register global slash commands for Cursor CLI/agent fallback.
+  # Some environments index plugin commands inconsistently outside the Forge repo;
+  # this mirrors the Claude command symlink approach.
+  mkdir -p "${HOME}/.cursor/commands"
+  ln -sfn "${FORGE_DIR}/commands" "${HOME}/.cursor/commands/forge"
+
   echo "  Done: ${plugin_dir}"
   echo "  Global Cursor rules: ${global_rules_dir}/forge.mdc (loads in every project)"
+  echo "  Commands: ~/.cursor/commands/forge → ${FORGE_DIR}/commands"
   echo "  Note: Restart Cursor to activate."
   if [[ -x "${FORGE_DIR}/scripts/verify-forge-plugin-install.sh" ]]; then
     echo "  Verify plugin skill layout: bash \"${FORGE_DIR}/scripts/verify-forge-plugin-install.sh\" --platform cursor"
@@ -342,6 +349,10 @@ uninstall_cursor() {
   if [ -d "$plugin_dir" ]; then
     rm -rf "$plugin_dir"
     echo "  Removed: ${plugin_dir}"
+  fi
+  if [ -L "${HOME}/.cursor/commands/forge" ]; then
+    rm "${HOME}/.cursor/commands/forge"
+    echo "  Removed: ~/.cursor/commands/forge"
   fi
 }
 

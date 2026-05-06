@@ -64,4 +64,16 @@ elif [[ ! -f "${CUR_RULE}" ]]; then
   echo "WARN: ~/.cursor/rules/forge.mdc missing — run install.sh --platform cursor" >&2
 fi
 
+CUR_CMD="${HOME}/.cursor/commands/forge"
+if [[ -L "${CUR_CMD}" ]]; then
+  target="$(readlink -f "${CUR_CMD}" 2>/dev/null || readlink "${CUR_CMD}")"
+  if [[ "${target}" == "${FORGE_DIR}/commands" ]]; then
+    echo "OK: ~/.cursor/commands/forge -> ${FORGE_DIR}/commands"
+  else
+    echo "WARN: ~/.cursor/commands/forge -> ${target} (expected ${FORGE_DIR}/commands)" >&2
+  fi
+else
+  echo "WARN: ~/.cursor/commands/forge missing — run: bash scripts/install.sh --platform cursor" >&2
+fi
+
 exit "${EC}"

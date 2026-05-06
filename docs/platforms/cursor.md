@@ -130,6 +130,28 @@ bash scripts/verify-forge-plugin-install.sh --platform cursor
 
 Then fully restart Cursor (and Cursor CLI sessions) so the refreshed plugin layout is loaded.
 
+### Cursor CLI agent still not showing `/forge` outside Forge repo
+
+Forge now registers a global commands symlink for Cursor CLI fallback:
+
+- `~/.cursor/commands/forge -> ~/forge/commands`
+
+Re-run install and restart the `agent` process:
+
+```bash
+cd ~/forge
+bash scripts/install.sh --platform cursor
+```
+
+Then in your target repo:
+
+```bash
+cd ~/Videos/jh
+agent
+```
+
+Try `/forge` and `/workspace` (spelling matters: `/workspace`, not `/worksapce`).
+
 **`.cursorrules` not loading:**
 - Verify the file exists at repo root: `ls -la .cursorrules`
 - Restart Cursor after adding the file

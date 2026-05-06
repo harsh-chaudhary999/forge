@@ -12,7 +12,7 @@
  * Reads conductor.log from the brain directory (FORGE_BRAIN, FORGE_BRAIN_PATH, or ~/forge/brain)
  * and prepends a targeted "NEXT GATE" reminder based on which gates have been
  * crossed and which are still pending. Log paths and file contents are loaded
- * once per brain via `loadConductorLogBundle` in forge-stage-detect.cjs.
+ * once per brain via `loadBrainPromptBundle` in forge-stage-detect.cjs (conductor + qa index).
  *
  * Static HARD-GATE block suppression (emits no additionalContext):
  *   FORGE_DISABLE_GATE_INJECTION=1
@@ -37,11 +37,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const {
-  forgeBrainSearchPaths,
-  loadConductorLogBundle,
-  loadQAPipelineLogBundle,
-} = require(path.join(__dirname, 'forge-stage-detect.cjs'));
+const { forgeBrainSearchPaths, loadBrainPromptBundle } = require(path.join(
+  __dirname,
+  'forge-stage-detect.cjs',
+));
 
 const { resolveNextGate, resolveQAPipelineGate } = require(path.join(
   __dirname,
@@ -79,11 +78,11 @@ function computeGateInjection() {
   const taskIdRaw = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
   const taskIdEnvSet = !!(taskIdRaw && String(taskIdRaw).trim());
 
-  /** @type {Map<string, ReturnType<typeof loadConductorLogBundle>>} */
+  /** @type {Map<string, ReturnType<typeof loadBrainPromptBundle>>} */
   const bundleByBrain = new Map();
   for (const brainPath of BRAIN_PATHS) {
     if (!fs.existsSync(brainPath)) continue;
-    bundleByBrain.set(brainPath, loadConductorLogBundle(brainPath));
+    bundleByBrain.set(brainPath, loadBrainPromptBundle(brainPath));
   }
 
   const allConductorBodies = [];
@@ -128,9 +127,8 @@ function computeGateInjection() {
       }
     }
 
-    const qaBundle = loadQAPipelineLogBundle(brainPath);
-    if (qaBundle && qaBundle.primaryContent) {
-      const qaGate = resolveQAPipelineGate(qaBundle.primaryContent);
+    if (bundle && bundle.qaPrimaryContent) {
+      const qaGate = resolveQAPipelineGate(bundle.qaPrimaryContent);
       if (qaGate) {
         nextGate = qaGate;
         break;

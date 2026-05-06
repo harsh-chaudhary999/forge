@@ -2,9 +2,9 @@
 /**
  * Forge conductor.log → stage stub name (intake | council | build | eval | pr).
  * Also exports brain path helpers and log discovery: conductor (`collectConductorLogIndex`,
- * `findMostRecentConductorLog`, `loadConductorLogBundle`) and QA pipeline (`collectQAPipelineLogIndex`,
- * `findMostRecentQAPipelineLog`, `loadQAPipelineLogBundle`) — selection rules stay paired between
- * path-only and read helpers.
+ * `loadConductorLogBundle`), QA pipeline (`collectQAPipelineLogIndex`, `findMostRecentQAPipelineLog`,
+ * `loadQAPipelineLogBundle`), and `loadBrainPromptBundle` (single combined `prds/` scan for
+ * UserPromptSubmit — conductor + primary qa-pipeline).
  * Used by session-start.cjs in this directory; run test-forge-stage-detect.cjs to verify.
  *
  * Rule: take the LAST [P…] phase marker in the log (document order), then map it.
@@ -83,8 +83,8 @@ function forgeBrainSearchPaths() {
 
 /**
  * Stats every candidate conductor.log (scoped single path or all tasks).
- * Shared by `findMostRecentConductorLog` (path only) and `loadConductorLogBundle`
- * (reads bodies) so selection rules cannot drift.
+ * Session-start uses this for path-only selection. `loadConductorLogBundle` shares these rules.
+ * `loadBrainPromptBundle` uses `collectUnifiedPromptGateIndices` (one merged `prds/` scan + QA).
  * @param {string} brainPath
  * @returns {{ statEntries: Array<{ path: string, mtimeMs: number }> }}
  */
@@ -127,27 +127,8 @@ function collectConductorLogIndex(brainPath) {
 }
 
 /**
- * Returns the path of the most recently modified conductor.log under
- * brainPath/prds/*, or null if none found.
- * Same scoping as `findMostRecentQAPipelineLog`: when `FORGE_TASK_ID` or
- * `FORGE_PRD_TASK_ID` is set and `brainPath/prds/<id>/conductor.log` exists,
- * returns that path without scanning every task (avoids O(N) stat per prompt).
- * @param {string} brainPath
- * @returns {string|null}
- */
-function findMostRecentConductorLog(brainPath) {
-  const { statEntries } = collectConductorLogIndex(brainPath);
-  if (statEntries.length === 0) return null;
-  let best = statEntries[0];
-  for (let i = 1; i < statEntries.length; i += 1) {
-    if (statEntries[i].mtimeMs > best.mtimeMs) best = statEntries[i];
-  }
-  return best.path;
-}
-
-/**
  * One pass per brain for UserPromptSubmit: same path selection as
- * `findMostRecentConductorLog` via `collectConductorLogIndex`, then reads each
+ * `collectConductorLogIndex`, then reads each
  * log once so suppress + next-gate do not duplicate I/O.
  *
  * @param {string} brainPath
@@ -231,7 +212,7 @@ function collectQAPipelineLogIndex(brainPath) {
 
 /**
  * Resolves `brainPath/prds/<task-id>/qa-pipeline.log` (standalone QA /qa-run flow).
- * Same scoping as `findMostRecentConductorLog`: prefer `FORGE_TASK_ID` or
+ * Same scoping as conductor logs: prefer `FORGE_TASK_ID` or
  * `FORGE_PRD_TASK_ID` when the scoped file exists; else newest mtime under prds/*.
  * @param {string} brainPath
  * @returns {string|null}
@@ -270,14 +251,157 @@ function loadQAPipelineLogBundle(brainPath) {
   }
 }
 
+/**
+ * One `readdir` of `prds/*` (when unscoped) collects both conductor and QA stat entries;
+ * matches per-file scoping rules of `collectConductorLogIndex` + `collectQAPipelineLogIndex`.
+ * @param {string} brainPath
+ * @returns {{ conductorStatEntries: Array<{ path: string, mtimeMs: number }>, qaStatEntries: Array<{ path: string, mtimeMs: number }> }}
+ */
+function collectUnifiedPromptGateIndices(brainPath) {
+  const prdsDir = path.join(brainPath, 'prds');
+  if (!fs.existsSync(prdsDir)) return { conductorStatEntries: [], qaStatEntries: [] };
+
+  const envTaskIdRaw = process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID;
+  const envTaskId = envTaskIdRaw ? String(envTaskIdRaw).trim() : '';
+
+  function scanAllConductors(out) {
+    try {
+      for (const taskDir of fs.readdirSync(prdsDir)) {
+        const logPath = path.join(prdsDir, taskDir, 'conductor.log');
+        if (!fs.existsSync(logPath)) continue;
+        try {
+          out.push({ path: logPath, mtimeMs: fs.statSync(logPath).mtimeMs });
+        } catch (_) {}
+      }
+    } catch (_) {}
+  }
+
+  function scanAllQa(out) {
+    try {
+      for (const taskDir of fs.readdirSync(prdsDir)) {
+        const logPath = path.join(prdsDir, taskDir, 'qa-pipeline.log');
+        if (!fs.existsSync(logPath)) continue;
+        try {
+          out.push({ path: logPath, mtimeMs: fs.statSync(logPath).mtimeMs });
+        } catch (_) {}
+      }
+    } catch (_) {}
+  }
+
+  function scanAllBoth(condOut, qaOut) {
+    try {
+      for (const taskDir of fs.readdirSync(prdsDir)) {
+        const cPath = path.join(prdsDir, taskDir, 'conductor.log');
+        const qPath = path.join(prdsDir, taskDir, 'qa-pipeline.log');
+        if (fs.existsSync(cPath)) {
+          try {
+            condOut.push({ path: cPath, mtimeMs: fs.statSync(cPath).mtimeMs });
+          } catch (_) {}
+        }
+        if (fs.existsSync(qPath)) {
+          try {
+            qaOut.push({ path: qPath, mtimeMs: fs.statSync(qPath).mtimeMs });
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+  }
+
+  const conductorStatEntries = [];
+  const qaStatEntries = [];
+
+  if (!envTaskId) {
+    scanAllBoth(conductorStatEntries, qaStatEntries);
+    return { conductorStatEntries, qaStatEntries };
+  }
+
+  const cScoped = path.join(prdsDir, envTaskId, 'conductor.log');
+  const qScoped = path.join(prdsDir, envTaskId, 'qa-pipeline.log');
+
+  let haveCond = false;
+  if (fs.existsSync(cScoped)) {
+    try {
+      conductorStatEntries.push({ path: cScoped, mtimeMs: fs.statSync(cScoped).mtimeMs });
+      haveCond = true;
+    } catch (_) {}
+  }
+  let haveQa = false;
+  if (fs.existsSync(qScoped)) {
+    try {
+      qaStatEntries.push({ path: qScoped, mtimeMs: fs.statSync(qScoped).mtimeMs });
+      haveQa = true;
+    } catch (_) {}
+  }
+
+  if (!haveCond && !haveQa) {
+    scanAllBoth(conductorStatEntries, qaStatEntries);
+  } else {
+    if (!haveCond) scanAllConductors(conductorStatEntries);
+    if (!haveQa) scanAllQa(qaStatEntries);
+  }
+
+  return { conductorStatEntries, qaStatEntries };
+}
+
+/**
+ * UserPromptSubmit: conductor bundle + primary qa-pipeline.log — **one** unified index pass per brain
+ * (`collectUnifiedPromptGateIndices`), then reads conductor logs + primary QA body.
+ * @param {string} brainPath
+ * @returns {{ primaryPath: string|null, primaryContent: string|null, entries: Array<{path: string, content: string, mtimeMs: number}>, qaPrimaryPath: string|null, qaPrimaryContent: string|null }}
+ */
+function loadBrainPromptBundle(brainPath) {
+  const { conductorStatEntries, qaStatEntries } = collectUnifiedPromptGateIndices(brainPath);
+
+  const entries = [];
+  for (const se of conductorStatEntries) {
+    try {
+      const content = fs.readFileSync(se.path, 'utf-8');
+      entries.push({ path: se.path, content, mtimeMs: se.mtimeMs });
+    } catch (_) {}
+  }
+
+  let primaryPath = null;
+  let primaryContent = null;
+  if (entries.length > 0) {
+    let best = entries[0];
+    for (let i = 1; i < entries.length; i += 1) {
+      if (entries[i].mtimeMs > best.mtimeMs) best = entries[i];
+    }
+    primaryPath = best.path;
+    primaryContent = best.content;
+  }
+
+  let qaPrimaryPath = null;
+  let qaPrimaryContent = null;
+  if (qaStatEntries.length > 0) {
+    let qb = qaStatEntries[0];
+    for (let i = 1; i < qaStatEntries.length; i += 1) {
+      if (qaStatEntries[i].mtimeMs > qb.mtimeMs) qb = qaStatEntries[i];
+    }
+    try {
+      qaPrimaryPath = qb.path;
+      qaPrimaryContent = fs.readFileSync(qb.path, 'utf-8');
+    } catch (_) {}
+  }
+
+  return {
+    primaryPath,
+    primaryContent,
+    entries,
+    qaPrimaryPath,
+    qaPrimaryContent,
+  };
+}
+
 module.exports = {
   findLastPhaseMarker,
   markerToStage,
   detectStageFromLogContent,
   forgeBrainSearchPaths,
   collectConductorLogIndex,
-  findMostRecentConductorLog,
   loadConductorLogBundle,
+  collectUnifiedPromptGateIndices,
+  loadBrainPromptBundle,
   collectQAPipelineLogIndex,
   findMostRecentQAPipelineLog,
   loadQAPipelineLogBundle,

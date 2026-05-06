@@ -15,6 +15,14 @@ on:
       - ".claude/hooks/prompt-submit-injection.cjs"
       - ".claude/hooks/forge-stage-detect.cjs"
       - ".claude/hooks/test-forge-stage-detect.cjs"
+      - ".claude/hooks/pre-commit.cjs"
+      - ".claude/hooks/pre-merge.cjs"
+      - ".claude/hooks/commit-msg.cjs"
+      - ".claude/hooks/post-merge.cjs"
+      - ".claude/hooks/post-rewrite.cjs"
+      - ".claude/hooks/forge-install-hooks.cjs"
+      - ".claude/hooks/forge-worktree-cleanup.cjs"
+      - ".claude/hooks/post-pr-dreamer.cjs"
       - "tools/**/*.py"
       - "tools/verify/**"
       - "tools/scan/**"
@@ -37,6 +45,14 @@ on:
       - ".claude/hooks/prompt-submit-injection.cjs"
       - ".claude/hooks/forge-stage-detect.cjs"
       - ".claude/hooks/test-forge-stage-detect.cjs"
+      - ".claude/hooks/pre-commit.cjs"
+      - ".claude/hooks/pre-merge.cjs"
+      - ".claude/hooks/commit-msg.cjs"
+      - ".claude/hooks/post-merge.cjs"
+      - ".claude/hooks/post-rewrite.cjs"
+      - ".claude/hooks/forge-install-hooks.cjs"
+      - ".claude/hooks/forge-worktree-cleanup.cjs"
+      - ".claude/hooks/post-pr-dreamer.cjs"
       - "tools/**/*.py"
       - "tools/verify/**"
       - "tools/scan/**"
@@ -87,6 +103,14 @@ jobs:
 
       - name: Load post-commit hook (syntax)
         run: node --check .claude/hooks/post-commit.cjs
+
+      - name: Load remaining hooks (syntax)
+        run: |
+          set -e
+          for f in pre-commit pre-merge commit-msg post-merge post-rewrite \
+                    forge-install-hooks forge-worktree-cleanup post-pr-dreamer; do
+            node --check ".claude/hooks/${f}.cjs"
+          done
 
   verify-forge-task:
     runs-on: ubuntu-latest

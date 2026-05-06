@@ -10,6 +10,7 @@ const {
   markerToStage,
   detectStageFromLogContent,
   collectConductorLogIndex,
+  collectUnifiedPromptGateIndices,
   loadConductorLogBundle,
   findMostRecentQAPipelineLog,
   loadBrainPromptBundle,
@@ -175,6 +176,37 @@ test('findMostRecentQAPipelineLog prefers FORGE_TASK_ID scoped path over newer m
       process.env.FORGE_TASK_ID = 'task-a';
       delete process.env.FORGE_PRD_TASK_ID;
       assert.strictEqual(findMostRecentQAPipelineLog(tmp), qaA);
+    } finally {
+      if (prevT === undefined) delete process.env.FORGE_TASK_ID;
+      else process.env.FORGE_TASK_ID = prevT;
+      if (prevP === undefined) delete process.env.FORGE_PRD_TASK_ID;
+      else process.env.FORGE_PRD_TASK_ID = prevP;
+    }
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('collectUnifiedPromptGateIndices scoped: conductor present, QA absent → qaStatEntries empty (no fallback)', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'forge-unified-idx-'));
+  try {
+    fs.mkdirSync(path.join(tmp, 'prds', 'task-a'), { recursive: true });
+    fs.mkdirSync(path.join(tmp, 'prds', 'task-b'), { recursive: true });
+    const condA = path.join(tmp, 'prds', 'task-a', 'conductor.log');
+    const qaB = path.join(tmp, 'prds', 'task-b', 'qa-pipeline.log');
+    fs.writeFileSync(condA, '[P1]\n', 'utf-8');
+    fs.writeFileSync(qaB, '[QA-OTHER-TASK]\n', 'utf-8');
+    const sb = fs.statSync(qaB);
+    fs.utimesSync(qaB, new Date(sb.mtimeMs + 120_000), new Date(sb.mtimeMs + 120_000));
+    const prevT = process.env.FORGE_TASK_ID;
+    const prevP = process.env.FORGE_PRD_TASK_ID;
+    try {
+      process.env.FORGE_TASK_ID = 'task-a';
+      delete process.env.FORGE_PRD_TASK_ID;
+      const { conductorStatEntries, qaStatEntries } = collectUnifiedPromptGateIndices(tmp);
+      assert.strictEqual(conductorStatEntries.length, 1);
+      assert.strictEqual(conductorStatEntries[0].path, condA);
+      assert.strictEqual(qaStatEntries.length, 0);
     } finally {
       if (prevT === undefined) delete process.env.FORGE_TASK_ID;
       else process.env.FORGE_TASK_ID = prevT;

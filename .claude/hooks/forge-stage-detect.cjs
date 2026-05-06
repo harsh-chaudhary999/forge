@@ -276,18 +276,6 @@ function collectUnifiedPromptGateIndices(brainPath) {
     } catch (_) {}
   }
 
-  function scanAllQa(out) {
-    try {
-      for (const taskDir of fs.readdirSync(prdsDir)) {
-        const logPath = path.join(prdsDir, taskDir, 'qa-pipeline.log');
-        if (!fs.existsSync(logPath)) continue;
-        try {
-          out.push({ path: logPath, mtimeMs: fs.statSync(logPath).mtimeMs });
-        } catch (_) {}
-      }
-    } catch (_) {}
-  }
-
   function scanAllBoth(condOut, qaOut) {
     try {
       for (const taskDir of fs.readdirSync(prdsDir)) {
@@ -337,8 +325,9 @@ function collectUnifiedPromptGateIndices(brainPath) {
     scanAllBoth(conductorStatEntries, qaStatEntries);
   } else {
     if (!haveCond) scanAllConductors(conductorStatEntries);
-    // Task-scoped mode: never substitute another task's qa-pipeline.log when this task's is absent.
-    if (!haveQa && !envTaskId) scanAllQa(qaStatEntries);
+    // Task-scoped (envTaskId set) but this task has no qa-pipeline.log: intentionally do nothing
+    // for QA — do not scan other tasks' qa-pipeline.log (cross-task QA contamination was the bug).
+    // qaStatEntries stays empty when haveQa is false.
   }
 
   return { conductorStatEntries, qaStatEntries };

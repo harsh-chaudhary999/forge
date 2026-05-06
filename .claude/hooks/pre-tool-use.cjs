@@ -33,7 +33,9 @@
  *
  * FORGE_ROOT — optional absolute path to Forge repo root; defaults to two levels
  * above this hook (…/forge). Used to load tools/dev/skill-tool-policy.json
- * (fallback: tools/skill-tool-policy.json) when present.
+ * (fallback: tools/skill-tool-policy.json) when present. If set to a path outside
+ * the user home directory, skill-policy loading is skipped (untrusted tree); canary
+ * and destructive-pattern checks still run for Bash/Shell.
  *
  * Active skill: ~/.forge/.active-skill (skill basename). Session-start also uses
  * ~/.forge/.active-skill-tier (optional 1–4); it can write that file after parsing
@@ -165,10 +167,12 @@ try {
 const forgeRoot = process.env.FORGE_ROOT
   ? path.resolve(String(process.env.FORGE_ROOT).trim())
   : path.resolve(__dirname, '..', '..');
+/** When FORGE_ROOT points outside ~, skip skill-tool-policy / SKILL.md gate only — still run canary + destructive checks below. */
+let forgeRootTrusted = true;
 if (process.env.FORGE_ROOT) {
   const home = os.homedir();
   if (!forgeRoot.startsWith(home + path.sep) && forgeRoot !== home) {
-    process.exit(0);
+    forgeRootTrusted = false;
   }
 }
 
@@ -228,7 +232,7 @@ function resolveSkillAllowedTools(skillKey, skillFilePath, loadSkillContent) {
   return { allowedTools, isHardGate: isHardGateSkill, source: 'SKILL.md' };
 }
 
-if (activeSkill) {
+if (activeSkill && forgeRootTrusted) {
   if (!/^[a-zA-Z0-9_-]+$/.test(activeSkill)) {
     process.exit(0);
   }

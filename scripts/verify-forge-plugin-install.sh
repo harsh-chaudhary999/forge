@@ -98,6 +98,32 @@ verify_plugin_tools_scanner() {
   return 0
 }
 
+verify_cursor_manifest() {
+  local root="$1"
+  local manifest="${root}/.cursor-plugin/plugin.json"
+  if [[ ! -f "${manifest}" ]]; then
+    echo "ERROR [cursor]: missing ${manifest}" >&2
+    return 1
+  fi
+  if ! command -v node >/dev/null 2>&1; then
+    echo "OK [cursor]: ${manifest} exists (skip key validation: node missing)"
+    return 0
+  fi
+  node -e "
+    const fs = require('fs');
+    const p = process.argv[1];
+    const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+    const required = ['skills', 'agents', 'commands', 'hooks'];
+    const missing = required.filter((k) => !j[k] || typeof j[k] !== 'string');
+    if (missing.length) {
+      console.error('ERROR [cursor]: plugin manifest missing keys: ' + missing.join(', ') + ' in ' + p);
+      process.exit(1);
+    }
+    console.log('OK [cursor]: plugin manifest has skills/agents/commands/hooks');
+  " "${manifest}" || return 1
+  return 0
+}
+
 opencode_skills_root() {
   local base="${HOME}/.opencode/plugins/forge"
   if [[ -d "${base}/skills" ]]; then
@@ -149,6 +175,9 @@ run_one() {
   if [[ "${lbl}" == "claude-code" ]] && [[ -d "${r}/skills" ]]; then
     verify_claude_plugin_layout "${r}" || return 1
   fi
+  if [[ "${lbl}" == "cursor" ]] && [[ -d "${r}/skills" ]]; then
+    verify_cursor_manifest "${r}" || return 1
+  fi
   if [[ "${lbl}" == "cursor" || "${lbl}" == "claude-code" ]] && [[ -d "${r}/skills" ]]; then
     verify_plugin_tools_scanner "${r}" "${lbl}" || return 1
   fi
@@ -178,6 +207,7 @@ case "${PLATFORM}" in
     verify_merged_skills_root "${cr}" "cursor"
     verify_no_nested_copy_dirs "${cr}" "cursor"
     if [[ -d "${cr}/skills" ]]; then
+      verify_cursor_manifest "${cr}" || exit 1
       verify_plugin_tools_scanner "${cr}" "cursor" || exit 1
     fi
     ;;

@@ -329,14 +329,18 @@ RULES
   fi
 
   # Register global slash commands for Cursor CLI/agent fallback.
-  # Some environments index plugin commands inconsistently outside the Forge repo;
-  # this mirrors the Claude command symlink approach.
+  # Cursor CLI expects flat files under ~/.cursor/commands/*.md.
   mkdir -p "${HOME}/.cursor/commands"
   ln -sfn "${FORGE_DIR}/commands" "${HOME}/.cursor/commands/forge"
+  for cmd in "${FORGE_DIR}"/commands/*.md; do
+    [ -f "$cmd" ] || continue
+    ln -sfn "$cmd" "${HOME}/.cursor/commands/$(basename "$cmd")"
+  done
 
   echo "  Done: ${plugin_dir}"
   echo "  Global Cursor rules: ${global_rules_dir}/forge.mdc (loads in every project)"
   echo "  Commands: ~/.cursor/commands/forge → ${FORGE_DIR}/commands"
+  echo "  Commands: ~/.cursor/commands/*.md → ${FORGE_DIR}/commands/*.md"
   echo "  Note: Restart Cursor to activate."
   if [[ -x "${FORGE_DIR}/scripts/verify-forge-plugin-install.sh" ]]; then
     echo "  Verify plugin skill layout: bash \"${FORGE_DIR}/scripts/verify-forge-plugin-install.sh\" --platform cursor"
@@ -350,6 +354,13 @@ uninstall_cursor() {
     rm -rf "$plugin_dir"
     echo "  Removed: ${plugin_dir}"
   fi
+  for cmd in "${FORGE_DIR}"/commands/*.md; do
+    [ -f "$cmd" ] || continue
+    local link="${HOME}/.cursor/commands/$(basename "$cmd")"
+    if [ -L "$link" ]; then
+      rm "$link"
+    fi
+  done
   if [ -L "${HOME}/.cursor/commands/forge" ]; then
     rm "${HOME}/.cursor/commands/forge"
     echo "  Removed: ~/.cursor/commands/forge"

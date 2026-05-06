@@ -76,4 +76,16 @@ else
   echo "WARN: ~/.cursor/commands/forge missing — run: bash scripts/install.sh --platform cursor" >&2
 fi
 
+CUR_FORGE_MD="${HOME}/.cursor/commands/forge.md"
+if [[ -L "${CUR_FORGE_MD}" ]]; then
+  target="$(readlink -f "${CUR_FORGE_MD}" 2>/dev/null || readlink "${CUR_FORGE_MD}")"
+  if [[ "${target}" == "${FORGE_DIR}/commands/forge.md" ]]; then
+    echo "OK: ~/.cursor/commands/forge.md -> ${FORGE_DIR}/commands/forge.md"
+  else
+    echo "WARN: ~/.cursor/commands/forge.md -> ${target} (expected ${FORGE_DIR}/commands/forge.md)" >&2
+  fi
+else
+  echo "WARN: ~/.cursor/commands/forge.md missing — run: bash scripts/install.sh --platform cursor" >&2
+fi
+
 exit "${EC}"

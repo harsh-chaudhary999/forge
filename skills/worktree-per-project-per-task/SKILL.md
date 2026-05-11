@@ -131,6 +131,14 @@ git status --porcelain
 3. Subagent commits work to `task/<task-id>` branch
 4. Subagent reports: `DONE`, `DONE_WITH_CONCERNS`, `NEEDS_CONTEXT`, or `BLOCKED`
 
+**Next step after worktree is verified:**
+Before dispatching dev-implementer, invoke `forge-tdd` to write RED (failing) tests inside the worktree. Implementation (GREEN code) follows only after RED tests are observed failing and logged. The sequence is:
+1. Worktree created and verified (`git worktree list` confirms task branch) ← you are here
+2. `forge-tdd` RED phase: write failing tests, confirm they fail
+3. dev-implementer: write minimal code to make tests GREEN
+4. `forge-tdd` GREEN verification: confirm tests pass
+Never dispatch dev-implementer to write implementation code without a prior RED phase in the same worktree.
+
 **Subagent must NOT:**
 - Merge into main/master
 - Push to origin

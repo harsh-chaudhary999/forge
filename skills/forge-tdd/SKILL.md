@@ -4,6 +4,8 @@ description: "WHEN: About to write any production code. HARD-GATE: Iron law - wr
 type: rigid
 version: 1.0.1
 preamble-tier: 3
+requires:
+  - worktree-per-project-per-task
 triggers:
   - "write test first"
   - "TDD"
@@ -15,6 +17,8 @@ allowed-tools:
 ---
 
 # Test-Driven Development (Iron Law)
+
+**Prerequisite (HARD-GATE):** You must be executing inside an isolated git worktree created by `worktree-per-project-per-task`. Step 0 enforces this. No test is written before worktree existence is confirmed.
 
 **HARD-GATE: Non-negotiable. No production code without failing test first.**
 
@@ -38,7 +42,29 @@ allowed-tools:
 
 ---
 
-## Step 0: Read Code Style Before Writing Any Test
+## Step 0 — Worktree Pre-Check (HARD-GATE)
+
+**Before writing a single test line, verify you are executing inside an isolated git worktree.**
+
+```bash
+# Verify current directory is a worktree (not main working tree)
+git rev-parse --show-toplevel && git worktree list | grep "$(git rev-parse --show-toplevel)"
+```
+
+Expected output: the current path appears in `git worktree list` with a branch name matching the task (e.g., `task/<task-id>`).
+
+**If the check fails (current dir is main, or no task branch exists):**
+
+1. STOP — do not write any test.
+2. Invoke `worktree-per-project-per-task` to create a fresh isolated worktree for this task.
+3. `cd` into the new worktree path.
+4. Re-start forge-tdd from Step 0 inside the worktree.
+
+**HARD-GATE: No test file is created, no `git add` is run, and no RED phase begins until `git worktree list` shows the current path on a task-specific branch.**
+
+---
+
+## Step 1: Read Code Style Before Writing Any Test
 
 Before writing the first test, read the project's coding conventions:
 

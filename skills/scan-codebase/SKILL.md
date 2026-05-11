@@ -442,6 +442,55 @@ Artifacts:
 
 Read the phase 3.5 console output for the HTTP method breakdown before manual enrichment.
 
+### 3.6 — code-style.md: extract coding conventions from hub reads
+
+**Write once per repo role** to `~/forge/brain/products/<slug>/codebase/code-style.md`.
+This file is the mandatory style reference for all dev-implementers — they read it before writing any code for this repo.
+
+Extract from the Tier 1 hub files you just read:
+
+```markdown
+# Code Style: <role> (<repo-name>)
+
+**Extracted from:** Tier 1 hub reads (Phase 3)
+**Repo:** <repo-path>
+
+## Naming Conventions
+- Classes/Types: <PascalCase | snake_case | camelCase> — e.g. `UserService`, `user_service`
+- Functions/Methods: <camelCase | snake_case> — e.g. `getUser`, `get_user`
+- Constants: <UPPER_SNAKE | camelCase> — e.g. `MAX_RETRY`, `maxRetry`
+- Files: <PascalCase.ts | camelCase.ts | kebab-case.ts> — e.g. `UserService.ts`
+- Variables: <camelCase | snake_case>
+
+## Import Style
+- <Named imports only | Default imports | Barrel files (index.ts) | Direct path imports>
+- Example from codebase: `import { UserService } from './services/UserService'`
+
+## Function / Class Style
+- <Classes with DI constructor | Plain functions | Arrow function exports | Functional components>
+- Async pattern: <async/await | Promise.then | Callbacks>
+- Example: `export class UserService { constructor(private db: DB) {} }`
+
+## Error Handling Pattern
+- <throw new CustomError() | return Result<T, E> | return { error, data } | callback(err, data)>
+- Example from codebase: `throw new AppError('NOT_FOUND', 404, message)`
+
+## Testing Conventions
+- Test file location: <next to source | __tests__/ | test/ | spec/>
+- Test file naming: <*.test.ts | *.spec.ts | *_test.go>
+- Test framework: <jest | vitest | go test | pytest | junit>
+- Mocking style: <jest.mock() | sinon | mockery | no mocks — real DB>
+
+## Comments / Documentation
+- <JSDoc on all public functions | no comments | inline comments only>
+- Example: `/** Returns user by ID. Throws NOT_FOUND if absent. */`
+
+## Other Patterns Observed
+- <Any other consistent patterns from hub files — decorators, middleware patterns, etc.>
+```
+
+**HARD-GATE:** If `code-style.md` is missing when a dev-implementer starts a task for this repo, the implementer MUST generate it by reading 3 existing files from the target module before writing any code. "I'll match the style from memory" is not acceptable.
+
 ---
 
 ## Phase 4: Brain Write (Obsidian Format)

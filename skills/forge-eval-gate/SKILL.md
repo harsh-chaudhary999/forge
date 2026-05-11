@@ -52,6 +52,7 @@ If you notice any of these, STOP and do not proceed:
 - **Eval fails but team proceeds citing "it's a known flaky test"** — Known flakiness is a real bug. STOP. Fix the flakiness or remove the test; do not proceed past a failing eval.
 - **Self-heal has run 3 times and eval still fails** — The cap has been reached. STOP. Escalate to human with full failure context. Do not attempt a 4th self-heal cycle.
 - **Eval verdict is YELLOW and team treats it as GREEN** — YELLOW means non-critical failures. STOP. Investigate YELLOW scenarios before merging; do not treat YELLOW as acceptable.
+- **`[P4.4-EVAL-PASS]` is logged before the eval driver finishes running** — Markers must reflect actual, completed state — not anticipated state. Logging the eval-pass marker optimistically (before `semantic-eval-manifest.json` is written with `outcome: pass`) means the audit trail is false. STOP. The sequence is strictly: eval driver completes → `semantic-eval-manifest.json` written with `outcome: pass` → `semantic-eval-run.log` complete → THEN log `[P4.4-EVAL-PASS]` to `conductor.log`. Any other order is invalid.
 
 ## Detailed Workflow
 

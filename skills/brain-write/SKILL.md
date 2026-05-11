@@ -32,6 +32,15 @@ allowed-tools:
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Iron Law
+
+```
+EVERY BRAIN WRITE IS A GIT COMMIT — NOT JUST A FILE WRITE.
+EVERY BRAIN COMMIT MESSAGE MUST INCLUDE task_id:, decision_id:, OR contract_id: ANCHOR.
+COMMITS WITHOUT ANCHORS ARE NOISE — THEY CANNOT BE FOUND, RESUMED, OR AUDITED.
+A DECISION THAT EXISTS ONLY IN CHAT IS LOST AT CONTEXT COMPACTION.
+```
+
 Every write is a git commit. Pattern:
 
 ## 1. Write the file

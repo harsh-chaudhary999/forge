@@ -37,6 +37,7 @@ Before any vector or FTS index ships, prefer **YAML frontmatter** on new decisio
 ├── prds/                                  # Per-task PRD delivery (conductor path; parallel to product slug dirs)
 │   └── <task-id>/
 │       ├── prd-locked.md
+│       ├── conductor.log           # Phase transition markers: [P1-PRD-LOCKED] → [P5-PR-RAISED] (appended, never overwritten)
 │       ├── terminology.md                 # Product/domain terms for this task (not Forge glossary); see docs/terminology-review.md + docs/templates/terminology.md
 │       ├── shared-dev-spec.md
 │       ├── parity/                        # HARD-GATE before spec-freeze (see spec-freeze Step 0): external-plan.md OR completed checklist.md OR waiver.md
@@ -56,6 +57,7 @@ Before any vector or FTS index ships, prefer **YAML frontmatter** on new decisio
 │       ├── tech-plans/
 │       │   ├── HUMAN_SIGNOFF.md            # After agent self-review + XALIGN: human approval / feedback / waiver before State 4b (see docs/tech-plan-human-signoff.template.md)
 │       │   └── <repo-name>.md
+│       ├── blockers/               # HARD-GATE failures, escalations, and unresolved blockers (<timestamp>-<slug>.md)
 │       ├── checkpoints/                    # Session checkpoints from context-save/context-restore
 │       └── eval/
 │

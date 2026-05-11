@@ -129,6 +129,7 @@ EVERY RUN IS COMMITTED TO BRAIN WITH ITS SHA EVIDENCE — TERMINAL OUTPUT IS NOT
 - **Stack health check failed in local mode** — STOP. Do not run eval against a broken stack. Report which service failed to start.
 - **eval-judge returns RED and user asks to merge anyway** — STOP. RED verdict is a hard gate. Fix the failure and re-run.
 - **Scenario count in brain is 0** — STOP. No scenarios = no coverage = no valid verdict. Ask user to check PRD completeness.
+- **Semantic automation CSV (`semantic-automation.csv`) authored or executed before `manual-test-cases.csv` is approved** — Semantic steps are derived from manual test cases; authoring them before the manual baseline is locked means traceability is broken and the semantic CSV will need a full rewrite. STOP. Complete `qa-manual-test-cases-from-prd`, get QA analyst sign-off on `manual-test-cases.csv`, then use `TraceToCsvId` to reference manual rows when writing semantic automation steps.
 
 ## Pipeline Phases
 

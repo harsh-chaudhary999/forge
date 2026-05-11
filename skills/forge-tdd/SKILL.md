@@ -115,6 +115,8 @@ Before writing any production code, you must have failing tests covering ALL fou
 - One happy-path test and nothing else — edge cases and errors ARE requirements
 - "I'll add more tests after the feature works" — test matrix must be RED before any production code
 - Integration tests as optional — if the function touches a DB, cache, queue, or external API, an integration test is mandatory
+- Tests use `assert result is not None` / `expect(fn).toHaveBeenCalled()` as the primary assertion — existence and call-only checks are hollow. Assert the specific output contract.
+- Test name is a single word or function name (`test_login`, `test_user`, `test_api`) — rewrite with behavior + condition pattern.
 
 **Recommended test authoring order within RED:**
 1. Happy path first — validates the API contract and makes the function's contract visible
@@ -123,6 +125,311 @@ Before writing any production code, you must have failing tests covering ALL fou
 4. Integration test — write after unit tests confirm the function's contract; integration confirms wiring
 
 Writing edge cases first is a trap: you'll design the API around edge cases and miss the obvious happy path.
+
+---
+
+## Test Anatomy: Arrange-Act-Assert (MANDATORY STRUCTURE)
+
+Every test MUST use Arrange-Act-Assert. Label each section with a comment. No exceptions.
+
+```python
+# Python example
+def test_login_with_valid_credentials_returns_jwt_token():
+    # --- Arrange ---
+    mock_user_repo = Mock()
+    mock_user_repo.find_by_email.return_value = User(
+        id="user_1", email="test@example.com",
+        password_hash=hash_password("correct_pass"), active=True
+    )
+    service = LoginService(user_repo=mock_user_repo, token_ttl=3600)
+
+    # --- Act ---
+    result = service.authenticate("test@example.com", "correct_pass")
+
+    # --- Assert ---
+    assert result.token is not None, "Valid credentials must yield a token"
+    assert result.expires_in == 3600, f"Expected ttl=3600, got {result.expires_in}"
+    assert result.user_id == "user_1", "Token must identify the authenticated user"
+```
+
+```typescript
+// TypeScript example
+it('should return 200 with JWT when credentials are valid', async () => {
+    // --- Arrange ---
+    jest.spyOn(userRepo, 'findByEmail').mockResolvedValue(
+        mockUser({ email: 'test@example.com', passwordHash: hash('correct_pass') })
+    );
+
+    // --- Act ---
+    const response = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'test@example.com', password: 'correct_pass' });
+
+    // --- Assert ---
+    expect(response.status).toBe(200);
+    expect(response.body.token).toMatch(/^eyJ/);       // JWT format
+    expect(response.body.expiresIn).toBe(3600);
+    expect(response.body).not.toHaveProperty('passwordHash'); // no secret leak
+});
+```
+
+**Rules:**
+- Arrange: build ALL inputs, mocks, and fixtures BEFORE the act line. Zero setup after Act.
+- Act: ONE line only. If you need two act lines, split into two tests.
+- Assert: assert SPECIFIC values, NOT just existence. Every assert gets a failure message.
+
+---
+
+## Test Naming Convention (MANDATORY)
+
+Test names must describe **behavior** and **condition**, not the function name.
+
+| ❌ BAD (describes code) | ✅ GOOD (describes behavior) |
+|---|---|
+| `test_login()` | `test_login_with_valid_credentials_returns_jwt_token()` |
+| `test_user_service()` | `test_create_user_when_email_already_exists_raises_duplicate_error()` |
+| `test_api()` | `test_get_orders_when_user_has_no_orders_returns_empty_list()` |
+| `it('works')` | `it('should display validation error when email field is empty on submit')` |
+| `test_edge_case()` | `test_validate_email_rejects_string_without_at_symbol()` |
+
+**Pattern:**
+- Python/Go/Java: `test_<subject>_<condition>_<expected_outcome>`
+- TypeScript/JS: `it('should <expected_outcome> when <condition>')`
+- Kotlin: `` `when <condition>, <expected_outcome>` `` (backtick syntax)
+
+**HARD-GATE:** A test named `test_login`, `test_user`, `test_api`, `test_edge`, or any single-word name is **NOT a valid test name** — rewrite it before committing.
+
+---
+
+## Assertion Quality Rules (MANDATORY)
+
+Assertions must verify **specific observable behavior**, not just existence or invocation.
+
+**Assertion quality ladder — only ✅ tiers are acceptable:**
+
+| Tier | Example | Verdict |
+|---|---|---|
+| ❌ Existence | `assert result` / `assert result is not None` | Useless — passes for any truthy value |
+| ❌ Call-only | `expect(fn).toHaveBeenCalled()` | Useless — doesn't verify arguments or outcome |
+| ❌ Status only | `expect(response.status).toBe(200)` alone | Incomplete — body might be wrong |
+| ✅ Specific value | `assert result.token.startswith('eyJ')` | Good — verifies content |
+| ✅ Full contract | `assert result.token`, `assert result.expires_in == 3600`, `assert result.user_id == user.id` | Best — covers the full output contract |
+
+**Rules:**
+1. **Assert the output contract, not the code path.** Never assert that a private method was called — assert what the caller observes.
+2. **Every assert gets a failure message.** `assert x == y, f"Expected {y}, got {x}"` / `expect(x).toBe(y)` (Jest messages are built in).
+3. **Error tests must assert the error code/message**, not just that an exception was raised. `pytest.raises(AuthError) as exc; assert exc.value.code == 'INVALID_CREDENTIALS'`
+4. **State-change tests must assert the new state**, not just that a method was called. If `update_user` is called, assert `user.updated_at` changed and `user.name == new_name`.
+5. **Negative assertions are required for security.** If login fails, assert the response body does NOT contain a token. If user is unauthorized, assert the response does NOT contain the resource.
+
+---
+
+## Surface-Specific Test Patterns
+
+### Backend Service / Business Logic (Python)
+
+```python
+class TestOrderService:
+    def test_place_order_with_valid_items_creates_order_and_returns_order_id(self):
+        # --- Arrange ---
+        mock_inventory = Mock()
+        mock_inventory.check_availability.return_value = True
+        mock_order_repo = Mock()
+        mock_order_repo.save.return_value = Order(id="ord_123", status="PENDING")
+        service = OrderService(inventory=mock_inventory, order_repo=mock_order_repo)
+
+        # --- Act ---
+        result = service.place_order(user_id="u1", items=[{"sku": "A1", "qty": 2}])
+
+        # --- Assert ---
+        assert result.order_id == "ord_123", f"Expected ord_123, got {result.order_id}"
+        assert result.status == "PENDING", f"New order must be PENDING, got {result.status}"
+        mock_order_repo.save.assert_called_once()  # side effect verified AFTER output
+
+    def test_place_order_when_item_out_of_stock_raises_out_of_stock_error(self):
+        # --- Arrange ---
+        mock_inventory = Mock()
+        mock_inventory.check_availability.return_value = False
+        service = OrderService(inventory=mock_inventory, order_repo=Mock())
+
+        # --- Act / Assert ---
+        with pytest.raises(OutOfStockError) as exc:
+            service.place_order(user_id="u1", items=[{"sku": "A1", "qty": 2}])
+        assert exc.value.sku == "A1", f"Error must name the out-of-stock SKU"
+        assert exc.value.code == "OUT_OF_STOCK"
+```
+
+### REST API Endpoint (Node.js / Express + Supertest)
+
+```typescript
+describe('POST /api/orders', () => {
+    it('should return 201 with order id when items are in stock', async () => {
+        // --- Arrange ---
+        jest.spyOn(inventoryService, 'checkAvailability').mockResolvedValue(true);
+        jest.spyOn(orderRepo, 'save').mockResolvedValue({ id: 'ord_123', status: 'PENDING' });
+
+        // --- Act ---
+        const response = await request(app)
+            .post('/api/orders')
+            .set('Authorization', `Bearer ${validToken}`)
+            .send({ items: [{ sku: 'A1', qty: 2 }] });
+
+        // --- Assert ---
+        expect(response.status).toBe(201);
+        expect(response.body.orderId).toBe('ord_123');
+        expect(response.body.status).toBe('PENDING');
+        expect(response.headers['location']).toContain('/api/orders/ord_123');
+    });
+
+    it('should return 409 with OUT_OF_STOCK when item unavailable', async () => {
+        // --- Arrange ---
+        jest.spyOn(inventoryService, 'checkAvailability').mockResolvedValue(false);
+
+        // --- Act ---
+        const response = await request(app)
+            .post('/api/orders')
+            .set('Authorization', `Bearer ${validToken}`)
+            .send({ items: [{ sku: 'A1', qty: 2 }] });
+
+        // --- Assert ---
+        expect(response.status).toBe(409);
+        expect(response.body.error).toBe('OUT_OF_STOCK');
+        expect(response.body.sku).toBe('A1');
+        expect(response.body).not.toHaveProperty('orderId'); // no partial order on failure
+    });
+
+    it('should return 401 when Authorization header is missing', async () => {
+        const response = await request(app).post('/api/orders').send({ items: [] });
+        expect(response.status).toBe(401);
+        expect(response.body.error).toBe('UNAUTHORIZED');
+    });
+});
+```
+
+### React Component (RTL + userEvent)
+
+```typescript
+describe('OrderForm', () => {
+    it('should show quantity error when qty exceeds max stock', async () => {
+        // --- Arrange ---
+        render(<OrderForm maxStock={5} onSubmit={jest.fn()} />);
+
+        // --- Act ---
+        await userEvent.type(screen.getByLabelText(/quantity/i), '10');
+        await userEvent.click(screen.getByRole('button', { name: /place order/i }));
+
+        // --- Assert ---
+        expect(screen.getByRole('alert')).toHaveTextContent('Maximum quantity is 5');
+        expect(screen.queryByText(/order placed/i)).not.toBeInTheDocument();
+    });
+
+    it('should call onSubmit with sku and qty when form is valid', async () => {
+        // --- Arrange ---
+        const onSubmit = jest.fn().mockResolvedValue({ orderId: 'ord_123' });
+        render(<OrderForm maxStock={10} onSubmit={onSubmit} />);
+
+        // --- Act ---
+        await userEvent.type(screen.getByLabelText(/sku/i), 'A1');
+        await userEvent.type(screen.getByLabelText(/quantity/i), '3');
+        await userEvent.click(screen.getByRole('button', { name: /place order/i }));
+
+        // --- Assert ---
+        expect(onSubmit).toHaveBeenCalledWith({ sku: 'A1', qty: 3 });
+        await screen.findByText(/order placed/i); // async confirmation visible
+    });
+});
+```
+
+### Android / Kotlin (JUnit + MockK + ViewModel)
+
+```kotlin
+class OrderViewModelTest {
+    @Test
+    fun `when valid items submitted, emits Success state with order id`() {
+        // --- Arrange ---
+        val orderRepo = mockk<OrderRepository>()
+        coEvery { orderRepo.placeOrder(any()) } returns Result.Success(Order(id = "ord_123", status = "PENDING"))
+        val viewModel = OrderViewModel(orderRepo)
+
+        // --- Act ---
+        viewModel.placeOrder(items = listOf(OrderItem(sku = "A1", qty = 2)))
+
+        // --- Assert ---
+        val state = viewModel.uiState.value
+        assertIs<OrderUiState.Success>(state)
+        assertEquals("ord_123", state.orderId)
+        assertEquals("PENDING", state.status)
+    }
+
+    @Test
+    fun `when item is out of stock, emits Error state with OUT_OF_STOCK code`() {
+        // --- Arrange ---
+        val orderRepo = mockk<OrderRepository>()
+        coEvery { orderRepo.placeOrder(any()) } returns Result.Error(OutOfStockException("A1"))
+        val viewModel = OrderViewModel(orderRepo)
+
+        // --- Act ---
+        viewModel.placeOrder(items = listOf(OrderItem(sku = "A1", qty = 2)))
+
+        // --- Assert ---
+        val state = viewModel.uiState.value
+        assertIs<OrderUiState.Error>(state)
+        assertEquals("OUT_OF_STOCK", state.code)
+        assertEquals("A1", state.sku)
+    }
+}
+```
+
+---
+
+## Mocking Contract
+
+**Mock at system boundaries only. Do NOT mock your own business logic.**
+
+| ✅ Mock these (system boundaries) | ❌ Never mock these (your own code) |
+|---|---|
+| Database / ORM queries | Service classes you wrote |
+| HTTP clients (external APIs) | Value objects / DTOs |
+| File system reads/writes | Pure functions |
+| Message queue producers/consumers | Enum lookups |
+| Clock / `datetime.now()` / `Date.now()` | In-memory data structures |
+| Third-party SDKs (payment, auth, SMS) | Constants |
+| Email / push notification services | Business rule validators |
+
+**Mocking strategy by test type:**
+- **Unit test**: mock ALL system boundaries; test one class/function in isolation
+- **Integration test**: use real DB (test DB / in-memory), mock only external HTTP and third-party SDKs
+- **E2E / eval test**: no mocks — real services, real DB, real network
+
+**Mock verification rule:** Always verify mock calls WITH arguments, not just that they were called:
+```python
+# ❌ Wrong — verifies nothing
+mock_email.send.assert_called()
+
+# ✅ Right — verifies the contract
+mock_email.send.assert_called_once_with(
+    to="user@example.com",
+    subject="Order Confirmation",
+    template="order-confirm",
+    context={"order_id": "ord_123"}
+)
+```
+
+---
+
+## Hollow Test Anti-Patterns — HARD-GATE STOP
+
+These tests technically pass the matrix count but provide zero coverage. **Any test matching these patterns must be rewritten before committing.**
+
+| Pattern | Example | Why it fails | Rewrite target |
+|---|---|---|---|
+| **Trivial equality** | `assert add(2, 2) == 4` | Only tests the obvious; catches nothing real | Test boundary: `add(MAX_INT, 1)` → overflow behavior |
+| **Existence only** | `assert result is not None` | Passes for any truthy output | Assert specific fields: `assert result.order_id.startswith('ord_')` |
+| **Call-only mock** | `expect(fn).toHaveBeenCalled()` | Doesn't verify arguments or return value | `expect(fn).toHaveBeenCalledWith(expectedArgs)` |
+| **Status-only HTTP** | `expect(res.status).toBe(200)` alone | Body could be empty or wrong | Add body assertions: `expect(res.body.data).toEqual(expectedData)` |
+| **Tautology** | `assert user.name == user.name` | Always true | `assert user.name == 'Alice'` (fixed expected value) |
+| **No negative path** | Only happy path tests for auth | Auth bugs live in the failure paths | Add: wrong password → 401, missing token → 401, expired token → 401 |
+| **Stub behavior only** | Test only verifies mock was set up correctly | Tests the mock, not the real code | Remove mock setup for the function under test; verify the actual output |
 
 ### CSV / semantic trace markers (machine verification)
 

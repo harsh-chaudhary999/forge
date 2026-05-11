@@ -1565,6 +1565,14 @@ Result:
 
 **Related Skills:** brain-read, brain-write, brain-remember
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] The target decision file still exists at its brain path — only status fields were updated, no file was deleted
+- [ ] The demotion (status change) was committed to git with `git -C ~/forge/brain commit`, and `git log --oneline -1` shows the commit
+- [ ] The commit message specifies which decision, from what status, to what status, and the demotion rule that triggered it — no vague "cleaned up" messages
+- [ ] A grep for cross-references to the demoted decision ID returned no dangling Active decisions that depended on it without a migration path
+- [ ] If a conductor marker was required, the `[P*-BRAIN-FORGET]` log line appears in the conductor transcript before claiming the demotion complete
+
 ## Checklist
 
 Before claiming completion:

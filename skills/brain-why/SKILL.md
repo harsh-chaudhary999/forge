@@ -1416,6 +1416,14 @@ Result:
 
 **Output Format:** Structured markdown with 5 main sections, dependencies, lessons, and patterns.
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] The why explanation references the specific `decision_id` (e.g., `D42`) by name — not a vague description like "the API versioning decision"
+- [ ] The source artifact (prd-locked.md, spec doc, or equivalent brain file) is cited by its brain path or git-resolvable link in the Evidence or By Whom section — not paraphrased from memory
+- [ ] The reasoning is not vague or placeholder — the Alternatives Considered section lists at least one rejected option with a stated reason for rejection
+- [ ] The provenance trace was sourced from the actual brain file at `~/forge/brain/` (or the product brain path), not reconstructed from git log messages or conversation recall
+- [ ] If a superseded predecessor exists (a `supersedes:` link in the decision), that predecessor was also read and its chain was followed to confirm the full evolution of the decision
+
 ## Checklist
 
 Before claiming provenance trace complete:

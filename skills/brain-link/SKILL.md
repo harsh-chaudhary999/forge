@@ -858,6 +858,14 @@ Future enhancements:
 
 ---
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] The link file (or link metadata embedded in the decision file) exists at the expected brain path and is readable via `cat` or `Read`
+- [ ] The target decision the link points to exists — verified with `grep -r "^decision_id: <target-id>" ~/forge/brain --include="*.md"` returning a result
+- [ ] The git commit includes the link file (or the updated decision file containing the link), confirmed via `git -C ~/forge/brain log --oneline -1 -- <path>`
+- [ ] No broken link — for `replaces`/`variant` directional links, the reverse link was also created and verified to exist
+- [ ] The link type is explicitly declared (`replaces`, `conflicts`, `complements`, `variant`, or `related`) — not left untyped or defaulting to a catch-all
+
 ## 14. Cross-References
 
 ### Related Skills

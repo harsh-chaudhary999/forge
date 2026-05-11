@@ -387,6 +387,14 @@ Post-deployment:
 
 Output: **DECISION RECORDED** (auditable, traceable, retrievable in brain, committed to git) or **BLOCKED** (can't persist, merge conflict, brain not in git, data corruption)
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] The brain write used `git add` + `git -C ~/forge/brain commit` — not just a file write; verify the file is tracked by running `git -C ~/forge/brain status` and confirming nothing is left unstaged
+- [ ] The commit message includes at least one of `task_id:`, `decision_id:`, or `contract_id:` as an anchor — not a generic message like "record decision" or "update brain"
+- [ ] `git -C ~/forge/brain log --oneline -1` confirms the brain commit appears at HEAD with the correct anchor in the subject or body
+- [ ] No decision was left only in the conversation transcript — every decision point identified during the task has a corresponding committed file in `~/forge/brain/`
+- [ ] `brain-recall` can find the newly committed decision using at least two distinct query terms (keyword search returns the file path)
+
 ## Checklist
 
 Before claiming decision recorded:

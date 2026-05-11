@@ -66,6 +66,23 @@ Next: tech-plan-write-per-project"
 
 Without one of these anchors, `brain-recall` grep and `git log --grep` produce too much noise. The anchor can appear in the subject line or body — not only in the commit footer.
 
+### Anchor-Type Matrix
+
+Every brain commit message **must** include the appropriate anchor. Use this table to pick the right one:
+
+| File written | Required anchor | Example |
+|---|---|---|
+| `prd-locked.md` | `task_id:` | `task_id: post-jml-recruiter-verification-nudges` |
+| `shared-dev-spec.md` | `task_id:` | `task_id: post-jml-recruiter-verification-nudges` |
+| `tech-plans/*.md` | `task_id:` | `task_id: post-jml-recruiter-verification-nudges` |
+| `decisions/*.md` | `decision_id:` | `decision_id: auth-strategy-v2` |
+| `blockers/*.md` | `task_id:` | `task_id: post-jml-recruiter-verification-nudges` |
+| `contracts/*.md` | `contract_id:` | `contract_id: api-rest-v1` |
+| `qa/*.md` / `qa/*.csv` | `task_id:` | `task_id: post-jml-recruiter-verification-nudges` |
+| `context/*.md` | `task_id:` | `task_id: post-jml-recruiter-verification-nudges` |
+
+**Rule:** `decision_id:` is for architectural decisions that outlive a single task. `contract_id:` is for cross-team API/schema contracts. Everything else uses `task_id:`.
+
 - **Markup:** Markdown always
 - **Paths:** Follow `~/forge/brain/` structure exactly
 - **No binary files**

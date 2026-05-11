@@ -1309,6 +1309,14 @@ query_embedding=$(call_claude_api "API versioning")
 - [x] No placeholders or draft language
 - [x] Production-ready guidance
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] The query returned at least one file path (not an empty result set) — confirmed by the grep command outputting a line before piping to ranking
+- [ ] The returned content was spot-checked against the original brain write: at least one field (e.g., `decision_id:`, `title:`, or `status:`) matches the source file to confirm no stale/overwritten content was returned
+- [ ] The search was not limited to the current product — at least one cross-product or domain-level tag search was run to surface patterns from other products
+- [ ] Archived and deprecated decisions were explicitly excluded from the primary results (grep includes `| grep -v "#archived" | grep -v "#deprecated"`) unless archived results were specifically requested
+- [ ] The recall findings were documented (written out as output or fed into the next skill) before the downstream decision proceeded — not left only in chat
+
 ## Checklist
 
 Before claiming recall is complete:

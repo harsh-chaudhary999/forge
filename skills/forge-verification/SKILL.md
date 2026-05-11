@@ -350,3 +350,11 @@ Before claiming a task complete:
 - [ ] No "should pass" or "confident it works" language used — evidence shown
 - [ ] Infrastructure is reachable (DB, cache, services confirmed up before testing)
 - [ ] If human found an issue not caught by verification: test added to prevent recurrence
+
+## Post-Implementation Checklist
+
+- [ ] Every claim in the implementation report has a corresponding command run and output logged.
+- [ ] No "should work" or "probably passes" — only confirmed outputs count.
+- [ ] Test suite run and actual pass/fail counts recorded (not "tests pass").
+- [ ] `verify_forge_task.py` was run and its output included, not assumed.
+- [ ] Zero unverified assertions in the implementation summary.

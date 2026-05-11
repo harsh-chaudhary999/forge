@@ -360,6 +360,34 @@ Before claiming council complete:
   contract_search_status: negotiated
   ```
   **Why:** If the session is interrupted after 3/5 contracts, the next session reads frontmatter and skips re-negotiating already-closed contracts. `open` = not yet discussed; `disputed` = dreamer escalation pending; `negotiated` = locked.
+
+**Example `shared-dev-spec.md` frontmatter with per-contract status:**
+
+```yaml
+---
+task_id: my-feature-task
+schema_version: 1
+
+contract_api_status: negotiated      # REST endpoints agreed
+contract_cache_status: open          # TTL policy still disputed
+contract_event_status: negotiated    # Topic names + schema locked
+contract_schema_status: negotiated   # DB migration approved
+contract_search_status: open         # Index mapping TBD
+
+spec_frozen: false                   # set to true only when ALL contracts = negotiated
+---
+```
+
+On session resumption: skip any contract where `status: negotiated`. Re-enter negotiation only for `open` or `disputed` contracts.
+
 - [ ] All cross-surface conflicts resolved — none deferred to implementation
 - [ ] shared-dev-spec.md has no TBD fields
 - [ ] spec-freeze invoked after spec is written to brain
+
+## Post-Implementation Checklist
+
+- [ ] All 5 contracts show `status: negotiated` in `shared-dev-spec.md` frontmatter.
+- [ ] `[P2-SPEC-FROZEN]` logged to `conductor.log` after last contract negotiated.
+- [ ] `shared-dev-spec.md` committed to brain with `task_id:` anchor.
+- [ ] No contract left in `open` or `disputed` state.
+- [ ] On session resumption: only contracts not yet `negotiated` were re-negotiated.

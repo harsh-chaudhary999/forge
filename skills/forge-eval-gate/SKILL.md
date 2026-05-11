@@ -439,3 +439,11 @@ Before claiming eval gate passed:
 - [ ] eval-judge returned GREEN or DONE_WITH_CONCERNS with documented concerns
 - [ ] Self-heal attempted on any failures before declaring BLOCKED
 - [ ] Eval verdict written to brain before PRs are raised
+
+## Post-Implementation Checklist
+
+- [ ] `semantic-eval-manifest.json` outcome is `pass` (GREEN) — not `yellow` or `fail`.
+- [ ] `[P4.4-EVAL-PASS]` logged to `conductor.log` after manifest written.
+- [ ] Self-heal iteration count ≤ 3 if any RED occurred.
+- [ ] Ship-Readiness Score computed and logged (numeric, not just label).
+- [ ] `python3 tools/verify/verify_forge_task.py` exits 0 for this task.

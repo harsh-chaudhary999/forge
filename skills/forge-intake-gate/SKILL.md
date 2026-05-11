@@ -265,3 +265,11 @@ Before claiming intake complete:
 - [ ] PRD locked and written to brain
 - [ ] Conductor notified that PRD is ready for Council
 - [ ] **`terminology.md` present in `~/forge/brain/prds/<task-id>/` when in scope** (same bar as [intake-interrogate](../intake-interrogate/SKILL.md) product-terminology HARD-GATE); verify **`open_doubts`** matches unresolved table rows
+
+## Post-Implementation Checklist
+
+- [ ] `prd-locked.md` written to `~/forge/brain/prds/<task-id>/` (not just in chat).
+- [ ] All 9 intake questions answered (Q1–Q9, including Q9 design lock).
+- [ ] `[P1-PRD-LOCKED]` logged to `conductor.log`.
+- [ ] Design source (Figma key, Lovable repo, or “no new UI”) explicitly recorded.
+- [ ] Task ID is slug-formatted and unique (not duplicate of existing brain task).

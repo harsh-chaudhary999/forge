@@ -361,3 +361,11 @@ Before starting implementation in worktree:
 - [ ] Dependencies installed in the worktree environment
 - [ ] No state carried over from previous task's worktree
 - [ ] Cleanup plan confirmed: worktree deleted after eval passes or task fails
+
+## Post-Implementation Checklist
+
+- [ ] Task is executing in a dedicated worktree (not in main working directory).
+- [ ] Worktree branch name includes task-id (not a generic "fix" or "feature" branch).
+- [ ] No uncommitted changes from a prior task are present in the worktree.
+- [ ] `git worktree list` confirms this worktree is separate from main.
+- [ ] Worktree will be pruned after PR is merged (not left dangling).

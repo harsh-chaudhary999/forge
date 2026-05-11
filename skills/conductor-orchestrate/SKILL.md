@@ -1204,3 +1204,11 @@ Before claiming orchestration complete:
 - [ ] **P4.4 eval invoked** (not skipped after partial implement); eval returned GREEN before any PRs were raised
 - [ ] conductor.log committed with all phase transitions, subagent dispatches, and escalations
 - [ ] Dreamer retrospective triggered post-merge
+
+## Post-Implementation Checklist
+
+- [ ] Current pipeline stage matches the last `[P*]` marker in `conductor.log`.
+- [ ] No phase marker is logged before its prerequisite phase marker (ordering constraint upheld).
+- [ ] `conductor.log` is git-committed to brain (not just written to disk).
+- [ ] No phase was skipped by claiming "already done in chat" — each phase has an artifact or marker.
+- [ ] The next gate's prerequisite is met before invoking the next skill.

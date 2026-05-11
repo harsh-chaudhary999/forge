@@ -354,3 +354,11 @@ Before claiming code verified:
 - [ ] Error handling and edge cases inspected
 - [ ] All spec requirements traceable to code implementation
 - [ ] Review findings written to brain if significant gaps found
+
+## Post-Implementation Checklist
+
+- [ ] Reviewer ran `git diff` or `git show` on the actual commits — not just read the implementer's summary.
+- [ ] Every file changed was explicitly reviewed (no "looks good" on unread files).
+- [ ] `[P4.2-REVIEW]` logged to `conductor.log` only after reviewer read the diff.
+- [ ] Any "DONE_WITH_CONCERNS" from implementer was addressed before logging review pass.
+- [ ] No rubber-stamp approvals: at least one substantive observation per review.

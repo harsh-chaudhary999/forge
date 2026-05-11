@@ -827,3 +827,11 @@ TDD is the foundation. Every other discipline depends on it.
 ---
 
 Note: This version includes edge cases and decision tree for complex testing scenarios (slow tests, flaky tests, infrastructure dependencies, legacy code, integration vs. unit testing).
+
+## Post-Implementation Checklist
+
+- [ ] Every test was run and confirmed FAIL before any implementation code was written.
+- [ ] Test names follow `test_<subject>_<condition>_<expected_outcome>` pattern (no single-word names).
+- [ ] Each test has labeled AAA sections (# Arrange / # Act / # Assert).
+- [ ] Assertions are specific-value or full-contract (not existence-only or call-only mock).
+- [ ] No hollow test anti-patterns present: no 2+2=4, no tautology, no missing negative path.

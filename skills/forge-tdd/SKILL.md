@@ -38,6 +38,24 @@ allowed-tools:
 
 ---
 
+## Step 0: Read Code Style Before Writing Any Test
+
+Before writing the first test, read the project's coding conventions:
+
+```bash
+cat ~/forge/brain/products/<slug>/codebase/code-style.md
+```
+
+Match test code to these conventions: import style, async pattern (`async/await` vs `.then()`), assertion library (`expect` vs `assert`), test block naming (`describe/it` vs `test()`), error handling shape, and file naming.
+
+**Fallback if `code-style.md` is absent (scan not yet run):** Open the 3 most recently modified source files in the repo and infer conventions from them:
+```bash
+git -C <repo-path> log --diff-filter=M --name-only -3 -- '*.ts' '*.py' '*.kt' '*.go' '*.java' | grep '\.'
+```
+Log: `[WARN] code-style.md absent — test style inferred from recent files`.
+
+**HARD-GATE:** Do not write a single test line before completing this step. Mismatched test style causes P2 reviewer findings that delay merge.
+
 ## Iron Law
 
 ```

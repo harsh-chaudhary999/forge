@@ -60,6 +60,7 @@ NO FULL /forge PIPELINE (commands/forge.md) WITHOUT [P4.0-QA-CSV] approved=yes B
 
 If you notice any of these, STOP and do not proceed:
 
+- **Phase markers are logged out of order in `conductor.log`** — e.g., `[P4.4-EVAL-PASS]` appears before `[P4.0-SEMANTIC-EVAL]` or `[P4.1-DISPATCH]`, or `[P3-TECH-PLAN-LOCKED]` appears before `[P2-SPEC-FROZEN]`. Phase markers must be logged in strictly ascending order: P1 → P2 → P3 → P4.0 → P4.1 → P4.2 → P4.3 → P4.4 → P5. STOP. If out-of-order markers are detected in `conductor.log`, the pipeline state is corrupt — do not proceed. Diagnose which phase was skipped and invoke the missing skill before continuing.
 - **Conductor moves to Council before PRD is locked in brain** — Phase ordering is violated. STOP. Intake must produce a brain-recorded PRD lock before any other phase starts.
 - **Build is dispatched while Council is still open** — Tech plans cannot be written against an unlocked spec. STOP. Lock the shared-dev-spec first, then write tech plans, then dispatch build.
 - **Eval is running while tasks report NEEDS_CONTEXT or BLOCKED** — Eval against incomplete builds produces meaningless results. STOP. Resolve all subagent statuses before invoking eval.
@@ -71,6 +72,7 @@ If you notice any of these, STOP and do not proceed:
 - **No logged `P4.0-TDD-RED` (or equivalent) before production commits** — `forge-tdd` was not applied: no failing tests were written and run first. STOP. Back up to test authoring before more feature code.
 - **P4.1 UI dispatch without `[DESIGN-INGEST]` when `design_new_work: yes`** — Net-new visual work requires materialized design in `~/forge/brain/prds/<task-id>/design/` **or** locked `figma_file_key` + `figma_root_node_ids` with MCP/API notes in brain — unless `design_waiver: prd_only` is explicit. STOP. Run **Phase 4.0b** first (see below).
 - **`[P4.1-DISPATCH]` or `[DISPATCH]` without prior eval artifact** — Valid **`qa/semantic-eval-manifest.json`** + **`[P4.0-SEMANTIC-EVAL]`**; commit **`qa/semantic-eval-run.log`** when the runner produced it (**`docs/forge-task-verification.md`**). If the log jumps from tech plan to `IMPLEMENTATION_STARTED`, STOP; back up to **`qa-semantic-csv-orchestrate`** / **`docs/semantic-eval-csv.md`**.
+- **Worktree is missing when dev-implementer or forge-tdd is about to be dispatched** — An implementer or TDD subagent working without a worktree will write code directly into the main branch, contaminating shared history. STOP. Run `git worktree list` in each affected repo. If the task branch is not listed, invoke `worktree-per-project-per-task` first. No dispatch until every affected repo shows a task-branch worktree in `git worktree list`.
 
 ## Purpose
 
@@ -386,7 +388,7 @@ Ensure **consensus** across all repos (no conflicting contracts).
   3. **TDD / State 4b:** RED logged per repo per policy (or explicit **`WAIVE_TDD`**).
   4. **Design:** State **4b-design** satisfied or not applicable.  
 **ACTION:**
-  1. Create a worktree per repo (if not already from 4b, reuse policy per `worktree-per-project-per-task`).
+  1. Invoke `worktree-per-project-per-task` to create a fresh isolated worktree for every affected repo. **HARD-GATE: Verify `git worktree list` shows the task branch in each repo BEFORE dispatching any dev-implementer or forge-tdd subagent.** If worktree creation fails for any repo, STOP — log the failure to `conductor.log` as `[P4.1-WORKTREE-FAIL]` and escalate to the human. Do not proceed with dispatch on partial worktree state.
   2. Dispatch `dev-implementer` subagent for each repo IN PARALLEL (safe: no shared state between repos).
   3. Each subagent receives:
      - Task text (inline, full context from tech plan)
@@ -427,6 +429,14 @@ If structure.txt is absent: the rg result is authoritative. Log `[WARN] structur
 Skipping this step and creating a new file when an existing one should be modified is a BLOCKED condition — the implementer must report BLOCKED and the conductor must re-dispatch with corrected task instructions.
 
 **SUCCESS CONDITION:** All subagents complete. All repos have commits on their branch.  
+
+**Post-dispatch sanity check — Pre-Write Search Gate:**
+After dev-implementer reports completion, verify the implementation log or commit message includes evidence of the pre-write file search HARD-GATE:
+- Implementer must have run `grep` or `rg` against `structure.txt` before creating any new file.
+- If the implementer's report contains no mention of pre-write search (no `structure.txt` grep, no `rg` evidence), flag it:
+  > "Implementation report is missing pre-write search evidence. Did you run the pre-write file search per State 5 HARD-GATE? Provide grep/rg output confirming no duplicate file was created."
+- If no evidence is provided after prompting, mark the task `NEEDS_CONTEXT` and re-dispatch with explicit pre-write search instructions.
+
 **FAILURE CONDITION:** Subagent fails to implement OR implements code that breaks tests.  
 **ESCALATION:** Self-heal attempts to diagnose. Up to 3 attempts. If all fail, escalate to user with logs.  
 **LOGGING:**

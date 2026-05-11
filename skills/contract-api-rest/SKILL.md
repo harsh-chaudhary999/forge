@@ -1731,3 +1731,11 @@ Before claiming completion:
 - [ ] All consumer surfaces (backend, web, app) have signed off on the contract shape before it is locked
 - [ ] Backward compatibility guarantees are written explicitly: what changes are safe in minor versions, what requires a major bump
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Every endpoint in the contract is agreed by both producer and all consumer surfaces — no endpoint was added unilaterally
+- [ ] Request and response schemas (including all error envelopes) are locked in `shared-dev-spec.md` with real JSON examples, not prose descriptions
+- [ ] `contract_api_status: negotiated` is set in the `shared-dev-spec.md` frontmatter (or the contract file heading) — not `draft` or `TBD`
+- [ ] No `TBD` fields remain in any endpoint schema — every field has a name, type, nullability, and example value
+- [ ] A `contract_id` anchor (brain decision ID or commit SHA) is recorded in the brain commit, linking the locked contract to its negotiation record
+

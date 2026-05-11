@@ -356,6 +356,14 @@ Before declaring spec frozen, verify:
 
 Output: **SPEC FROZEN** (hash verified, brain record written, ready for per-project tech planning) or **BLOCKED** (council sign-off incomplete, unresolved conflicts, spec contains TBDs)
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] `shared-dev-spec.md` is git-committed (not just written to disk): a `SPECFREEZE:` commit exists and the commit SHA is recorded as the spec hash in the brain freeze record
+- [ ] All 5 contract status fields (`contract_api_status`, `contract_event_status`, `contract_cache_status`, `contract_schema_status`, `contract_search_status`) show `negotiated` in the shared-dev-spec frontmatter — none show `draft`, `open`, or `TBD`
+- [ ] `[P2-SPEC-FROZEN]` (or `SPECFRZ-*` brain decision ID) is logged to `conductor.log` — confirming the freeze record is written and the spec hash is captured
+- [ ] No agent can modify the spec after freeze without following the `SPEC-AMENDMENT` procedure (change request → council re-vote → new `SPECFRZ-*` record → re-commit): the freeze record is in the brain and the change boundary categories (cosmetic / behavioral / scope addition) are documented
+- [ ] `terminology.md` has `open_doubts: none` (or a brain-recorded waiver with owner) — `spec-freeze` is blocked on `open_doubts: pending` without an explicit waiver
+
 ## Cross-References
 
 - `forge-council-gate` -- produces the SPECLOCK that this skill freezes

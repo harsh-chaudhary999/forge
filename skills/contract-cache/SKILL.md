@@ -556,6 +556,14 @@ Who needs to write to this key?
 
 ---
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Cache key pattern (namespace prefix, delimiter, entity segments) is agreed by all services that read or write the key — no service coined its own pattern
+- [ ] TTL policy for every key is explicitly agreed and written into `shared-dev-spec.md` — no key has a "default" or "TBD" TTL
+- [ ] Eviction strategy (LRU, volatile-ttl, etc.) and stampede-prevention approach (lock-and-refresh, xfetch, stale fallback) are documented per high-traffic key
+- [ ] `contract_cache_status: negotiated` is set in the `shared-dev-spec.md` frontmatter — not `draft` or `open`
+- [ ] No open items remain: every key has a single named owner service, a serialization format, an invalidation trigger, and a fallback behavior when cache is unavailable
+
 ## References & Related Skills
 
 - **brain-read:** Look up past cache contracts and domain decisions

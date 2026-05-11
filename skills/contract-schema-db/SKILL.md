@@ -1006,6 +1006,14 @@ How critical is this constraint to data integrity?
 
 **Escalation**: If multiple services depend on NULL values, escalate to NEEDS_COORD - Services must agree on constraint level before migration.
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Migration files match the agreed schema: every column name, type, and nullability in the migration matches the contract row-for-row
+- [ ] Column types and nullability are explicitly locked in `shared-dev-spec.md` — no column is listed as `TBD` or left with a vague type like `string`
+- [ ] `contract_schema_status: negotiated` is set in the `shared-dev-spec.md` frontmatter — not `draft` or `open`
+- [ ] No `TBD` column names or constraint definitions remain in the contract — every table, column, index, and foreign key is named and typed
+- [ ] Every destructive migration step (DROP COLUMN, rename, type change) has a verified down migration (rollback script) written and tested alongside the up migration
+
 ## Checklist
 
 Before locking a database schema contract:

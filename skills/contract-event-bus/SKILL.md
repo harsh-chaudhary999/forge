@@ -857,6 +857,14 @@ Is duplicate processing acceptable?
 
 ---
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] All topic names follow the `domain.entity.action` convention and are agreed by both producer and all consumer teams — no generic names like `events` or `updates`
+- [ ] Event schema is locked in a formal format (Avro, Protobuf, or JSON Schema) registered in the schema registry — not prose-only description
+- [ ] Delivery guarantee (at-least-once, exactly-once, or at-most-once) is documented per consumer group, with the matching idempotency and deduplication strategy specified
+- [ ] `contract_event_status: negotiated` is set in the `shared-dev-spec.md` frontmatter — not `draft` or `open`
+- [ ] No unresolved producer/consumer disagreements remain: DLQ destination, retention period, consumer group IDs, and schema evolution/compatibility policy are all locked and signed off by every affected team
+
 ## Related Skills
 
 - **brain-read:** Load topology and existing contracts

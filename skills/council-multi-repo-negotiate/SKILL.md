@@ -605,6 +605,14 @@ This marks the spec as immutable in the brain.
 - **Immutability**: Once locked, the shared-dev-spec cannot be modified without explicit unlock + re-negotiation
 - **Next Phase**: Output of this skill feeds directly into Phase 2.11 (tech-planning), which breaks the spec into implementation tasks
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] All 5 contracts (REST API, event bus, cache, DB schema, search) reached `negotiated` status — no contract is still `open`, `draft`, or `disputed`
+- [ ] `shared-dev-spec.md` is committed to the brain under `~/forge/brain/prds/<task-id>/` with a `task_id:` anchor in the file header, not merely written to disk
+- [ ] A `[P2-SPEC-FREEZE]` conductor marker (or equivalent `[SPECLOCK]` decision record) is logged in `conductor.log` — confirming council is complete and spec is ready for `spec-freeze`
+- [ ] No contract is left in `open` or `disputed` state before proceeding: every unresolved conflict was escalated to the dreamer and resolved with a signed-off decision record
+- [ ] The `[TERMINOLOGY]` line is appended to `conductor.log` with `open_doubts=none` (or `pending` only if an explicit waiver is recorded) — `spec-freeze` blocks on `pending` without a waiver
+
 ## Checklist
 
 Before claiming council complete:

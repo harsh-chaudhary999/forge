@@ -564,6 +564,14 @@ How many services will write to this index?
 
 ---
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Index mapping is explicitly agreed (every field name, type, and analyzer) and written into `shared-dev-spec.md` — `dynamic: true` is never used; the mapping is formal, not prose
+- [ ] Query interface is documented: which fields are searchable, which are filterable, which are sortable — no implicit "it should work" assumptions
+- [ ] `contract_search_status: negotiated` is set in the `shared-dev-spec.md` frontmatter — not `draft` or `open`
+- [ ] No unresolved ranking or relevance questions remain: scoring model (BM25, boosting, decay), freshness priority, and synonym rules are locked and agreed by all consumer teams
+- [ ] Index alias strategy and zero-downtime reindex procedure are documented, including rollback steps and the agreed refresh interval
+
 ## Related Skills
 
 - **brain-read**: Retrieve product topology and contracts from the brain

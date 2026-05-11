@@ -406,6 +406,18 @@ If two skills apply and order is ambiguous, check the `requires` field in both s
 WHEN THERE IS A 1% CHANCE A SKILL APPLIES, INVOKE IT BEFORE ANY RESPONSE. PROCESS SKILLS FIRST. IMPLEMENTATION SKILLS SECOND. SUBAGENTS EXECUTE THEIR TASK AND REPORT STATUS — THEY DO NOT RE-RUN THE BOOTSTRAP.
 ```
 
+## Anti-Pattern Preamble
+
+| Rationalization | Why It Fails |
+|---|---|
+| "I'll check stage from chat context" | Chat is not the transport layer — conductor.log is. Stage inferred from chat will be stale after compaction. |
+| "I know which skill to invoke without checking" | Skills evolve. Reading the wrong version of a skill means following outdated rules. Always invoke via Skill tool. |
+| "I'll ask two questions at once to save turns" | One-step horizon: bundled questions produce bundled decisions. Each gate deserves its own turn. |
+| "AskUserQuestion is optional for simple choices" | Any choice that blocks progress is a blocking question. Use AskUserQuestion — don't embed choices in prose. |
+| "The user said UI, so I'll assume same design as before" | Q9 (Design Lock) requires explicit source. Never assume design is unchanged. |
+| "I'll skip stage detection — we're clearly in council" | If you skip stage detection, you will eventually act in the wrong phase. Always read conductor.log. |
+| "The current task is urgent — I'll skip the gate" | Urgency is the oldest rationalization for skipping discipline. Gates exist because urgency causes mistakes. |
+
 ## Where Things Live
 
 - **Brain:** `~/forge/brain/` (git repo, source of truth)
@@ -459,6 +471,14 @@ Process skills first (intake, conductor), then implementation skills (council, e
 4. **dreamer** — Inline conflict resolution + retrospective scoring.
 
 Everything else is skills.
+
+## Post-Implementation Checklist
+
+- [ ] Stage correctly identified from conductor.log tail (not assumed from chat history).
+- [ ] The correct skill for the current stage invoked (not a manually inferred action).
+- [ ] `AskUserQuestion` used for blocking questions (not prose "reply if you want to proceed").
+- [ ] One-step horizon followed: only the immediate next gate discussed, not future pipeline stages.
+- [ ] No bundled unrelated decisions in one turn (each question gets its own turn).
 
 ## Checklist
 

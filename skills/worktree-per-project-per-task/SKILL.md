@@ -612,6 +612,14 @@ Worktrees are **not branches**. They are independent filesystem checkouts of the
 - **D24:** HARD-GATE tags on non-skippable steps
 - **D26:** TodoWrite-required checklists on multi-step process skills
 
+## Post-Implementation Checklist
+
+- [ ] Worktree created with branch name `<task-id>/<repo-role>` (task-id scoped, not generic).
+- [ ] `git worktree list` confirms the new worktree is isolated from main.
+- [ ] Implementation ran inside the worktree (not in the main working directory).
+- [ ] Worktree branch pushed to remote before PR creation.
+- [ ] Worktree marked for pruning after PR merged (not left dangling).
+
 ## Checklist
 
 Before dispatching dev-implementer to any project:

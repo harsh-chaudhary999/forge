@@ -1550,6 +1550,14 @@ This example shows how each task:
 4. Has a standard commit message
 5. Respects dependencies (Task 2 depends on Task 1)
 
+## Post-Implementation Checklist
+
+- [ ] Plan reads `code-style.md` from brain before naming any functions, classes, or files.
+- [ ] All net-new declarations have grep evidence they don't already exist in the codebase.
+- [ ] Cross-task duplicate check ran (`grep | awk | sort | uniq -d`) — no duplicated function names across tasks.
+- [ ] `[P3-TECH-PLAN-LOCKED]` logged to conductor.log after plan is committed to brain.
+- [ ] Plan committed to brain at `tech-plans/<repo-role>-plan.md` with task_id: anchor.
+
 ## Checklist
 
 Before handing plans to tech-plan-self-review:

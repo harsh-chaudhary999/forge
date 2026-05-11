@@ -347,6 +347,14 @@ eval re-run             (verifies resolution)
 
 ---
 
+## Post-Implementation Checklist
+
+- [ ] Conflict stated precisely: which two services disagree, on which contract field, with what values.
+- [ ] Resolution is a concrete decision (one side wins, or a compromise value is chosen) — not "both sides should discuss further".
+- [ ] Resolution written to brain at `decisions/<timestamp>-<conflict-slug>.md` with decision_id: anchor.
+- [ ] Both affected services' contract status updated to reflect the resolution.
+- [ ] If unresolvable inline: BLOCKED written and human escalated (not silently deferred).
+
 ## HARD-GATE Checklist
 
 Before marking a conflict as resolved, ALL of the following must be true:

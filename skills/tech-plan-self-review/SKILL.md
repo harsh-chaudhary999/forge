@@ -411,6 +411,14 @@ For each failed check, collect:
 - ❌ 404 vs 403 handling not clear (BLOCKER)
 - Fix: Exact response shape and error codes
 
+## Post-Implementation Checklist
+
+- [ ] Every task in the plan names specific files to create or modify (no "update the service" tasks).
+- [ ] Every TDD step shows a real test command with expected output (no "write a test" without the test code).
+- [ ] Cross-task type consistency verified: function names used in Task N+1 match definitions in Task N.
+- [ ] Placeholder scan complete: no "TBD", "TODO", "implement later", or "similar to Task N" in any step.
+- [ ] Plan saved to `docs/superpowers/plans/<date>-<feature>.md` and committed to brain with task_id: anchor.
+
 ## Output Template
 
 When submitting review results:

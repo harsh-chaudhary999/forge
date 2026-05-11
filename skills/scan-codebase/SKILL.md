@@ -101,6 +101,15 @@ This graph exists so **operators who do not know the repo** can still ship safel
 
 ---
 
+## Iron Law
+
+```
+SCAN OUTPUT MUST BE VALIDATED BEFORE ANY TECH PLAN PROCEEDS.
+structure.txt MUST BE WRITTEN AND COUNT-VERIFIED BEFORE EXITING PHASE 4.
+INCREMENTAL SKIP (FORGE_SCAN_INCREMENTAL=1) APPLIES ONLY TO UNCHANGED ROLES — NEVER TO FIRST-TIME SCANS.
+code-style.md ABSENCE IS NOT SILENT — FLAG AS UNKNOWN AND LOG TO CONDUCTOR.
+```
+
 ## Overview
 
 Scan produces a structured knowledge graph of a codebase, stored in the Forge brain as navigable Obsidian markdown. It runs in 4 phases, ordered by token cost (cheapest first):
@@ -1536,6 +1545,14 @@ Does SCAN.json exist?
 **Token guidance:** No hard budget cap — read hub files fully. Phase 1 inventory is automated (no manual `find`/`awk` in the skill path). The token investment is in Phase 3 reads and Phase 4 writes, both of which produce permanent brain files that prevent future re-reads.
 
 ---
+
+## Post-Implementation Checklist
+
+- [ ] `codebase/<role>/structure.txt` written and line count matches `forge_scan_source_files.txt` line count (±0, not truncated).
+- [ ] Hub score computed for all files with ≥ 20 source files (Edge Case 8 skip rule applied correctly).
+- [ ] `code-style.md` written to brain for each scanned repo role (or absence flagged as UNKNOWN).
+- [ ] `FORGE_SCAN_INCREMENTAL=1` used only for re-scans of unchanged roles (not first-time scans).
+- [ ] Phase 4 integrity check passed: no source file from `forge_scan_source_files.txt` missing from structure.txt.
 
 ## Cross-References
 

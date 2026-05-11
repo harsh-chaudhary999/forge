@@ -374,6 +374,14 @@ Try to start the service.
 
 ---
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] New SKILL.md has YAML frontmatter with `name`, `description`, `type`, `requires` fields.
+- [ ] Type is declared as `rigid` or `flexible` (not absent).
+- [ ] If `rigid`: Iron Law, Anti-Pattern Preamble, at least one HARD-GATE, and Post-Implementation Checklist are present.
+- [ ] Skill is registered in the catalog (bash scripts/count-skills.sh output updated or not broken).
+- [ ] At least one pressure scenario written for the new skill's HARD-GATE.
+
 ## Checklist
 
 Before shipping any skill:

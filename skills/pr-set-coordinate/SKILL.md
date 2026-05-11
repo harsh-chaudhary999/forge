@@ -693,6 +693,14 @@ Action: Resolve conflicts manually, then retry merge
 - **Phase 5.1:** PR Set Coordinate (this skill)
 - **Merge Order Pattern:** Dependency-aware serial merge (no parallelization of dependent PRs)
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] PR created in every repo that has changes (no repo with commits left without a PR).
+- [ ] PR title follows project's PR title convention (not "WIP" or untitled).
+- [ ] PR body includes task_id and links to brain spec.
+- [ ] `[P5-PR-RAISED]` logged to conductor.log after last PR created.
+- [ ] All PRs point to the correct base branch (not accidentally targeting main directly).
+
 ## Checklist
 
 Before claiming PR set complete:

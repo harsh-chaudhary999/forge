@@ -359,6 +359,14 @@ Commit to brain when your workflow uses git-backed brain.
 4. **Huge existing suite** — Sample statistically + full pass on PRD-touched modules; document sampling.
 5. **No KB** — Source column only `PRD` / `REGRESSION`; Step 3 second sample may be two PRD scenarios of different types.
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Every PRD requirement has at least one corresponding test case row in `manual-test-cases.csv`.
+- [ ] `Source` column populated for every row (required, not optional).
+- [ ] `Automatable` column is one of: `Yes`, `No`, `Partial` — no blanks.
+- [ ] `Automatable: Partial` rows have a `[PARTIAL — stops at: <step>]` note in the corresponding semantic-automation.csv or `TraceToCsvId` field.
+- [ ] No placeholder test steps: every `Steps` cell describes a real observable action.
+
 ## Checklist (before claiming done)
 
 - [ ] `qa-prd-analysis` artifact exists and is referenced

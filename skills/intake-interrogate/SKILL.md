@@ -275,6 +275,14 @@ When the PRD centers on an entity type that likely participates in **multiple pr
 
 **HARD-GATE:** Do not treat intake as **complete** if `open_doubts` in `terminology.md` frontmatter is not `none` and doubts are not recorded elsewhere with an owner. Council negotiates on **shared words**; unresolved domain ambiguity **blocks** [forge-council-gate](../forge-council-gate/SKILL.md) until resolved or **waived** with reason in brain.
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] All 9 questions asked and answered (Q1–Q9 — not stopped early).
+- [ ] Q9 (Design Lock) used the verbatim blockquote — not paraphrased.
+- [ ] `prd-locked.md` written to `~/forge/brain/prds/<task-id>/` with task_id: anchor.
+- [ ] Design source is explicit: Figma key, Lovable repo, or "no new UI" — not "TBD".
+- [ ] `[P1-PRD-LOCKED]` logged to conductor.log after prd-locked.md is on disk.
+
 ## Output
 
 Write all answers to `~/forge/brain/prds/<task-id>/prd-locked.md`:

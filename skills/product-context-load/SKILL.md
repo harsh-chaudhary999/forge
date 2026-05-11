@@ -252,6 +252,14 @@ Given a product slug (from the locked PRD), load and validate:
 
 Next: Council reasoning.
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Product stack doc read from brain (not assumed from prior session).
+- [ ] All service ports confirmed (no two services share a port).
+- [ ] Deployment target confirmed (local, Docker, PM2-SSH, etc.).
+- [ ] No port conflict detected (grep for duplicate port declarations passed).
+- [ ] Context loaded to brain's `context/` path with task_id: anchor before any plan proceeds.
+
 ## Checklist
 
 Before advancing to council:

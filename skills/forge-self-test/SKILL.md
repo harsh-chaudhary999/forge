@@ -1586,6 +1586,14 @@ git status | grep "CONFLICT"
 
 ---
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Pressure scenario run against the skill under test (not just a description of it).
+- [ ] Scenario produced a specific pass/fail result (not "the skill should work").
+- [ ] Any identified anti-pattern in the skill was fixed (not just noted).
+- [ ] The skill's HARD-GATE was exercised by the scenario (gate fired, not bypassed).
+- [ ] Scenario result written to brain with task_id: anchor.
+
 ## Cross-References: Skills & Concepts Used in Self-Test
 
 **Core Pipeline Skills:**

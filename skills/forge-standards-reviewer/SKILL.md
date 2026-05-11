@@ -457,6 +457,14 @@ Before emitting the report:
 - [ ] Suppressed finding count reported
 - [ ] Verdict emitted with clear reasoning
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Every section in the checklist was reviewed (no skipped sections).
+- [ ] Iron Law, Anti-Pattern Preamble, HARD-GATE, and Post-Implementation Checklist presence verified for rigid skills.
+- [ ] Any missing section flagged with a specific line reference (not just "section missing").
+- [ ] Review result written to brain (not left only in chat).
+- [ ] No rubber-stamp: at least one specific finding per skill reviewed.
+
 ## Cross-References
 
 | Related Skill | Relationship |

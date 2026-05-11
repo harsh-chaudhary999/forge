@@ -373,6 +373,14 @@ Before handing off to pr-set-coordinate:
 
 ---
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Merge order documented (which repo merges first, second, etc.).
+- [ ] Merge order respects contract dependencies (schema DB before API, API before frontend).
+- [ ] Merge order written to brain with task_id: anchor.
+- [ ] Each step in the merge order has a health-check or smoke test defined.
+- [ ] Rollback plan documented if merge N fails after merge N-1 already landed.
+
 ## Cross-References
 
 - **pr-set-coordinate** — Executes the merge order produced by this skill (creation, linking, merging)

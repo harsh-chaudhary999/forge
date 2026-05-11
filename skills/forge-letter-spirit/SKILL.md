@@ -305,6 +305,14 @@ Output: **COMPLIANT** (rule followed, both letter and spirit aligned) or **ESCAL
 
 ---
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Implementation satisfies the intent behind the requirement, not just the literal words.
+- [ ] Edge cases implied by the PRD context (not just stated) were considered.
+- [ ] No "technically compliant but obviously wrong" outputs (satisfies test harness but breaks UX).
+- [ ] Review confirmed the implementation matches what a user would expect, not just what the spec says.
+- [ ] Any gap between letter and spirit was escalated to the human (not silently papered over).
+
 ## Checklist
 
 Before claiming compliance:

@@ -3,6 +3,28 @@ name: forge
 description: "You MUST use this for full end-to-end delivery — invokes conductor-orchestrate with entrypoint full pipeline (/forge): all phases through PR set, dream, and mandatory State 4b manual QA CSV before semantic machine-eval (qa/semantic-automation.csv + semantic-eval-manifest.json)."
 ---
 
+## Pipeline Overview
+
+```
+P1: Intake          → prd-locked.md + terminology.md
+P2: Product Context → context-loaded.md
+P3: Council         → shared-dev-spec.md (all 5 contracts)
+P3: Tech Plans      → tech-plans/<repo>.md (per repo)
+P4.0: QA Analysis   → qa/qa-analysis.md
+P4.0: Manual CSV    → qa/manual-test-cases.csv
+P4.0: Semantic CSV  → qa/semantic-automation.csv + semantic-eval-manifest.json
+P4.0b: TDD RED      → failing tests committed per repo
+P4.1: Build         → GREEN implementation committed per repo
+P4.2: Review        → spec-reviewer + code-quality-reviewer per repo
+P4.4: Eval          → EVAL PASS (all scenarios GREEN)
+P5: PRs             → coordinated PR set per repo
+P5: Dream           → retrospective + brain learnings
+```
+
+Gates: `[P1-PRD-LOCKED]` → `[P2-CONTEXT-LOADED]` → `[P3-SPEC-FROZEN]` → `[P4.0-QA-CSV]` → `[P4.0-SEMANTIC-EVAL]` → `[P4.0-TDD-RED]` → `[P4.1-DISPATCH]` → `[P4.2-REVIEW-PASS]` → `[P4.4-EVAL-PASS]` → `[P5-PR-SET]`
+
+Abort: log `[ABORT_TASK: <task-id>]` to conductor.log at any point — see **Abort Workflow** below.
+
 Invoke the `conductor-orchestrate` skill to run the **full end-to-end** Forge pipeline for this task.
 
 If the user provided a PRD or product description after this command, use it as the initial input.
@@ -29,3 +51,37 @@ Single-line map (same as **`conductor-orchestrate`**): intake → council → te
 <HARD-GATE>
 Do NOT treat **`/forge`** as intake-only or planning-only; do NOT omit **State 4b manual QA CSV**, **P4.4 eval**, or **PR set** on a non-**`[ABORT_TASK]`** run. Pass **`entrypoint = full pipeline (/forge)`** into **`conductor-orchestrate`**.
 </HARD-GATE>
+
+## Abort Workflow
+
+To stop a `/forge` run mid-pipeline without leaving the brain in a half-written state:
+
+**Step 1 — Signal abort:** Write the marker to conductor.log:
+```bash
+echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) [ABORT_TASK] task_id=<id> reason=<one-line reason>" \
+  >> ~/forge/brain/prds/<task-id>/conductor.log
+```
+Or say `[ABORT_TASK: <task-id>]` in chat — the agent will detect it.
+
+**Step 2 — Agent behavior on abort detection:**
+- STOP all new brain writes and subagent dispatches immediately
+- Do NOT create new files in `~/forge/brain/prds/<task-id>/`
+- Log `[ABORT_COMPLETED] task_id=<id>` to conductor.log
+- List uncommitted brain changes for user review:
+  ```bash
+  git -C ~/forge/brain status prds/<task-id>/
+  ```
+
+**Step 3 — Cleanup (user-driven):**
+```bash
+# See what was written
+git -C ~/forge/brain log --oneline prds/<task-id>/ | head -10
+
+# Revert partial brain writes if needed
+git -C ~/forge/brain revert HEAD  # or specific commit
+
+# Remove worktrees created for this task
+bash .claude/scripts/forge-worktree-cleanup.sh . 0 1
+```
+
+**What is NOT cleaned automatically:** Code commits on feature branches in product repos are NOT reverted by abort — those require manual `git reset` or branch deletion per repo. Abort only stops new brain writes; it does not undo implementation work.

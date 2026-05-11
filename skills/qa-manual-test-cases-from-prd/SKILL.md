@@ -59,6 +59,7 @@ Approved manual test cases are **acceptance inventory**: they define *what* must
 | "I'll skip samples and user approval — we're in a hurry" | Format drift and wrong assumptions multiply rework cost past any “saved” time. |
 | "Expected result only in the Description column" | Breaks import pipelines and double-entry rules; always separate column **and** appendix per format. |
 | "Source column is optional" | Traceability to PRD vs KB vs regression is lost; audits fail. |
+| "I'll skip Source for non-comprehensive runs" | Source is the only way to build regression suites and track origin post-ship. Required on every row regardless of coverage depth. |
 | "Deprecation in Jira can wait" | Stale tests run in regression and hide real failures; document at least in report, execute TMS updates when your org uses them. |
 | "XRAY/Atlassian MCP unavailable — I'll guess prior cases" | STOP. Use exports the user provides or block until Source 2 exists. |
 | "Step 7 count review is bureaucratic" | Estimation vs actual drift catches systematic under-coverage; skipping it ships silent gaps. |
@@ -183,10 +184,10 @@ If an agent only fills **Summary** and **Expected Result**, **Description** is *
 | **Preconditions** (optional column **unless comprehensive**) | **If `coverage_depth: comprehensive`** in **`qa-analysis.md`**: column is **required** in header — see **Preconditions column — mandatory for comprehensive**. When present: concise setup — auth + data + flags + environment references. Must align with **Description** steps. **No blank cells** when the column exists — use **`None`** / **`N/A — default happy path`** for true default-only cases. |
 | **Description** | **Numbered** step list — **this is where execution lives** (not only Summary). **HARD-GATE:** For UI, step **1** must be navigation: `1. Navigate to <platform base URL> …` using configured URLs. **Forbidden:** a single sentence like *“User verifies reverification flow”* with **no** `1.` / `2.` steps — that row is **not** a test case. **If no `Preconditions` column:** when the case depends on non-default **account/data/flag** state, begin the cell with `Preconditions: <explicit setup>.` then `1. Navigate…`. Map screens/selectors to **`qa-prd-analysis` Q8** / design when applicable. No line breaks inside the CSV cell; use spaces between steps. **Append** at end: `EXPECTED RESULT: <same text as Expected Result column>`. |
 | **Expected Result** | **One** outcome; must **match** the `EXPECTED RESULT:` appendix in Description character-for-character. |
-| **Automatable** | `Yes` \| `No` \| `Partial`. |
+| **Automatable** | `Yes` \| `No` \| `Partial`. Definitions: **`Yes`** = all steps executable by a driver without human intervention. **`No`** = requires human action (physical device, CAPTCHA, biometric, real payment). **`Partial`** = early steps automatable, later steps require human (e.g., web flow automatable up to MFA prompt, then human must complete). For `Partial` rows: include in `semantic-automation.csv` covering only the automatable prefix steps; annotate the CSV row Intent with `[PARTIAL — stops at: <description of manual step>]`. |
 | **Type** | e.g. `Positive`, `Negative`, `Edge Case`, `API`, `Security`, `Performance`, `Smoke`, `Sanity`, `Regression`, … |
 | **Feature Categorization** | Module / epic name for filtering imports. |
-| **Source** (optional column) | `PRD` \| `KB` \| `REGRESSION` \| `HYBRID` — when column present, **every** data row must set it. |
+| **Source** (**required column — always**) | `PRD` \| `KB` \| `REGRESSION` \| `HYBRID`. **Required in every CSV regardless of `coverage_depth`.** Minimum effort: one word (`PRD` for cases derived from the PRD, `REGRESSION` for re-runs of known bugs, `KB` for cases from prior product knowledge, `HYBRID` for mixed origin). Enables downstream regression suite management, TMS auto-tagging, and `brain-recall` search across QA history. |
 
 **Full header with both optionals** (when team wants Source + Preconditions separated):
 
@@ -363,7 +364,7 @@ Commit to brain when your workflow uses git-backed brain.
 - [ ] `qa-prd-analysis` artifact exists and is referenced
 - [ ] **Step 1b** full bundle re-read completed before Step 5; Step 8 lists **Sources consulted** + **CONTEXT_GAP** (or explicit “none”)
 - [ ] User approved samples (Step 3) and final count (Step 7)
-- [ ] CSV validates: 8 columns + **`Source`** + **`Preconditions`** when **`coverage_depth: comprehensive`**; else optional **Source** / **Preconditions** per **Preconditions column — mandatory for comprehensive**; **no blank Preconditions** when column present; quoting, navigation rule, EXPECTED RESULT appendix
+- [ ] CSV validates: **`Source`** column present and set on every data row (always required); **`Preconditions`** column present when **`coverage_depth: comprehensive`** (or equivalent); **no blank Preconditions** when column present; quoting, navigation rule, EXPECTED RESULT appendix
 - [ ] Atomicity spot-check: random 10% of rows read for split violations
 - [ ] Report (Step 8) delivered
 - [ ] If **CONTEXT_GAP** was non-empty: **CONTEXT_GAP closure (interactive)** completed — **no** unresolved open gaps without explicit human **risk-accept** / **defer** per **`using-forge`**

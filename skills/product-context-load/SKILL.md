@@ -259,6 +259,14 @@ Before advancing to council:
 - [ ] Product slug validated — `~/forge/brain/products/<slug>/product.md` exists
 - [ ] All listed repos validated — each path exists on disk
 - [ ] Circular dependencies checked — topological sort passes without cycles
+- [ ] Port conflicts checked — for each service in `product.md` that declares a `port` or `health_port`, verify no two services claim the same port number. Run:
+  ```bash
+  # Extract all port declarations from product.md
+  grep -E 'port:|health_port:|listen:' ~/forge/brain/products/<slug>/product.md | \
+    awk '{print $2}' | sort | uniq -d | \
+    while read p; do echo "[PORT-CONFLICT] port=$p claimed by multiple services"; done
+  ```
+  If conflicts found: stop and report — `eval-product-stack-up` will fail at runtime. Record in `context-loaded.md` as `port_conflict: true` with conflicting services listed.
 - [ ] All contracts loaded — api-rest, schema-mysql, cache, event, search as applicable
 - [ ] Incompatible version constraints identified and escalated if found
 - [ ] Codebase scan checked — either **`verify_scan_outputs.py` PASS** + loaded (with staleness warning if >7 days), **`SCAN_INCOMPLETE`** noted if verify fails, or absence flagged in context-loaded.md

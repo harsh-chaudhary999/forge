@@ -104,12 +104,20 @@ function die(message) {
  * else `preamble-tier` in skills/<name>/SKILL.md frontmatter.
  * @returns {{ tier: number, activeSkill: string } | null}
  */
-function writeActiveSkillTierCache(tier) {
+function writeActiveSkillTierCache(tier, skillMdPath) {
   try {
     if (!fs.existsSync(FORGE_RUNTIME_DIR)) {
       fs.mkdirSync(FORGE_RUNTIME_DIR, { recursive: true, mode: 0o700 });
     }
-    fs.writeFileSync(ACTIVE_SKILL_TIER_FILE, `${tier}\n`, { encoding: 'utf-8', mode: 0o600 });
+    let skillHash = '';
+    if (skillMdPath) {
+      try {
+        const crypto = require('crypto');
+        const content = fs.readFileSync(skillMdPath, 'utf8');
+        skillHash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 16);
+      } catch (_) { /* hash unavailable — cache still valid by tier only */ }
+    }
+    fs.writeFileSync(ACTIVE_SKILL_TIER_FILE, `${tier}\n# sha256=${skillHash}`, { encoding: 'utf-8', mode: 0o600 });
     log(`Wrote ${ACTIVE_SKILL_TIER_FILE} (preamble tier cache — pair with ~/.forge/.active-skill)`);
   } catch (e) {
     log(`Could not write ${ACTIVE_SKILL_TIER_FILE}: ${e.message}`);
@@ -123,19 +131,42 @@ function resolvePreambleTierFromActiveSkill() {
     const name = fs.readFileSync(p, 'utf-8').trim();
     if (!/^[a-zA-Z0-9_-]+$/.test(name)) return null;
 
+    const skillPath = path.join(SKILL_SKILLS_DIR, name, 'SKILL.md');
+
     if (fs.existsSync(ACTIVE_SKILL_TIER_FILE)) {
       try {
-        const line = fs.readFileSync(ACTIVE_SKILL_TIER_FILE, 'utf-8').trim().split(/\r?\n/)[0];
-        const n = parseInt(line, 10);
+        const cached = fs.readFileSync(ACTIVE_SKILL_TIER_FILE, 'utf-8').trim();
+        const lines = cached.split(/\r?\n/);
+        const n = parseInt(lines[0], 10);
         if (!Number.isNaN(n) && n >= 1 && n <= 4) {
-          return { tier: Math.min(4, Math.max(1, n)), activeSkill: name };
+          const cachedHash = (lines[1] || '').replace('# sha256=', '').trim();
+          if (cachedHash) {
+            // New format: validate hash against current SKILL.md
+            try {
+              const crypto = require('crypto');
+              const content = fs.readFileSync(skillPath, 'utf8');
+              const currentHash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 16);
+              if (currentHash !== cachedHash) {
+                log(`Preamble tier cache invalidated (SKILL.md changed) — re-parsing`);
+                fs.unlinkSync(ACTIVE_SKILL_TIER_FILE);
+                // Fall through to re-parse below
+              } else {
+                return { tier: Math.min(4, Math.max(1, n)), activeSkill: name }; // Cache is valid
+              }
+            } catch (_) {
+              // SKILL.md unreadable — use cached tier without validation
+              return { tier: Math.min(4, Math.max(1, n)), activeSkill: name };
+            }
+          } else {
+            // Old format (digit only) — accept without validation
+            return { tier: Math.min(4, Math.max(1, n)), activeSkill: name };
+          }
         }
       } catch (_) {
         // fall through to SKILL.md
       }
     }
 
-    const skillPath = path.join(SKILL_SKILLS_DIR, name, 'SKILL.md');
     if (!fs.existsSync(skillPath)) return null;
     const raw = fs.readFileSync(skillPath, 'utf-8');
     const fmMatch = raw.match(/^---\n([\s\S]*?)\n---/);
@@ -145,7 +176,7 @@ function resolvePreambleTierFromActiveSkill() {
     const n = parseInt(m[1], 10);
     if (Number.isNaN(n)) return null;
     const tier = Math.min(4, Math.max(1, n));
-    writeActiveSkillTierCache(tier);
+    writeActiveSkillTierCache(tier, skillPath);
     return { tier, activeSkill: name };
   } catch (_) {
     return null;

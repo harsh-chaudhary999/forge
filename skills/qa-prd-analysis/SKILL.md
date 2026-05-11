@@ -213,6 +213,18 @@ Using the brain context from Step 0, run a structured interrogation. Every quest
 
 The human must **see Q1–Q7 and Q8 (when UI in scope)** in the **chat thread** and answer (or risk-accept) before you write **`qa-analysis.md`** with interrogation **confirmed**. **Never** “confirm” from PRD inference alone. **Chat first, brain file second.**
 
+**Multi-session tracking:** If Q1–Q8 span multiple chat sessions (e.g., Q1–Q3 in Session 1, Q4–Q8 in Session 2), record session boundaries in `qa-analysis.md` frontmatter:
+
+```yaml
+interrogation_sessions:
+  - date: “2025-11-15”
+    session_note: “Q1–Q3 covered (test types, surfaces, scope)”
+  - date: “2025-11-16”
+    session_note: “Q4–Q8 covered (security, performance, design mapping)”
+```
+
+This field is informational (no machine validation) but enables auditors to verify which questions were answered when. If all questions were answered in one session, a single entry suffices.
+
 ### HARD-GATE — Sequential interactive interrogation (mandatory)
 
 **How the dialogue runs**

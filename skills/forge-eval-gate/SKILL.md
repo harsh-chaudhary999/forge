@@ -110,6 +110,31 @@ For each YELLOW scenario:
 4. **YELLOW is only acceptable** when all 3× isolation runs pass. One failure in 3 = RED.
 5. After triaging all YELLOWs: all cleared → proceed to Claim Eval Pass. Any RED → enter Self-Heal Loop.
 
+### RED_INFRA: Infrastructure Failure Classification
+
+When a scenario fails with a **connectivity or infrastructure error** (not an assertion failure), classify as `RED_INFRA` before entering the self-heal loop:
+
+**RED_INFRA symptoms:**
+- "Cannot connect to [database|broker|service]" / ECONNREFUSED
+- "Docker daemon not running" / "Container not found"
+- "MCP server unavailable" / "Tool execution timed out"
+- "Port already in use" / "Address already in use"
+- Health check endpoint unreachable (HTTP 502/503/504) on a service the eval depends on, NOT the product under test
+
+**RED_INFRA vs RED_PRODUCT decision:**
+| Signal | Classification |
+|---|---|
+| Connection refused on the product's own port | RED_PRODUCT — product failed to start |
+| Connection refused on a dependency (DB, broker) | RED_INFRA — infrastructure failed |
+| Assertion fails on valid input | RED_PRODUCT — product returned wrong value |
+| Eval driver itself crashes (segfault, OOM) | RED_INFRA — driver issue |
+
+**HARD-GATE:** Do NOT consume self-heal attempts on `RED_INFRA`. Self-heal is for product bugs, not infrastructure. Instead:
+1. Restore the failing infrastructure component
+2. Re-run eval from scratch (full clean run — do not re-use previous partial results)
+3. If infrastructure cannot be restored: escalate as BLOCKED with infra diagnosis
+4. Log: `[EVAL-INFRA] task_id=<id> component=<name> error=<summary> timestamp=<ISO8601>`
+
 ### Diagnose Failures
 **IF any scenario fails:**
 
@@ -332,6 +357,20 @@ Before merging, verify:
    - Infrastructure (slow response, contention)?
 4. Fix root cause, re-run eval
 5. If cannot fix within 3 attempts: escalate as **BLOCKED** (eval infrastructure too slow to validate code)
+
+**Partial result preservation (HARD-GATE):**
+Before killing a hanging eval, capture completed scenario results so re-runs don't start from scratch:
+
+```bash
+# Capture completed scenarios from semantic-eval-run.log before killing
+grep '"outcome": "PASS"' qa/semantic-eval-run.log | \
+  python3 -c "import sys,json; [print(json.loads(l)['stepId']) for l in sys.stdin]" \
+  > qa/semantic-eval-completed-steps.txt
+
+echo "Completed $(wc -l < qa/semantic-eval-completed-steps.txt) steps before timeout"
+```
+
+On re-run, the driver should skip steps listed in `semantic-eval-completed-steps.txt` (pass-through with prior PASS result). If the driver does not support resume, note the count so the re-run progress is tracked. Do NOT re-run 100 scenarios when 80 passed — document and re-run only the TIMED_OUT remainder.
 
 ---
 

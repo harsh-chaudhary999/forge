@@ -25,6 +25,7 @@ allowed-tools:
 |---|---|
 | "I'll commit the decision later" | Uncommitted decisions are invisible decisions. If it's not in git, it didn't happen. |
 | "The commit message can be brief" | Commit messages are the primary search surface for brain-recall. Vague messages make past decisions unfindable. |
+| "I don't need to reference task-id or decision-id in the commit" | Without at least one of {task-id, decision-id, contract-id}, `git log --grep` returns noise. Every brain commit must anchor to one identifier. |
 | "I'll update the existing decision file" | Brain decisions are append-only. Editing a locked decision destroys provenance. Create a new decision that supersedes the old one. |
 | "This doesn't need a full decision record" | Every decision needs who, when, why, evidence. "Quick notes" become orphaned context that no one can trace. |
 | "I'll write it to a scratch file first" | Scratch files bypass the brain's git-backed audit trail. Write directly to the correct brain path. |
@@ -57,6 +58,14 @@ Next: tech-plan-write-per-project"
 - **Product terminology (`terminology.md`)** — **Path:** `~/forge/brain/prds/<task-id>/terminology.md`. **Format:** YAML frontmatter per [docs/templates/terminology.md](../../docs/templates/terminology.md) (`task_id`, `status`, `updated`, `open_doubts`, `terminology_risk`). **When to use this skill:** creating or **committing** the file after a review turn (not ad hoc edits without `git commit` in the brain). **HARD-GATE content:** use [docs/terminology-review.md](../../docs/terminology-review.md) for review protocol; prefer **append** to the **Revision** table over silent edits to locked rows. For machine DRIFT logs by convention, see `qa/terminology-drift-log.md` in the template [docs/templates/terminology-drift-log.md](../../docs/templates/terminology-drift-log.md) (optional).
 - **One file per decision** (prd-locked.md, shared-dev-spec.md, retrospective.md, etc.)
 - **Descriptive commit messages** — why this decision, what it depends on, next step
+
+**Commit message searchability (HARD-GATE):** Every brain commit message MUST include at least one of:
+- `task_id: <id>` — ties commit to the PRD task
+- `decision_id: D<NNN>` — ties commit to a specific decision record
+- `contract_id: <name>` — ties commit to a locked contract (api-rest, schema-db, event-bus, etc.)
+
+Without one of these anchors, `brain-recall` grep and `git log --grep` produce too much noise. The anchor can appear in the subject line or body — not only in the commit footer.
+
 - **Markup:** Markdown always
 - **Paths:** Follow `~/forge/brain/` structure exactly
 - **No binary files**

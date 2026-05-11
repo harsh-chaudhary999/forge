@@ -91,7 +91,11 @@ If any NO: machine gate or conductor discipline failed — fix before merge.
 
 ## Red Flags — STOP
 
-- **`DependsOn`** cycle or unknown **Id** reference.
+- **`DependsOn`** cycle or unknown **Id** reference — the `--dry-run` validator reports the cycle path (e.g., "Cycle: step-5 → step-8 → step-12 → step-5"). **Resolution options:**
+  1. **Extract shared setup**: If steps 5 and 8 both need the same precondition, create a new `step-setup` that both depend on. Break the cycle by removing the mutual dependency.
+  2. **Reorder the CSV**: If step 12 does not actually need step 5's output, remove `DependsOn: step-5` from step 12.
+  3. **Merge steps**: If steps are truly inseparable, merge them into one atomic step with a compound Intent.
+  Never proceed to real driver execution with a DependsOn cycle — results are undefined.
 - **`semantic-eval-manifest.json`** **`kind`** is **`semantic-csv-eval`** but **`semantic-automation.csv`** is missing.
 - Logging **`[P4.1-DISPATCH]`** before **`[P4.0-SEMANTIC-EVAL]`** when **`conductor.log`** is in use.
 - Declaring semantic **GREEN** when only **`noop`** / **`--dry-run`** ran and product proof was required.
@@ -106,6 +110,37 @@ If any NO: machine gate or conductor discipline failed — fix before merge.
 | **`DependsOn`** references a step **Id** in **`manual-test-cases.csv`** only | Ensure **`Id`** exists in **`semantic-automation.csv`** — DependsOn targets **CSV row Ids**, not TMS strings alone. | Resolver returns unknown Id → validation failure. |
 | Large CSV (>100 rows) | Validate with **`semantic_csv.py`** first; batch driver runs with timeouts per **`eval-driver-*`** policy. | Timeouts mid-run without structured **SKIPPED** look like product bugs. |
 | Operator refuses MCP — only local ADB | Record brain decision; use **`eval-driver-android-adb`** / CDP on host; keep **`semantic-eval-run.log`** evidence of driver choice. | **D5** violation if automation is assumed without recorded choice. |
+
+### DependsOn Result Marshaling Contract
+
+When step B lists `DependsOn: step-A-id`, the driver must pass step A's result to step B's execution context:
+
+**Step result format (all drivers return):**
+```json
+{
+  "stepId": "step-create-user",
+  "surface": "api",
+  "outcome": "PASS",
+  "result": {
+    "userId": "user_abc123",
+    "email": "test@example.com"
+  }
+}
+```
+
+**Result injection in CSV Intent field:** Reference a prior step's result value using `${stepId.result.fieldName}`:
+```
+Intent: "Log in as user created in step-create-user: email=${step-create-user.result.email}"
+```
+
+The driver resolves `${...}` references from the `semantic-eval-run.log` before executing the step. If the referenced step has no result or failed, the dependent step is classified `BLOCKED_DEPENDENCY` (not FAIL or PASS).
+
+**Cross-surface marshaling:** Web driver returns DOM text; API driver returns JSON. Drivers are responsible for JSON-serializing their results into the standard format above. A web CDP step extracting a field value must produce:
+```json
+{ "result": { "fieldValue": "extracted text here" } }
+```
+
+**Missing result:** If step A passes but `result` is empty `{}`, and step B depends on A's result data, classify step B as `CONTEXT_GAP` — flag in run.log, continue to next step.
 
 ## Cross-References
 

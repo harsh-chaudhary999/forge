@@ -1016,6 +1016,11 @@ START: Deployment failed, one or more services unhealthy
 - Rollback should only restore last known good state, not arbitrary previous version.
 - Each recovery action (retry, rollback, escalate) should be logged with reason and timestamp.
 - If escalating, include all diagnostics to help operator (logs, compose file, env vars, timestamps).
+- MUST verify schema version matches the rolled-back image's expected version before declaring rollback complete. The standard pattern:
+  1. Query schema version table (e.g., `SELECT version FROM schema_migrations ORDER BY run_at DESC LIMIT 1`) or run the migration status command for the stack's DB tool (e.g., `docker-compose exec db rails db:migrate:status`).
+  2. Compare to the expected version recorded in `deployment-manifest.json` for the target image tag.
+  3. If mismatch: DO NOT declare rollback complete. Run the appropriate down-migration inside the container, then re-check.
+  4. Log result: `[ROLLBACK-VERIFY] schema_version=<actual> expected=<target> match=<true|false>`.
 
 ---
 

@@ -109,6 +109,11 @@ The following rationalizations **WILL BLOCK** your deployment. These are not edg
 - IF database version mismatch possible, MUST include schema rollback step or declare rollback unavailable.
 - MUST implement 30-60s waiting period post-rollback before returning success (allows old version to stabilize, catch lingering issues).
 - MUST verify rollback metrics (latency, error rate) against baseline before declaring rollback complete.
+- MUST verify schema version matches deployed code version after rollback. The standard pattern:
+  1. Query schema version table (e.g., `SELECT version FROM schema_migrations ORDER BY run_at DESC LIMIT 1`) or run `db:migrate:status`.
+  2. Compare to the expected version recorded in `deployment-manifest.json` for the target commit.
+  3. If mismatch: DO NOT declare rollback complete. Run `db:migrate:down` to the target version, then re-check.
+  4. Log result: `[ROLLBACK-VERIFY] schema_version=<actual> expected=<target> match=<true|false>`.
 
 ---
 

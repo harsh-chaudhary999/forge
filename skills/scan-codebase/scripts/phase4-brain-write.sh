@@ -42,6 +42,12 @@ if [ ! -f "$STRUCTURE_FILE" ]; then
     echo "${file#$REPO/}"
   done < /tmp/forge_scan_source_files.txt > "$STRUCTURE_FILE"
   echo "  Written: $STRUCTURE_FILE ($(wc -l < "$STRUCTURE_FILE") paths)"
+  # Validate count matches source inventory
+  SOURCE_COUNT=$(wc -l < /tmp/forge_scan_source_files.txt 2>/dev/null || echo 0)
+  STRUCT_COUNT=$(wc -l < "$STRUCTURE_FILE" 2>/dev/null || echo 0)
+  if [ "$STRUCT_COUNT" -lt "$SOURCE_COUNT" ]; then
+    echo "  [WARN] structure.txt has $STRUCT_COUNT lines but forge_scan_source_files.txt has $SOURCE_COUNT — possible truncated write. Re-run phase4 to fix."
+  fi
 else
   echo "  Skipped: $STRUCTURE_FILE already exists"
 fi

@@ -231,6 +231,11 @@ python3 tools/verify_scan_outputs.py ~/forge/brain/products/<slug>/codebase
 - `FORGE_SCAN_INCREMENTAL=1` — same as passing `--incremental`
 - `FORGE_SCAN_AST_IMPORTS=1` — emit `forge_scan_ast_import_edges.tsv` and include import-ref edges in `graph.json`
 
+**When to use incremental vs full scan:**
+- **Full scan** (`FORGE_SCAN_INCREMENTAL` unset or 0): first scan of a repo; after a major refactor (>20 files moved/renamed); after switching branches; after adding/removing dependencies.
+- **Incremental scan** (`FORGE_SCAN_INCREMENTAL=1`): re-scan after small changes (1-5 files modified); adding a new function to an existing module; fixing a bug in an existing class. Incremental skips unchanged roles in phase1/3.5/4.
+- **When in doubt, run full.** Incremental saves ~60% of scan time but may miss cross-role edge updates if interface files changed.
+
 **Incremental confidence/fallback inspection:**
 
 - Check `run.json` keys `incremental.phase5_56_mode` and `incremental.phase5_56_reason`.
@@ -504,6 +509,8 @@ Create all output files in `~/forge/brain/products/<slug>/codebase/`. Use `[[wik
 **Multi-repo:** Prefer **one** `python3 tools/forge_scan.py` (or `PYTHONPATH=tools python3 -m scan_forge`) invocation with all `--repos` so phase 1 → 3.5 → 4 run in the correct order for every role. If you must split work, run the full runner per repo with the same `--run-dir` only when you know what you are doing — the default is one coherent pipeline.
 
 Check the Phase 4 summary for node counts. If a count is 0 unexpectedly, confirm Phase 1 artifacts exist for that repo in `FORGE_SCAN_TMP`.
+
+Also check that `~/forge/brain/products/<slug>/codebase/code-style.md` was written during Phase 3 (Step 3.6). If absent after Phase 3 completes, the planner and implementers will fall back to style inference — create it now by reading the top 3 hub files and extracting the Section 3.6 template before proceeding.
 
 ### 4.1 — SCAN.json (metadata, always first)
 
@@ -1327,6 +1334,12 @@ Is the file a README / ARCHITECTURE / CONTRIBUTING / ADR?
                           enriched brain nodes after each group.
 ```
 
+**How to carve batches:** Split by Tier, not by arbitrary line ranges — splitting mid-tier orphans related files. Recommended split:
+- Subagent A: all Tier 1 hub files (highest-scored, fewest files, most critical)
+- Subagent B: Tier 2 hub files (split into 2 sub-batches if >30 files)
+- Subagents C+: Tier 3 leaf files in groups of 20-30 by directory (keep same-directory files together so cross-references resolve cleanly)
+Never split a directory's files across two subagents — they reference each other's imports and one subagent will have gaps.
+
 ### Decision Tree 2: Pattern classification
 
 ```
@@ -1478,6 +1491,19 @@ Does SCAN.json exist?
 4. Set a reminder in index.md: `> Re-run /scan when codebase grows past 20 files.`
 
 **Escalation:** None
+
+---
+
+### Edge Case 8: Small repo (< 20 source files)
+
+**Situation:** Repo has fewer than 20 source files. Full Phase 1–2 hub scoring is overkill — scoring 15 files produces a meaningless ranking where every file is a "hub."
+
+**Action:**
+- Skip Phase 2 hub detection and hub scoring entirely.
+- In Phase 3, read ALL source files directly (no tier filtering needed — the repo is small enough).
+- In Phase 4, the script generates stubs for all files as normal.
+- Set a note in `SCAN_SUMMARY.md`: `Hub detection: SKIPPED (< 20 source files — all files treated as Tier 1)`.
+- `FORGE_SCAN_INCREMENTAL=1` is typically not needed for repos this small.
 
 ---
 

@@ -104,17 +104,25 @@ Before writing any production code, you must have failing tests covering ALL fou
 | Scenario Type | Required count | What it tests |
 |---|---|---|
 | **Happy path** | 1+ per public function | Normal input → expected output |
-| **Edge case** | 1+ per public function | Empty, null, zero, boundary values, max length |
+| **Edge case** | 2+ per public function | At minimum: one null/empty/zero input AND one boundary value (max length, min int, overflow, off-by-one). Also consider: concurrent call, permission denied (if access-controlled), malformed input, missing required field |
 | **Error / failure** | 1+ per public function | Invalid input, dependency down, timeout, permission denied |
 | **Integration** | 1+ per API endpoint or cross-service call | Full request → handler → DB/cache/queue → response round trip |
 
-**HARD-GATE:** If your test file has fewer than 3 tests per public function (or fewer than 4 for any API endpoint), you have not completed the RED phase. Do not proceed to GREEN.
+**HARD-GATE:** If your test file has fewer than 4 tests per public function (or fewer than 5 for any API endpoint), you have not completed the RED phase. Do not proceed to GREEN.
 
 **Anti-patterns that trigger STOP:**
 - `it('should work')` — not a scenario, not a test
 - One happy-path test and nothing else — edge cases and errors ARE requirements
 - "I'll add more tests after the feature works" — test matrix must be RED before any production code
 - Integration tests as optional — if the function touches a DB, cache, queue, or external API, an integration test is mandatory
+
+**Recommended test authoring order within RED:**
+1. Happy path first — validates the API contract and makes the function's contract visible
+2. Error / failure next — validates robustness before edge cases distract you
+3. Edge cases last — validates completeness once happy path and errors are solid
+4. Integration test — write after unit tests confirm the function's contract; integration confirms wiring
+
+Writing edge cases first is a trap: you'll design the API around edge cases and miss the obvious happy path.
 
 ### CSV / semantic trace markers (machine verification)
 

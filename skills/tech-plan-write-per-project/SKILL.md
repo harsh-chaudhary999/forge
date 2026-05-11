@@ -341,6 +341,15 @@ Decision: net-new at src/services/UserService.ts
 If evidence is missing → the task is BLOCKED until evidence is provided.
 If a match IS found → the task must say "modify existing: `<path>`" not "create new".
 
+**Cross-task duplicate check (HARD-GATE during `tech-plan-self-review`):** Before marking any file as net-new, scan all other `### Task N` declarations in THIS plan for the same path. Two tasks declaring the same file net-new means both implementers will create it — last writer wins, first writer's work is silently discarded.
+
+```bash
+# Run during tech-plan-self-review to catch duplicate net-new declarations
+grep -n "net-new\|Create:" tech-plans/<repo>.md | awk -F: '{print $3}' | sort | uniq -d
+```
+
+If duplicates are found: consolidate into one task (the one that owns the file's primary responsibility) and make the other task modify the existing file instead.
+
 ### 1b.2b First-session reconnaissance (MUST when elaboration applies)
 
 **Why this exists:** `scan-codebase` + `codebase/index.md` / `modules/*.md` answer *where things probably live*. They do **not** replace an implementer’s **first hour** in the product repo — the failure mode you feel as “scan/review don’t work” is often **only brain stubs, no ordered assignment**. This block is the **handoff from navigation → execution**.

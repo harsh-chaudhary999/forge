@@ -150,6 +150,7 @@ The skill will:
 - **Check:**
   - All 4 surfaces attended and proposed
   - All 5 contracts negotiated (no "TBD")
+  **Resumption rule:** At session start, read `shared-dev-spec.md` frontmatter. Contracts with `status: negotiated` are already closed — do not re-open them. Start from the first `open` contract.
   - No unresolved conflicts (all either consensus or escalated)
   - Each surface agrees to their scope
   - Surfaces agree to contract specifications
@@ -222,6 +223,15 @@ Before locking spec, verify:
   - [ ] Cache (keys, TTL, invalidation)
   - [ ] Database (schema, migrations, indexing)
   - [ ] Search (index structure, query syntax)
+- [ ] Per-contract status written to `shared-dev-spec.md` YAML frontmatter after each contract closes:
+  ```yaml
+  contract_api_status: negotiated       # or: open | disputed
+  contract_events_status: negotiated
+  contract_cache_status: negotiated
+  contract_db_status: negotiated
+  contract_search_status: negotiated
+  ```
+  **Why:** If the session is interrupted after 3/5 contracts, the next session reads frontmatter and skips re-negotiating already-closed contracts. `open` = not yet discussed; `disputed` = dreamer escalation pending; `negotiated` = locked.
 - [ ] All conflicts resolved (or escalated to dreamer with decision)
 - [ ] Each surface agrees to their scope
 - [ ] Each surface agrees to contract specifications
@@ -340,6 +350,16 @@ Before claiming council complete:
 
 - [ ] All 4 surfaces (backend, web frontend, app frontend, infra) attended and produced outputs
 - [ ] All 5 contracts negotiated (REST API, event bus, cache, DB schema, search)
+  **Resumption rule:** At session start, read `shared-dev-spec.md` frontmatter. Contracts with `status: negotiated` are already closed — do not re-open them. Start from the first `open` contract.
+- [ ] Per-contract status written to `shared-dev-spec.md` YAML frontmatter after each contract closes:
+  ```yaml
+  contract_api_status: negotiated       # or: open | disputed
+  contract_events_status: negotiated
+  contract_cache_status: negotiated
+  contract_db_status: negotiated
+  contract_search_status: negotiated
+  ```
+  **Why:** If the session is interrupted after 3/5 contracts, the next session reads frontmatter and skips re-negotiating already-closed contracts. `open` = not yet discussed; `disputed` = dreamer escalation pending; `negotiated` = locked.
 - [ ] All cross-surface conflicts resolved — none deferred to implementation
 - [ ] shared-dev-spec.md has no TBD fields
 - [ ] spec-freeze invoked after spec is written to brain

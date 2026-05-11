@@ -326,6 +326,19 @@ Summarize so **reuse is not taken for granted** from task ordering alone. **Pref
 - **Net-new:** bullets — new files, new tables, new public routes/events — also with paths or names.
 - **Unknown / scan gap:** if brain scan or spec does not prove a reuse target, say **`DISCOVERY_REQUIRED`** or **`HUMAN_CONFIRM`** — do not silently pick a module.
 
+**HARD-GATE — Net-New File Declaration:**
+Before any task can declare a file as net-new, the tech plan MUST show evidence from the brain scan or a grep command that no existing file serves this purpose.
+
+Required evidence format:
+```
+Checked: brain/products/<slug>/codebase/modules/<role>-<module>.md — no UserService found
+Checked: rg "class UserService" <repo> — 0 matches
+Decision: net-new at src/services/UserService.ts
+```
+
+If evidence is missing → the task is BLOCKED until evidence is provided.
+If a match IS found → the task must say "modify existing: `<path>`" not "create new".
+
 ### 1b.2b First-session reconnaissance (MUST when elaboration applies)
 
 **Why this exists:** `scan-codebase` + `codebase/index.md` / `modules/*.md` answer *where things probably live*. They do **not** replace an implementer’s **first hour** in the product repo — the failure mode you feel as “scan/review don’t work” is often **only brain stubs, no ordered assignment**. This block is the **handoff from navigation → execution**.
@@ -543,6 +556,26 @@ Each task must satisfy:
 - **Completeness**: Every file shown in full, no abbreviations, no "..."
 - **Specificity**: Exact file paths, exact bash commands, exact test assertions
 - **Intent:** **`Traces to:`** + **`Rationale:`** present per **Traceability & rationale** above
+
+### Test task format — scenario names required
+
+Test tasks must list every scenario by name, not just "write tests". Vague test tasks are rejected.
+
+❌ Wrong:
+```
+- [ ] Write tests for UserService
+```
+
+✅ Required:
+```
+- [ ] Write failing tests — UserService test matrix (RED phase):
+  - `createUser_happyPath_returnsUser`
+  - `createUser_duplicateEmail_throwsConflictError`
+  - `createUser_dbDown_throwsServiceUnavailable`
+  - `createUser_emptyName_throwsValidationError`
+  - `createUser_integration_persistsToDb`
+  Each must be watched FAIL before proceeding to implementation tasks.
+```
 
 ### Non-Examples (What NOT to do)
 ```markdown

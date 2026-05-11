@@ -79,6 +79,25 @@ If you notice any of these, STOP and do not proceed:
 
 **Success Criterion:** Red test fails with clear, meaningful error.
 
+### Test Matrix — Required Before Any GREEN Phase
+
+Before writing any production code, you must have failing tests covering ALL four scenario types for every public function/method/endpoint being implemented. One test total is not acceptable.
+
+| Scenario Type | Required count | What it tests |
+|---|---|---|
+| **Happy path** | 1+ per public function | Normal input → expected output |
+| **Edge case** | 1+ per public function | Empty, null, zero, boundary values, max length |
+| **Error / failure** | 1+ per public function | Invalid input, dependency down, timeout, permission denied |
+| **Integration** | 1+ per API endpoint or cross-service call | Full request → handler → DB/cache/queue → response round trip |
+
+**HARD-GATE:** If your test file has fewer than 3 tests per public function (or fewer than 4 for any API endpoint), you have not completed the RED phase. Do not proceed to GREEN.
+
+**Anti-patterns that trigger STOP:**
+- `it('should work')` — not a scenario, not a test
+- One happy-path test and nothing else — edge cases and errors ARE requirements
+- "I'll add more tests after the feature works" — test matrix must be RED before any production code
+- Integration tests as optional — if the function touches a DB, cache, queue, or external API, an integration test is mandatory
+
 ### CSV / semantic trace markers (machine verification)
 
 When **`qa/manual-test-cases.csv`** exists for the task, tie each RED test to an acceptance **Id** and/or a **`qa/semantic-automation.csv`** step **Id** using a comment the verifier scans:
@@ -251,6 +270,7 @@ Create a test file. Use standard test framework for the language. Start with one
 ✅ **PASS:**
 - Test written before any code
 - Test fails when run (RED phase observed)
+- Test matrix complete: happy path + edge case + error + integration (where applicable) all RED before any production code
 - Minimal code written to pass test
 - Test passes when run (GREEN phase observed)
 - All existing tests still pass

@@ -997,6 +997,14 @@ journalctl -u SERVICE_NAME --no-pager --grep "took.*ms" -o short
 
 ---
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Deployment command completed without non-zero exit code.
+- [ ] Health check step confirmed service is responding (not just process running).
+- [ ] `[DEPLOY-SYSTEMD]` marker appended to `conductor.log` with ISO-8601 timestamp.
+- [ ] Rollback procedure tested or explicitly documented as untested (with reason).
+- [ ] If schema migration ran: `[ROLLBACK-VERIFY]` also logged to `conductor.log`.
+
 ## Cross-References
 
 This skill integrates with other Forge skills for complete deployment reasoning:
@@ -1616,6 +1624,41 @@ Typical operation durations (on modern hardware):
 - Unit file reload becomes slow if > 1000 units present
 
 ---
+
+Once `health_check()` confirms the service is responding at the application HTTP endpoint, append to conductor.log:
+```
+YYYY-MM-DDTHH:MM:SSZ [DEPLOY-SYSTEMD] task_id=<id> target=<host-or-service> outcome=success
+```
+
+### Rollback — Schema Verification
+
+Before executing rollback, verify schema compatibility:
+
+1. **Query applied migrations:**
+   ```bash
+   # Check which migrations are applied vs. expected
+   psql "$DATABASE_URL" -c "SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 5;"
+   ```
+
+2. **Compare to deployment manifest:**
+   ```bash
+   # deployment-manifest.json records expected schema version at deploy time
+   EXPECTED=$(jq -r '.schema_version' ~/forge/brain/prds/<task-id>/deployment-manifest.json)
+   ACTUAL=$(psql "$DATABASE_URL" -tAc "SELECT MAX(version) FROM schema_migrations;")
+   if [ "$ACTUAL" != "$EXPECTED" ]; then
+     echo "SCHEMA MISMATCH: expected=$EXPECTED actual=$ACTUAL — run migrate:down before rollback"
+   fi
+   ```
+
+3. **Run down migration if mismatch detected:**
+   ```bash
+   npm run migrate:down  # or equivalent for the project's migration tool
+   ```
+
+4. **Log rollback result to conductor.log:**
+   ```
+   YYYY-MM-DDTHH:MM:SSZ [ROLLBACK-VERIFY] task_id=<id> schema_expected=<v> schema_actual=<v> action=migrate-down|none outcome=success|fail
+   ```
 
 ## Checklist
 

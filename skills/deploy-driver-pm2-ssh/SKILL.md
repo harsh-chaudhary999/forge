@@ -453,6 +453,11 @@ if (!health.healthy) {
 // Deployment successful
 ```
 
+Append to conductor.log:
+```
+YYYY-MM-DDTHH:MM:SSZ [DEPLOY-PM2-SSH] task_id=<id> target=<host-or-service> outcome=success
+```
+
 **Graceful Restart:**
 ```javascript
 await stop(ssh, 'app')
@@ -1093,6 +1098,14 @@ START: Deployment completed, monitoring detects issue
 - Have runbook for common rollback scenarios (missing env var, port conflict, etc.).
 
 ---
+
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Deployment command completed without non-zero exit code.
+- [ ] Health check step confirmed service is responding (not just process running).
+- [ ] `[DEPLOY-PM2-SSH]` marker appended to `conductor.log` with ISO-8601 timestamp.
+- [ ] Rollback procedure tested or explicitly documented as untested (with reason).
+- [ ] If schema migration ran: `[ROLLBACK-VERIFY]` also logged to `conductor.log`.
 
 ## Cross-References
 

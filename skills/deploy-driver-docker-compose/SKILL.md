@@ -1157,6 +1157,19 @@ This skill supports:
 
 ---
 
+Once all services are confirmed healthy, append to conductor.log:
+```
+YYYY-MM-DDTHH:MM:SSZ [DEPLOY-DOCKER-COMPOSE] task_id=<id> target=<host-or-service> outcome=success
+```
+
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Deployment command completed without non-zero exit code.
+- [ ] Health check step confirmed service is responding (not just process running).
+- [ ] `[DEPLOY-DOCKER-COMPOSE]` marker appended to `conductor.log` with ISO-8601 timestamp.
+- [ ] Rollback procedure tested or explicitly documented as untested (with reason).
+- [ ] If schema migration ran: `[ROLLBACK-VERIFY]` also logged to `conductor.log`.
+
 ## Cross-References
 
 ### Related Deploy Drivers

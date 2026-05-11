@@ -703,6 +703,14 @@ Before handing fault diagnosis to self-heal-triage:
 - [ ] Evidence collected: logs, stack trace, request/response, DB state, cache state as applicable
 - [ ] Fault diagnosis recorded using the **structured handoff template** below (YAML-shaped fields for **`self-heal-triage`** consumption — **not** removed eval-scenario YAML)
 
+## Post-Implementation Checklist
+
+- [ ] Fault localized to a specific file + line range (not a vague "the API is broken").
+- [ ] Root cause classification assigned: product bug / infra failure / test assertion error / config issue.
+- [ ] Evidence written to brain: `blockers/<timestamp>-<description>.md` with task_id: anchor.
+- [ ] RED_INFRA path taken (not self-heal retry) if the fault is infrastructure (ECONNREFUSED, Docker down).
+- [ ] Fault location passed to self-heal-triage as structured input (not loose prose).
+
 ## Cross-References
 
 - **`qa-semantic-csv-orchestrate`**, **`docs/semantic-eval-csv.md`** — semantic CSV schema and runner.

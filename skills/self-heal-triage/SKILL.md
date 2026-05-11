@@ -834,6 +834,14 @@ START: Classification complete, confidence score calculated
 
 ---
 
+## Post-Implementation Checklist
+
+- [ ] Triage decision is one of: fix-code / fix-test / fix-config / escalate — not "investigate more".
+- [ ] Fix strategy written to brain with task_id: anchor before any code is changed.
+- [ ] If fix-code: specific files and lines to change are named (not "update the handler").
+- [ ] If escalate: BLOCKED written to brain with blocker description and next step for human.
+- [ ] Self-heal iteration counter checked — triage does not proceed on iteration > 3.
+
 ## Cross-References
 
 - **`self-heal-locate-fault`** — **Semantic path triage** depends on its parse of **`semantic-eval-run.log`**.

@@ -673,3 +673,11 @@ Replace each `FILL_*` placeholder with the actual value for this debug session b
 | `confidence` | How certain you are that this is the real root cause (`high` = verified by regression test, `medium` = fix worked but root cause inferred, `low` = fix worked but root cause unknown) |
 
 If `confidence` is `low`, note it in `root_cause` so the next reader knows the diagnosis was incomplete.
+
+## Post-Implementation Checklist
+
+- [ ] Debug followed a structured hypothesis → test → result cycle (not random edits).
+- [ ] Each hypothesis was written before being tested (not reverse-engineered from the fix).
+- [ ] Failing command reproduced locally before any fix was attempted.
+- [ ] Fix verified by re-running the exact failing command (not just "should work now").
+- [ ] Debug session summary written to brain with task_id: anchor.

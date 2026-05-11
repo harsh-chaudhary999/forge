@@ -209,6 +209,14 @@ What about retry budgets? Timeouts? Circuit breakers?
 
 ---
 
+## Post-Implementation Checklist
+
+- [ ] All new endpoints have input validation at the boundary (not assumed valid from caller).
+- [ ] Database queries use parameterized statements (no string interpolation in SQL).
+- [ ] Error responses return structured JSON with an error code (not raw exception messages).
+- [ ] Service does not silently swallow exceptions — all catch blocks log or re-throw.
+- [ ] Integration test covers the new endpoint with a real (or test-scoped) database connection.
+
 ## Output
 
 Write to `~/forge/brain/prds/<task-id>/council/backend.md`:

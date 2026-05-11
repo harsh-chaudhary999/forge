@@ -1388,6 +1388,14 @@ Write to `~/forge/brain/prds/<task-id>/council/app.md`:
 
 ---
 
+## Post-Implementation Checklist
+
+- [ ] Layout tested on at least two screen sizes (phone + tablet, or two density buckets).
+- [ ] No hardcoded dp/pt values that break on non-default font scale.
+- [ ] Navigation flows confirmed with back-stack behavior (pressing Back works as expected).
+- [ ] Permissions requested at runtime (not just in manifest), with denied-permission path handled.
+- [ ] At least one Espresso/XCUITest or UI Automator test covers the new screen's happy path.
+
 ## 12. Cross-References
 
 **Related Skills:**

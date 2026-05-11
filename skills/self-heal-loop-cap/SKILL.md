@@ -607,6 +607,14 @@ Before declaring BLOCKED and escalating:
 - [ ] All three attempts documented with fix description and result
 - [ ] Escalation report includes: failing scenario, all fixes tried, failure evidence per attempt
 
+## Post-Implementation Checklist
+
+- [ ] Iteration counter incremented before each self-heal attempt (not after).
+- [ ] At iteration > 3: BLOCKED written to brain and human escalated — no silent retry.
+- [ ] Iteration count logged to conductor.log alongside each `[SELF-HEAL-*]` marker.
+- [ ] Counter reset only when a new eval run starts (not per-step reset within the same run).
+- [ ] Partial eval results preserved to brain before BLOCKED is declared.
+
 ## Cross-References
 
 This skill depends on and coordinates with:

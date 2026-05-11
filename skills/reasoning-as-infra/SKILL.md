@@ -1246,6 +1246,14 @@ Step 3: Switchback (optional)
 
 ---
 
+## Post-Implementation Checklist
+
+- [ ] Infrastructure change is idempotent (applying it twice produces the same result).
+- [ ] No hardcoded secrets or credentials in IaC files — secrets come from env vars or a secrets manager.
+- [ ] Rollback procedure documented for the infra change.
+- [ ] Change tested in a staging/dev environment before being applied to production config.
+- [ ] Diff of the infra change reviewed by a human before conductor marks deploy complete.
+
 ## Cross-References & Sister Skills
 
 ### Sister Skills

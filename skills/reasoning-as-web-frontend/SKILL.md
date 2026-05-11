@@ -252,6 +252,14 @@ Patterns:
 - Performance/accessibility impact of feature
 - Component reuse opportunities
 
+## Post-Implementation Checklist
+
+- [ ] Component renders without console errors in the browser (not just "no TypeScript errors").
+- [ ] Accessibility: interactive elements have ARIA labels or semantic HTML equivalents.
+- [ ] No hardcoded magic strings for UI copy — copy lives in a constants file or i18n resource.
+- [ ] State management follows the project's established pattern (not a new ad-hoc approach).
+- [ ] At least one visual regression or RTL smoke test covers the new component.
+
 ## Output Format
 
 Generate output to `~/forge/brain/prds/<task-id>/council/web.md`:

@@ -1595,3 +1595,11 @@ Before claiming MySQL eval complete:
 - [ ] Transactional isolation confirmed (no dirty reads between eval steps)
 - [ ] `teardown()` called unconditionally — test data removed and DB in clean state
 - [ ] No eval leaves behind uncommitted transactions or orphaned rows
+
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Every scenario step has an entry in `qa/semantic-eval-run.log` (no silent skips).
+- [ ] Each step outcome is one of: `PASS`, `FAIL`, `BLOCKED_DEPENDENCY`, `SKIPPED` (with reason), `CONTEXT_GAP` — no unclassified results.
+- [ ] `qa/semantic-eval-manifest.json` written with `kind: semantic-csv-eval` and a non-placeholder `outcome`.
+- [ ] Database connection string validated; queries run in a transaction rolled back after eval (no side effects).
+- [ ] `python3 tools/verify/verify_forge_task.py --task-id <id> --brain <brain>` exits 0.

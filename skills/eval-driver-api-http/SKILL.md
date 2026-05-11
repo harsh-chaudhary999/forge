@@ -810,3 +810,11 @@ Before running an HTTP API eval scenario:
 - [ ] Response body compared field-by-field, not by string equality
 - [ ] Certificate validation is enabled (not suppressed with rejectUnauthorized: false)
 - [ ] `teardown()` called in all paths (success, failure, timeout)
+
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Every scenario step has an entry in `qa/semantic-eval-run.log` (no silent skips).
+- [ ] Each step outcome is one of: `PASS`, `FAIL`, `BLOCKED_DEPENDENCY`, `SKIPPED` (with reason), `CONTEXT_GAP` — no unclassified results.
+- [ ] `qa/semantic-eval-manifest.json` written with `kind: semantic-csv-eval` and a non-placeholder `outcome`.
+- [ ] All HTTP requests include correct auth headers; status codes matched, not just 2xx.
+- [ ] `python3 tools/verify/verify_forge_task.py --task-id <id> --brain <brain>` exits 0.

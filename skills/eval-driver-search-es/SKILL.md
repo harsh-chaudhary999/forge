@@ -855,6 +855,14 @@ Before marking eval pass for any Elasticsearch-backed feature:
 - [ ] Teardown deletes correct index (verify index count decreased)
 - [ ] Mapping updates followed by re-index before asserting on new fields
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Every scenario step has an entry in `qa/semantic-eval-run.log` (no silent skips).
+- [ ] Each step outcome is one of: `PASS`, `FAIL`, `BLOCKED_DEPENDENCY`, `SKIPPED` (with reason), `CONTEXT_GAP` — no unclassified results.
+- [ ] `qa/semantic-eval-manifest.json` written with `kind: semantic-csv-eval` and a non-placeholder `outcome`.
+- [ ] Elasticsearch cluster health is `green` or `yellow` (not `red`) before eval; index mapping matches expected fields.
+- [ ] `python3 tools/verify/verify_forge_task.py --task-id <id> --brain <brain>` exits 0.
+
 ## Cross-References
 
 - **eval-driver-api-http** — HTTP trigger for search-indexing endpoints

@@ -725,3 +725,11 @@ Before running an iOS XCTest eval scenario:
 - [ ] All assertions target named accessibility identifiers or exact element predicates
 - [ ] `screenshot()` called and file path recorded in scenario output
 - [ ] `disconnect()` called in all paths (success, failure, timeout)
+
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Every scenario step has an entry in `qa/semantic-eval-run.log` (no silent skips).
+- [ ] Each step outcome is one of: `PASS`, `FAIL`, `BLOCKED_DEPENDENCY`, `SKIPPED` (with reason), `CONTEXT_GAP` — no unclassified results.
+- [ ] `qa/semantic-eval-manifest.json` written with `kind: semantic-csv-eval` and a non-placeholder `outcome`.
+- [ ] XCTest scheme compiled without warnings; device UDID confirmed connected before test run.
+- [ ] `python3 tools/verify/verify_forge_task.py --task-id <id> --brain <brain>` exits 0.

@@ -1465,3 +1465,11 @@ Before running a CDP eval scenario:
 - [ ] Every assertion verifies specific text, attribute, or element state — not just presence
 - [ ] `screenshot()` called and file path recorded in scenario output
 - [ ] `teardown()` called in all paths (success, failure, timeout)
+
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Every scenario step has an entry in `qa/semantic-eval-run.log` (no silent skips).
+- [ ] Each step outcome is one of: `PASS`, `FAIL`, `BLOCKED_DEPENDENCY`, `SKIPPED` (with reason), `CONTEXT_GAP` — no unclassified results.
+- [ ] `qa/semantic-eval-manifest.json` written with `kind: semantic-csv-eval` and a non-placeholder `outcome`.
+- [ ] CDP connection to the correct origin verified before first step; no screenshot-only assertions.
+- [ ] `python3 tools/verify/verify_forge_task.py --task-id <id> --brain <brain>` exits 0.

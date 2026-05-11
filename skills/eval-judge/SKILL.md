@@ -67,6 +67,14 @@ Record **RED** and **YELLOW** in brain via **`brain-write`** when your workflow 
 - **PASS** claimed when **`semantic-eval-run.log`** contains FAILED lines that contradict pass.
 - Overriding RED without a new successful **`qa-semantic-csv-orchestrate`** run.
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Every scenario step has an entry in `qa/semantic-eval-run.log` (no silent skips).
+- [ ] Each step outcome is one of: `PASS`, `FAIL`, `BLOCKED_DEPENDENCY`, `SKIPPED` (with reason), `CONTEXT_GAP` — no unclassified results.
+- [ ] `qa/semantic-eval-manifest.json` written with `kind: semantic-csv-eval` and a non-placeholder `outcome`.
+- [ ] Every FAIL has a root cause classification (not just "FAIL — unknown"); YELLOW outcome includes triage note.
+- [ ] `python3 tools/verify/verify_forge_task.py --task-id <id> --brain <brain>` exits 0.
+
 ## Cross-References
 
 | Related | Role |

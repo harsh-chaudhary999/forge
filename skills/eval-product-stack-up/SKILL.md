@@ -1298,3 +1298,11 @@ Before declaring stack ready for eval:
 - [ ] Total stack startup completed under 30 seconds
 - [ ] No partial stack — all critical services verified ready
 - [ ] Stack-up log available for debugging if any eval scenario fails
+
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Every scenario step has an entry in `qa/semantic-eval-run.log` (no silent skips).
+- [ ] Each step outcome is one of: `PASS`, `FAIL`, `BLOCKED_DEPENDENCY`, `SKIPPED` (with reason), `CONTEXT_GAP` — no unclassified results.
+- [ ] `qa/semantic-eval-manifest.json` written with `kind: semantic-csv-eval` and a non-placeholder `outcome`.
+- [ ] All required services return health-check OK before eval starts; missing service logged as RED_INFRA (not RED_PRODUCT).
+- [ ] `python3 tools/verify/verify_forge_task.py --task-id <id> --brain <brain>` exits 0.

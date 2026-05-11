@@ -807,6 +807,14 @@ Before marking eval pass for any Kafka-backed feature:
 - [ ] Consumer group offsets cleaned up in teardown
 - [ ] Eval-prefixed topic deleted or retained per policy
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Every scenario step has an entry in `qa/semantic-eval-run.log` (no silent skips).
+- [ ] Each step outcome is one of: `PASS`, `FAIL`, `BLOCKED_DEPENDENCY`, `SKIPPED` (with reason), `CONTEXT_GAP` — no unclassified results.
+- [ ] `qa/semantic-eval-manifest.json` written with `kind: semantic-csv-eval` and a non-placeholder `outcome`.
+- [ ] Kafka consumer group confirmed at correct offset before publish; message schema validated after consume.
+- [ ] `python3 tools/verify/verify_forge_task.py --task-id <id> --brain <brain>` exits 0.
+
 ## Cross-References
 
 - **eval-driver-api-http** — HTTP trigger for message-producing endpoints

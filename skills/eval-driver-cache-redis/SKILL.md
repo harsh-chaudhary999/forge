@@ -951,6 +951,14 @@ const cleanup = async () => {
 - [ ] Connection pool closed (CLIENT LIST audit)
 - [ ] No uncommitted transactions left behind
 
+### Post-Implementation Checklist: Did I Follow the Skill?
+
+- [ ] Every scenario step has an entry in `qa/semantic-eval-run.log` (no silent skips).
+- [ ] Each step outcome is one of: `PASS`, `FAIL`, `BLOCKED_DEPENDENCY`, `SKIPPED` (with reason), `CONTEXT_GAP` — no unclassified results.
+- [ ] `qa/semantic-eval-manifest.json` written with `kind: semantic-csv-eval` and a non-placeholder `outcome`.
+- [ ] Redis `PING` returned `PONG` before test; TTL verified via `TTL <key>` command after write.
+- [ ] `python3 tools/verify/verify_forge_task.py --task-id <id> --brain <brain>` exits 0.
+
 ## Cross-References
 
 - **eval-driver-api-http** — HTTP trigger for cache-busting endpoints

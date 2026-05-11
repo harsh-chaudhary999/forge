@@ -271,6 +271,28 @@ For each **new or modified agent** in the diff:
 
 ---
 
+## Step 6b — Product code style check (when `code-style.md` exists)
+
+Check if `~/forge/brain/products/<slug>/codebase/code-style.md` exists for the repo being reviewed. If it does, compare the diff against it:
+
+```bash
+cat ~/forge/brain/products/<slug>/codebase/code-style.md
+```
+
+Flag as **P2 — RECOMMENDED** any of these mismatches:
+- Wrong naming convention (e.g. `snake_case` function in a `camelCase` codebase)
+- Wrong import style (e.g. default import when codebase uses named imports only)
+- Wrong async pattern (e.g. `.then()` chain in an `async/await` codebase)
+- Wrong error handling (e.g. returning `{error}` object when codebase throws)
+- Wrong test file location or naming convention
+
+Flag as **P1 — REQUIRED** if:
+- New code introduces a completely different naming convention for a public API (e.g. new `get_user()` function in a TypeScript `camelCase` codebase) — this breaks discoverability
+
+If `code-style.md` does not exist: note "style check skipped — code-style.md not found; run /scan to generate" as a P3 advisory finding.
+
+---
+
 ## Step 7: Emit Report
 
 Structure the report as:

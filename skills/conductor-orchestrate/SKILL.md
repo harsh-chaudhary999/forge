@@ -396,7 +396,25 @@ Ensure **consensus** across all repos (no conflicting contracts).
      - Success criteria
      - **`forge-tdd`:** implement **GREEN** to satisfy existing tests; extend tests only in new RED→GREEN cycles
      - Paths to machine-eval artifacts (**`qa/semantic-eval-manifest.json`**, **`qa/semantic-eval-run.log`**, **`qa/semantic-automation.csv`**) and **`qa/manual-test-cases.csv`** for TDD traceability
+     - Read `~/forge/brain/products/<slug>/codebase/code-style.md` BEFORE writing any code. Match its naming conventions, import style, async pattern, and error handling pattern exactly.
   4. Track completion per subagent.
+
+**HARD-GATE — Pre-Write File Search (every implementer, every task):**
+
+Before writing or creating ANY file, the implementer MUST run these two commands and include results in their work log:
+
+```bash
+# 1. Check structure.txt for existing files in target area
+grep -i "<ClassName or module name>" ~/forge/brain/products/<slug>/codebase/structure.txt
+
+# 2. Search repo for existing implementations
+rg "<ClassName or functionName>" <repo-path> --type <ts|py|go|java|kt> -l
+```
+
+If either command returns a match → modify the existing file. Do NOT create a new file.
+If both return zero matches → document the evidence and proceed with new file creation.
+
+Skipping this step and creating a new file when an existing one should be modified is a BLOCKED condition — the implementer must report BLOCKED and the conductor must re-dispatch with corrected task instructions.
 
 **SUCCESS CONDITION:** All subagents complete. All repos have commits on their branch.  
 **FAILURE CONDITION:** Subagent fails to implement OR implements code that breaks tests.  
@@ -511,8 +529,26 @@ The Conductor manages the complete delivery cycle: dispatching dev work, reviewi
   2. For each repo IN PARALLEL:
      - Dispatch `dev-implementer` subagent.
      - Pass: task_id, repo path, tech plan, contract impact, success criteria, **`forge-tdd`**, paths to **`qa/semantic-eval-manifest.json`** / **`qa/semantic-automation.csv`**, **`qa/manual-test-cases.csv`**, confirmation that RED tests already exist.
+     - Read `~/forge/brain/products/<slug>/codebase/code-style.md` BEFORE writing any code. Match its naming conventions, import style, async pattern, and error handling pattern exactly.
      - Track worktree ID and branch name.
   3. Monitor all subagents for completion or failure.
+
+**HARD-GATE — Pre-Write File Search (every implementer, every task):**
+
+Before writing or creating ANY file, the implementer MUST run these two commands and include results in their work log:
+
+```bash
+# 1. Check structure.txt for existing files in target area
+grep -i "<ClassName or module name>" ~/forge/brain/products/<slug>/codebase/structure.txt
+
+# 2. Search repo for existing implementations
+rg "<ClassName or functionName>" <repo-path> --type <ts|py|go|java|kt> -l
+```
+
+If either command returns a match → modify the existing file. Do NOT create a new file.
+If both return zero matches → document the evidence and proceed with new file creation.
+
+Skipping this step and creating a new file when an existing one should be modified is a BLOCKED condition — the implementer must report BLOCKED and the conductor must re-dispatch with corrected task instructions.
 
 **SUCCESS CONDITION:** All dev-implementer subagents complete. All repos have commits on their feature branch.  
 **FAILURE CONDITION:** Subagent fails (code doesn't compile, tests fail, blocked).  

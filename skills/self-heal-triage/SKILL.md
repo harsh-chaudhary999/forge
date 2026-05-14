@@ -163,6 +163,21 @@ Automatically classify test and system failures into one of four categories to e
 
 Do **not** require YAML scenario IDs — use semantic **`id`** fields consistently.
 
+### RED_INFRA Pre-Check (runs BEFORE classification)
+
+Before classifying any failure, check whether `forge-eval-gate` has logged a `RED_INFRA` outcome:
+
+1. Read `~/forge/brain/prds/<task-id>/qa/semantic-eval-manifest.json` or `conductor.log`.
+2. If `outcome: RED_INFRA` is present (ECONNREFUSED, Docker daemon down, MCP unavailable, dependent service not reachable):
+   - **Do NOT classify this as a code bug, flaky test, or bad test.**
+   - **Do NOT consume a self-heal retry attempt.**
+   - Immediately write a BLOCKED escalation to `~/forge/brain/prds/<task-id>/blockers/<timestamp>-infra-failure.md` with the infrastructure symptom.
+   - Output: `BLOCKED — RED_INFRA: <symptom>. No retry consumed. Human must resolve infrastructure before re-running eval.`
+   - Stop. Do not proceed to the classification procedure below.
+3. Only if `outcome` is NOT `RED_INFRA`: proceed to the classification procedure.
+
+**Why:** Infrastructure failures cannot be fixed by code changes. Consuming self-heal retries on infra failures wastes the entire retry budget on unfixable symptoms, leaving zero retries for the real code bug that will surface once infra is restored.
+
 ## Classification Categories
 
 ### 1. Flaky Test

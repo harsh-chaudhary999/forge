@@ -30,6 +30,14 @@ allowed-tools:
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
+## Iron Law
+
+```
+ALWAYS READ FROM THE BRAIN PATH DIRECTLY — MEMORY IS NOT AUTHORITY, THE BRAIN IS.
+NEVER INFER OR ASSUME BRAIN CONTENT FROM CHAT CONTEXT — READ THE FILE.
+IF THE BRAIN FILE DOES NOT EXIST, STOP AND FLAG MISSING — DO NOT PROCEED WITH ASSUMED DATA.
+```
+
 The brain at `~/forge/brain/` is git-backed markdown. Read patterns:
 
 ## Product Topology

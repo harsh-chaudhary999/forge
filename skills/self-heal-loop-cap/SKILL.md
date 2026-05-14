@@ -108,12 +108,12 @@ System state changes between attempts. Services restart, caches clear, environme
 ### Anti-Pattern 5: "Loop cap only applies to code bugs, not infra faults"
 
 **Why It Fails:**
-The 3-attempt cap applies uniformly to all fault categories: code bugs, configuration errors, infrastructure faults, flaky tests, integration failures. Infra faults have the same limit because persistent infra problems require ops escalation, not retry loops. No category gets a free pass.
+Infrastructure failures classified as `RED_INFRA` by `forge-eval-gate` (ECONNREFUSED, Docker daemon down, MCP unavailable) do **NOT** consume a retry cycle — they escalate immediately to BLOCKED. Only classification types `CODE_BUG`, `FLAKY`, and `TEST_BUG` from `self-heal-triage` consume retries from the 3-attempt budget.
 
 **Enforcement (MUST):**
-1. MUST apply 3-attempt cap to code faults, config errors, infra failures equally
-2. MUST NOT increment loop counter differently by fault type
-3. MUST escalate infra faults to operations after 3 attempts (no exception)
+1. MUST apply 3-attempt cap to code faults, config errors, and flaky/test failures
+2. MUST NOT consume a retry attempt for `RED_INFRA` outcomes — escalate immediately
+3. MUST check `self-heal-triage` RED_INFRA Pre-Check output before incrementing attempt counter
 4. MUST document fault category in escalation for proper routing
 5. MUST treat "it's an infra problem so we can retry more" as anti-pattern violation
 

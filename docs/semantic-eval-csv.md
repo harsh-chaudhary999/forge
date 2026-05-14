@@ -82,6 +82,23 @@ Log in as the user created above: POST /auth/login with email=${api-create-user.
 | **TraceToCsvId** | Optional **`Id`** from **`qa/manual-test-cases.csv`** for traceability (validated against that CSV). RED tests can cite the same ids via **`# forge-tdd: …`** — see **`skills/forge-tdd`** and **`verify_forge_task.py --verify-tdd-csv-trace`**. |
 | **ExpectedHint** | Optional substring or short hint for assertions / screenshots — interpreted by the host driver. |
 
+## Surface → Driver Mapping
+
+The `Surface` column in `semantic-automation.csv` maps to a specific eval driver skill:
+
+| CSV Surface value | Aliases | Eval Driver Skill | Notes |
+|---|---|---|---|
+| `web` | `web-cdp` | `eval-driver-web-cdp` | CDP / Playwright / browser MCP — ask operator which path |
+| `api` | `api-http` | `eval-driver-api-http` | HTTP/REST calls |
+| `mysql` | `db`, `db-mysql` | `eval-driver-db-mysql` | MySQL direct queries |
+| `redis` | `cache`, `cache-redis` | `eval-driver-cache-redis` | Redis cache state |
+| `es` | `search`, `search-es` | `eval-driver-search-es` | Elasticsearch |
+| `kafka` | `bus`, `bus-kafka` | `eval-driver-bus-kafka` | Event bus |
+| `android` | `android-adb` | `eval-driver-android-adb` | ADB vs Appium MCP — ask operator |
+| `ios` | `ios-xctest` | `eval-driver-ios-xctest` | XCTest / simulator — macOS host only |
+
+Aliases are resolved by `tools/verify/semantic_csv.py` `SURFACE_ALIASES` before validation.
+
 ## Host drivers (operator machine)
 
 Forge plugin code does **not** ship LangChain-style orchestrators (**CLAUDE.md** D5). Semantic execution uses **host-local** drivers documented in **`eval-driver-*`** skills:
@@ -106,3 +123,11 @@ Log **`[P4.0-SEMANTIC-EVAL]`** in **`conductor.log`** after manifest + **`semant
 ## Skill
 
 **`qa-semantic-csv-orchestrate`** — brain read → validate CSV → run CLI or dispatch host automation → append conductor marker.
+
+## Related Documentation
+
+| Doc | Purpose |
+|---|---|
+| [`docs/semantic-eval-schema.md`](semantic-eval-schema.md) | Full JSON schema for `semantic-eval-manifest.json` and `semantic-eval-run.log`, verdict logic table, RED_INFRA escalation |
+| [`docs/forge-task-verification.md`](forge-task-verification.md) | CI integration, `verify_forge_task.py` flags, GitHub Actions workflow template |
+| [`docs/conductor-log-format.md`](conductor-log-format.md) | Marker registry — `[P4.0-SEMANTIC-EVAL]` format and ordering constraints |

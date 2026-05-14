@@ -65,7 +65,7 @@ Append-only JSON-lines file. One JSON object per line per step execution.
 | `PASS` | Step executed and assertions passed |
 | `FAIL` | Step executed and assertions failed (product bug) |
 | `BLOCKED_DEPENDENCY` | Dependency step failed or was blocked — this step skipped |
-| `CONTEXT_GAP` | Dependency passed but returned empty `result: {}` — step attempted without interpolation |
+| `CONTEXT_GAP` | Step could not be fully evaluated. Two forms: (1) dependency passed but returned empty `result: {}` so downstream interpolation (`${stepId.result.field}`) had no data; (2) external context required by the step (credentials, device, URL, test account) was not available at runtime. In both cases the step result is indeterminate — not a pass, not a product bug. |
 | `SKIPPED` | Surface not available on this host (e.g., iOS on Linux) |
 
 **Required fields per line:**
@@ -91,9 +91,22 @@ Append-only JSON-lines file. One JSON object per line per step execution.
 | `pass` | all PASS | GREEN |
 | `pass` | any CONTEXT_GAP or BLOCKED_DEPENDENCY | YELLOW (incomplete execution) |
 | `fail` | any FAIL | RED |
-| `fail` | all non-PASS are BLOCKED_DEPENDENCY | YELLOW (dependency issue, not code bug) |
+| `fail` | all non-PASS are BLOCKED_DEPENDENCY | YELLOW (dependency chain failed — fix the root upstream step, not the blocked ones) |
 | `yellow` | mixed | YELLOW |
-| `RED_INFRA` | any | RED_INFRA — escalate, no retry |
+| `RED_INFRA` | any | RED_INFRA — escalate immediately, do NOT consume self-heal retry budget |
+
+### BLOCKED_DEPENDENCY verdict guidance
+
+When `manifest.outcome = fail` and every non-PASS step in `run.log` has `outcome: BLOCKED_DEPENDENCY`, the issue is an upstream step that failed — not a code bug in the current steps. The verdict is YELLOW, not RED. Fix the root failure (the first non-PASS, non-BLOCKED_DEPENDENCY step) and re-run. Do not enter the self-heal loop for BLOCKED_DEPENDENCY steps — they are downstream victims of the root failure.
+
+### RED_INFRA escalation procedure
+
+When `manifest.outcome = RED_INFRA`:
+1. Write a BLOCKED escalation file to `~/forge/brain/prds/<task-id>/blockers/<timestamp>-red-infra.md` explaining the symptom (ECONNREFUSED, Docker down, device offline, MCP unavailable)
+2. Log `[P4.4-RED-INFRA] task_id=<id> symptom=<description>` to `conductor.log`
+3. Do NOT log a self-heal iteration counter — RED_INFRA does not count against the 3-retry budget
+4. Restore the infrastructure, verify with the appropriate health check, then re-run eval from scratch
+5. If infrastructure cannot be restored: escalate BLOCKED to human
 
 ## Related Skills
 

@@ -2,7 +2,7 @@
 name: conductor-orchestrate
 description: "WHEN: PRD is locked. You are the master state machine orchestrating the entire forge workflow. Routes the task through all phases, tracks state, manages escalations, and coordinates subagents."
 type: rigid
-requires: [intake-interrogate, product-context-load, brain-read, brain-write, forge-worktree-gate, council-multi-repo-negotiate, spec-freeze, tech-plan-write-per-project, qa-manual-test-cases-from-prd, forge-tdd, eval-product-stack-up, qa-semantic-csv-orchestrate, forge-eval-gate, pr-set-coordinate, dream-retrospect-post-pr]
+requires: [intake-interrogate, product-context-load, brain-read, brain-write, forge-worktree-gate, council-multi-repo-negotiate, spec-freeze, tech-plan-write-per-project, tech-plan-self-review, qa-manual-test-cases-from-prd, forge-tdd, eval-product-stack-up, qa-semantic-csv-orchestrate, forge-eval-gate, pr-set-coordinate, dream-retrospect-post-pr]
 version: 1.0.13
 preamble-tier: 4
 triggers:
@@ -374,7 +374,7 @@ Ensure **consensus** across all repos (no conflicting contracts).
   2. If **Figma MCP** is available in the host: **fetch target nodes first**; do not default to “please export PNG” while MCP can supply structure.
   3. If implementable inputs are still missing → **STOP**; return to intake or council to materialize design — **do not** enter State 5 / P4.1 for web/app UI work.
 
-**LOGGING:**
+**LOGGING** (see `docs/conductor-log-format.md` for full marker registry):
 ```
 [DESIGN-INGEST] task_id=<id> timestamp=<ISO8601> evidence=brain/prds/<task-id>/design/... figma_mcp=<yes|no|n/a> status=PASS|BLOCKED
 ```

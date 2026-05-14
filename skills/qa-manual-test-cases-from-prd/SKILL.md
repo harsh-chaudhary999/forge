@@ -376,3 +376,13 @@ Commit to brain when your workflow uses git-backed brain.
 - [ ] Atomicity spot-check: random 10% of rows read for split violations
 - [ ] Report (Step 8) delivered
 - [ ] If **CONTEXT_GAP** was non-empty: **CONTEXT_GAP closure (interactive)** completed — **no** unresolved open gaps without explicit human **risk-accept** / **defer** per **`using-forge`**
+
+## Cross-References
+
+| Skill / Doc | Relationship |
+|---|---|
+| `qa-prd-analysis` | **Prerequisite** — must run first; produces `qa/qa-analysis.md` consumed by Step 1b of this skill |
+| `qa-semantic-csv-orchestrate` | **Downstream** — reads `manual-test-cases.csv`; `TraceToCsvId` links rows to semantic automation steps |
+| `forge-tdd` | **Downstream consumer** — RED tests must trace back to approved rows in this CSV |
+| `conductor-orchestrate` | **Gate consumer** — State 4b requires `[P4.0-QA-CSV] approved=yes` before `[P4.0-SEMANTIC-EVAL]` |
+| `docs/conductor-log-format.md` | `[P4.0-QA-CSV]` marker format and conditional enforcement rules |

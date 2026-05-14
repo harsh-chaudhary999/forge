@@ -34,7 +34,7 @@ echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) [MARKER] task_id=<id> field=value" >> ~/for
 | `[P3-TECH-PLAN-REVIEW]` | Tech plan review round | `task_id` | `round=<n>`, `result=PASS\|CHANGES` |
 | `[P3-TECH-PLAN-XALIGN]` | Cross-repo alignment check | `task_id` | `result=PASS\|FAIL` |
 | `[P3-TECH-PLAN-HUMAN]` | Human signoff on tech plan | `task_id` | `status=APPROVED\|REJECTED` |
-| `[P4.0-QA-CSV]` | Manual QA CSV approved | `task_id` | `rows=<n>`, `approved=yes\|skipped=not_required` |
+| `[P4.0-QA-CSV]` | Manual QA CSV approved | `task_id` | `rows=<n>`, `approved=yes` (mandatory on `/forge` or when `forge_qa_csv_before_eval: true`); `skipped=not_required` (only for partial runs when flag is unset/false) |
 | `[P4.0-SEMANTIC-EVAL]` | Semantic CSV eval complete | `task_id` | `kind=semantic-csv-eval`, `outcome=pass\|fail\|yellow` |
 | `[P4.0-TDD-RED]` | TDD RED phase confirmed per repo | `task_id` | `repo=<role>`, `test_files=<list>`, `red_confirmed=yes` |
 | `[P4.1-DISPATCH]` | Dev-implementer dispatched | `task_id` | `repo=<role>`, `worktree=<path>` |
@@ -43,7 +43,7 @@ echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) [MARKER] task_id=<id> field=value" >> ~/for
 | `[P4.2-DESIGN-PARITY]` | Design parity check complete | `task_id` | `repo=<role>`, `reviewer=design-implementation-reviewer\|figma-design-sync\|skipped`, `result=PASS\|FAIL\|SKIP` |
 | `[P4.3-REVIEW-PASS]` | All reviews passed | `task_id` | — |
 | `[P4.4-EVAL-PASS]` | Eval passed GREEN | `task_id` | `outcome=GREEN`, `manifest=qa/semantic-eval-manifest.json` |
-| `[P4.4-EVAL-FAIL]` | Eval failed | `task_id` | `outcome=RED\|YELLOW`, `self_heal_iter=<n>` |
+| `[P4.4-EVAL-FAIL]` | Eval failed | `task_id`, `outcome=RED\|YELLOW`, `self_heal_iter=<n>` | — |
 | `[P4.4-RED-INFRA]` | Infrastructure failure during eval | `task_id` | `symptom=<ECONNREFUSED\|docker-down\|mcp-unavailable>` |
 | `[P5-PR-RAISED]` | PR raised | `task_id` | `repo=<role>`, `pr_url=<url>` |
 | `[P5-PR-MERGED]` | PR merged | `task_id` | `repo=<role>`, `pr_url=<url>` |
@@ -57,10 +57,41 @@ echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) [MARKER] task_id=<id> field=value" >> ~/for
 
 ## Ordering Rule
 
-Markers MUST be logged in ascending phase order. `[P4.4-EVAL-PASS]` cannot appear before `[P4.1-DISPATCH]`. If out-of-order markers are detected, the pipeline state is corrupt — do not proceed.
+Markers MUST be logged in ascending phase order. If out-of-order markers are detected, the pipeline state is corrupt — do not proceed.
+
+**Required ordering within State 4b:**
+```
+[QA-ANALYSIS-LOCKED] → [P4.0-QA-CSV] → [P4.0-SEMANTIC-EVAL] → [P4.0-TDD-RED] → [DESIGN-INGEST] (if applicable) → [P4.1-DISPATCH]
+```
+
+**Full pipeline order:**
+```
+[P1-PRD-LOCKED] → [P2-SPEC-FROZEN] → [P3-TECH-PLAN-LOCKED] → [QA-ANALYSIS-LOCKED]
+  → [P4.0-QA-CSV] → [P4.0-SEMANTIC-EVAL] → [P4.0-TDD-RED] → [DESIGN-INGEST]?
+  → [P4.1-DISPATCH] → [P4.2-REVIEW] → [P4.2-DESIGN-PARITY]? → [P4.3-REVIEW-PASS]
+  → [P4.4-EVAL-PASS|FAIL] → [P5-PR-RAISED] → [P5-PR-MERGED]
+```
+
+**Note:** `task_id` is required on **every** log line, including non-phase markers (`[CANARY-ALERT]`, `[ROLLBACK-VERIFY]`, `[DEPLOY-*]`, `[PR-BLOCKED]`).
 
 **Verification:** `grep '\[P' conductor.log | sort` should match the natural append order.
 
 ## Skills That Write to conductor.log
 
-forge-intake-gate, forge-council-gate, spec-freeze, tech-plan-write-per-project, qa-prd-analysis, qa-manual-test-cases-from-prd (`[P4.0-QA-CSV]`), qa-semantic-csv-orchestrate (`[P4.0-SEMANTIC-EVAL]`), forge-tdd (`[P4.0-TDD-RED]`), conductor-orchestrate, forge-eval-gate, pr-set-coordinate, all deploy-driver-* skills, canary.
+| Skill | Markers written |
+|---|---|
+| `forge-intake-gate` | `[P1-PRD-LOCKED]` |
+| `forge-council-gate` | (triggers spec-freeze) |
+| `spec-freeze` | `[P2-SPEC-FROZEN]`, `[P2-SPEC-AMENDED]`, `[P2-SPEC-AMENDMENT-REJECTED]`, `[P2-DISPUTE-RESOLVED]` |
+| `tech-plan-write-per-project` | `[P3-TECH-PLAN-REVIEW]`, `[P3-TECH-PLAN-XALIGN]`, `[P3-TECH-PLAN-HUMAN]`, `[P3-TECH-PLAN-LOCKED]` |
+| `qa-prd-analysis` | `[QA-ANALYSIS-LOCKED]` |
+| `qa-manual-test-cases-from-prd` | `[P4.0-QA-CSV]` |
+| `qa-semantic-csv-orchestrate` | `[P4.0-SEMANTIC-EVAL]` |
+| `forge-tdd` | `[P4.0-TDD-RED]` |
+| `conductor-orchestrate` | `[P4.1-DISPATCH]`, `[P4.1-WORKTREE-FAIL]`, `[P4.3-REVIEW-PASS]`, `[DESIGN-INGEST]` |
+| `forge-eval-gate` | `[P4.4-EVAL-PASS]`, `[P4.4-EVAL-FAIL]`, `[P4.4-RED-INFRA]` |
+| `self-heal-triage` | `[P4.4-RED-INFRA]` (when RED_INFRA detected) |
+| `pr-set-coordinate` | `[PR-BLOCKED]`, `[P5-PR-RAISED]` |
+| `pr-set-merge-order` | `[P5-PR-MERGED]` |
+| `all deploy-driver-* skills` | `[DEPLOY-<SURFACE>]`, `[DEPLOY-HEALTH-FAIL]`, `[ROLLBACK-VERIFY]` |
+| `canary` | `[CANARY-ALERT]` |

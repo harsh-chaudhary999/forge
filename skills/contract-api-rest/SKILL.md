@@ -1739,3 +1739,14 @@ Before claiming completion:
 - [ ] No `TBD` fields remain in any endpoint schema — every field has a name, type, nullability, and example value
 - [ ] A `contract_id` anchor (brain decision ID or commit SHA) is recorded in the brain commit, linking the locked contract to its negotiation record
 
+
+## Cross-References
+
+| Skill / Doc | Relationship |
+|---|---|
+| `council-multi-repo-negotiate` | **Caller** — invokes this skill when REST API conflict is identified during council |
+| `spec-freeze` | **Downstream** — `shared-dev-spec.md` contract section is locked after this skill's output |
+| `forge-council-gate` | **Gate** — all 5 contracts (including REST API) must be negotiated before spec freeze |
+| `contract-event-bus` | **Sibling contract** — event bus contracts often depend on REST API payload shape |
+| `tech-plan-write-per-project` | **Consumer** — Section 1b.5 traces synchronous API wiring from this contract |
+| `spec-reviewer` | **Verifier** — checks implementation matches the locked REST API contract line-by-line |

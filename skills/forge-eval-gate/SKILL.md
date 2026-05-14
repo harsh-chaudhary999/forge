@@ -448,3 +448,21 @@ Before claiming eval gate passed:
 - [ ] Self-heal iteration count ≤ 3 if any RED occurred.
 - [ ] Ship-Readiness Score computed and logged (numeric, not just label).
 - [ ] `python3 tools/verify/verify_forge_task.py` exits 0 for this task.
+
+## Cross-References
+
+| Skill / Doc | Relationship |
+|---|---|
+| `eval-product-stack-up` | **Prerequisite** — brings up full multi-service stack before drivers run |
+| `eval-driver-api-http` | **Eval driver** — executes HTTP/REST surface steps |
+| `eval-driver-web-cdp` | **Eval driver** — executes web UI surface steps |
+| `eval-driver-db-mysql` | **Eval driver** — verifies database state |
+| `eval-driver-cache-redis` | **Eval driver** — verifies cache state |
+| `eval-driver-bus-kafka` | **Eval driver** — verifies event bus messages |
+| `eval-driver-search-es` | **Eval driver** — verifies search index state |
+| `eval-driver-ios-xctest` | **Eval driver** — drives iOS simulator |
+| `eval-driver-android-adb` | **Eval driver** — drives Android device/emulator |
+| `eval-judge` | **Downstream** — reads `semantic-eval-manifest.json` + `semantic-eval-run.log` to produce GREEN/YELLOW/RED verdict |
+| `self-heal-locate-fault` | **Downstream on RED** — fault locator first step of self-heal loop |
+| `docs/semantic-eval-schema.md` | Artifact schema for `semantic-eval-manifest.json` and `semantic-eval-run.log` |
+| `docs/conductor-log-format.md` | `[P4.4-EVAL-PASS]`, `[P4.4-EVAL-FAIL]`, `[P4.4-RED-INFRA]` marker formats |

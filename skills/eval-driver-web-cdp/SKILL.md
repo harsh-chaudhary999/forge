@@ -1485,3 +1485,13 @@ Before running a CDP eval scenario:
 - [ ] `qa/semantic-eval-manifest.json` written with `kind: semantic-csv-eval` and a non-placeholder `outcome`.
 - [ ] CDP connection to the correct origin verified before first step; no screenshot-only assertions.
 - [ ] `python3 tools/verify/verify_forge_task.py --task-id <id> --brain <brain>` exits 0.
+
+## Cross-References
+
+| Skill / Doc | Relationship |
+|---|---|
+| `qa-semantic-csv-orchestrate` | **Dispatcher** — invokes this driver for steps with `Surface: web` or `web-cdp` |
+| `eval-judge` | **Downstream** — reads `semantic-eval-run.log` entries this driver writes |
+| `forge-eval-gate` | **Gate** — this driver is one of multiple drivers coordinated by the gate |
+| `docs/semantic-eval-csv.md` | Surface → driver mapping; `DependsOn` syntax |
+| `docs/semantic-eval-schema.md` | `semantic-eval-run.log` outcome enum and required fields |

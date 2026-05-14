@@ -169,9 +169,41 @@ Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the
 
 ---
 
+### [P4.0-QA-CSV]
+
+**Definition:** `conductor.log` marker logged after `~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv` has ≥1 approved row and Step 7 approval is granted in `qa-manual-test-cases-from-prd`. Format: `[P4.0-QA-CSV] task_id=<id> rows=<n> approved=yes`. When logging `skipped=not_required`, it is only valid on partial runs (`/plan`, `/build`, etc.) when `forge_qa_csv_before_eval` is `false`/unset in `product.md`. **Never** log `skipped=not_required` on a full `/forge` run.
+
+**Prerequisite for:** `[P4.0-SEMANTIC-EVAL]` must come after this marker. `conductor-orchestrate` State 4b enforces the ordering.
+
+**Cross-References:** `qa-manual-test-cases-from-prd`; `docs/conductor-log-format.md`; `conductor-orchestrate` State 4b step 0.
+
+---
+
 ### [P4.0-SEMANTIC-EVAL]
 
 **Definition:** **`conductor.log`** marker logged after valid **`qa/semantic-eval-manifest.json`** exists on disk — **State 4b** machine-eval gate. **`qa/semantic-eval-run.log`** is the per-step **CSV execution trace**; commit it with the manifest whenever the runner produced it. Parsed by **`prompt-submit-gates.cjs`** (**`GATE_PATTERNS.SEMANTIC_EVAL`**).
+
+---
+
+### [P4.0-TDD-RED]
+
+**Definition:** `conductor.log` marker logged after TDD RED phase is confirmed per repo — failing tests have been written and watched fail before any production implementation code is committed. Format: `[P4.0-TDD-RED] task_id=<id> repo=<role> test_files=<list> red_confirmed=yes`. One marker per repo involved in the task.
+
+**Prerequisite for:** `[P4.1-DISPATCH]` — no production feature code dispatched until RED is confirmed.
+
+**Written by:** `forge-tdd` Output section (per the skill's Output instruction).
+
+**Cross-References:** `forge-tdd` § Output; `forge-verification` § Phase Authority Check; `conductor-orchestrate` State 4b step 2.
+
+---
+
+### [P4.2-DESIGN-PARITY]
+
+**Definition:** `conductor.log` marker logged after design parity check completes per repo during Phase 4.2 Review. Format: `[P4.2-DESIGN-PARITY] task_id=<id> repo=<role> reviewer=design-implementation-reviewer|figma-design-sync|skipped result=PASS|FAIL|SKIP`. Only written when `design_new_work: yes` and the repo is `web` or `app` (no `design_waiver: prd_only`).
+
+**When `result=SKIP`:** Harness not available — human sign-off required before advancing to Phase 4.3.
+
+**Cross-References:** `conductor-orchestrate` § Phase 4.2; `docs/conductor-log-format.md`.
 
 ---
 
@@ -230,6 +262,90 @@ Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the
 ---
 
 ## Core Concepts
+
+### shared-dev-spec.md
+
+**Definition:** The canonical contract document produced by `Council` and locked by `spec-freeze`. Lives at `~/forge/brain/prds/<task-id>/shared-dev-spec.md`. Contains all 5 service contracts negotiated by the 4 surfaces: REST API (endpoints, payloads, status codes), event bus (topics, schemas), cache (keys, TTL, invalidation), database (tables, schema, migrations), search (document structure, analyzers). Immutable after `[P2-SPEC-FROZEN]` — changes require full SPEC-AMENDMENT Protocol (council re-vote + new `[P2-SPEC-AMENDED]` marker).
+
+**Usage Context:** All downstream phases read from this file. `tech-plan-write-per-project` breaks it into per-repo tasks. `spec-reviewer` verifies implementation matches it line-by-line. `forge-drift-check` detects divergence. Do not modify post-freeze without re-opening council.
+
+**What It's NOT:** Not a living document. Not per-repo. Not aspirational. Not a "first draft" — it is the signed contract.
+
+**Cross-References:** Written by `council-multi-repo-negotiate`; locked by `spec-freeze`; read by `tech-plan-write-per-project`, `spec-reviewer`, `forge-drift-check`; amended via `spec-freeze` § SPEC-AMENDMENT Protocol.
+
+---
+
+### product.md
+
+**Definition:** Per-product workspace config file at `~/forge/brain/products/<slug>/product.md`. Contains: product slug, repo paths (role → absolute path), start/health commands per service, `deploy_doc` for services with complex startup, and flags. The most important flag is `forge_qa_csv_before_eval` (boolean) — when `true` or when the entrypoint is `/forge`, `qa-manual-test-cases-from-prd` is mandatory before `[P4.0-SEMANTIC-EVAL]`.
+
+**Key fields:**
+- `forge_qa_csv_before_eval: true|false` — gates manual QA CSV requirement
+- `repos:` — role-to-path map (e.g., `backend: /abs/path/to/backend`)
+- `start:` — how to start each service for eval
+- `health:` — health check command per service
+
+**Cross-References:** Read by `conductor-orchestrate`, `eval-product-stack-up`, `deploy-driver-*`; `forge_qa_csv_before_eval` enforced by `conductor-orchestrate` State 4b.
+
+---
+
+### worktree-per-project-per-task (D30)
+
+**Definition:** D30 discipline enforced by the `worktree-per-project-per-task` skill. Every `dev-implementer` task must execute in a **fresh isolated git worktree** — never on the main working tree or a shared branch. One worktree per repo per task. The branch follows naming convention `task/<task-id>[-<repo-role>]`. Worktrees are created before `[P4.1-DISPATCH]` and confirmed by `forge-tdd` Step 0.
+
+**Why isolated:** Prevents state leakage between parallel tasks, ensures the RED test only sees the current task's code, and makes rollback clean (delete worktree, branch is gone).
+
+**Red flag:** If `git worktree list` shows the current directory on `main`/`master` or `HEAD` without a task branch — STOP. Invoke `worktree-per-project-per-task` first.
+
+**Cross-References:** Enforced by `forge-tdd` Step 0 HARD-GATE; `conductor-orchestrate` State 5 HARD-GATE; skill `worktree-per-project-per-task`.
+
+---
+
+### Brain Directory Structure
+
+**Definition:** The Forge brain is the append-only, git-backed evidence store at `~/forge/brain/`. Two subtrees:
+
+- `~/forge/brain/products/<slug>/` — persistent per-product config (`product.md`, `codebase/`, `terminology.md`, scan outputs)
+- `~/forge/brain/prds/<task-id>/` — per-task artifacts (all phases of a single pipeline run)
+
+**Per-task layout (`~/forge/brain/prds/<task-id>/`):**
+
+| Path | Contents |
+|---|---|
+| `prd-locked.md` | Intake output — immutable PRD with all 9 Q answers |
+| `terminology.md` | Canonical product term sheet |
+| `shared-dev-spec.md` | Council output — 5 contracts, frozen |
+| `tech-plans/<repo>.md` | Per-repo task breakdown |
+| `qa/manual-test-cases.csv` | Approved acceptance test cases |
+| `qa/semantic-automation.csv` | Machine-eval step DAG |
+| `qa/semantic-eval-manifest.json` | Eval run outcome |
+| `qa/semantic-eval-run.log` | Per-step JSON lines |
+| `design/` | Figma MCP ingest or Lovable sync artifacts |
+| `conductor.log` | Append-only phase marker log |
+| `decisions/` | Brain decisions (DREAM-*, SPECCHG-*) |
+| `blockers/` | Escalation files when BLOCKED |
+
+**Cross-References:** `brain-read`, `brain-write`, `brain-recall`, `forge-brain-layout`.
+
+---
+
+### prd-locked.md
+
+**Definition:** Immutable PRD artifact written to `~/forge/brain/prds/<task-id>/prd-locked.md` at the end of intake. Contains all 9 `intake-interrogate` question answers as structured sections. Key frontmatter fields: `product`, `goal`, `success_criteria`, `repos` (role list), `contracts` (which of 5 apply), `timeline`, `rollback_plan`, `metrics`, `design_new_work`, `design_intake_anchor`. Once written and `[P1-PRD-LOCKED]` is logged, this file is read-only — reopen intake if it must change.
+
+**Cross-References:** Written by `intake-interrogate`; read by all downstream skills; consumed by `council-multi-repo-negotiate`, `tech-plan-write-per-project`, `qa-prd-analysis`.
+
+---
+
+### terminology.md
+
+**Definition:** Per-task canonical term sheet at `~/forge/brain/prds/<task-id>/terminology.md`. Table of canonical product names, disallowed variants, and `open_doubts` in frontmatter. Authored in intake, aligned at council. Consumed by QA authoring (for `Intent`/`ExpectedHint` wording), tech plans (UI copy), and assertion text so human-facing copy matches contracts.
+
+**What It's NOT:** Not the `forge-glossary` (which covers Forge process terms). Not global — it is task-scoped. Not optional for UI-facing work.
+
+**Cross-References:** `intake-interrogate`; `council-multi-repo-negotiate`; `docs/terminology-review.md`; `forge-glossary` § Product terminology.
+
+---
 
 ### Skill
 
@@ -437,21 +553,21 @@ Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the
 
 ### spec-reviewer
 
-**Definition:** Subagent that reads actual code line-by-line and verifies it matches `shared-dev-spec` exactly. Enforces D14: "trust code, not reports." Not allowed to skim or trust summaries.
+**Definition:** Subagent that reads actual code line-by-line and verifies it matches `shared-dev-spec` exactly. Enforces D14: "trust code, not reports." Not allowed to skim or trust summaries. Runs a 9-phase verification scope: (1) API contract compliance, (2) DB schema compliance, (3) event bus contracts, (4) cache contracts, (5) search contracts, (6) cross-service integration wiring, (7) performance guard rails, (8) security requirements, (9) operational readiness (health endpoints, logging, metrics). Also checks for over-building (code not in spec) and under-building (spec requirements not implemented).
 
-**Usage Context:** Invoked during Review stage. Must read full implementation (not diffs or summaries) and cross-reference against spec. Reports APPROVED or CHANGE_REQUESTED.
+**Usage Context:** Invoked during Review stage. Must read full implementation (not diffs or summaries) and cross-reference against spec. Reports APPROVED or CHANGE_REQUESTED with findings per phase.
 
-**Cross-References:** Enforced by `forge-trust-code` (HARD-GATE). Part of Review stage, first stage.
+**Cross-References:** Enforced by `forge-trust-code` (HARD-GATE). Part of Review stage, first stage. Agent definition: `agents/spec-reviewer.md`.
 
 ---
 
 ### code-quality-reviewer
 
-**Definition:** Subagent that checks 8-point quality framework (readability, maintainability, testability, error handling, consistency, performance, security, observability) plus cross-cutting concerns (race conditions, deadlocks, injection attacks).
+**Definition:** Subagent that checks 8-point quality framework: (1) Naming Conventions & Clarity, (2) File Size & Organization, (3) Code Complexity & Readability, (4) Error Handling & Resilience, (5) Test Coverage & Quality, (6) Performance & Scalability, (7) Security Practices, (8) Observability & Debuggability. Plus Phase 4 cross-service quality checks (consistent error codes, cache key patterns, event schema field names, class/function naming conventions across services).
 
-**Usage Context:** Invoked during Review stage after spec-reviewer approves. Must read code and apply framework. Reports APPROVED or CHANGE_REQUESTED.
+**Usage Context:** Invoked during Review stage after spec-reviewer approves. Must read code and apply all 8 checks. Reports APPROVED or CHANGE_REQUESTED with issues categorized as Critical, Important, or Minor.
 
-**Cross-References:** Part of Review stage, second stage.
+**Cross-References:** Part of Review stage, second stage. Agent definition: `agents/code-quality-reviewer.md`.
 
 ---
 
@@ -498,7 +614,7 @@ Key locked decisions (only externally visible decisions are listed here; D1–D4
 
 **Definition:** Integer (1–4) in a skill's YAML frontmatter that controls how much of the skill's context is inlined into session-start by `session-start.cjs`. Tier 1 = minimal (name + one-line description only); Tier 4 = full content inlined. Higher tiers burn more context budget; use sparingly for skills that must be available before any tool invocation.
 
-**How it works:** On session start, `session-start.cjs` reads the active skill's `preamble-tier` from `~/.forge/.active-skill-tier` (single-digit cache file). If the cache is stale (SHA-256 of `SKILL.md` changed), it re-parses the skill and updates the cache. The tier determines how many sections are serialized into the IDE's system prompt injection.
+**How it works:** On session start, `session-start.cjs` reads the active skill's `preamble-tier` from `~/.forge/.active-skill-tier`. The cache file is **per-active-skill** (global path, tracks whichever skill is currently active). Format: line 1 = tier digit `1`–`4`; line 2 = `# sha256=<hex>` (optional, new format). If line 2 is present and the SHA-256 of the current `SKILL.md` differs, the cache is invalidated and re-parsed. If line 2 is absent (older single-line format written by `echo N > ~/.forge/.active-skill-tier`), hash validation is skipped — the tier is used as-is. The tier determines how many sections are serialized into the IDE's system prompt injection.
 
 **Usage Context:** Set `preamble-tier: 1` for most skills (name + description sufficient). Set `preamble-tier: 3` or `preamble-tier: 4` only for foundational skills (`using-forge`, `forge-glossary`) that must deliver orientation context on every session. Never set `preamble-tier: 4` on a skill that has 500+ lines — it will saturate context.
 
@@ -510,7 +626,9 @@ Key locked decisions (only externally visible decisions are listed here; D1–D4
 
 **Definition:** Boolean field in `prd-locked.md` (from `intake-interrogate` Q9) indicating whether the PRD requires net-new UI design artifacts. When `design_new_work: yes`, the pipeline MUST run State 4b-design (`conductor-orchestrate`) before P4.1 dispatch — materializing design to `~/forge/brain/prds/<task-id>/design/` (Figma MCP ingest, Lovable sync, or manual exports) and logging `[DESIGN-INGEST] status=PASS` to `conductor.log`. When `design_new_work: no` or `design_waiver: prd_only`, State 4b-design is skipped.
 
-**Artifact Traceability:** `intake-interrogate Q9` → `prd-locked.md design_new_work=yes` → `State 4b-design` → `~/forge/brain/prds/<task-id>/design/MCP_INGEST.md` (or `LOVABLE_SYNC.md`) → `[DESIGN-INGEST] status=PASS` in `conductor.log` → P4.1 dispatch unlocked for web/app repos.
+**How to set:** During `intake-interrogate` Q9, the agent asks whether new UI design artifacts are required. If yes, write `design_new_work: yes` in the YAML frontmatter of `prd-locked.md`. If no new design, write `design_new_work: no` (or `design_waiver: prd_only` with owner + risk justification).
+
+**Artifact Traceability:** `intake-interrogate Q9` → `prd-locked.md design_new_work: yes` → `State 4b-design` → `~/forge/brain/prds/<task-id>/design/MCP_INGEST.md` (or `LOVABLE_SYNC.md`) → `[DESIGN-INGEST] status=PASS` in `conductor.log` → P4.1 dispatch unlocked for web/app repos.
 
 **Cross-References:** `conductor-orchestrate` § State 4b-design; `intake-interrogate` Q9; `docs/conductor-log-format.md` `[DESIGN-INGEST]`.
 
@@ -532,7 +650,7 @@ Key locked decisions (only externally visible decisions are listed here; D1–D4
 
 ### CONTEXT_GAP
 
-**Definition:** Outcome value for a semantic eval step (in `qa/semantic-eval-run.log`) when the step could not be evaluated because required context was missing — no credentials, no test data, no device, no URL. The step result is indeterminate, not a pass or fail. `eval-judge` maps any `CONTEXT_GAP` entries to a YELLOW verdict if all non-skipped steps otherwise pass.
+**Definition:** Outcome value for a semantic eval step (in `qa/semantic-eval-run.log`) when the step could not be fully evaluated. Two forms: (1) an upstream dependency step passed but returned an empty `result: {}`, so downstream `${stepId.result.field}` interpolation had no data; (2) external context required by the step (credentials, device, URL, test account) was not available at runtime. In both cases the step result is indeterminate — not a pass, not a product bug. `eval-judge` maps any `CONTEXT_GAP` entries to a YELLOW verdict if all non-skipped steps otherwise pass.
 
 **Usage Context:** When `eval-judge` sees `CONTEXT_GAP` in `semantic-eval-run.log`, the verdict is YELLOW (not RED). The appropriate response is to provide the missing context (credentials, device, test account) and re-run — not to enter the self-heal loop.
 
@@ -546,9 +664,9 @@ Key locked decisions (only externally visible decisions are listed here; D1–D4
 
 **Definition:** Outcome value for a semantic eval step when the step was skipped because a step it `DependsOn` returned a non-PASS result. Propagated automatically by the CSV eval runner when upstream steps fail. `eval-judge` maps runs where all non-PASS outcomes are BLOCKED_DEPENDENCY to a YELLOW verdict (dependency issue, not a code bug in the current step).
 
-**Usage Context:** When debugging a RED eval run, distinguish BLOCKED_DEPENDENCY steps from genuine failures. A step marked BLOCKED_DEPENDENCY did not run — its result says nothing about the correctness of its own code. Fix the upstream failing step first, then re-run.
+**Usage Context:** When debugging a RED eval run, distinguish BLOCKED_DEPENDENCY steps from genuine failures. A step marked BLOCKED_DEPENDENCY did not run — its result says nothing about the correctness of its own code. Fix the upstream failing step first, then re-run. When `manifest.outcome = fail` but **all** non-PASS steps are BLOCKED_DEPENDENCY, the eval-judge verdict is **YELLOW** (not RED) — the root failure is a dependency chain issue, not a code bug in the current implementation.
 
-**What It's NOT:** Not the same as CONTEXT_GAP (missing context vs. upstream failure). Not a code bug in the blocked step. Not skippable — if the dependency step is genuinely broken, it must be fixed.
+**What It's NOT:** Not the same as CONTEXT_GAP (empty result vs. upstream failure). Not a code bug in the blocked step. Not skippable — if the dependency step is genuinely broken, it must be fixed.
 
 **Cross-References:** `eval-judge` § BLOCKED_DEPENDENCY verdict rule; `docs/semantic-eval-schema.md` § DependsOn propagation; `qa-semantic-csv-orchestrate` § dependency DAG.
 
@@ -644,3 +762,20 @@ Key locked decisions (only externally visible decisions are listed here; D1–D4
 4. Do not propagate undefined terminology into brain decisions without clarifying its meaning first
 
 **Escalation:** NEEDS_CONTEXT — request a definition from the skill author before proceeding with work that depends on this term.
+
+---
+
+### Edge Case 4: Council Is Requested to Be Skipped Due to Time Pressure
+
+**Symptom:** "We already know the contracts, can we skip council and go straight to implementation?"
+
+**Do NOT:** Accept the skip request and proceed to tech plans without running `forge-council-gate`.
+
+**Action:**
+1. STOP. Council is a HARD-GATE — it is not optional even when contracts appear pre-negotiated.
+2. If contracts are documented elsewhere (prior PRD, wiki, existing spec), load them as the starting position for council, not as a substitute for it.
+3. Run `forge-council-gate` with the existing contract proposals as input — surfaces still negotiate, verify compatibility, and sign off.
+4. If the human insists on skipping: do not proceed. Log BLOCKED. Explain that council prevents integration bugs that surface during eval; skipping council means those bugs are discovered when they are expensive to fix.
+5. The only valid "skip" is `[ABORT_TASK]` logged to `conductor.log` by the human — which cancels the whole pipeline, not just council.
+
+**Escalation:** BLOCKED — council is non-negotiable per `forge-council-gate` Iron Law.

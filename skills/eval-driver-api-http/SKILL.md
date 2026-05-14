@@ -830,3 +830,13 @@ Before running an HTTP API eval scenario:
 - [ ] `qa/semantic-eval-manifest.json` written with `kind: semantic-csv-eval` and a non-placeholder `outcome`.
 - [ ] All HTTP requests include correct auth headers; status codes matched, not just 2xx.
 - [ ] `python3 tools/verify/verify_forge_task.py --task-id <id> --brain <brain>` exits 0.
+
+## Cross-References
+
+| Skill / Doc | Relationship |
+|---|---|
+| `qa-semantic-csv-orchestrate` | **Dispatcher** — invokes this driver for steps with `Surface: api` or `api-http` |
+| `eval-judge` | **Downstream** — reads `semantic-eval-run.log` entries this driver writes |
+| `forge-eval-gate` | **Gate** — this driver is one of multiple drivers coordinated by the gate |
+| `docs/semantic-eval-csv.md` | Surface → driver mapping; `DependsOn` syntax |
+| `docs/semantic-eval-schema.md` | `semantic-eval-run.log` outcome enum and required fields |

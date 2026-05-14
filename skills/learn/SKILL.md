@@ -20,6 +20,16 @@ allowed-tools:
 
 Writes session learnings to brain so future sessions benefit. Unlike `brain-write` (formal decisions), `learn` captures soft knowledge: patterns, gotchas, process improvements.
 
+### Skill Boundary: learn vs retro vs brain-write
+
+| Skill | Captures | Writes to | When |
+|---|---|---|---|
+| `learn` | Reusable patterns, gotchas, process insights — things useful in **future tasks** | `~/forge/brain/learnings/<slug>.md` | During or after any task, when a non-obvious pattern is discovered |
+| `retro` | Post-task reflection — what went well, what to improve, time/effort reality vs. estimate | `~/forge/brain/prds/<task-id>/retro.md` | After a task completes (post-PR), before next sprint |
+| `brain-write` | Formal decisions with rationale (technical or product choices, contract records) | `~/forge/brain/prds/<task-id>/decisions/<id>.md` | At the moment a decision is made — not retrospective |
+
+**Rule of thumb:** "This will help me on the next PRD" → `learn`. "This reflects how this task went" → `retro`. "I just decided X because Y" → `brain-write`.
+
 ## Human input (all hosts)
 
 This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**.

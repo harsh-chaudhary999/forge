@@ -18,6 +18,16 @@ allowed-tools:
 
 Use this **after** your primary implementation pass and **after** you would normally invoke **`forge-trust-code`**. It does not replace spec review; it adds an explicit **independent reasoning pass** so obvious gaps are not missed because one session anchored on the same assumptions.
 
+### Review Skill Roles at a Glance
+
+| Skill | Mandatory? | When to invoke | Output |
+|---|---|---|---|
+| `forge-trust-code` | **YES** | After implementation, before eval — reviewer reads actual diff | Spec compliance verdict (PASS/FAIL) |
+| `second-opinion-review` | No (recommended for high-stakes) | After forge-trust-code passes, when a second perspective is valuable | Independent reasoning pass — confirms or flags concerns |
+| `review-readiness` | **YES** | Immediately before PR creation | All gates passed checklist (eval GREEN, tests passing, no open TODOs) |
+
+**When to use this skill (second-opinion-review):** When forge-trust-code has passed but the change is high-risk (security-sensitive, cross-service contract, performance-critical). A second reviewer reads the same diff independently, without seeing the first reviewer's conclusions.
+
 ## Anti-Pattern Preamble
 
 | Rationalization | Why it fails |

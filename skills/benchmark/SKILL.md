@@ -28,6 +28,22 @@ Performance regression detection. Baselines key metrics, flags regressions again
 
 **Measure. Baseline. Flag regressions. Block if over threshold.**
 
+### When to Invoke
+
+Invoke benchmark **after all eval scenarios pass** (conductor.log shows `[P4.4-EVAL-PASS]`) and **before PR creation**. Do not run benchmark before eval — benchmark is meaningless if the product is broken.
+
+Sequence: `forge-eval-gate` → `[P4.4-EVAL-PASS]` → `benchmark` → verdict → PR creation (if not REGRESSION).
+
+### PR Gate
+
+| Benchmark Verdict | Effect on PR |
+|---|---|
+| `PASS` (within threshold) | PR may proceed |
+| `REGRESSION` (>threshold degradation) | **PR is blocked** — same as eval FAIL. Log `[BENCHMARK-REGRESSION] task_id=<id> metric=<name> delta=<pct>%` to `conductor.log`. Invoke self-heal or fix performance before PR. |
+| `IMPROVEMENT` | PR proceeds; log `[BENCHMARK-IMPROVEMENT]` to `conductor.log` for record |
+
+**HARD-GATE: A REGRESSION verdict from benchmark blocks PR creation, equivalent to a RED eval outcome.**
+
 ## Invocation Modes
 
 - `/benchmark baseline <url>` — capture performance baseline

@@ -49,6 +49,36 @@ Concrete **URLs, selectors, and payloads** often only become known **after** run
 | Column | Description |
 |--------|-------------|
 | **DependsOn** | Comma-separated **Id** values. Steps with unmet or failed dependencies are **SKIPPED** at run time. Order is validated as a **DAG** (no cycles). |
+
+### Result Interpolation: Passing Data Between Steps
+
+When step B depends on step A (`DependsOn: step-A`), step B can reference step A's result values directly in its `Intent` or payload fields using this syntax:
+
+```
+${stepId.result.fieldName}
+```
+
+**Example:** Step `api-create-user` returns:
+```json
+{ "stepId": "api-create-user", "outcome": "PASS", "result": { "userId": "u_abc123", "email": "test@example.com" } }
+```
+
+A downstream step can reference:
+- `${api-create-user.result.userId}` → resolves to `u_abc123`
+- `${api-create-user.result.email}` → resolves to `test@example.com`
+
+**Intent field example:**
+```
+Log in as the user created above: POST /auth/login with email=${api-create-user.result.email}
+```
+
+**Outcome when dependency fails:**
+- Dependency `FAIL` → this step classified `BLOCKED_DEPENDENCY` (not executed)
+- Dependency `PASS` but `result: {}` → this step classified `CONTEXT_GAP` (attempted without interpolation)
+- Reference to unknown field → treat as `CONTEXT_GAP`
+
+**Driver responsibility:** The eval driver (web-cdp, api-http, etc.) resolves `${...}` references by reading `semantic-eval-run.log` before executing the step. If resolution fails, the step is marked `CONTEXT_GAP`, not `FAIL`.
+
 | **TraceToCsvId** | Optional **`Id`** from **`qa/manual-test-cases.csv`** for traceability (validated against that CSV). RED tests can cite the same ids via **`# forge-tdd: …`** — see **`skills/forge-tdd`** and **`verify_forge_task.py --verify-tdd-csv-trace`**. |
 | **ExpectedHint** | Optional substring or short hint for assertions / screenshots — interpreted by the host driver. |
 

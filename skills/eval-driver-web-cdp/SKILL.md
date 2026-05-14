@@ -87,6 +87,18 @@ This skill enables eval scripts to drive web UI automation through CDP, supporti
 
 ## Core Functions
 
+### Dependency Marshaling (DependsOn Contract)
+
+When a step lists `DependsOn: <stepId>`, the driver must resolve the prior step's result before executing:
+
+1. **Read prior step result** from `semantic-eval-run.log` — find the JSON line where `stepId` matches the dependency.
+2. **Check outcome:**
+   - If dependency outcome is `FAIL` or `BLOCKED_DEPENDENCY`: mark this step as `BLOCKED_DEPENDENCY`, write to run.log, skip CDP execution, continue to next step.
+   - If dependency outcome is `PASS` but `result` is `{}` (empty): mark this step as `CONTEXT_GAP`, log a warning ("dependency passed but returned no result data"), and attempt execution without interpolation.
+   - If dependency outcome is `PASS` and `result` has data: resolve any `${stepId.result.fieldName}` references in the step's Intent or selector fields before running CDP commands.
+3. **Result injection example:** If prior step returned `{ "userId": "abc123" }`, replace `${prior-step.result.userId}` with `abc123` in this step's CDP payload before executing.
+4. **Never silently skip:** All BLOCKED_DEPENDENCY and CONTEXT_GAP outcomes must be written to `semantic-eval-run.log` as a JSON line with the reason before moving to the next step.
+
 ### launch()
 
 **Signature:**

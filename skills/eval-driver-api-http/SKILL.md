@@ -67,6 +67,18 @@ The eval-driver-api-http skill enables:
 
 ## API Reference
 
+### Dependency Marshaling (DependsOn Contract)
+
+When a step lists `DependsOn: <stepId>`, resolve the prior step's result from `semantic-eval-run.log` before executing the HTTP request:
+
+1. **Read prior step result** — find the JSON line in `semantic-eval-run.log` where `stepId` matches the dependency.
+2. **Check outcome:**
+   - If dependency outcome is `FAIL` or `BLOCKED_DEPENDENCY`: mark this step as `BLOCKED_DEPENDENCY`, write to run.log, skip HTTP call, continue to next step.
+   - If dependency outcome is `PASS` but `result` is `{}` (empty): mark this step as `CONTEXT_GAP`, log warning, attempt HTTP call without interpolation (no substitution).
+   - If dependency outcome is `PASS` with data: resolve `${stepId.result.fieldName}` references in URL path, query params, or request body before sending the HTTP request.
+3. **Result injection example:** If prior step returned `{ "token": "Bearer xyz" }`, replace `${auth-step.result.token}` in the Authorization header before sending the request.
+4. **Never silently skip:** Write every BLOCKED_DEPENDENCY and CONTEXT_GAP outcome to `semantic-eval-run.log` as a JSON line before continuing.
+
 ### setup(config)
 
 Initializes the HTTP driver for eval.

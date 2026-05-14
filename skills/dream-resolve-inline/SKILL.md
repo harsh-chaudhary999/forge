@@ -1,6 +1,6 @@
 ---
 name: dream-resolve-inline
-description: "WHEN: eval reveals cross-service conflict — two services disagree on contract, data format, or behavior. Dreamer analyzes both sides and proposes resolution."
+description: "TIMING: During active development (before PR). WHEN: eval reveals cross-service conflict — two services disagree on contract, data format, or behavior. Dreamer analyzes both sides and proposes resolution."
 type: rigid
 requires: [brain-read, brain-write]
 version: 1.0.0
@@ -15,6 +15,8 @@ allowed-tools:
 ---
 
 # Dream Resolve Inline
+
+> **Timing:** This skill is for conflicts that arise **during active development**, before any PR is raised. For post-PR retrospective scoring and learning, use `dream-retrospect-post-pr` instead.
 
 ## Anti-Pattern Preamble
 

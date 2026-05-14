@@ -138,6 +138,13 @@ Include a `## Design Gap Analysis` section in your output when design assets are
 
 ---
 
+**Before reasoning about any component, hook, or page:** Read the scan-codebase output for this repo:
+- `~/forge/brain/prds/<task-id>/codebase/<role>/structure.txt` — full file inventory
+- `~/forge/brain/prds/<task-id>/codebase/<role>/code-style.md` — component naming, import conventions, styling approach
+- `SCAN.json` hub scores (if present) — identifies shared components that are imported widely and must not be broken
+
+Never invent naming or styling conventions — always derive from `code-style.md`. If `code-style.md` is absent, run `/scan-codebase` first.
+
 ## Analysis Framework
 
 Analyze every PRD systematically across 5 dimensions:
@@ -932,6 +939,10 @@ When reasoning about a PRD:
 - [ ] Flag risks and blockers
 - [ ] Write output in markdown to brain
 - [ ] Use concrete examples, not abstractions
+
+## Cross-References
+
+- **scan-codebase** — Must be run (and output read) before reasoning starts. Provides `structure.txt`, `code-style.md`, and `SCAN.json` hub scores for the target repo.
 
 ## Related Skills & References
 

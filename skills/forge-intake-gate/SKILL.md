@@ -268,6 +268,7 @@ Before claiming intake complete:
 
 ## Post-Implementation Checklist
 
+- [ ] Product topology validated via `product-context-load` before PRD was locked — all referenced repos exist in `product.md`, no port conflicts detected.
 - [ ] `prd-locked.md` written to `~/forge/brain/prds/<task-id>/` (not just in chat).
 - [ ] All 9 intake questions answered (Q1–Q9, including Q9 design lock).
 - [ ] `[P1-PRD-LOCKED]` logged to `conductor.log`.

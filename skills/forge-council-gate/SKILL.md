@@ -151,6 +151,22 @@ The skill will:
   - All 4 surfaces attended and proposed
   - All 5 contracts negotiated (no "TBD")
   **Resumption rule:** At session start, read `shared-dev-spec.md` frontmatter. Contracts with `status: negotiated` are already closed — do not re-open them. Start from the first `open` contract.
+
+#### Disputed Contract Recovery
+
+When a contract is in `disputed` state and a dreamer escalation is pending:
+
+1. Record the dreamer escalation ID in the contract's frontmatter:
+   ```yaml
+   contract_api_status: disputed
+   dispute_escalation_id: DREAM-<timestamp>-<slug>
+   dispute_reason: <one-line description of the disagreement>
+   ```
+2. Do NOT re-open or re-negotiate contracts already marked `negotiated` while a dispute is pending.
+3. Continue negotiating any remaining `open` contracts that are not party to the dispute.
+4. When the dreamer decision arrives: update the contract status to `negotiated` (if resolved) or `open` (if sent back for re-negotiation), remove `dispute_escalation_id`, and log `[P2-DISPUTE-RESOLVED] task_id=<id> contract=<name> decision=DREAM-<id>` to `conductor.log`.
+5. **HARD-GATE:** Do not invoke `spec-freeze` while any contract is in `disputed` state, even if all others are `negotiated`.
+
   - No unresolved conflicts (all either consensus or escalated)
   - Each surface agrees to their scope
   - Surfaces agree to contract specifications

@@ -47,6 +47,13 @@ If you notice any of these, STOP and do not proceed:
 - **Auth requirements are deferred** — An endpoint without explicit auth requirements will be implemented inconsistently across services. STOP. Every endpoint must state its authentication mechanism (Bearer token, API key, session) and authorization check (ownership, role, scope) before council closes.
 - **Error codes and response shapes are not specified** — Inconsistent error formats force every client to implement unique parsing logic. STOP. Every endpoint must specify its error response schema and the full set of possible HTTP status codes.
 
+**Before reasoning about any module, class, or function:** Read the scan-codebase output for this repo:
+- `~/forge/brain/prds/<task-id>/codebase/<role>/structure.txt` — full file inventory
+- `~/forge/brain/prds/<task-id>/codebase/<role>/code-style.md` — naming conventions, async pattern, import style
+- `SCAN.json` hub scores (if present) — identifies Tier 1 hub files that must not be broken
+
+Never invent naming conventions or import patterns — always derive from `code-style.md`. If `code-style.md` is absent, run `/scan-codebase` first.
+
 You are the backend team (API design, databases, services, async processing). Given a locked PRD, reason about:
 
 ## 1. API Endpoints
@@ -997,6 +1004,10 @@ DOES THE OPERATION NEED AN IMMEDIATE RESPONSE TO THE CLIENT?
 | Real-time notification | Async (but fast, <1s) | < 1s p99 | Eventual | Medium |
 
 ---
+
+## Cross-References
+
+- **scan-codebase** — Must be run (and output read) before reasoning starts. Provides `structure.txt`, `code-style.md`, and `SCAN.json` hub scores for the target repo.
 
 ## Council Questions to Ask
 

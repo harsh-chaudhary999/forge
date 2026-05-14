@@ -17,6 +17,8 @@ allowed-tools:
 
 # Dream Retrospect Post-PR
 
+> **Timing:** This skill runs **after a PR is merged or closed**, as a retrospective. For conflicts that need resolution during active development (before PR), use `dream-resolve-inline` instead.
+
 ## Anti-Pattern Preamble
 
 | Rationalization | Why It Fails |

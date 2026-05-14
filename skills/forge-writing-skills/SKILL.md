@@ -401,3 +401,11 @@ Before shipping any skill:
 - [ ] Cross-references to related skills included
 
 Output: **SKILL READY** (all checklist items pass, rigor review passed) or **SKILL INCOMPLETE** (specific items failing — fix before shipping)
+
+## Cross-References
+
+| Skill | Relationship |
+|---|---|
+| [**forge-skill-anatomy**](/skills/forge-skill-anatomy/SKILL.md) | **Prerequisite** — canonical authority on required sections, frontmatter fields, preamble-tier system, and Pre-Publish validation checklist. Read before writing any skill. |
+| [**forge-standards-reviewer**](/skills/forge-standards-reviewer/SKILL.md) | **Downstream consumer** — runs after implementation to audit a PR against Forge's own skill format rules. Skills written without following this skill will fail forge-standards-reviewer. |
+| [**forge-self-test**](/skills/forge-self-test/SKILL.md) | **Downstream consumer** — end-to-end test that validates all rigid skills have the required sections. Skills missing Iron Law, Anti-Pattern Preamble, or Post-Implementation Checklist will fail forge-self-test. |

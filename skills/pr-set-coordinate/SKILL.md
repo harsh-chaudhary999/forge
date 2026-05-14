@@ -47,6 +47,26 @@ If you notice any of these, STOP and do not proceed:
 - **Eval has not passed before PRs are raised** — PRs raised before eval passes risk merging code that will fail in production. STOP. Confirm GREEN eval verdict before raising any PR.
 - **Brain is not updated with PR URLs and merge status** — Audit trail is lost. STOP. Write PR URLs, merge order, and merge timestamps to brain before considering the PR set complete.
 
+### Step 0 — Verify Eval GREEN (HARD-GATE)
+
+Before raising any PR, confirm eval has passed for this task:
+
+```bash
+grep '\[P4\.4-EVAL-PASS\]' ~/forge/brain/prds/<task-id>/conductor.log
+```
+
+**Expected:** At least one line matching `[P4.4-EVAL-PASS]` with the correct `task_id=`.
+
+**If absent:** STOP. Do not raise any PR. Log to conductor:
+```
+[PR-BLOCKED] task_id=<id> reason=eval-not-green
+```
+Then invoke `forge-eval-gate` to run eval. Only return to this skill after `[P4.4-EVAL-PASS]` is logged.
+
+**HARD-GATE: No PR is raised, no branch is pushed for merge review, until this grep returns a match.**
+
+---
+
 ## Purpose
 
 After eval passes and branches are ready to merge, this skill raises N coordinated PRs (one per affected project) in strict dependency order. Each PR links to the others, and the skill waits for each to merge before raising the next.

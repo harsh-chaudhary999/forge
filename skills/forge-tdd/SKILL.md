@@ -861,3 +861,11 @@ Note: This version includes edge cases and decision tree for complex testing sce
 - [ ] Each test has labeled AAA sections (# Arrange / # Act / # Assert).
 - [ ] Assertions are specific-value or full-contract (not existence-only or call-only mock).
 - [ ] No hollow test anti-patterns present: no 2+2=4, no tautology, no missing negative path.
+
+### Next Step After TDD
+
+After all tests pass (GREEN phase complete and REFACTOR done):
+
+1. Run the full test suite one final time to confirm no regressions.
+2. **Invoke `forge-verification`** — TDD proves unit/integration correctness; `forge-verification` confirms the integrated system behaves correctly end-to-end before the task is marked ready for review.
+3. Do not raise a PR or mark the task complete without `forge-verification` passing.

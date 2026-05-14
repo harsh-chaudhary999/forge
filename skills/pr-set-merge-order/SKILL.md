@@ -381,6 +381,13 @@ Before handing off to pr-set-coordinate:
 - [ ] Each step in the merge order has a health-check or smoke test defined.
 - [ ] Rollback plan documented if merge N fails after merge N-1 already landed.
 
+### Next Step
+
+The merge order computed by this skill is the input to `pr-set-coordinate`. Once the order is determined:
+
+1. Record the ordered list in the brain: `~/forge/brain/prds/<task-id>/pr-merge-order.md`.
+2. Invoke `pr-set-coordinate` with the ordered list to raise and merge PRs sequentially — each PR waits for CI green and the previous merge before proceeding.
+
 ## Cross-References
 
 - **pr-set-coordinate** — Executes the merge order produced by this skill (creation, linking, merging)

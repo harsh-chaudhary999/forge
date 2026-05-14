@@ -135,6 +135,26 @@ If a behavioral change is genuinely required:
 
 4. **If rejected:** Change is dead. Document rejection reason. Proceed with original frozen spec.
 
+### SPEC-AMENDMENT Protocol
+
+A SPEC-AMENDMENT is the only valid mechanism to modify a frozen shared-dev-spec after `[P2-SPEC-FROZEN]` is logged.
+
+**Trigger:** Any team member identifies a necessary change to a frozen contract.
+
+**Steps:**
+1. Write a `SPECCHG-<timestamp>-<slug>.md` decision to `~/forge/brain/prds/<task-id>/decisions/` with:
+   - `decision_id: SPECCHG-<timestamp>`
+   - `change_type: cosmetic | behavioral | scope-addition`
+   - `rationale:` (why the frozen spec is wrong or incomplete)
+   - `proposed_change:` (exact diff in contract language)
+2. Invoke `forge-council-gate` to re-negotiate the affected contract(s) with all parties.
+3. If re-negotiation produces agreement: update `shared-dev-spec.md`, increment its version, commit to brain with a new `SPECFRZ-*` record, and log `[P2-SPEC-AMENDED] task_id=<id> specchg=SPECCHG-<timestamp>` to `conductor.log`.
+4. If re-negotiation fails: the original frozen spec stands. Log `[P2-SPEC-AMENDMENT-REJECTED]` and close the `SPECCHG-*` decision as rejected.
+
+**HARD-GATE:** No implementer or agent may act on a proposed change until `[P2-SPEC-AMENDED]` is logged. Acting on unratified changes is a spec-freeze violation.
+
+---
+
 ## Edge Cases & Fallback Paths
 
 ### Case 1: Bug in Spec Discovered During Build

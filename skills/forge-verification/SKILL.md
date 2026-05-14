@@ -58,6 +58,16 @@ If you notice any of these, STOP and do not proceed:
 
 ## Detailed Workflow
 
+**Phase Authority Check (before running any verification command):**
+Read `~/forge/brain/prds/<task-id>/conductor.log` tail to confirm the current phase:
+- Verification for TDD: conductor.log should show `[P4.1-DISPATCH]` for the relevant repo (not yet eval)
+- Verification for eval: conductor.log should show `[P4.0-SEMANTIC-EVAL]` or `[P4.1-DISPATCH]` complete
+- Verification for pre-PR: conductor.log should show `[P4.4-EVAL-PASS]` before `forge-verification` is used as final gate
+
+Do not claim verification results as eval evidence if conductor.log shows the task is still in a TDD phase.
+
+---
+
 ### Staleness Check (**run FIRST, before any verification work**)
 
 Before beginning a new verification run, check whether a PASS verdict already exists for the current commit and is less than 7 days old. If so, you may skip re-running and cite the existing evidence — but only if no code has changed since that commit.
@@ -119,6 +129,64 @@ For each verification target:
 3. **Do NOT interpret** — just record facts:
    - ✗ "This probably works"
    - ✓ "9/9 tests passed, 0 skipped, 0 flaky"
+
+### Surface-Specific Verification Commands
+
+Run the command appropriate for the surface being verified. Capture full output — do not paraphrase.
+
+**API / Backend (HTTP):**
+```bash
+# Health check
+curl -f -s -o /dev/null -w "%{http_code}" http://localhost:<PORT>/health
+# Endpoint smoke test
+curl -X POST http://localhost:<PORT>/api/<endpoint> \
+  -H "Content-Type: application/json" \
+  -d '{"key": "value"}' | jq .
+```
+
+**Web Frontend:**
+```bash
+# Check dev server is running
+curl -f http://localhost:<PORT>/ | grep -o '<title>[^<]*</title>'
+# Screenshot via CDP (if eval driver available)
+node -e "const CDP=require('chrome-remote-interface'); CDP(async c=>{ await c.Page.navigate({url:'http://localhost:<PORT>'}); const s=await c.Page.captureScreenshot(); require('fs').writeFileSync('verify-screenshot.png', Buffer.from(s.data,'base64')); process.exit(0); })"
+```
+
+**Android:**
+```bash
+# Verify app is running on device/emulator
+adb shell dumpsys activity activities | grep -i "<package>"
+# Check logs for errors
+adb logcat -d -s "<TAG>" | tail -50
+# Assert no crash
+adb shell am start -n "<package>/<activity>" && echo "Launch OK"
+```
+
+**iOS:**
+```bash
+# Verify simulator is booted
+xcrun simctl list devices | grep "Booted"
+# Launch and verify app
+xcrun simctl launch booted <bundle-id> && echo "Launch OK"
+```
+
+**Database:**
+```bash
+# Check schema matches expected
+psql $DATABASE_URL -c "\dt" | grep "<expected_table>"
+# Verify migration ran
+psql $DATABASE_URL -c "SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1;"
+```
+
+**Cache (Redis):**
+```bash
+redis-cli -h localhost -p 6379 PING   # expect PONG
+redis-cli -h localhost -p 6379 INFO server | grep redis_version
+```
+
+**HARD-GATE: Paste the actual command output in your verification report. "It works" without output is not verification.**
+
+---
 
 ### Validate Against Expectations
 - **Input:** Verification output + acceptance criteria

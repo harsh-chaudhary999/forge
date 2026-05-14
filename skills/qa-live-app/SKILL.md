@@ -177,3 +177,33 @@ Results: <RESULT_FILE>
 ```
 
 If any test failed: append `Action required: investigate failing test cases before sign-off.`
+
+---
+
+### Evidence HARD-GATE (Before Claiming QA Complete)
+
+**HARD-GATE: You cannot claim QA complete or mark test cases as passed without the following artifacts:**
+
+1. **Results file written to brain:**
+   ```bash
+   # Write results to brain
+   mkdir -p ~/forge/brain/prds/<task-id>/qa/logs/
+   cat > ~/forge/brain/prds/<task-id>/qa/logs/live-app-qa-<timestamp>.md <<EOF
+   # Live App QA Results — $(date -u +%Y-%m-%dT%H:%M:%SZ)
+   task_id: <task-id>
+   tester: <agent-or-human>
+   
+   ## Test Cases Executed
+   | ID | Description | Result | Evidence |
+   |---|---|---|---|
+   | TC-001 | ... | PASS/FAIL | screenshot/log path |
+   EOF
+   ```
+
+2. **All approved test cases executed** — not sampled. Every row in `qa/manual-test-cases.csv` with status `approved` must have a result row.
+
+3. **Results committed to brain** via `brain-write` with `task_id:` anchor.
+
+4. **Claiming "tested and works" without these artifacts is a skill violation.**
+
+If any test case cannot be executed (environment issue, surface unavailable): mark it `SKIPPED` with reason — do not omit it.

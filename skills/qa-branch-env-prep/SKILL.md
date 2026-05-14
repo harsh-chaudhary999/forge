@@ -199,6 +199,28 @@ Record the answer as `run_mode: url-only | branch-local | branch-code-validate |
 
 ---
 
+### Step 0.5 — Pre-flight Port Availability Check (HARD-GATE)
+
+Before starting any service, verify all required ports are free:
+
+```bash
+# For each port required by product.md services:
+for PORT in <port1> <port2> <port3>; do
+  if lsof -ti :$PORT > /dev/null 2>&1; then
+    echo "CONFLICT: Port $PORT is already in use by $(lsof -ti :$PORT | xargs ps -p | tail -1)"
+    exit 1
+  else
+    echo "OK: Port $PORT is free"
+  fi
+done
+```
+
+**If any port is in use:** STOP. Identify the process holding the port (`lsof -i :PORT`), terminate it if it's a stale process from a previous run, or update `product.md` if there is a genuine port conflict between services.
+
+**HARD-GATE: Do not proceed with branch checkout or service startup until all required ports are confirmed free.**
+
+---
+
 ## Inputs
 
 The skill accepts a structured input — either provided inline or read from `~/forge/brain/prds/<task-id>/qa-run-config.yaml` if it exists:

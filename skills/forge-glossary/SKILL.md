@@ -478,7 +478,7 @@ Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the
 
 ## Decision References (D1-D30)
 
-Key locked decisions:
+Key locked decisions (only externally visible decisions are listed here; D1–D4, D6–D12, D16–D23, D26–D29 are internal implementation decisions recorded in `brain/decisions/` and not surfaced in the glossary because they affect tooling internals, not skill-level behavior):
 
 | Decision | Summary |
 |---|---|
@@ -489,6 +489,68 @@ Key locked decisions:
 | D24 | HARD-GATE tags on every non-skippable step; red flags enforce them |
 | D25 | Anti-Pattern preambles on every discipline-enforcing skill |
 | D30 | Fresh worktree per project per task. No shared state. |
+
+---
+
+## Preamble-Tier System
+
+### preamble-tier
+
+**Definition:** Integer (1–4) in a skill's YAML frontmatter that controls how much of the skill's context is inlined into session-start by `session-start.cjs`. Tier 1 = minimal (name + one-line description only); Tier 4 = full content inlined. Higher tiers burn more context budget; use sparingly for skills that must be available before any tool invocation.
+
+**How it works:** On session start, `session-start.cjs` reads the active skill's `preamble-tier` from `~/.forge/.active-skill-tier` (single-digit cache file). If the cache is stale (SHA-256 of `SKILL.md` changed), it re-parses the skill and updates the cache. The tier determines how many sections are serialized into the IDE's system prompt injection.
+
+**Usage Context:** Set `preamble-tier: 1` for most skills (name + description sufficient). Set `preamble-tier: 3` or `preamble-tier: 4` only for foundational skills (`using-forge`, `forge-glossary`) that must deliver orientation context on every session. Never set `preamble-tier: 4` on a skill that has 500+ lines — it will saturate context.
+
+**Cross-References:** `using-forge` § **`~/.forge/.active-skill-tier`** (cache format). `session-start.cjs` implements the read/write logic.
+
+---
+
+### design_new_work
+
+**Definition:** Boolean field in `prd-locked.md` (from `intake-interrogate` Q9) indicating whether the PRD requires net-new UI design artifacts. When `design_new_work: yes`, the pipeline MUST run State 4b-design (`conductor-orchestrate`) before P4.1 dispatch — materializing design to `~/forge/brain/prds/<task-id>/design/` (Figma MCP ingest, Lovable sync, or manual exports) and logging `[DESIGN-INGEST] status=PASS` to `conductor.log`. When `design_new_work: no` or `design_waiver: prd_only`, State 4b-design is skipped.
+
+**Artifact Traceability:** `intake-interrogate Q9` → `prd-locked.md design_new_work=yes` → `State 4b-design` → `~/forge/brain/prds/<task-id>/design/MCP_INGEST.md` (or `LOVABLE_SYNC.md`) → `[DESIGN-INGEST] status=PASS` in `conductor.log` → P4.1 dispatch unlocked for web/app repos.
+
+**Cross-References:** `conductor-orchestrate` § State 4b-design; `intake-interrogate` Q9; `docs/conductor-log-format.md` `[DESIGN-INGEST]`.
+
+---
+
+## Eval Classification Terms
+
+### RED_INFRA
+
+**Definition:** Eval failure classification for infrastructure failures that are not code bugs — `ECONNREFUSED`, Docker service down, MCP unavailable, device/emulator not running. Classified by `self-heal-triage` before consuming any retry budget. RED_INFRA bypasses the self-heal retry cap: infrastructure must be restored first, then eval re-runs from scratch (the failed attempt does not count against the 3-retry budget).
+
+**Usage Context:** `self-heal-triage` checks for RED_INFRA symptoms before applying any other triage category. If RED_INFRA is detected: write BLOCKED escalation to `~/forge/brain/prds/<task-id>/blockers/`, log `[P4.4-RED-INFRA]` to `conductor.log`, and stop. Do NOT log the attempt as a self-heal retry.
+
+**What It's NOT:** Not a code bug. Not a test failure. Not a flaky test. Not a race condition. RED_INFRA is always an environment issue — fix the environment, not the code.
+
+**Cross-References:** `self-heal-triage` § RED_INFRA Pre-Check; `self-heal-loop-cap` § RED_INFRA bypass rule; `docs/conductor-log-format.md` `[P4.4-RED-INFRA]`.
+
+---
+
+### CONTEXT_GAP
+
+**Definition:** Outcome value for a semantic eval step (in `qa/semantic-eval-run.log`) when the step could not be evaluated because required context was missing — no credentials, no test data, no device, no URL. The step result is indeterminate, not a pass or fail. `eval-judge` maps any `CONTEXT_GAP` entries to a YELLOW verdict if all non-skipped steps otherwise pass.
+
+**Usage Context:** When `eval-judge` sees `CONTEXT_GAP` in `semantic-eval-run.log`, the verdict is YELLOW (not RED). The appropriate response is to provide the missing context (credentials, device, test account) and re-run — not to enter the self-heal loop.
+
+**What It's NOT:** Not a test failure. Not RED_INFRA. Not a code bug. CONTEXT_GAP means "we don't know yet" — the step was not executed, not failed.
+
+**Cross-References:** `eval-judge` § Semantic path verdict table; `docs/semantic-eval-schema.md` § outcome enum; `qa-semantic-csv-orchestrate`.
+
+---
+
+### BLOCKED_DEPENDENCY
+
+**Definition:** Outcome value for a semantic eval step when the step was skipped because a step it `DependsOn` returned a non-PASS result. Propagated automatically by the CSV eval runner when upstream steps fail. `eval-judge` maps runs where all non-PASS outcomes are BLOCKED_DEPENDENCY to a YELLOW verdict (dependency issue, not a code bug in the current step).
+
+**Usage Context:** When debugging a RED eval run, distinguish BLOCKED_DEPENDENCY steps from genuine failures. A step marked BLOCKED_DEPENDENCY did not run — its result says nothing about the correctness of its own code. Fix the upstream failing step first, then re-run.
+
+**What It's NOT:** Not the same as CONTEXT_GAP (missing context vs. upstream failure). Not a code bug in the blocked step. Not skippable — if the dependency step is genuinely broken, it must be fixed.
+
+**Cross-References:** `eval-judge` § BLOCKED_DEPENDENCY verdict rule; `docs/semantic-eval-schema.md` § DependsOn propagation; `qa-semantic-csv-orchestrate` § dependency DAG.
 
 ---
 

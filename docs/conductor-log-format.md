@@ -34,10 +34,13 @@ echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) [MARKER] task_id=<id> field=value" >> ~/for
 | `[P3-TECH-PLAN-REVIEW]` | Tech plan review round | `task_id` | `round=<n>`, `result=PASS\|CHANGES` |
 | `[P3-TECH-PLAN-XALIGN]` | Cross-repo alignment check | `task_id` | `result=PASS\|FAIL` |
 | `[P3-TECH-PLAN-HUMAN]` | Human signoff on tech plan | `task_id` | `status=APPROVED\|REJECTED` |
+| `[P4.0-QA-CSV]` | Manual QA CSV approved | `task_id` | `rows=<n>`, `approved=yes\|skipped=not_required` |
 | `[P4.0-SEMANTIC-EVAL]` | Semantic CSV eval complete | `task_id` | `kind=semantic-csv-eval`, `outcome=pass\|fail\|yellow` |
+| `[P4.0-TDD-RED]` | TDD RED phase confirmed per repo | `task_id` | `repo=<role>`, `test_files=<list>`, `red_confirmed=yes` |
 | `[P4.1-DISPATCH]` | Dev-implementer dispatched | `task_id` | `repo=<role>`, `worktree=<path>` |
 | `[P4.1-WORKTREE-FAIL]` | Worktree creation failed | `task_id` | `repos_affected=<list>`, `reason=<msg>` |
 | `[P4.2-REVIEW]` | Code review complete | `task_id` | `result=PASS\|CHANGES`, `reviewer=spec\|quality` |
+| `[P4.2-DESIGN-PARITY]` | Design parity check complete | `task_id` | `repo=<role>`, `reviewer=design-implementation-reviewer\|figma-design-sync\|skipped`, `result=PASS\|FAIL\|SKIP` |
 | `[P4.3-REVIEW-PASS]` | All reviews passed | `task_id` | — |
 | `[P4.4-EVAL-PASS]` | Eval passed GREEN | `task_id` | `outcome=GREEN`, `manifest=qa/semantic-eval-manifest.json` |
 | `[P4.4-EVAL-FAIL]` | Eval failed | `task_id` | `outcome=RED\|YELLOW`, `self_heal_iter=<n>` |
@@ -60,4 +63,4 @@ Markers MUST be logged in ascending phase order. `[P4.4-EVAL-PASS]` cannot appea
 
 ## Skills That Write to conductor.log
 
-forge-intake-gate, forge-council-gate, spec-freeze, tech-plan-write-per-project, qa-prd-analysis, qa-semantic-csv-orchestrate, conductor-orchestrate, forge-eval-gate, pr-set-coordinate, all deploy-driver-* skills, canary.
+forge-intake-gate, forge-council-gate, spec-freeze, tech-plan-write-per-project, qa-prd-analysis, qa-manual-test-cases-from-prd (`[P4.0-QA-CSV]`), qa-semantic-csv-orchestrate (`[P4.0-SEMANTIC-EVAL]`), forge-tdd (`[P4.0-TDD-RED]`), conductor-orchestrate, forge-eval-gate, pr-set-coordinate, all deploy-driver-* skills, canary.

@@ -60,11 +60,12 @@ If you notice any of these, STOP and do not proceed:
 
 **Phase Authority Check (before running any verification command):**
 Read `~/forge/brain/prds/<task-id>/conductor.log` tail to confirm the current phase:
-- Verification for TDD: conductor.log should show `[P4.1-DISPATCH]` for the relevant repo (not yet eval)
+- Verification during TDD RED phase: conductor.log should show `[P4.0-TDD-RED]` logged for the repo (tests written and confirmed failing — no production feature code yet)
+- Verification for post-dispatch TDD: conductor.log should show `[P4.1-DISPATCH]` for the relevant repo (implementation started, not yet eval)
 - Verification for eval: conductor.log should show `[P4.0-SEMANTIC-EVAL]` or `[P4.1-DISPATCH]` complete
 - Verification for pre-PR: conductor.log should show `[P4.4-EVAL-PASS]` before `forge-verification` is used as final gate
 
-Do not claim verification results as eval evidence if conductor.log shows the task is still in a TDD phase.
+Do not claim verification results as eval evidence if conductor.log shows the task is still in a TDD phase (`[P4.0-TDD-RED]` present, `[P4.1-DISPATCH]` absent).
 
 ---
 

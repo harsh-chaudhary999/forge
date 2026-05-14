@@ -21,9 +21,11 @@ P5: PRs             → coordinated PR set per repo
 P5: Dream           → retrospective + brain learnings
 ```
 
-Gates: `[P1-PRD-LOCKED]` → `[P2-CONTEXT-LOADED]` → `[P3-SPEC-FROZEN]` → `[P4.0-QA-CSV]` → `[P4.0-SEMANTIC-EVAL]` → `[P4.0-TDD-RED]` → `[P4.1-DISPATCH]` → `[P4.2-REVIEW-PASS]` → `[P4.4-EVAL-PASS]` → `[P5-PR-SET]`
+Gates (canonical `conductor.log` markers — see `docs/conductor-log-format.md`): `[P1-PRD-LOCKED]` → `[P2-SPEC-FROZEN]` → `[P3-TECH-PLAN-LOCKED]` → `[QA-ANALYSIS-LOCKED]` → `[P4.0-QA-CSV]` → `[P4.0-SEMANTIC-EVAL]` → `[P4.0-TDD-RED]` → `[P4.1-DISPATCH]` → `[P4.3-REVIEW-PASS]` → `[P4.4-EVAL-PASS]` → `[P5-PR-RAISED]`
 
 Abort: log `[ABORT_TASK: <task-id>]` to conductor.log at any point — see **Abort Workflow** below.
+
+**Primary skills invoked (in pipeline order):** `forge-intake-gate` → `intake-interrogate` → `forge-council-gate` → `council-multi-repo-negotiate` (+ reasoning/contract skills) → `spec-freeze` → `tech-plan-write-per-project` → `qa-prd-analysis` → `qa-manual-test-cases-from-prd` → `qa-semantic-csv-orchestrate` → `forge-tdd` → `conductor-orchestrate` (dispatch) → `forge-verification` → `forge-eval-gate` (eval drivers) → `self-heal-*` (if RED) → `pr-set-coordinate` → `pr-set-merge-order` → `dream-retrospect-post-pr`.
 
 Invoke the `conductor-orchestrate` skill to run the **full end-to-end** Forge pipeline for this task.
 

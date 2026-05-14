@@ -826,7 +826,7 @@ DECISION RULE:
 
 ---
 
-Output: **TDD PASS** (test first, minimal code, all tests pass) or **BLOCKED** (test infrastructure broken, untestable legacy code, infrastructure unavailable after attempts to restore)
+Output: **TDD PASS** (test first, minimal code, all tests pass — log `[P4.0-TDD-RED] task_id=<id> repo=<repo> test_files=<list> red_confirmed=yes` to `conductor.log` after RED phase is confirmed) or **BLOCKED** (test infrastructure broken, untestable legacy code, infrastructure unavailable after attempts to restore)
 
 TDD is not about writing tests. It's about:
 1. **Clarifying requirements** — Test forces you to think through edge cases before coding

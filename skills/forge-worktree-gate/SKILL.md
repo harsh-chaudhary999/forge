@@ -40,6 +40,7 @@ EVERY TASK RUNS IN ITS OWN FRESH WORKTREE. THERE IS NO EXCEPTION. A SHARED WORKT
 
 If you notice any of these, STOP and do not proceed:
 
+- **Conductor logs `[P4.1-WORKTREE-FAIL]` when this gate fails** — `forge-worktree-gate` is a hard prerequisite for `conductor-orchestrate` State 4.1. If worktree validation fails here, conductor writes `[P4.1-WORKTREE-FAIL] task_id=<id> repos_affected=<list> reason=<msg>` to `conductor.log` and blocks all implementation dispatch. The pipeline cannot proceed until this gate passes. See `docs/conductor-log-format.md` for the full marker format.
 - **Agent starts editing files in the main branch directly** — Shared state contamination in progress. Stop the task, create a fresh worktree, restart from there.
 - **Two tasks share the same `node_modules/` or `dist/` directory** — Worktree isolation has been broken. Both tasks are compromised. Recreate both worktrees fresh from main.
 - **A task's branch is based on another task's branch (not main)** — Cross-task dependency introduced. Tasks must branch from main only. Rebase onto main or abort and re-isolate.

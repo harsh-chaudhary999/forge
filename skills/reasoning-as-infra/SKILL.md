@@ -43,6 +43,15 @@ If you notice any of these, STOP and do not proceed:
 - **Rollback procedure for schema migration is absent** — Irreversible migrations with no rollback plan mean production incidents with no recovery path. STOP. Define rollback for every destructive migration step.
 - **Infra reasoning depends on app/web surface outputs before they are available** — Sequential reasoning means missed cross-dependencies. STOP. Run all surfaces in parallel, then resolve conflicts in negotiation.
 
+**Before reasoning about any infrastructure component (Dockerfile, nginx config, terraform, CI pipeline, port allocation):** Read the scan-codebase output for this repo:
+- `~/forge/brain/prds/<task-id>/codebase/<role>/structure.txt` — full file inventory including existing Dockerfiles, configs, and scripts
+- `~/forge/brain/prds/<task-id>/codebase/<role>/code-style.md` — existing naming conventions for services, volumes, networks, and environment variables
+- `SCAN.json` hub scores (if present) — identifies shared infrastructure files referenced by multiple services
+
+Never assume service names, port numbers, or environment variable names — always derive from existing infra files. If `code-style.md` is absent, run `/scan-codebase` first.
+
+---
+
 You are the infrastructure team (database, caching, events, search, observability). Given a locked PRD, reason about:
 
 ## 1. Database (MySQL)
@@ -1257,6 +1266,11 @@ Step 3: Switchback (optional)
 ## Cross-References & Sister Skills
 
 ### Sister Skills
+
+**scan-codebase:**
+- Use before reasoning: Produces `structure.txt`, `code-style.md`, and `SCAN.json` for the target repo
+- Required: Read scan outputs before making any naming, port, or convention decisions
+- Link: `code-style.md` is the authoritative source for service names, env var naming patterns, and existing Dockerfile conventions
 
 **reasoning-as-backend:**
 - Database: Coordinates query patterns, indexes, partitioning strategy

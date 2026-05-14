@@ -361,6 +361,15 @@ const report = buildStackReport(topology, infraResult, serviceResult, healthChec
      - Log port, PID, timestamp
 
 4. **Start Services** (in resolved dependency order)
+
+   **Service startup uses deploy drivers:** The `start` command for each service is provided by the deploy driver matching the product's `deploy_strategy` field in `product.md`:
+   - `deploy_strategy: pm2-ssh` → invoke `deploy-driver-pm2-ssh` for startup
+   - `deploy_strategy: docker-compose` → invoke `deploy-driver-docker-compose` for startup
+   - `deploy_strategy: systemd` → invoke `deploy-driver-systemd` for startup
+   - `deploy_strategy: local-process` → invoke `deploy-driver-local-process` for startup
+
+   Stack-up does not reimplement startup — it orchestrates the correct driver per service.
+
    - For each project in order:
      - If role is "shared" (shared-schemas): skip startup, mark as ready
      - Select deploy driver based on deploy_strategy
@@ -1282,6 +1291,23 @@ After this skill completes:
 - Use eval-driver-db-mysql for database verification
 - Use eval-driver-cache-redis for cache tests
 - Use eval-driver-bus-kafka for event bus tests
+
+## Cross-References
+
+**Deploy Drivers (service startup):**
+- `deploy-driver-pm2-ssh` — startup via PM2 over SSH (`deploy_strategy: pm2-ssh`)
+- `deploy-driver-docker-compose` — startup via Docker Compose (`deploy_strategy: docker-compose`)
+- `deploy-driver-systemd` — startup via systemd (`deploy_strategy: systemd`)
+- `deploy-driver-local-process` — startup via local process (`deploy_strategy: local-process`)
+
+**Eval Drivers (scenario execution):**
+- `eval-driver-api-http` — REST API test scenarios
+- `eval-driver-db-mysql` — database verification
+- `eval-driver-cache-redis` — cache tests
+- `eval-driver-bus-kafka` — event bus tests
+- `eval-driver-web-cdp` — browser/web UI scenarios
+- `eval-driver-android-adb` — Android device scenarios
+- `eval-driver-ios-xctest` — iOS device scenarios
 
 On eval completion or failure:
 - Use graceful or forceful shutdown patterns (above)

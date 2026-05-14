@@ -355,6 +355,14 @@ Before claiming code verified:
 - [ ] All spec requirements traceable to code implementation
 - [ ] Review findings written to brain if significant gaps found
 
+### Next Step After Trust Review
+
+After spec compliance is confirmed:
+
+1. The reviewer has verified the diff matches the spec — but this confirms **what was written**, not **what the code does at runtime**.
+2. **Invoke `forge-verification`** — runs actual commands (test suite, curl, integration checks) to confirm the implementation behaves correctly in execution.
+3. Do not mark the implementation ready for eval or PR without `forge-verification` passing.
+
 ## Post-Implementation Checklist
 
 - [ ] Reviewer ran `git diff` or `git show` on the actual commits — not just read the implementer's summary.

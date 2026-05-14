@@ -48,6 +48,15 @@ If you notice any of these, STOP and do not proceed:
 - **Battery and bandwidth impact is not assessed** — Features that drain battery or consume excessive bandwidth will be rejected by users. STOP. State explicit constraints before locking.
 - **App is in scope but intake Q9 / design lock was not read** — Autonomous council threads only propagate what is written in `prd-locked.md` and `shared-dev-spec.md`. STOP. Read **Design / UI** (and **Design source**) before finishing `app.md`.
 
+**Before reasoning about any component, hook, screen, or navigation flow:** Read the scan-codebase output for this repo:
+- `~/forge/brain/prds/<task-id>/codebase/<role>/structure.txt` — full file inventory
+- `~/forge/brain/prds/<task-id>/codebase/<role>/code-style.md` — component naming, import conventions, navigation patterns, styling approach
+- `SCAN.json` hub scores (if present) — identifies shared components and navigation containers imported widely that must not be broken
+
+Never invent naming or styling conventions — always derive from `code-style.md`. If `code-style.md` is absent, run `/scan-codebase` first.
+
+---
+
 You are the mobile app team (Android/iOS). Given a locked PRD, reason about user-facing behavior, data consistency, offline capabilities, and platform constraints. This reasoning focuses on the app frontend's role in distributed system reliability.
 
 ---
@@ -1404,6 +1413,7 @@ Write to `~/forge/brain/prds/<task-id>/council/app.md`:
 - reasoning-as-infra: Event sourcing, message queues, network resilience
 - contract-api-rest: REST contract negotiation (versioning, deprecation)
 - brain-read: Look up product topology, project metadata
+- scan-codebase: Produces `structure.txt`, `code-style.md`, and `SCAN.json` required before reasoning about any screen, component, or navigation flow
 
 **Related Forge Decisions:**
 - D14 (Persuasion Principles): Explain conflicts to users with clarity and authority

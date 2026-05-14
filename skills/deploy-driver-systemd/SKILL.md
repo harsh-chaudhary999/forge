@@ -296,6 +296,13 @@ Check service health via systemd status and optional HTTP health endpoint verifi
 - **Unhealthy**: status != "active" OR HTTP returns non-200 OR latency spike > 3x baseline OR restart_count > 0
 - **Degraded**: status == "active" but latency spike indicates load/issue
 
+**Health Check Timeout (HARD-GATE):**
+- First check delay: 10s after service start (allow startup time)
+- Per-check timeout: 5s
+- Retry policy: 3 retries at 5s intervals before marking UNHEALTHY
+- Total wait budget: 30s maximum
+- If unhealthy after 30s: log `[DEPLOY-HEALTH-FAIL]` to conductor.log and invoke rollback
+
 **Error Cases:**
 - Unit not found: Throws "Unit {service_name}.service not found"
 - Timestamp parse error: Returns {healthy: false, status: "unknown", uptime_seconds: 0}

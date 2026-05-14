@@ -256,6 +256,13 @@ const result = await health_check(3000, '/health')
 - Return { healthy: false, latency_ms: X } on non-200 status
 - Distinguish between transient (retry) and permanent (escalate) failures
 
+**Health Check Timeout (HARD-GATE):**
+- First check delay: 5s after process start
+- Per-check timeout: 3s
+- Retry policy: 3 retries at 3s intervals before marking UNHEALTHY
+- Total wait budget: 15s maximum (local processes start faster than remote)
+- If unhealthy after 15s: log `[DEPLOY-HEALTH-FAIL]` to conductor.log and terminate the process
+
 ### stop(process_name) → {status: "stopped"}
 
 Gracefully terminate a process.

@@ -157,3 +157,23 @@ anomalies: <N>
 Verdict: <STABLE|WARNING|ALERT>
 EOF
 ```
+
+### ALERT Escalation Procedure
+
+When verdict is `ALERT`:
+
+1. **Log to brain immediately:**
+   ```bash
+   cat >> ~/forge/brain/prds/<task-id>/conductor.log <<EOF
+   $(date -u +%Y-%m-%dT%H:%M:%SZ) [CANARY-ALERT] task_id=<id> metric=<metric> baseline=<value> current=<value> delta=<pct>%
+   EOF
+   ```
+2. **Write a blocker:** Create `~/forge/brain/prds/<task-id>/blockers/<timestamp>-canary-alert.md` with:
+   - The anomalous metric and its delta from baseline
+   - The time window observed
+   - Whether this is a new deploy or an existing deployment
+3. **Invoke rollback (if alert follows a recent deploy):**
+   - Run the relevant deploy driver (e.g., `/deploy-driver-pm2-ssh`, `/deploy-driver-docker-compose`) with action=rollback.
+   - Re-run canary watch after rollback to confirm return to STABLE.
+4. **If alert is on an existing deployment (no recent deploy):** Escalate to human — output `BLOCKED — CANARY-ALERT: <metric> anomaly on stable deployment. Human investigation required.`
+5. **HARD-GATE:** Do not proceed with any further deployment or eval while verdict is ALERT.

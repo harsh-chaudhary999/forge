@@ -759,3 +759,13 @@ Result:
 ```
 
 ---
+
+## Cross-References
+
+- `brain-read`: Low-level file reader; brain-write calls it before overwriting to detect conflicts.
+- `brain-recall`: Queries the brain before making a new decision — pair with brain-write to record what was found.
+- `brain-why`: Traces provenance of an existing decision; use after brain-write to verify the record is complete.
+- `brain-forget`: Archives a decision when it is superseded; complement to brain-write for lifecycle management.
+- `brain-link`: Creates semantic edges between decisions written via brain-write.
+- `forge-brain-persist`: Handles commit and push of brain files after brain-write creates them.
+- `docs/conductor-log-format.md`: Format for conductor.log entries; brain-write records log markers as decision evidence.

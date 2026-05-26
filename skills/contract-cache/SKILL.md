@@ -570,3 +570,14 @@ Who needs to write to this key?
 - **reasoning-as-infra:** Analyze caching, database, and scaling requirements
 - **contract-api:** Define REST contracts that interact with cached data
 - **contract-db:** Define database schemas and denormalization for cache warming
+
+## Cross-References
+
+- `council-multi-repo-negotiate`: Drives contract negotiation that produces the cache contract this skill implements.
+- `spec-freeze`: Locks all 5 contracts (including cache) after council completes — no changes after `[P2-SPEC-FROZEN]`.
+- `forge-council-gate`: Gate that enforces contract completeness before spec-freeze.
+- `contract-api-rest`: REST API contract that reads/writes cached data; cache contract and API contract must align on TTL and invalidation.
+- `contract-schema-db`: DB schema contract for cache-warming source data; coordinate denormalization.
+- `eval-driver-cache-redis`: Executes Redis surface steps in `semantic-automation.csv` — validates contract compliance at eval time.
+- `spec-reviewer`: Verifies that implemented cache layer matches the locked cache contract.
+- `tech-plan-write-per-project`: References the cache contract when generating per-repo implementation plans.

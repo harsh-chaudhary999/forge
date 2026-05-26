@@ -407,3 +407,15 @@ On session resumption: skip any contract where `status: negotiated`. Re-enter ne
 - [ ] `shared-dev-spec.md` committed to brain with `task_id:` anchor.
 - [ ] No contract left in `open` or `disputed` state.
 - [ ] On session resumption: only contracts not yet `negotiated` were re-negotiated.
+
+## Cross-References
+
+- `council-multi-repo-negotiate`: Called by forge-council-gate to run contract negotiation per repo pair; gate validates negotiation is complete.
+- `spec-freeze`: Triggered by forge-council-gate when all 5 contracts reach `status: negotiated`; logs `[P2-SPEC-FROZEN]`.
+- `contract-api-rest`: First contract validated by the gate; REST API contract between repos.
+- `contract-event-bus`: Second contract validated by the gate; event/message contracts.
+- `contract-cache`: Third contract validated by the gate; cache key and TTL contracts.
+- `contract-schema-db`: Fourth contract validated by the gate; database schema contracts.
+- `contract-search`: Fifth contract validated by the gate; search index contracts.
+- `conductor-orchestrate`: Sequences `[P2-SPEC-FROZEN]` in the pipeline; forge-council-gate produces the output conductor consumes.
+- `docs/conductor-log-format.md`: `[P2-SPEC-FROZEN]` and `[P2-SPEC-AMENDED]` marker formats logged after council completes.

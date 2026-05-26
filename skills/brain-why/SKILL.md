@@ -1,7 +1,7 @@
 ---
 name: brain-why
 description: "WHEN: You need to trace the full provenance of a specific decision — who made it, when, why, and what alternatives were considered. Shows why, when, by whom, evidence, alternatives, outcome."
-type: rigid
+type: flexible
 requires: [brain-read]
 version: 1.0.0
 preamble-tier: 2
@@ -1434,3 +1434,11 @@ Before claiming provenance trace complete:
 - [ ] Evidence and contemporaneous reasoning documented as output
 - [ ] Linked decisions and downstream lessons surfaced
 - [ ] Circular or broken references flagged and escalated
+
+## Cross-References
+
+- `brain-read`: Fetches the raw decision file for a given ID; brain-why calls it to get the full decision record.
+- `brain-write`: Records new decisions; brain-why surfaces the provenance of decisions created by brain-write.
+- `brain-recall`: Searches the brain for prior art before a new decision; brain-why digs deeper into a specific result.
+- `brain-forget`: Archives a decision when superseded; check brain-why first to understand downstream dependents.
+- `brain-link`: Traces semantic edges between decisions; brain-why walks the `related_decisions` chains brain-link creates.

@@ -756,3 +756,11 @@ If manual PR merge is needed:
 - **StatusCheckRollup:** GitHub's list of all status checks (CI, linting, tests, etc.)
 - **Cross-Link:** Comment in PR referencing related PRs (for traceability)
 - **Squash:** Merge strategy that combines all commits into one (clean history)
+
+## Cross-References
+
+- `pr-set-merge-order`: Called after pr-set-coordinate raises all PRs; determines safe merge sequence across repos.
+- `forge-eval-gate`: Eval must pass GREEN before PRs can be raised; pr-set-coordinate is blocked if `[P4.4-EVAL-PASS]` not logged.
+- `conductor-orchestrate`: Sequences `[P5-PR-RAISED]` after `[P4.3-REVIEW-PASS]`; pr-set-coordinate produces the `[P5-PR-RAISED]` markers.
+- `worktree-per-project-per-task`: Produces the branches that pr-set-coordinate turns into PRs.
+- `docs/conductor-log-format.md`: `[P5-PR-RAISED]` and `[PR-BLOCKED]` marker formats; `[PR-BLOCKED]` is logged when eval is not GREEN.

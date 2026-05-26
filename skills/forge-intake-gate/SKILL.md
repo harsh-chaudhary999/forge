@@ -274,3 +274,11 @@ Before claiming intake complete:
 - [ ] `[P1-PRD-LOCKED]` logged to `conductor.log`.
 - [ ] Design source (Figma key, Lovable repo, or “no new UI”) explicitly recorded.
 - [ ] Task ID is slug-formatted and unique (not duplicate of existing brain task).
+
+## Cross-References
+
+- `intake-interrogate`: Elicits answers to Q1-Q9; forge-intake-gate validates those answers and logs `[P1-PRD-LOCKED]`.
+- `brain-write`: Persists `prd-locked.md` to `~/forge/brain/prds/<task-id>/`; intake-gate calls brain-write after answers pass validation.
+- `forge-council-gate`: Follows intake-gate; reads `prd-locked.md` to seed contract negotiation.
+- `conductor-orchestrate`: Sequences the full pipeline starting with `[P1-PRD-LOCKED]`; forge-intake-gate produces the first marker.
+- `docs/conductor-log-format.md`: `[P1-PRD-LOCKED]` marker format — required fields: `task_id`, optional: `prd_path`, `q9_design_source`.

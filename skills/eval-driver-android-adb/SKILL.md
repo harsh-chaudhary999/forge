@@ -1815,3 +1815,12 @@ Before running an Android ADB eval scenario:
 - [ ] `qa/semantic-eval-manifest.json` written with `kind: semantic-csv-eval` and a non-placeholder `outcome`.
 - [ ] ADB device/emulator listed by `adb devices` before test run; UI hierarchy captured on FAIL.
 - [ ] `python3 tools/verify/verify_forge_task.py --task-id <id> --brain <brain>` exits 0.
+
+## Cross-References
+
+- `qa-semantic-csv-orchestrate`: Generates `qa/semantic-automation.csv` with `android` surface steps that this driver executes.
+- `eval-judge`: Aggregates Android step outcomes from `semantic-eval-run.log` into a final PASS/FAIL/YELLOW verdict.
+- `forge-eval-gate`: Consumes `semantic-eval-manifest.json` written by this driver to gate PR merge.
+- `qa-live-app`: Higher-level skill that orchestrates this driver as part of live app testing.
+- `docs/semantic-eval-csv.md`: CSV column definitions and `android` surface alias (`android-adb`) used by this driver.
+- `docs/semantic-eval-schema.md`: JSON schema for `semantic-eval-manifest.json` and step outcome enum (PASS/FAIL/BLOCKED_DEPENDENCY/CONTEXT_GAP/SKIPPED).

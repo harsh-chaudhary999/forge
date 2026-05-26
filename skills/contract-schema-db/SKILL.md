@@ -1025,3 +1025,14 @@ Before locking a database schema contract:
 - [ ] Rollback procedure defined for every destructive migration step
 - [ ] Constraint level chosen (DB-enforced vs app-enforced vs dual-layer) with rationale
 - [ ] No schema change marked TBD or "to be decided later"
+
+## Cross-References
+
+- `council-multi-repo-negotiate`: Drives contract negotiation that produces the DB schema contract this skill governs.
+- `spec-freeze`: Locks all 5 contracts (including DB schema) after council — immutable after `[P2-SPEC-FROZEN]`.
+- `forge-council-gate`: Gate that enforces all 5 contracts are `negotiated` before freezing.
+- `contract-api-rest`: REST API contract that depends on DB schema; foreign keys and indexes must align.
+- `contract-cache`: Cache contract for denormalization and cache-warming; coordinates with DB schema.
+- `eval-driver-db-mysql`: Executes `mysql` surface steps in `semantic-automation.csv` — validates schema compliance at eval time.
+- `spec-reviewer`: Verifies implementation matches the locked DB schema contract (migration safety, index rationale).
+- `tech-plan-write-per-project`: References the DB schema contract when generating per-repo implementation plans.

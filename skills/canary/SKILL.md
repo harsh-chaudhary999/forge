@@ -177,3 +177,12 @@ When verdict is `ALERT`:
    - Re-run canary watch after rollback to confirm return to STABLE.
 4. **If alert is on an existing deployment (no recent deploy):** Escalate to human — output `BLOCKED — CANARY-ALERT: <metric> anomaly on stable deployment. Human investigation required.`
 5. **HARD-GATE:** Do not proceed with any further deployment or eval while verdict is ALERT.
+
+## Cross-References
+
+- `deploy-driver-pm2-ssh`: Rollback via PM2 SSH when canary fires after a PM2-managed deploy.
+- `deploy-driver-local-process`: Rollback via local process restart when canary fires on a local deploy.
+- `deploy-driver-docker-compose`: Rollback via Docker Compose when canary fires after a Docker deploy.
+- `deploy-driver-systemd`: Rollback via systemd when canary fires after a systemd-managed service deploy.
+- `forge-eval-gate`: Eval gate that MUST pass GREEN before any deploy; canary fires if post-deploy metrics degrade.
+- `docs/conductor-log-format.md`: `[CANARY-ALERT]`, `[DEPLOY-HEALTH-FAIL]`, and `[ROLLBACK-VERIFY]` marker formats logged by this skill.

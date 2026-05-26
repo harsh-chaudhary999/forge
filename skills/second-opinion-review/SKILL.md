@@ -63,3 +63,10 @@ After the checklist, apply this decision table — do **not** leave it to judgme
 ## Relationship to conductor
 
 **`conductor-orchestrate`** still owns phase order. This skill is an **optional adjunct** before merge when stakes or ambiguity are high.
+
+## Cross-References
+
+- `conductor-orchestrate`: Orchestrates the pipeline phases; second-opinion-review is an optional adjunct invoked before merge when stakes or ambiguity are high.
+- `spec-reviewer`: First-pass code review; second-opinion-review provides an independent perspective after spec-reviewer has passed.
+- `code-quality-reviewer`: Code quality audit; second-opinion-review can serve as a final check when code-quality-reviewer surfaced concerns.
+- `forge-eval-gate`: Eval gate before merge; second-opinion-review is a peer review safeguard complementary to eval.

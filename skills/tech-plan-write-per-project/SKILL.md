@@ -1569,3 +1569,12 @@ Before handing plans to tech-plan-self-review:
 - [ ] Each task has exact file paths (relative to project root)
 - [ ] Test task precedes implementation task for each feature (TDD order)
 - [ ] External dependencies identified and flagged if unresolvable
+
+## Cross-References
+
+- `forge-council-gate`: Provides the locked `shared-dev-spec.md` (all 5 contracts) that this skill decomposes into per-repo tech plans.
+- `spec-freeze`: Immutable spec after `[P2-SPEC-FROZEN]` — tech-plan-write-per-project must not diverge from the frozen spec.
+- `conductor-orchestrate`: Sequences `[P3-TECH-PLAN-LOCKED]` after tech plans pass review; consuming the plans produced here.
+- `worktree-per-project-per-task`: Creates isolated branches for each repo plan produced by this skill.
+- `forge-tdd`: Implements the per-repo plan in TDD order; tech-plan-write-per-project must specify test-first steps.
+- `docs/conductor-log-format.md`: `[P3-TECH-PLAN-LOCKED]`, `[P3-TECH-PLAN-REVIEW]`, `[P3-TECH-PLAN-HUMAN]` marker formats.

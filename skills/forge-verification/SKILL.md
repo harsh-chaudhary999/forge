@@ -2,7 +2,7 @@
 name: forge-verification
 description: "WHEN: About to claim implementation is complete or working. HARD-GATE: Run verification, see output, THEN claim success. Never \"should pass\", \"confident\", \"should work\"."
 type: rigid
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "run verification"

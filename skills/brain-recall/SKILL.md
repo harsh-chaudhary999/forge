@@ -1,7 +1,7 @@
 ---
 name: brain-recall
 description: "WHEN: You are about to make a decision and need to check if prior art or past learnings exist. Recall decisions, patterns, and gotchas from the brain before proceeding."
-type: rigid
+type: flexible
 requires: [brain-read]
 version: 1.0.1
 preamble-tier: 2
@@ -1328,3 +1328,11 @@ Before claiming recall is complete:
 - [ ] Hybrid search used where applicable (grep → brain-read → brain-why for deep provenance)
 - [ ] Recall findings documented before the decision proceeds
 
+
+## Cross-References
+
+- `brain-read`: Low-level reader used by brain-recall to load matching decision files from the brain.
+- `brain-write`: Records new decisions; always run brain-recall first to avoid duplicating existing art.
+- `brain-why`: Traces full provenance of a specific decision found by brain-recall.
+- `brain-forget`: Archives superseded decisions; run brain-recall before forgetting to check for dependents.
+- `brain-link`: Creates semantic edges between decisions; pair with brain-recall to find related decisions to link.

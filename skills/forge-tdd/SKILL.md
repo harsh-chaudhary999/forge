@@ -2,7 +2,7 @@
 name: forge-tdd
 description: "WHEN: About to write any production code. HARD-GATE: Iron law - write test first, watch fail, write minimal code, watch pass. No exceptions."
 type: rigid
-version: 1.0.1
+version: 1.1.0
 preamble-tier: 3
 requires:
   - worktree-per-project-per-task

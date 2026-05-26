@@ -453,3 +453,12 @@ Before claiming intake complete:
 - [ ] prd-locked.md written to `~/forge/brain/prds/<task-id>/` and committed to brain
 - [ ] Success criteria are measurable and testable (not behavioral descriptions)
 - [ ] Rollback plan is concrete (not "revert the commit")
+
+## Cross-References
+
+- `forge-intake-gate`: Calls intake-interrogate to produce `prd-locked.md`; the gate validates answers and logs `[P1-PRD-LOCKED]`.
+- `brain-write`: Receives the completed `prd-locked.md` artifact; intake-interrogate answers are persisted via brain-write.
+- `forge-council-gate`: Follows intake; uses `prd-locked.md` to drive contract negotiation across repos.
+- `spec-freeze`: Locks contracts after council; intake answers seed the initial contract scope.
+- `conductor-orchestrate`: Sequences the full pipeline starting from `[P1-PRD-LOCKED]`; intake-interrogate produces the first artifact in that sequence.
+- `docs/conductor-log-format.md`: `[P1-PRD-LOCKED]` marker format — logged after intake-interrogate writes `prd-locked.md`.

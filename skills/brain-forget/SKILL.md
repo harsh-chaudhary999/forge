@@ -1,7 +1,7 @@
 ---
 name: brain-forget
 description: "WHEN: A decision is being superseded, deprecated, or has aged out. Archive it without deletion — marks as warm→cold→archived with full audit trail."
-type: rigid
+type: flexible
 requires: [brain-read]
 version: 1.0.0
 preamble-tier: 2
@@ -1584,3 +1584,11 @@ Before claiming completion:
 - [ ] `lessons_learned` and `status_reason` fields are populated in the decision file
 - [ ] Successor decision (if applicable) is linked via `successor:` field
 - [ ] Affected teams notified of the demotion per the communication protocol for the rule applied
+
+## Cross-References
+
+- `brain-read`: Fetches the current decision file before demotion; brain-forget requires reading the file to confirm status.
+- `brain-write`: Creates the decision record that brain-forget later archives; successor decisions are recorded via brain-write.
+- `brain-recall`: Search before forget — confirm no active decision depends on the one being demoted.
+- `brain-why`: Trace provenance before archiving; use brain-why to identify downstream decisions that reference the one being forgotten.
+- `brain-link`: Checks and updates `successor:` and `related:` edges when a decision is archived.

@@ -207,3 +207,13 @@ If any test failed: append `Action required: investigate failing test cases befo
 4. **Claiming "tested and works" without these artifacts is a skill violation.**
 
 If any test case cannot be executed (environment issue, surface unavailable): mark it `SKIPPED` with reason — do not omit it.
+
+## Cross-References
+
+- `qa-semantic-csv-orchestrate`: Generates `qa/semantic-automation.csv` steps that qa-live-app executes against the live stack.
+- `qa-prd-analysis`: Produces the test coverage plan that determines which scenarios qa-live-app must cover.
+- `forge-eval-gate`: Consumes the `semantic-eval-manifest.json` written by this skill to gate PR merge.
+- `eval-judge`: Aggregates step outcomes into a final PASS/FAIL/YELLOW verdict.
+- `conductor-orchestrate`: Sequences `[P4.0-SEMANTIC-EVAL]` before `[P4.1-DISPATCH]` — qa-live-app must complete before dispatch.
+- `docs/semantic-eval-csv.md`: Column definitions, Surface→Driver mapping, and result interpolation syntax for the CSV this skill runs.
+- `docs/semantic-eval-schema.md`: JSON schema for `semantic-eval-manifest.json` and `semantic-eval-run.log` produced by this skill.

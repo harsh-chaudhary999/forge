@@ -638,3 +638,11 @@ Before dispatching dev-implementer to any project:
 - [ ] Dependencies installed in each worktree independently (no shared node_modules)
 - [ ] Cleanup plan confirmed: worktree deleted unconditionally after eval passes or task fails
 - [ ] Dev-implementer dispatched only after worktrees are verified (not before)
+
+## Cross-References
+
+- `conductor-orchestrate`: Calls worktree-per-project-per-task before dispatching dev-implementer; worktrees must be verified before `[P4.1-DISPATCH]`.
+- `forge-tdd`: Runs inside the worktree created by this skill; TDD RED phase is confirmed in the isolated branch.
+- `tech-plan-write-per-project`: Produces per-repo plans that determine which repos need worktrees.
+- `pr-set-coordinate`: Creates PRs from the branches produced by this skill after eval passes.
+- `docs/conductor-log-format.md`: `[P4.1-WORKTREE-FAIL]` marker — logged when worktree creation fails; includes `repos_affected` and `reason`.

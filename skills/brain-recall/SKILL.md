@@ -54,6 +54,18 @@ If you notice any of these, STOP and do not proceed:
 
 Hybrid retrieval from persistent brain. Searches past decisions, patterns, learnings using grep + tags + product/project filtering.
 
+## Task Scope Check (HARD-GATE)
+
+Before recalling from `prds/<task-id>/`, confirm the active task-id:
+
+```bash
+echo "${FORGE_TASK_ID:-${FORGE_PRD_TASK_ID:-UNSET}}"
+```
+
+If `UNSET` and multiple tasks exist under `prds/`, ask the user which task is active before reading task-scoped paths. Product-level paths (`products/<slug>/`) are shared and safe to read without task scoping.
+
+**HARD-GATE:** Do not search across all `prds/*/` when you need task-specific data — you will return results from other tasks and mix contexts.
+
 ## Overview
 
 The brain-recall skill enables agents and developers to:

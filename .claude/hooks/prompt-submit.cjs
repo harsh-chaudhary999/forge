@@ -157,6 +157,8 @@ const staticReminder = [
   '• forge-verification   — Run commands and log real output before claiming done',
   '• forge-brain-persist  — Every decision committed to brain (never just in chat)',
   '• forge-trust-code     — Reviewer reads actual diff — never trusts implementer report',
+  '• one-step-horizon     — One question per turn; never bundle decisions or status-dump mid-task',
+  '• brain-scope          — Read only prds/<active-task-id>/; confirm task-id before any brain read',
   'If you are tempted to skip any gate: STOP. Invoke the skill. No exceptions.',
   '</forge-active-gates>',
 ].join('\n');

@@ -40,6 +40,22 @@ IF THE BRAIN FILE DOES NOT EXIST, STOP AND FLAG MISSING — DO NOT PROCEED WITH 
 
 The brain at `~/forge/brain/` is git-backed markdown. Read patterns:
 
+## Task Scope Verification (HARD-GATE)
+
+Before reading any `prds/<task-id>/` path, verify you are reading the correct task:
+
+```bash
+# Confirm active task-id from environment or conductor.log
+echo "${FORGE_TASK_ID:-${FORGE_PRD_TASK_ID:-UNSET}}"
+# If UNSET, derive from the most recent conductor.log entry:
+ls -t ~/forge/brain/prds/*/conductor.log 2>/dev/null | head -1
+```
+
+**HARD-GATE:** If `FORGE_TASK_ID` is unset and multiple `prds/*/conductor.log` files exist, confirm the task-id with the user before reading. Reading from the wrong task's brain silently poisons context — wrong contracts, wrong decisions, wrong spec.
+
+Acceptable: reading from `products/<slug>/` (product config is shared across tasks).
+Not acceptable: reading from `prds/<other-task-id>/` when the active task is different.
+
 ## Product Topology
 ```bash
 cd ~/forge/brain

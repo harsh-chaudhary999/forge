@@ -5,7 +5,6 @@ on:
     paths:
       - "scripts/install.sh"
       - "scripts/forge-doctor.sh"
-      - "hooks/session-start"
       - "hooks/hooks.json"
       - ".claude/hooks/session-start.cjs"
       - ".claude/hooks/pre-tool-use.cjs"
@@ -35,7 +34,6 @@ on:
     paths:
       - "scripts/install.sh"
       - "scripts/forge-doctor.sh"
-      - "hooks/session-start"
       - "hooks/hooks.json"
       - ".claude/hooks/session-start.cjs"
       - ".claude/hooks/pre-tool-use.cjs"
@@ -76,6 +74,29 @@ jobs:
 
       - name: forge_evidence_bundle.py syntax
         run: python3 -m py_compile tools/ops/forge_evidence_bundle.py
+
+      - name: forge_brain_mcp.py syntax + protocol smoke
+        run: |
+          python3 -m py_compile tools/mcp/forge_brain_mcp.py tools/forge_brain_mcp.py
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | python3 tools/forge_brain_mcp.py | python3 -c "import sys,json; rs=[json.loads(l) for l in sys.stdin if l.strip()]; assert rs[0]['result']['serverInfo']['name']=='forge-brain', rs; assert len(rs[1]['result']['tools'])==5, rs; print('OK: forge-brain MCP responds with 5 tools')"
+
+      - name: trajectory eval + OTel export syntax + smoke
+        run: |
+          python3 -m py_compile tools/eval/forge_trajectory_eval.py tools/eval/forge_otel_export.py tools/forge_trajectory_eval.py tools/forge_otel_export.py
+          T="$(mktemp -d)"; mkdir -p "$T/prds/demo"
+          printf '%s\n' \
+            '2026-06-18T10:00:00Z [P1-PRD-LOCKED] task_id=demo' \
+            '2026-06-18T10:30:00Z [P2-SPEC-FROZEN] task_id=demo' \
+            '2026-06-18T11:45:00Z [P4.0-SEMANTIC-EVAL] task_id=demo outcome=pass' \
+            '2026-06-18T12:30:00Z [P4.1-DISPATCH] task_id=demo' \
+            '2026-06-18T14:00:00Z [P4.3-REVIEW-PASS] task_id=demo' \
+            '2026-06-18T14:30:00Z [P4.4-EVAL-PASS] task_id=demo outcome=GREEN' \
+            > "$T/prds/demo/conductor.log"
+          python3 tools/forge_trajectory_eval.py --task-id demo --brain "$T" --strict >/dev/null && echo "OK: trajectory eval (GREEN, strict)"
+          python3 tools/forge_otel_export.py --task-id demo --brain "$T" | python3 -c "import sys,json; t=json.load(sys.stdin); assert t['resourceSpans'][0]['scopeSpans'][0]['spans']; print('OK: OTLP/JSON export')"
 
       - name: Stage marker unit tests
         run: node .claude/hooks/test-forge-stage-detect.cjs
@@ -146,3 +167,6 @@ jobs:
         run: |
           python3 tools/dev/lint_skill_allowed_tools.py --write-policy /tmp/skill-tool-policy.json
           diff -u tools/dev/skill-tool-policy.json /tmp/skill-tool-policy.json
+
+      - name: skills + agents conform to the Agent Skills standard
+        run: python3 tools/check_skill_standard.py

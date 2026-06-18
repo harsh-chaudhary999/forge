@@ -2,7 +2,9 @@
 
 > Plug-and-play multi-repo product orchestration for AI-assisted delivery. Takes a PRD and drives it through locked scope, negotiated contracts, tech plans, TDD implementation, multi-surface eval, review, and coordinated PRs — with a **git-backed brain** as the system of record.
 
-Forge ships a feature across **multiple repos** without embedding a runtime framework in your product code: **skills** (markdown + YAML), **subagents**, **hooks**, and **commands** encode process. **Full skill catalog** under `skills/` (count: `bash scripts/count-skills.sh`), **4 subagents**, **21 slash commands**. Works with **Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Copilot CLI, OpenCode, JetBrains AI** (see [Platform Setup](#platform-setup)).
+Forge ships a feature across **multiple repos** without embedding a runtime framework in your product code: **skills** (markdown + YAML), **subagents**, **hooks**, and **commands** encode process. **Full skill catalog** under `skills/` (count: `bash scripts/count-skills.sh`), **4 subagents**, **21 slash commands**. **Built for [Claude Code](https://code.claude.com).**
+
+> **This is the Claude-only branch.** It is specialized for Claude Code and uses Claude-native primitives (subagent frontmatter, dynamic workflows, MCP, the Agent Skills standard). Builds for other IDEs (Cursor, Gemini CLI, Codex, …) live on their own branches.
 
 **`/forge`** (`commands/forge.md`) is the **full end-to-end** entrypoint: same phases as **`conductor-orchestrate`**, including **mandatory** State 4b **manual QA CSV** (`qa-prd-analysis` → `qa-manual-test-cases-from-prd` → approved `qa/manual-test-cases.csv` → `[P4.0-QA-CSV]`) **before** **`[P4.0-SEMANTIC-EVAL]`**, then **semantic machine-eval** (**`qa/semantic-automation.csv`** + valid **`qa/semantic-eval-manifest.json`** — **`docs/semantic-eval-csv.md`**), TDD RED (**`forge-tdd`** driven by acceptance CSV + tech plans), design ingest when applicable, dispatch, reviews, **P4.4 eval**, self-heal, PR set, dream/brain. Other slash commands are **partial slices** — see [Commands reference](#commands-reference) and [Orchestration model](#orchestration-model-automation-vs-approvals).
 
@@ -50,19 +52,15 @@ Use your fork or upstream; see **[Forks and remotes](docs/contributing.md#forks-
 
 ### 2. Install
 
-Use **bash** (not `sh` / dash). If auto-detect skips your IDE (e.g. Cursor without the shell command on PATH), pass **`--platform`** explicitly — see [Cursor troubleshooting](docs/platforms/cursor.md#installsh-did-not-install-forge-for-cursor-auto-detect-skipped-cursor).
+Use **bash** (not `sh` / dash) — the script uses bash arrays and `[[`.
 
 ```bash
 bash scripts/install.sh
 ```
 
-Installs for all detected IDEs. For one platform:
+Installs the Forge plugin into the Claude Code plugin cache and registers its hooks + commands in `~/.claude/`. See [docs/platforms/claude-code.md](docs/platforms/claude-code.md).
 
-```bash
-bash scripts/install.sh --platform cursor
-```
-
-### 3. Restart your IDE
+### 3. Restart Claude Code
 
 Forge injects context on session start. Verify:
 
@@ -90,19 +88,9 @@ Forge is **just files in your clone** (`~/forge` by default). There is **no buil
 cd ~/forge && git pull && bash scripts/install.sh
 ```
 
-Omit flags to refresh **every** host `install.sh` auto-detects; or pass **`--platform`** once per editor you actually use. Supported names: **`cursor`**, **`claude-code`**, **`opencode`**, **`antigravity`**, **`codex`**, **`gemini-cli`**, **`jetbrains`**, **`copilot-cli`** (see `bash scripts/install.sh --help`).
+**Always re-run `install.sh` after `git pull`** if skills, commands, or hooks changed. Pulling alone updates **`~/forge`** on disk but **does not** refresh the Claude Code install: hook registration (**`~/.claude/settings.json`**) and the plugin cache under **`~/.claude/plugins/cache/forge-plugin/`** only update when the installer runs again. Otherwise you may see **stale command lists**, old **`PreToolUse`** matchers, or missing **`prompt-submit`** behavior until you reinstall.
 
-**Always re-run `install.sh` after `git pull`** if skills, commands, or hooks changed. Pulling alone updates **`~/forge`** on disk but **does not** refresh IDE-facing installs: **Cursor** global rules (**`~/.cursor/rules/forge.mdc`**) and **Claude Code** hook registration (**`~/.claude/settings.json`**, plugin cache under **`~/.claude/plugins/cache/`**) only update when the installer runs again. Otherwise you may see **stale command lists**, old **`PreToolUse`** matchers, or missing **`prompt-submit`** behavior until you reinstall.
-
-**After `git pull`, host-specific refresh:**
-
-| Host | Extra step (when applicable) |
-|------|--------------------------------|
-| **Gemini CLI** | `gemini extensions update forge` (or re-run `gemini extensions link ~/forge`) so the CLI sees new files. |
-| **Codex** | Re-run `codex plugin install forge` if you rely on Codex’s cached plugin copy (see `install.sh` output). |
-| **JetBrains** | Re-run `install.sh --platform jetbrains` or re-copy `templates/junie-guidelines.md` into projects that vendor the template. |
-
-Restart each app (or start a new agent session) after a meaningful skill or hook change. Per-host notes: **[`docs/platforms/`](docs/platforms/)**.
+Restart Claude Code (or start a new session) after a meaningful skill or hook change. See **[`docs/platforms/claude-code.md`](docs/platforms/claude-code.md)**.
 
 **Version today:** `package.json` and **`.*-plugin/plugin.json`** carry **`1.0.0`** — bump these when you want installers and manifests to reflect a new drop; tags + Release notes help watchers. **Tags are not created automatically** on push; maintainers bump versions in a PR, then may run the optional **`Tag release`** GitHub Action (see **`docs/contributing.md` → Releases**) to push `vX.Y.Z`.
 
@@ -177,7 +165,7 @@ PRD → Intake → Council → Spec freeze → Tech plans
 ## Design & UI
 
 - **Intake — design / UI** (mandatory for web/app / user-visible scope): the user must see the **verbatim** design source-of-truth question from **`intake-interrogate`** in chat (not only text in `prd-locked.md`); then **`design_intake_anchor`**, implementable paths or **`figma_file_key` + `figma_root_node_ids`**, or a documented waiver — not wiki-only links.
-- **Surface skills** (`reasoning-as-web-frontend`, `reasoning-as-app-frontend`): **Lovable → GitHub** when `lovable_github_repo` is locked (**[`docs/platforms/lovable.md`](docs/platforms/lovable.md)**); **Figma MCP first** when the host provides it; then REST; human export as fallback.
+- **Surface skills** (`reasoning-as-web-frontend`, `reasoning-as-app-frontend`): **Lovable → GitHub** when `lovable_github_repo` is locked (design source synced to a repo Forge can read); **Figma MCP first** when available; then REST; human export as fallback.
 - **Council / spec-freeze** copy design fields into **`shared-dev-spec.md`**; thin design blocks **block** freeze when net-new UI lacks implementable inputs.
 
 ---
@@ -337,6 +325,7 @@ Role names (`backend-api`, `frontend`, …) must match the `--repos <role>:<path
 - **No product code changes required** to adopt Forge — you describe topology in **`product.md`** / workspace flow.
 - **No third-party agent frameworks** in the plugin’s own rules (D5).
 - **Auditable brain** — git-backed markdown for decisions, specs, scans, QA, eval.
+- **Brain MCP server** — a read-only [MCP](https://modelcontextprotocol.io) server (`tools/mcp/forge_brain_mcp.py`, stdlib-only) exposes the brain (`brain_read`/`recall`/`why`/`conductor_status`) to any agent, no Forge session required. See [`docs/brain-mcp.md`](docs/brain-mcp.md).
 - **Anti-pattern preambles** on discipline skills — rationalization tables before workflows.
 - **Iron laws** on rigid skills — explicit non-negotiables (TDD, eval gate, intake, etc.).
 - **Documented edge cases & escalation** — `BLOCKED`, `NEEDS_CONTEXT`, `NEEDS_COORDINATION`, `NEEDS_INFRA_CHANGE`, `DONE_WITH_CONCERNS` across skills.
@@ -350,17 +339,11 @@ Role names (`backend-api`, `frontend`, …) must match the `--repos <role>:<path
 
 | Platform | Status | Install |
 |---|---|---|
-| Claude Code | Supported | `.claude-plugin/plugin.json` |
-| Cursor | Supported | `.cursor-plugin/plugin.json` + `.cursorrules` |
-| Google Antigravity | Supported | `.agent/skills/` + `AGENTS.md` + `GEMINI.md` |
-| Gemini CLI / Project IDX | Supported | `gemini-extension.json` |
-| OpenAI Codex | Supported | `AGENTS.md` |
-| GitHub Copilot CLI | Supported | Session hook + `COPILOT_CLI` |
-| OpenCode | Supported | `.opencode/plugins/forge.js` |
-| JetBrains AI | Manual | `templates/junie-guidelines.md` → `.junie/guidelines.md` |
-| Lovable (UI) | Design + export path | No plugin — lock **GitHub-synced repo** or brain exports per **[`docs/platforms/lovable.md`](docs/platforms/lovable.md)** |
+| Claude Code | Supported (this branch) | `.claude-plugin/plugin.json` + `bash scripts/install.sh` |
 
-**Guides:** [`docs/platforms/`](docs/platforms/) — **Planning vs execution sessions (all hosts):** [`docs/platforms/session-modes-forge.md`](docs/platforms/session-modes-forge.md) — **Merged `skills/` installs (Cursor, Claude Code, OpenCode copy):** [`docs/platforms/plugin-skill-layout.md`](docs/platforms/plugin-skill-layout.md)
+> Other IDEs (Cursor, Gemini CLI, Codex, Antigravity, Copilot CLI, OpenCode, JetBrains) are maintained on **dedicated branches**, not this one.
+
+**Guides:** [`docs/platforms/claude-code.md`](docs/platforms/claude-code.md) — **Planning vs execution sessions:** [`docs/platforms/session-modes-forge.md`](docs/platforms/session-modes-forge.md) — **Merged `skills/` plugin-cache layout:** [`docs/platforms/plugin-skill-layout.md`](docs/platforms/plugin-skill-layout.md)
 
 ---
 
@@ -475,11 +458,11 @@ Each file under **`commands/`** has YAML **`name:`** + **`description:`**, optio
 | **`/remember`** | **`brain-write`** — record decision / learning. |
 | **`/forge-status`** | Read-only brain / plugin snapshot. |
 | **`/forge-test`** | **Meta** — **`forge-self-test`** on **bundled seed** product (validates **this** repo), **not** your product’s **`/forge`**. |
-| **`/forge-install`** | Show install paths for supported IDEs. |
+| **`/forge-install`** | Show the Claude Code install path. |
 | **`/qa`** | **Standalone QA pipeline** — brain load → scenario generation (all test types) → branch checkout → stack-up → multi-surface exec → verdict. Independent of `/forge`. |
 | **`/qa-write`** | **Partial** — author **`qa/semantic-automation.csv`** + manifest (**`qa-semantic-csv-orchestrate`**, **`docs/semantic-eval-csv.md`**); align machine steps to **`manual-test-cases.csv`** via **`TraceToCsvId`** where applicable (**`commands/qa-write.md`**). |
 | **`/qa-run`** | **Partial** — execute existing scenarios against named branches + env (`qa-branch-env-prep` → stack-up → drivers → `eval-judge`). |
-| **`/doctor`** | **Meta** — run **`scripts/forge-doctor.sh`**: plugin layout + Claude hooks symlink + **`settings.json`** forge hook counts + Cursor **`forge.mdc`** freshness. |
+| **`/doctor`** | **Meta** — run **`scripts/forge-doctor.sh`**: plugin layout + **`~/.claude/commands/forge`** symlink + **`settings.json`** forge hook counts. |
 | **`/evidence-bundle`** | **Utility** — **`tools/forge_evidence_bundle.py`**: tar.gz + manifest for **`prds/<task-id>/`** (audit handoff). |
 
 ---
@@ -501,22 +484,18 @@ forge/
 │   └── …
 ├── agents/                 # 4 subagent definitions (*.md)
 ├── commands/               # 21 slash-command docs (*.md)
-├── hooks/                  # Hook manifests (hooks.json, hooks-cursor.json) + session-start shim
+├── hooks/                  # Hook manifest (hooks.json — Claude Code auto-discovers it)
 ├── .claude/hooks/          # Claude Code + repo git hooks: *.cjs (session-start, pre-tool-use, …)
 ├── tools/                  # scan_forge, verify_forge_task.py, forge_adjacency_scan.py — see tools/README.md
 ├── docs/
-│   ├── platforms/          # Cursor, Claude Code, …
+│   ├── platforms/          # claude-code.md, session-modes-forge.md, plugin-skill-layout.md
 │   ├── contributing.md     # Git + hooks contributor notes
 │   ├── adjunct-skills.md   # Optional skills vs conductor canonical path
 │   ├── adjacency-and-cohorts.md  # Pre-Council adjacency + cohort + PRD signals (single spine)
 │   └── examples/
-├── scripts/                  # install.sh, verify-forge-plugin-install.sh
-├── templates/              # e.g. JetBrains junie-guidelines (no bundled forge-product; product = brain product.md)
-├── .claude-plugin/
-├── .cursor-plugin/         # Cursor manifest (plugin.json)
-├── .agent/skills/          # Antigravity symlinks → skills/
-├── .opencode/plugins/
-├── CLAUDE.md / AGENTS.md / GEMINI.md / .cursorrules
+├── scripts/                # install.sh, verify-forge-plugin-install.sh, forge-doctor.sh
+├── .claude-plugin/         # Claude Code plugin + marketplace manifests
+├── CLAUDE.md / AGENTS.md
 ├── package.json
 └── README.md
 ```
@@ -591,9 +570,9 @@ Full reference: **[`docs/forge-task-verification.md`](docs/forge-task-verificati
 
 ### Forge not loading
 
-1. See **[`docs/platforms/`](docs/platforms/)** for your IDE.
-2. Validate hook JSON under **`hooks/`** (and IDE-specific variants, e.g. **`hooks-cursor.json`**).
-3. Restart the IDE; run **`/forge-status`**.
+1. See **[`docs/platforms/claude-code.md`](docs/platforms/claude-code.md)**.
+2. Validate hook JSON under **`hooks/hooks.json`** and that **`~/.claude/settings.json`** has the three forge hooks (run **`/doctor`**).
+3. Restart Claude Code; run **`/forge-status`**.
 
 ### Skills not discovered
 
@@ -615,10 +594,6 @@ Check YAML frontmatter on any skill that fails to load.
 
 **If you still see duplicates** (e.g. legacy edits or forks that used a path without **`forge-plugin`**): edit **`~/.claude/settings.json`** manually and delete stray Forge entries, then reinstall.
 
-### Cursor: stale global rules or missing slash-command hints
-
-**`~/.cursor/rules/forge.mdc`** is **written by `install.sh`**, not by **`git pull`**. After upgrading Forge, run **`bash scripts/install.sh --platform cursor`** so **`forge.mdc`** and **`~/.cursor/plugins/local/forge/`** match your checkout. Restart Cursor. See **[`docs/platforms/cursor.md`](docs/platforms/cursor.md)**.
-
 ### Uninstall
 
 ```bash
@@ -629,7 +604,7 @@ cd ~/forge && bash scripts/install.sh --uninstall
 
 ## Requirements & license
 
-- **One of:** Claude Code, Cursor, Antigravity, Gemini CLI, Codex, Copilot CLI, OpenCode, JetBrains AI  
+- **[Claude Code](https://code.claude.com)** (this branch is Claude-only)  
 - **Git**, **Bash**  
 - **Node.js 16+** (install script)
 

@@ -1,7 +1,7 @@
 {
   "name": "forge",
-  "description": "Multi-repo product orchestration. Takes a PRD and ships it end-to-end across any product stack.",
-  "version": "1.0.0",
+  "description": "Multi-repo product orchestration for Claude Code. Takes a PRD and ships it end-to-end across any product stack.",
+  "version": "1.1.0",
   "author": {
     "name": "Harsh Chaudhary"
   },

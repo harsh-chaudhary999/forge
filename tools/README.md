@@ -9,7 +9,9 @@ Small, repo-local utilities shipped with Forge. The main maintained package here
 | **[`scan_forge/`](scan_forge/)** | Python package: phases 1, 3.5, 4, 5, 56, 57, CLI; smoke data is generated at runtime by `verify_smoke.py` — see **[`scan_forge/README.md`](scan_forge/README.md)** for phase map and module guide. |
 | **[`verify/`](verify/)** | Machine verification: task/brain gates (`verify_forge_task.py`, `verify_tech_plans.py`, `verify_scan_outputs.py`, semantic CSV coherence, drift, shared-spec, phase ledger, `requirements-verify.txt`, unit tests). |
 | **[`scan/`](scan/)** | Scan **CLI and helpers** (not the `scan_forge` package): `forge_scan.py`, `forge_codebase_search.py`, `forge_graph_query.py`, `forge_adjacency_scan.py`, `scan_bench.py`, `adjacency-seed-patterns.txt`. |
-| **[`dev/`](dev/)** | Maintainer tooling: `lint_skill_allowed_tools.py`, `skill-tool-policy.json`, tests. |
+| **[`mcp/`](mcp/)** | MCP servers: `forge_brain_mcp.py` (read-only brain query server — see **[`docs/brain-mcp.md`](../docs/brain-mcp.md)**). |
+| **[`eval/`](eval/)** | Trajectory eval + observability: `forge_trajectory_eval.py`, `forge_otel_export.py` (see **[`docs/eval-trajectory.md`](../docs/eval-trajectory.md)**). |
+| **[`dev/`](dev/)** | Maintainer tooling: `lint_skill_allowed_tools.py`, `check_skill_standard.py`, `skill-tool-policy.json`, tests. |
 | **[`ops/`](ops/)** | Operator utilities: `forge_evidence_bundle.py`, `brain_restore_deleted.py`. |
 | **[`js/`](js/)** | Node regression tests (e.g. `test-prompt-submit-gates.cjs`). |
 
@@ -28,6 +30,10 @@ Small, repo-local utilities shipped with Forge. The main maintained package here
 | [`append_phase_ledger.py`](append_phase_ledger.py) → [`verify/append_phase_ledger.py`](verify/append_phase_ledger.py), [`verify/phase_ledger.py`](verify/phase_ledger.py) | Append-only **`phase-ledger.jsonl`** with per-file **SHA256** |
 | [`verify/shared_spec_policy.py`](verify/shared_spec_policy.py) + [`verify/shared_spec_checklist.json`](verify/shared_spec_checklist.json) | **`verify_forge_task.py --check-shared-spec`** |
 | [`lint_skill_allowed_tools.py`](lint_skill_allowed_tools.py) → [`dev/lint_skill_allowed_tools.py`](dev/lint_skill_allowed_tools.py) | CI: rigid **`allowed-tools`**; **`--write-policy`** → [`dev/skill-tool-policy.json`](dev/skill-tool-policy.json) (**`pre-tool-use.cjs`** loads `tools/dev/skill-tool-policy.json`, with legacy fallback `tools/skill-tool-policy.json`) |
+| [`check_skill_standard.py`](check_skill_standard.py) → [`dev/check_skill_standard.py`](dev/check_skill_standard.py) | CI: every `skills/*/SKILL.md` + `agents/*.md` conforms to the **Agent Skills open standard** — `name` ≤64 / `[a-z0-9-]` / no reserved words; `description` non-empty / ≤1024 / no XML `<tags>`. Exit 1 on any violation. |
+| [`forge_brain_mcp.py`](forge_brain_mcp.py) → [`mcp/forge_brain_mcp.py`](mcp/forge_brain_mcp.py) | **Read-only Brain MCP server** (stdlib JSON-RPC/stdio): `brain_read`, `brain_list`, `brain_recall`, `brain_why`, `brain_conductor_status`. Register with `claude mcp add forge-brain -- python3 tools/forge_brain_mcp.py`. See **[`docs/brain-mcp.md`](../docs/brain-mcp.md)**. |
+| [`forge_trajectory_eval.py`](forge_trajectory_eval.py) → [`eval/forge_trajectory_eval.py`](eval/forge_trajectory_eval.py) | **Trajectory verdict** from `conductor.log`: scores gate adherence, phase ordering, eval outcome, heal efficiency (0–5 each) → GREEN/YELLOW/RED. `--strict` exits 1 on RED. See **[`docs/eval-trajectory.md`](../docs/eval-trajectory.md)**. |
+| [`forge_otel_export.py`](forge_otel_export.py) → [`eval/forge_otel_export.py`](eval/forge_otel_export.py) | Export a task's delivery trajectory as **OTLP/JSON** spans (eval spans carry OTel GenAI `gen_ai.*` attributes) for Langfuse / Braintrust / Phoenix. Stdlib only. |
 | [`forge_graph_query.py`](forge_graph_query.py) → [`scan/forge_graph_query.py`](scan/forge_graph_query.py) | **Ad-hoc queries** on **`graph.json`**: `summary`, `neighbors`, `search` — stdlib only |
 | [`forge_codebase_search.py`](forge_codebase_search.py) → [`scan/forge_codebase_search.py`](scan/forge_codebase_search.py) | Local BM25 search (SQLite FTS5) across scan artifacts |
 | `scan_forge/query_repl.py` | SQL helper for `forge_scan_edges.sqlite` (generated from `graph.json`) |

@@ -22,6 +22,15 @@ Then open `~/forge/brain/` in Obsidian. Forge will populate subdirectories (`prd
 
 See **[`skills/forge-brain-layout/SKILL.md`](../skills/forge-brain-layout/SKILL.md)** for the full annotated directory tree that Forge creates under `~/forge/brain/`.
 
+## Open Knowledge Format (OKF) conventions
+
+The brain is a directory of Markdown files with YAML frontmatter — an [Open Knowledge Format](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing/)-shaped knowledge base. Forge keeps two OKF artifacts per scope so the brain is progressively discoverable and self-documenting (see `forge-brain-layout` → *OKF + Memory-tool alignment*):
+
+- **`index.md`** — a one-row-per-file table of contents for the directory, so an agent can survey a scope before reading every file.
+- **`log.md`** — a date-grouped, newest-first changelog of what changed in that scope and why (append-only; complements `conductor.log`).
+
+Concept docs carry an OKF `type:` (`decision`, `contract`, `spec`, `eval`, `pattern`, `retrospective`, `terminology`). The brain also serves as an Anthropic Memory-tool directory: durable agent memory that persists across sessions and compaction.
+
 ## Obsidian config
 
 The `.obsidian/` config enables:

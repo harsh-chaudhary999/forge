@@ -3,7 +3,7 @@ name: dream-retrospect-post-pr
 description: "WHEN: All PRs merged and feature shipped. Dreamer scores decisions, extracts patterns, identifies opportunities, writes learnings to brain."
 type: flexible
 requires: [brain-read, brain-write]
-version: 1.0.0
+version: 1.1.0
 preamble-tier: 3
 triggers:
   - "post-PR retrospective"
@@ -102,6 +102,24 @@ Score every major decision on a 1-5 scale across 5 categories:
 | 1 | Eval was ineffective. Critical bug shipped. |
 
 **Evidence to collect:** Scenario pass rates, post-merge bug reports, coverage analysis.
+
+## Trajectory eval (deterministic substrate)
+
+Before scoring qualitatively, run the deterministic **trajectory analyzer** over the task's `conductor.log` — it scores *how the run got there* (gate adherence, phase ordering, eval outcome, self-heal efficiency), which is the 2026 Agent-as-a-Judge frontier and the objective floor under your 1–5 categories:
+
+```bash
+python3 tools/forge_trajectory_eval.py --task-id <task-id> --brain ~/forge/brain
+```
+
+Use its output as evidence: `gate_adherence`/`phase_ordering` inform **Intake/Council/Tech-Plan** categories; `eval_outcome`/`heal_efficiency` inform **Build/Eval** categories. A trajectory `verdict: RED` (broken ordering or RED eval) caps the retrospective — do not score Eval Coverage above 2 when the trajectory says RED.
+
+Optionally emit the trajectory to your observability stack (Langfuse / Braintrust / Phoenix) as OTLP/JSON so delivery quality is tracked over time, not just in the brain:
+
+```bash
+python3 tools/forge_otel_export.py --task-id <task-id> --out trace.json
+```
+
+See **[`docs/eval-trajectory.md`](../../docs/eval-trajectory.md)**.
 
 ## Pattern Extraction
 

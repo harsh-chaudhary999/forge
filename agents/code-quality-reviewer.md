@@ -2,6 +2,10 @@
 name: code-quality-reviewer
 description: "WHEN: spec-reviewer has passed and a Phase 2 code quality audit is needed across maintainability, testing, performance, security, and observability dimensions."
 type: rigid
+model: inherit
+effort: high
+maxTurns: 30
+disallowedTools: Edit, Write, NotebookEdit
 ---
 
 # Code Quality Reviewer Subagent

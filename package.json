@@ -1,9 +1,7 @@
 {
   "name": "forge",
-  "version": "1.0.0",
-  "description": "Plug-and-play multi-repo product orchestration plugin. Takes a PRD to shipped PRs across any product stack.",
-  "type": "module",
-  "main": ".opencode/plugins/forge.js",
+  "version": "1.1.0",
+  "description": "Plug-and-play multi-repo product orchestration plugin for Claude Code. Takes a PRD to shipped PRs across any product stack.",
   "homepage": "https://github.com/harsh-chaudhary999/forge",
   "repository": {
     "type": "git",

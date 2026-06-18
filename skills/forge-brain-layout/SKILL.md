@@ -2,7 +2,7 @@
 name: forge-brain-layout
 description: "WHEN: You need to look up brain directory structure, naming conventions, or query patterns before writing to or reading from the brain."
 type: reference
-version: 1.0.5
+version: 1.0.6
 preamble-tier: 2
 triggers:
   - "brain directory layout"
@@ -29,6 +29,16 @@ The brain is **not** a task tracker, issue system, or temporary notes file. It i
 ### Phase 2 prep (embeddings / hybrid index — optional today)
 
 Before any vector or FTS index ships, prefer **YAML frontmatter** on new decision files: stable `id`, `updated` (ISO-8601 date), `product` / `project` where applicable, and optional `supersedes: <prior-id>` for knowledge updates. Use predictable `##` section boundaries in long notes so a later indexer can chunk without splitting mid-thought. Codebase scans already emit `SCAN.json` under `products/<slug>/codebase/`; optional **`route-aliases.tsv`** there augments phase56 route matching. Each scan run also writes **`graph.json`**, **`SCAN_SUMMARY.md`**, and **`.forge_scan_manifest.json`**; the runner keeps per-role temp inputs under **`<run_dir>/_role/<role>/`** (see `tools/scan_forge/scan_paths.py`) so multi-repo inventories are not overwritten.
+
+## Open Knowledge Format (OKF) + Memory-tool alignment
+
+The brain is, by construction, an [Open Knowledge Format](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing/)-shaped knowledge base: a **directory of Markdown files with YAML frontmatter**, shippable in git and readable by humans and agents alike. Forge predates OKF v0.1 (2026-06-12) but converges on the same shape. Adopt these conventions so the brain stays portable and progressively discoverable:
+
+- **`index.md` per scope (progressive disclosure).** Each non-trivial brain directory SHOULD carry an `index.md` enumerating what lives there — one row per file/concept with a one-line description — so an agent can survey a scope before reading every file (cheaper context, mirroring the Agent Skills standard's Level-1 metadata). `products/<slug>/codebase/index.md` already does this for scans; extend the habit to `prds/<task-id>/`, `decisions/<category>/`, and `products/<slug>/prd/<prd-id>/`.
+- **`log.md` per scope (changelog that travels with the knowledge).** Append a **date-grouped changelog, newest first**, recording what changed in that scope and why. This is OKF's `log.md` pattern; it complements `conductor.log` (phase markers, not prose) and is **append-only** — never rewrite history.
+- **OKF `type:` frontmatter.** OKF's one required field is `type` (the concept category). Forge already keys decision records on `type` (see Anti-Pattern 1, `type=decision`). Put a concrete `type` on brain concept docs — `decision`, `contract`, `spec`, `eval`, `pattern`, `retrospective`, `terminology` — so a future indexer or any OKF consumer can filter by kind.
+
+**Memory-tool alignment.** The brain doubles as an [Anthropic Memory-tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool) directory: a filesystem the agent reads, writes, and updates across sessions and across context-editing / compaction boundaries. Brain files are the durable memory that survives compaction — write the decision to brain via `brain-write`, never leave it only in the conversation. `index.md` / `log.md` give that memory layer a cheap table of contents and an audit trail.
 
 ## Directory Tree
 

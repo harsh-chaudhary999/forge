@@ -2,7 +2,7 @@
 name: brain-write
 description: "WHEN: You need to record a decision, lock a spec, log an eval run, or document learnings in the brain."
 type: flexible
-version: 1.0.1
+version: 1.0.2
 preamble-tier: 2
 triggers:
   - "record a decision"
@@ -390,6 +390,8 @@ Resolves: D088 (unified name format)
 ## Metadata Frontmatter Template
 
 Use this YAML frontmatter in decision records, specs, and contracts. Standardize field names to enable brain-recall, brain-link, and brain-why.
+
+> **OKF + Memory-tool (see `forge-brain-layout` → OKF alignment).** `type` is also the [Open Knowledge Format](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing/) required field — keep it concrete so OKF consumers and a future indexer can filter by kind. When you write into a brain **scope** (`prds/<task-id>/`, `decisions/<category>/`, …): (1) add or update that scope's **`index.md`** row for the new file, and (2) append a dated, newest-first entry to that scope's **`log.md`** describing what changed and why (append-only). The brain is the agent's durable Memory-tool store — persist the decision here, not only in chat.
 
 Valid decision `type` values:
 

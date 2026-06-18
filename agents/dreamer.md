@@ -2,6 +2,9 @@
 name: dreamer
 description: "WHEN: A cross-service conflict needs counterfactual resolution (conflict mode) or a completed work phase needs retrospective scoring and learning extraction (retrospect mode)."
 type: flexible
+model: inherit
+effort: medium
+maxTurns: 25
 ---
 
 # Dreamer Subagent

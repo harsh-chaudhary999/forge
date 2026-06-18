@@ -2,14 +2,14 @@
 
 ## What This Repo Is
 
-Forge is a plug-and-play multi-repo product orchestration plugin for Claude Code, Cursor, Gemini CLI, Project IDX, and JetBrains AI. It takes a PRD and ships it end-to-end across any product stack.
+Forge is a plug-and-play multi-repo product orchestration plugin for **Claude Code**. It takes a PRD and ships it end-to-end across any product stack. **This branch is Claude-only** — other-IDE builds live on dedicated branches.
 
 ## If You Are an AI Working in This Repo
 
 - All skills live in `skills/` at repo root (not `.claude/skills/` — that is a symlink)
 - All agents live in `agents/` at repo root
-- **`hooks/`** — IDE hook manifests (`hooks.json`, `hooks-cursor.json`) and the **`hooks/session-start`** shell shim (for configs that do not call `node` directly)
-- **`.claude/hooks/`** — Claude Code hook implementations (`session-start.cjs`, `pre-tool-use.cjs`, …) plus git hook scripts installed for this repo — do not confuse the two directories
+- **`hooks/`** — the Claude Code hook manifest (`hooks.json`), auto-discovered by Claude Code from the plugin root
+- **`.claude/hooks/`** — Claude Code hook implementations (`session-start.cjs`, `pre-tool-use.cjs`, `prompt-submit.cjs`, …) plus git hook scripts installed for this repo — do not confuse the two directories
 - The `using-forge` skill is the bootstrap; Claude Code loads it via **`hooks/hooks.json`** → **`session-start.cjs`**
 
 ## Skill Format
@@ -17,18 +17,29 @@ Forge is a plug-and-play multi-repo product orchestration plugin for Claude Code
 Every skill is a `SKILL.md` file with YAML frontmatter:
 ```yaml
 ---
-name: skill-name
-description: WHEN to invoke — describes the trigger, not what the skill does
-type: rigid | flexible
-requires: [other-skill-name]
+name: skill-name                                    # standard-required
+description: WHEN to invoke — describes the trigger # standard-required
+type: rigid | flexible                              # Forge extension (rigid-skill lint)
+requires: [other-skill-name]                        # Forge extension
+preamble-tier: 1-4                                  # Forge extension (session-start hook)
 ---
 ```
+
+**Agent Skills standard conformance.** `name` and `description` are the only
+fields the [Agent Skills open standard](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview)
+requires, and they are constrained: `name` ≤ 64 chars, `[a-z0-9-]` only, no
+reserved words (`anthropic`/`claude`); `description` non-empty, ≤ 1024 chars,
+**no XML-style `<tags>`**. Forge's other keys (`type`, `requires`,
+`preamble-tier`, `allowed-tools`, `triggers`, and the native subagent fields)
+are extensions — standard hosts ignore unknown keys. Keep `name`/`description`
+conformant so skills load identically on every compliant host. Verify with:
+`python3 tools/check_skill_standard.py`.
 
 ## Execution Rules (Non-Negotiable)
 
 - **Never write scripts to `/tmp` and execute them.** Run all bash commands inline. Writing `/tmp/verify.sh`, `/tmp/check.sh`, `/tmp/final_check.sh` etc. and then running them is forbidden — it obscures what's being executed, creates untracked side effects, and requires extra permission approvals. If a command is complex, run it directly as a multi-line heredoc or chained pipeline.
 - **`/tmp` is only for data files, never for scripts.** Intermediate data files (e.g. scan output, temp lists) are acceptable. Executable scripts written to `/tmp` are not.
-- **Blocking interactive prompts (every supported IDE):** Skills name **`AskUserQuestion`** in **`allowed-tools`**; hosts map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor → **`AskQuestion`**; CLIs / editors without the tool → **numbered choices + stop**). Human answers must not be prose-only “reply if…” without that structure.
+- **Blocking interactive prompts:** Skills name **`AskUserQuestion`** in **`allowed-tools`** and use it for every human decision (task-id, doubt, waiver, fork). Human answers must not be prose-only “reply if…” without that structured affordance.
 - **Assistant dialogue (live chat):** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **no bundled** unrelated decisions in one turn; **question-forward** (no unsolicited reference-doc preface or **later-stage** status suffix on single-answer turns) except when the user asked for status or the roadmap. **Multi-question elicitation** items **4–8**. Static docs (**README**, **`commands/`**) may still list full dependency order.
 
 ## Written artifacts — precision (scans, plans, QA, eval, code, tests)
@@ -62,8 +73,8 @@ requires: [other-skill-name]
 | Skills (full catalog) | `skills/` — count: `bash scripts/count-skills.sh` from repo root |
 | Agents (4) | `agents/` |
 | Commands (21) | `commands/` |
-| Hook manifests + `hooks/session-start` shim | `hooks/` |
+| Hook manifest (`hooks.json`) | `hooks/` |
 | Claude / git hook scripts (`.cjs`) | `.claude/hooks/` |
 | Brain (decisions) | `brain/` |
 | Seed product | `seed-product/` |
-| Platform docs | `docs/platforms/` |
+| Platform docs (Claude Code) | `docs/platforms/` |

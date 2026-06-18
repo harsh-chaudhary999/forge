@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# forge-doctor — quick host install health (Cursor + Claude Code plugin layouts).
-# Reuses verify-forge-plugin-install.sh; adds symlink + settings.json + forge.mdc freshness.
+# forge-doctor — quick Claude Code install health.
+# Reuses verify-forge-plugin-install.sh; adds commands symlink + settings.json hook checks.
 #
 # Usage: bash scripts/forge-doctor.sh   (from Forge repo root)
 
@@ -50,42 +50,6 @@ for (const ev of want) {
   else console.error('WARN: settings.json ' + ev + ' — ' + forge.length + ' forge-plugin hook blocks (want 1); re-run install.sh --platform claude-code');
 }
 NODE
-fi
-
-CUR_RULE="${HOME}/.cursor/rules/forge.mdc"
-CUR_PLUG="${HOME}/.cursor/plugins/local/forge/skills/using-forge/SKILL.md"
-if [[ -f "${CUR_RULE}" ]] && [[ -f "${CUR_PLUG}" ]]; then
-  if [[ "${CUR_RULE}" -ot "${CUR_PLUG}" ]]; then
-    echo "WARN: ~/.cursor/rules/forge.mdc older than plugin skill — run: bash scripts/install.sh --platform cursor" >&2
-  else
-    echo "OK: ~/.cursor/rules/forge.mdc not older than plugin copy"
-  fi
-elif [[ ! -f "${CUR_RULE}" ]]; then
-  echo "WARN: ~/.cursor/rules/forge.mdc missing — run install.sh --platform cursor" >&2
-fi
-
-CUR_CMD="${HOME}/.cursor/commands/forge"
-if [[ -L "${CUR_CMD}" ]]; then
-  target="$(readlink -f "${CUR_CMD}" 2>/dev/null || readlink "${CUR_CMD}")"
-  if [[ "${target}" == "${FORGE_DIR}/commands" ]]; then
-    echo "OK: ~/.cursor/commands/forge -> ${FORGE_DIR}/commands"
-  else
-    echo "WARN: ~/.cursor/commands/forge -> ${target} (expected ${FORGE_DIR}/commands)" >&2
-  fi
-else
-  echo "WARN: ~/.cursor/commands/forge missing — run: bash scripts/install.sh --platform cursor" >&2
-fi
-
-CUR_FORGE_MD="${HOME}/.cursor/commands/forge.md"
-if [[ -L "${CUR_FORGE_MD}" ]]; then
-  target="$(readlink -f "${CUR_FORGE_MD}" 2>/dev/null || readlink "${CUR_FORGE_MD}")"
-  if [[ "${target}" == "${FORGE_DIR}/commands/forge.md" ]]; then
-    echo "OK: ~/.cursor/commands/forge.md -> ${FORGE_DIR}/commands/forge.md"
-  else
-    echo "WARN: ~/.cursor/commands/forge.md -> ${target} (expected ${FORGE_DIR}/commands/forge.md)" >&2
-  fi
-else
-  echo "WARN: ~/.cursor/commands/forge.md missing — run: bash scripts/install.sh --platform cursor" >&2
 fi
 
 exit "${EC}"

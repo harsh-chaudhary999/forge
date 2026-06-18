@@ -3,7 +3,7 @@ name: eval-judge
 description: "WHEN: Phase 4.4 needs a final pass/fail verdict from qa/semantic-eval-manifest.json outcome + qa/semantic-eval-run.log (semantic CSV execution). Renders GREEN/RED/YELLOW."
 type: rigid
 requires: [brain-read]
-version: 2.0.0
+version: 2.1.0
 preamble-tier: 3
 triggers:
   - "judge eval results"
@@ -93,3 +93,4 @@ Record **RED** and **YELLOW** in brain via **`brain-write`** when your workflow 
 | **`eval-driver-*`** | Host execution mapping from **Surface** — not a separate YAML scenario layer. |
 | **`self-heal-locate-fault`** | Downstream on RED — use **`semantic-eval-run.log`** JSON lines as primary evidence. |
 | **`forge-eval-gate`** | Parent workflow containing this judge. |
+| **`tools/forge_trajectory_eval.py`** | **Complementary, not a substitute.** This skill renders the **product verdict** (does the feature work?). The trajectory analyzer renders the **trajectory verdict** (did the run follow the gates — ordering, eval outcome, heal efficiency?). Two axes; `dream-retrospect-post-pr` consumes both. See **`docs/eval-trajectory.md`**. |

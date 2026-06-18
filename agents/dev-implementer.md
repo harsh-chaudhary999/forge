@@ -2,6 +2,9 @@
 name: dev-implementer
 description: "WHEN: Dispatched by conductor-orchestrate for a bite-sized feature, bugfix, refactor, migration, performance, or security task after State 4b gates pass."
 type: rigid
+model: inherit
+effort: high
+maxTurns: 40
 ---
 
 # dev-implementer Subagent

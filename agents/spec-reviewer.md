@@ -2,6 +2,10 @@
 name: spec-reviewer
 description: "WHEN: An implementation has been committed and must be verified line-by-line against the locked shared-dev-spec before code quality review proceeds."
 type: rigid
+model: inherit
+effort: high
+maxTurns: 30
+disallowedTools: Edit, Write, NotebookEdit
 ---
 
 # spec-reviewer Subagent

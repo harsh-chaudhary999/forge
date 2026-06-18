@@ -2,8 +2,9 @@
 name: contract-cache
 description: "WHEN: Council has identified cache design conflicts across surfaces and needs a locked contract. Negotiates key patterns, TTL strategy, invalidation, stampede prevention, serialization, and consistency model across all services."
 type: rigid
+effort: high
 requires: [brain-read]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "design cache contract"

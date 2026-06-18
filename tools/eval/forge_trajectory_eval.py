@@ -4,8 +4,13 @@
 Forge's `eval-judge` answers "does the product work?" (GREEN/RED/YELLOW from the
 semantic-eval manifest). The 2026 frontier in agent evaluation is *trajectory*
 eval — judging how the run got there: gate adherence, phase ordering, eval
-outcome, self-heal efficiency. Forge logs the richest delivery trajectory of any
-tool (`conductor.log` + brain), so it can score its own runs.
+outcome, self-heal efficiency. Forge logs a structured, per-phase delivery
+trajectory (`conductor.log` + brain), so it can score its own runs.
+
+Caveat: this audits the *log*, not the run — `gate_adherence` measures whether the
+conductor logged each phase marker, not whether the gate truly executed. The score
+is only as trustworthy as the conductor's logging discipline; treat it as a
+corroborating axis to the product verdict (`eval-judge`), not a substitute.
 
 This is the deterministic substrate an Agent-as-a-Judge (e.g. `dream-retrospect`)
 builds on: it parses `prds/<task-id>/conductor.log` and emits a structured
@@ -124,7 +129,7 @@ def analyze(task_id: str, brain: Path) -> dict:
     gate_adherence = round(5 * present / len(core_gates), 1)
     ordering_score = 5 if ordering_ok else 2
     eval_score = {"GREEN": 5, "YELLOW": 3, "RED_INFRA": 2, "RED": 1}.get(eval_outcome, 0)
-    heal_score = {0: 5, 1: 4, 2: 3, 3: 1}.get(self_heal_loops, 0 if self_heal_loops > 3 else 5)
+    heal_score = {0: 5, 1: 4, 2: 3, 3: 1}.get(self_heal_loops, 0)  # >3 loops exceeds the self-heal cap → 0
 
     scores = {
         "gate_adherence": gate_adherence,

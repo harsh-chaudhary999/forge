@@ -2,8 +2,9 @@
 name: reasoning-as-backend
 description: "WHEN: Council is reasoning about a PRD. You are the backend perspective (REST/gRPC/SQL). Analyze the PRD for API endpoints, data models, service boundaries, async patterns, performance SLOs."
 type: rigid
+effort: high
 requires: [brain-read]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 1
 triggers:
   - "reasoning for backend"

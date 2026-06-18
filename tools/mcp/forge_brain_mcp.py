@@ -19,6 +19,13 @@ Tools (all read-only, all confined to the brain root):
   brain_why               provenance for a file/decision (git log + frontmatter)
   brain_conductor_status  latest conductor.log phase markers for a task (or all)
 
+Also exposes (all read-only):
+  resources/*  every brain text file as an MCP resource (uri brain:///<path>),
+               plus a brain:///{path} template — so MCP clients can browse and read
+               the brain as resources, not only by calling tools.
+  prompts/*    task_brief, decision_provenance, recall_brain — ready-made prompts
+               that pull the relevant brain content inline for one-shot questions.
+
 Brain root resolution (first match wins):
   $FORGE_BRAIN  ->  $FORGE_BRAIN_PATH  ->  ~/forge/brain
 
@@ -39,10 +46,13 @@ import sys
 from pathlib import Path
 
 SERVER_NAME = "forge-brain"
-SERVER_VERSION = "1.1.0"
+SERVER_VERSION = "1.2.0"
 DEFAULT_PROTOCOL = "2025-06-18"
 MAX_FILE_BYTES = 200_000
 MAX_RECALL_RESULTS = 50
+MAX_RESOURCES = 200  # resources/list page size; the rest paginate via an offset cursor
+TEXT_SUFFIXES = (".md", ".csv", ".log", ".json", ".txt", ".tsv")
+RESOURCE_SCHEME = "brain:///"
 
 
 def log(msg: str) -> None:
@@ -132,7 +142,7 @@ def tool_brain_recall(args: dict) -> str:
     for path in sorted(root.rglob("*")):
         if ".git" in path.parts or not path.is_file():
             continue
-        if path.suffix.lower() not in (".md", ".csv", ".log", ".json", ".txt", ".tsv"):
+        if path.suffix.lower() not in TEXT_SUFFIXES:
             continue
         try:
             with path.open("r", encoding="utf-8", errors="ignore") as fh:
@@ -232,6 +242,139 @@ def tool_brain_conductor_status(args: dict) -> str:
     return "\n\n".join(out) if out else "No conductor.log found under any prds/<task-id>/."
 
 
+# ── Resources (every brain text file as an MCP resource) ──────────────────
+
+def _iter_brain_files(root: Path):
+    for path in sorted(root.rglob("*")):
+        if ".git" in path.parts or not path.is_file():
+            continue
+        if path.suffix.lower() in TEXT_SUFFIXES:
+            yield path
+
+
+def _mime(path: Path) -> str:
+    return "text/markdown" if path.suffix.lower() == ".md" else "text/plain"
+
+
+def _rel_from_uri(uri: str) -> str | None:
+    for prefix in ("brain:///", "brain://"):
+        if uri.startswith(prefix):
+            return uri[len(prefix):]
+    return None
+
+
+def list_resources(cursor) -> dict:
+    root = brain_root()
+    if not root.exists():
+        return {"resources": []}
+    files = list(_iter_brain_files(root))
+    try:
+        start = int(cursor) if cursor else 0
+    except (TypeError, ValueError):
+        start = 0
+    page = files[start:start + MAX_RESOURCES]
+    resources = [
+        {"uri": RESOURCE_SCHEME + str(p.relative_to(root)),
+         "name": str(p.relative_to(root)),
+         "mimeType": _mime(p)}
+        for p in page
+    ]
+    result = {"resources": resources}
+    nxt = start + MAX_RESOURCES
+    if nxt < len(files):
+        result["nextCursor"] = str(nxt)
+    return result
+
+
+def list_resource_templates() -> dict:
+    return {"resourceTemplates": [{
+        "uriTemplate": "brain:///{path}",
+        "name": "brain-file",
+        "description": "Any text file under the Forge brain root, addressed by its relative path.",
+        "mimeType": "text/markdown",
+    }]}
+
+
+def read_resource(uri: str) -> dict:
+    root = brain_root()
+    rel = _rel_from_uri(uri)
+    if rel is None:
+        raise ValueError(f"unsupported resource URI {uri!r} (expected brain:///<path>)")
+    target = _safe(root, rel) if root.exists() else None
+    if target is None or not target.exists() or target.is_dir():
+        raise FileNotFoundError(uri)
+    data = target.read_bytes()[:MAX_FILE_BYTES]
+    return {"contents": [{"uri": uri, "mimeType": _mime(target),
+                          "text": data.decode("utf-8", errors="replace")}]}
+
+
+# ── Prompts (ready-made questions that embed the relevant brain content) ───
+
+PROMPTS = [
+    {
+        "name": "task_brief",
+        "description": "Pull a task's locked PRD, shared-dev-spec, and conductor status inline, then ask for a scope/contracts/status summary.",
+        "arguments": [{"name": "task_id", "description": "Task id under prds/.", "required": True}],
+    },
+    {
+        "name": "decision_provenance",
+        "description": "Embed a decision's provenance (frontmatter + git history) and ask why it was made and what it superseded.",
+        "arguments": [{"name": "target", "description": "Brain-relative file path or a decision id (e.g. D102).", "required": True}],
+    },
+    {
+        "name": "recall_brain",
+        "description": "Search the brain for a term and embed the matching lines, then ask for a synthesis of prior art.",
+        "arguments": [{"name": "query", "description": "Text to search the brain for.", "required": True}],
+    },
+]
+PROMPTS_BY_NAME = {p["name"]: p for p in PROMPTS}
+
+
+def _user_msg(text: str) -> dict:
+    return {"role": "user", "content": {"type": "text", "text": text}}
+
+
+def get_prompt(name: str, arguments: dict) -> dict:
+    if name == "task_brief":
+        tid = (arguments.get("task_id") or "").strip()
+        if not tid:
+            raise ValueError("task_brief requires 'task_id'.")
+        prd = tool_brain_read({"path": f"prds/{tid}/prd-locked.md"})
+        spec = tool_brain_read({"path": f"prds/{tid}/shared-dev-spec.md"})
+        if spec.startswith("Not found"):
+            spec = tool_brain_read({"path": f"prds/{tid}/shared-dev-spec.DRAFT.md"})
+        status = tool_brain_conductor_status({"task_id": tid})
+        text = (
+            f"Below is the locked PRD, shared-dev-spec, and conductor status for Forge task {tid}.\n\n"
+            f"=== PRD ===\n{prd}\n\n=== SHARED-DEV-SPEC ===\n{spec}\n\n=== CONDUCTOR STATUS ===\n{status}\n\n"
+            "Summarize: the scope, the contracts and their producers/consumers, the current phase, "
+            "and any unresolved conflicts or blockers."
+        )
+        return {"description": f"Brief for task {tid}", "messages": [_user_msg(text)]}
+
+    if name == "decision_provenance":
+        target = (arguments.get("target") or "").strip()
+        if not target:
+            raise ValueError("decision_provenance requires 'target'.")
+        text = (
+            f"Provenance for {target} from the Forge brain:\n\n{tool_brain_why({'target': target})}\n\n"
+            "Explain why this decision was made, what (if anything) it supersedes, and whether it is still current."
+        )
+        return {"description": f"Provenance for {target}", "messages": [_user_msg(text)]}
+
+    if name == "recall_brain":
+        query = (arguments.get("query") or "").strip()
+        if not query:
+            raise ValueError("recall_brain requires 'query'.")
+        text = (
+            f"Brain matches for {query!r}:\n\n{tool_brain_recall({'query': query})}\n\n"
+            "Synthesize the prior art: what has already been decided or learned about this, and where it lives."
+        )
+        return {"description": f"Recall: {query}", "messages": [_user_msg(text)]}
+
+    raise ValueError(f"unknown prompt: {name}")
+
+
 TOOLS = [
     {
         "name": "brain_read",
@@ -307,7 +450,7 @@ def handle(msg: dict):
         proto = (msg.get("params") or {}).get("protocolVersion") or DEFAULT_PROTOCOL
         return _result(msg_id, {
             "protocolVersion": proto,
-            "capabilities": {"tools": {}},
+            "capabilities": {"tools": {}, "resources": {}, "prompts": {}},
             "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
         })
 
@@ -334,6 +477,42 @@ def handle(msg: dict):
             log(f"tool {name} error: {e}")
             return _result(msg_id, {"content": [{"type": "text", "text": f"Tool error: {e}"}], "isError": True})
         return _result(msg_id, {"content": [{"type": "text", "text": text}]})
+
+    if method == "resources/list":
+        cursor = (msg.get("params") or {}).get("cursor")
+        return _result(msg_id, list_resources(cursor))
+
+    if method == "resources/templates/list":
+        return _result(msg_id, list_resource_templates())
+
+    if method == "resources/read":
+        uri = (msg.get("params") or {}).get("uri") or ""
+        try:
+            return _result(msg_id, read_resource(uri))
+        except FileNotFoundError:
+            return _error(msg_id, -32002, f"Resource not found: {uri}")
+        except ValueError as e:
+            return _error(msg_id, -32602, str(e))
+        except Exception as e:
+            log(f"resources/read error: {e}")
+            return _error(msg_id, -32603, f"Internal error: {e}")
+
+    if method == "prompts/list":
+        listed = [{k: v for k, v in p.items()} for p in PROMPTS]
+        return _result(msg_id, {"prompts": listed})
+
+    if method == "prompts/get":
+        params = msg.get("params") or {}
+        name = params.get("name")
+        if name not in PROMPTS_BY_NAME:
+            return _error(msg_id, -32602, f"Unknown prompt: {name}")
+        try:
+            return _result(msg_id, get_prompt(name, params.get("arguments") or {}))
+        except ValueError as e:
+            return _error(msg_id, -32602, str(e))
+        except Exception as e:
+            log(f"prompts/get error: {e}")
+            return _error(msg_id, -32603, f"Internal error: {e}")
 
     if is_request:
         return _error(msg_id, -32601, f"Method not found: {method}")

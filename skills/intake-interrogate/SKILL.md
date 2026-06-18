@@ -2,8 +2,9 @@
 name: intake-interrogate
 description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Confidence-first: pre-fill from PRD + product.md; variable number of user turns — stop as soon as mandatory lock fields are concrete and doubts are cleared (no fixed question count; two answers can resolve many latent doubts). Q4 registry + Q9 design gates unchanged when they apply; **Q10 implementation closure** (VCS reference, authoritative delivery boundary, implementation stack) when the ambiguity gate in Q10 applies."
 type: rigid
+effort: high
 requires: [brain-write]
-version: 1.0.8
+version: 1.0.9
 preamble-tier: 2
 triggers:
   - "interrogate PRD"

@@ -120,7 +120,7 @@ def build_trace(task_id: str, brain: Path) -> dict:
             "spanId": _hex(f"forge:{task_id}:{i}:{e['marker']}", 16),
             "parentSpanId": root_span_id,
             "name": e["marker"],
-            "kind": 1,
+            "kind": 3 if e["marker"].startswith("P4.4-EVAL") else 1,  # CLIENT for GenAI eval spans, else INTERNAL
             "startTimeUnixNano": str(start),
             "endTimeUnixNano": str(end),
             "attributes": attrs,

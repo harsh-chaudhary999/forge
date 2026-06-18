@@ -24,6 +24,10 @@ The rule of thumb: **a workflow runs the automatable span *between* two human
 gates.** The human still runs the gate (approve the draft spec, sign off tech
 plans, approve the CSV, authorize the merge).
 
+For the spans marked **No** above — the ones that need a human *in the loop the
+whole time* (live adversarial council, parallel review, competing-hypothesis
+self-heal) — the right primitive is [Agent Teams](agent-teams.md), not workflows.
+
 ## Shipped: `/forge-council`
 
 `.claude/workflows/forge-council.js` — over a locked PRD it:

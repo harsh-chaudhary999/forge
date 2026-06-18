@@ -260,6 +260,15 @@ uninstall_claude_code() {
     done
     echo "  Removed Forge workflows from ~/.claude/workflows/"
   fi
+  # The brain MCP server may have been registered manually (see docs/brain-mcp.md):
+  #   claude mcp add forge-brain -- python3 ~/forge/tools/forge_brain_mcp.py
+  # The bundled .mcp.json goes away with the plugin dir above, but a manual registration
+  # would otherwise dangle, pointing at a deleted script. Best-effort removal (never fail uninstall).
+  if command -v claude >/dev/null 2>&1; then
+    if claude mcp remove forge-brain >/dev/null 2>&1; then
+      echo "  Removed forge-brain MCP registration"
+    fi
+  fi
 }
 
 # ── Main ─────────────────────────────────────────────────────────────────

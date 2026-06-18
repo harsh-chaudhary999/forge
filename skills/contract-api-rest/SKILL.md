@@ -2,8 +2,9 @@
 name: contract-api-rest
 description: "WHEN: Council has identified REST API conflicts across surfaces and needs a locked contract. Negotiates versioning strategy, endpoint shape, error codes, auth, rate limits, idempotency, and deprecation across all consumer teams."
 type: rigid
+effort: high
 requires: [brain-read]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "design REST API"

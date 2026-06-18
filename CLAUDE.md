@@ -75,6 +75,9 @@ conformant so skills load identically on every compliant host. Verify with:
 | Commands (21) | `commands/` |
 | Hook manifest (`hooks.json`) | `hooks/` |
 | Claude / git hook scripts (`.cjs`) | `.claude/hooks/` |
+| Dynamic workflows | `.claude/workflows/*.js` (e.g. `forge-council.js`) |
+| Brain MCP server (+ manifest) | `tools/mcp/forge_brain_mcp.py`, `.mcp.json` |
+| Eval tools (trajectory + OTel) | `tools/eval/` |
 | Brain (decisions) | `brain/` |
 | Seed product | `seed-product/` |
 | Platform docs (Claude Code) | `docs/platforms/` |

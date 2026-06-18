@@ -13,6 +13,12 @@ export const meta = {
 // args: { task_id: "<id>", brain?: "<brain root>" }
 const taskId = (args && args.task_id) || null
 const brain = (args && args.brain) || '~/forge/brain'
+// Brain paths may start with ~ (the operator home). The workflow runtime has no filesystem
+// access, but the subagents it spawns do — and the Read/Write tools want absolute paths. So
+// every agent prompt below carries this note telling the agent to expand ~ itself.
+const BRAIN_NOTE =
+  'NOTE: brain paths may begin with "~" (the operator home directory). Before any Read or Write, ' +
+  'expand "~" to an absolute path yourself (e.g. run `echo $HOME`) — the file tools require absolute paths.'
 if (!taskId) {
   log('forge-council: pass {task_id:"<id>"}. The locked PRD must exist at prds/<task_id>/prd-locked.md in the brain.')
   return { error: 'missing task_id' }
@@ -65,9 +71,10 @@ const SURFACES = [
 const surfaces = (await parallel(SURFACES.map((s) => () =>
   agent(
     `You are the ${s.key} surface in a Forge council. Read the locked PRD at ${prdPath} ` +
-    `and follow the Forge skill at skills/${s.skill}/SKILL.md. Produce this surface's reasoning: ` +
+    `and follow the Forge \`${s.skill}\` skill — invoke it by name via the Skill tool (it is installed as a plugin skill, not a file in this project's working directory). ` +
+    `Produce this surface's reasoning: ` +
     `responsibilities, the interfaces/data it OWNS, what it CONSUMES from other surfaces, risks, and open questions. ` +
-    `Be concrete and cite specifics from the PRD.`,
+    `Be concrete and cite specifics from the PRD. ${BRAIN_NOTE}`,
     { label: `surface:${s.key}`, phase: 'Surfaces', schema: SURFACE_SCHEMA }
   ).then((r) => ({ surface: s.key, ...r }))
 ))).filter(Boolean)
@@ -85,9 +92,9 @@ const surfacesJson = JSON.stringify(surfaces)
 const contracts = (await parallel(CONTRACTS.map((c) => () =>
   agent(
     `You negotiate the ${c.key} contract for a Forge council. Read the locked PRD at ${prdPath}, ` +
-    `follow skills/${c.skill}/SKILL.md, and reconcile against the surface reasonings: ${surfacesJson}. ` +
+    `follow the Forge \`${c.skill}\` skill (invoke it by name via the Skill tool), and reconcile against the surface reasonings: ${surfacesJson}. ` +
     `Propose the concrete contract (producer, consumers, shape) and list open questions. ` +
-    `If this contract is not relevant to the PRD, say so and return an empty shape.`,
+    `If this contract is not relevant to the PRD, say so and return an empty shape. ${BRAIN_NOTE}`,
     { label: `contract:${c.key}`, phase: 'Contracts', schema: CONTRACT_SCHEMA }
   ).then((r) => ({ key: c.key, ...r }))
 ))).filter(Boolean)
@@ -111,8 +118,8 @@ phase('Synthesize')
 const summary = await agent(
   `Synthesize a Forge shared-dev-spec DRAFT for task ${taskId} from the council outputs.\n\n` +
   `Surfaces: ${surfacesJson}\n\nContracts: ${JSON.stringify(contracts)}\n\nCross-check verdicts: ${JSON.stringify(verdicts)}\n\n` +
-  `Follow skills/council-multi-repo-negotiate/SKILL.md and skills/spec-freeze/SKILL.md for the section structure. ` +
-  `Write the result to ${taskDir}/shared-dev-spec.DRAFT.md (create the directory if needed; do NOT overwrite an existing shared-dev-spec.md). ` +
+  `Follow the Forge \`council-multi-repo-negotiate\` and \`spec-freeze\` skills (invoke them by name via the Skill tool) for the section structure. ` +
+  `${BRAIN_NOTE} Write the result to ${taskDir}/shared-dev-spec.DRAFT.md (create the directory if needed; do NOT overwrite an existing shared-dev-spec.md). ` +
   `At the top, add a frontmatter block with type: spec and status: DRAFT, and a "## Unresolved conflicts" section listing every conflict from the cross-check so a human can resolve them before spec-freeze. ` +
   `Return a short summary of what you wrote and the count of unresolved conflicts.`,
   { label: 'synthesize:draft-spec', phase: 'Synthesize' }

@@ -2,8 +2,9 @@
 name: dream-resolve-inline
 description: "TIMING: During active development (before PR). WHEN: eval reveals cross-service conflict — two services disagree on contract, data format, or behavior. Dreamer analyzes both sides and proposes resolution."
 type: rigid
+effort: high
 requires: [brain-read, brain-write]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "resolve a dream finding"

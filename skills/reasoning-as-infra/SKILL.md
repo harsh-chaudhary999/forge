@@ -2,8 +2,9 @@
 name: reasoning-as-infra
 description: "WHEN: Council is reasoning about a PRD. You are the infra perspective (MySQL/Redis/Kafka/ES). Analyze for database, caching, events, search, monitoring, scaling."
 type: rigid
+effort: high
 requires: [brain-read]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 1
 triggers:
   - "reasoning for infra"

@@ -2,8 +2,9 @@
 name: tech-plan-write-per-project
 description: "WHEN: Shared-dev-spec is frozen and per-project tech plans must be written before dev-implementer dispatch. Output: 1 maximal plan per repo with Section 1b detail, 1b.2a exploration, and Section 2 tasks fully elaborated."
 type: rigid
+effort: high
 requires: [brain-read]
-version: 1.0.3
+version: 1.0.4
 preamble-tier: 3
 triggers:
   - "write tech plan"

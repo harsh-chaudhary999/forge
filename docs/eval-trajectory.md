@@ -11,7 +11,7 @@ Output verdict and trajectory verdict are complementary: a feature can pass its
 scenarios (product GREEN) while the run took a corrupt path (trajectory RED), and
 vice versa. `dream-retrospect-post-pr` consumes both.
 
-Forge logs the richest delivery trajectory of any tool — every phase transition
+Forge logs a structured, per-phase delivery trajectory — every phase transition
 is in `conductor.log` — so it can score its own runs. This is the deterministic
 substrate an Agent-as-a-Judge builds on, not a replacement for it.
 
@@ -33,6 +33,13 @@ It parses `prds/<id>/conductor.log` and scores four dimensions (0–5):
 
 `verdict` is `RED` on broken ordering or RED eval, `GREEN` on a clean GREEN run,
 `YELLOW` otherwise. `--strict` exits 1 on RED (CI gate).
+
+> **Caveat — it audits the log, not the run.** `gate_adherence` measures whether
+> the conductor *logged* each phase marker, not whether the gate truly executed; a
+> run that skips a gate may also skip its marker. The trajectory score is only as
+> trustworthy as the conductor's logging discipline — treat a GREEN trajectory as
+> "the run *claims* a clean path," corroborated by (not a substitute for) the
+> product verdict from `eval-judge`.
 
 ## OpenTelemetry export
 

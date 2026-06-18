@@ -81,7 +81,10 @@ jobs:
           printf '%s\n' \
             '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' \
             '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
-            | python3 tools/forge_brain_mcp.py | python3 -c "import sys,json; rs=[json.loads(l) for l in sys.stdin if l.strip()]; assert rs[0]['result']['serverInfo']['name']=='forge-brain', rs; assert len(rs[1]['result']['tools'])==5, rs; print('OK: forge-brain MCP responds with 5 tools')"
+            '{"jsonrpc":"2.0","id":3,"method":"resources/list"}' \
+            '{"jsonrpc":"2.0","id":4,"method":"resources/templates/list"}' \
+            '{"jsonrpc":"2.0","id":5,"method":"prompts/list"}' \
+            | python3 tools/forge_brain_mcp.py | python3 -c "import sys,json; rs={json.loads(l)['id']:json.loads(l) for l in sys.stdin if l.strip()}; assert rs[1]['result']['serverInfo']['name']=='forge-brain', rs[1]; assert rs[1]['result']['capabilities']=={'tools':{},'resources':{},'prompts':{}}, rs[1]; assert len(rs[2]['result']['tools'])==5, rs[2]; assert 'resources' in rs[3]['result'], rs[3]; assert rs[4]['result']['resourceTemplates'][0]['uriTemplate']=='brain:///{path}', rs[4]; assert len(rs[5]['result']['prompts'])==3, rs[5]; print('OK: forge-brain MCP — 5 tools, resources+templates, 3 prompts')"
 
       - name: trajectory eval + OTel export syntax + smoke
         run: |
@@ -125,12 +128,48 @@ jobs:
       - name: Load post-commit hook (syntax)
         run: node --check .claude/hooks/post-commit.cjs
 
+      - name: forge-team-gates hook (syntax + behavior)
+        run: |
+          set -euo pipefail
+          node --check .claude/hooks/forge-team-gates.cjs
+          echo '{"hook_event_name":"TaskCompleted","teammate_name":"a","summary":"merged the PR"}' \
+            | node .claude/hooks/forge-team-gates.cjs
+          echo "OK: default mode allows (exit 0)"
+          T="$(mktemp -d)"; mkdir -p "$T/prds/demo"
+          printf '%s\n' '2026-06-19T10:00:00Z [P4.4-EVAL-PASS] task_id=demo outcome=GREEN' > "$T/prds/demo/conductor.log"
+          set +e
+          echo '{"hook_event_name":"TaskCompleted","teammate_name":"a","summary":"merged the PR"}' \
+            | FORGE_BRAIN="$T" FORGE_TEAM_GATES=strict node .claude/hooks/forge-team-gates.cjs
+          rc=$?; set -e
+          test "$rc" = "2"; echo "OK: strict blocks an unmerged ship claim (exit 2)"
+          test -f "$T/team-events.log"; echo "OK: audit log written"
+          rm -rf "$T"
+
       - name: Load remaining hooks (syntax)
         run: |
           set -e
           for f in pre-commit pre-merge commit-msg post-merge post-rewrite \
                     forge-install-hooks forge-worktree-cleanup post-pr-dreamer; do
             node --check ".claude/hooks/${f}.cjs"
+          done
+
+      - name: Load dynamic workflows (syntax)
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          # Workflow scripts run inside the dynamic-workflow runtime, which exposes globals
+          # (args, agent, parallel, pipeline, phase, log, budget) and wraps the body in an
+          # async function — so top-level await + return are valid only there. `node --check`
+          # on the raw file is unreliable (Node's ESM/CJS auto-detection masks errors with
+          # this export + top-level-await + return combo), so mirror the runtime wrapper.
+          for wf in .claude/workflows/*.js; do
+            echo "checking ${wf}"
+            node --check <(
+              printf 'async function __forge_wf__(args, agent, parallel, pipeline, phase, log, budget){\n'
+              sed 's/^export const /const /' "${wf}"
+              printf '\n}\n'
+            )
+            echo "OK: ${wf} parses"
           done
 
   verify-forge-task:

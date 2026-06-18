@@ -23,6 +23,12 @@ move to dedicated branches.
   root (path traversal refused). Bundled `.mcp.json` at the plugin root; register
   on any install with `claude mcp add forge-brain -- python3 tools/forge_brain_mcp.py`.
   See [`docs/brain-mcp.md`](docs/brain-mcp.md).
+  - **MCP resources + prompts** (server `v1.2.0`): every brain text file is also an
+    MCP **resource** (`brain:///<path>`, paginated, with a `brain:///{path}`
+    template) and three **prompts** (`task_brief`, `decision_provenance`,
+    `recall_brain`) embed the relevant brain content inline. `initialize` now
+    advertises `capabilities: { tools, resources, prompts }`. Still read-only,
+    still brain-confined.
 - **Agent Skills standard conformance check** (`tools/check_skill_standard.py`),
   run in CI; OKF + Memory-tool brain conventions (`index.md`/`log.md`/`type:`).
 - **Trajectory eval + OpenTelemetry export** (`tools/eval/`):
@@ -41,6 +47,36 @@ move to dedicated branches.
   them, and writes a `shared-dev-spec.DRAFT.md` to the brain (spec-freeze stays a
   human gate). `install.sh` copies workflows to `~/.claude/workflows/`. Mapping of
   conductor phases to workflows: [`docs/workflows.md`](docs/workflows.md).
+- **Agent Teams mapping** ([`docs/agent-teams.md`](docs/agent-teams.md)): documents
+  which conductor spans suit Claude Code [agent teams](https://code.claude.com/docs/en/agent-teams)
+  (the human-in-the-loop counterpart to workflows — live adversarial council, parallel
+  review, competing-hypothesis self-heal), how Forge's `agents/` subagents serve as
+  teammate roles, and how the `TeammateIdle`/`TaskCreated`/`TaskCompleted` hooks map
+  onto Forge's HARD-GATEs. No team config is shipped (team config is auto-generated and
+  must not be pre-authored).
+  - **`forge-team-gates.cjs`** (registered in `hooks/hooks.json` for all three team
+    events): an **audit** layer (append-only team-events log in the brain — never
+    blocks) plus an **opt-in** strict layer (`FORGE_TEAM_GATES=strict`) that blocks a
+    `TaskCompleted` claiming a merge/ship with no `[P5…]` brain marker, and a
+    `TeammateIdle` on a `[P4.4-EVAL-FAIL]`. Inert outside an experimental agent team.
+- **`effort: high` frontmatter** on the 14 reasoning-heavy skills (council surfaces
+  ×4, contracts ×5, `council-multi-repo-negotiate`, `tech-plan-write-per-project`,
+  `intake-interrogate`, `dream-retrospect-post-pr`, `dream-resolve-inline`) — uses the
+  2026 skill `effort` field to raise reasoning depth where it pays off; patch-bumped.
+
+### Fixed
+- **`/forge-council` portability**: subagents now invoke the `reasoning-as-*` /
+  `contract-*` / `spec-freeze` skills **by name** (Skill tool) instead of by relative
+  `skills/<x>/SKILL.md` path (which doesn't exist in a user's project), and every
+  file-touching prompt now expands `~` to an absolute path before Read/Write.
+- **Workflow CI coverage**: `.github/workflows/forge-hooks.yml` now syntax-checks
+  `.claude/workflows/*.js` by mirroring the runtime's async wrapper (raw `node --check`
+  is unreliable for the `export` + top-level-`await`/`return` form).
+- **Uninstall**: best-effort `claude mcp remove forge-brain` so a manually-registered
+  brain MCP server doesn't dangle at a deleted script.
+- **OTel export**: eval spans now emit `kind: CLIENT` (GenAI convention) instead of
+  INTERNAL. Trajectory analyzer drops an unreachable scoring branch and gains an
+  explicit "audits the log, not the run" caveat.
 
 ### Changed
 - **Claude-only build.** `scripts/install.sh`, `scripts/verify-forge-plugin-install.sh`,

@@ -21,6 +21,29 @@ no agent framework, so it does not violate D5/D13.
 
 All tools are confined to the brain root — a path that escapes it (e.g. `../../etc/passwd`) is refused.
 
+## Resources & Prompts
+
+Beyond tools, the server exposes the brain over the two other MCP primitives (both
+read-only, both confined to the brain root):
+
+**Resources** — every brain text file (`.md/.csv/.log/.json/.txt/.tsv`) is listed as an
+MCP resource with the URI `brain:///<relative-path>`, so a client can browse and read
+the brain as resources, not only by calling tools. `resources/list` paginates (200 per
+page via an offset `cursor`); `resources/templates/list` advertises the
+`brain:///{path}` template; `resources/read` returns a file's text (a URI that escapes
+the brain root yields a `-32002` resource-not-found, same guard as the tools).
+
+**Prompts** — ready-made questions that embed the relevant brain content inline, so a
+one-shot query needs no tool round-trips:
+
+| Prompt | Argument | What it embeds |
+|---|---|---|
+| `task_brief` | `task_id` | The task's locked PRD + `shared-dev-spec` (frozen, else `.DRAFT`) + conductor status, then asks for a scope/contracts/status summary. |
+| `decision_provenance` | `target` | A decision's frontmatter + git history (`brain_why`), then asks why it was made and what it superseded. |
+| `recall_brain` | `query` | Matching brain lines (`brain_recall`), then asks for a synthesis of prior art. |
+
+`initialize` advertises `capabilities: { tools, resources, prompts }`.
+
 ## Brain root resolution
 
 First match wins: `$FORGE_BRAIN` → `$FORGE_BRAIN_PATH` → `~/forge/brain`.
@@ -44,6 +67,12 @@ into the plugin cache by `install.sh`), which Claude Code auto-discovers when th
 plugin is enabled as a marketplace plugin. It runs
 `python3 ${CLAUDE_PLUGIN_ROOT}/tools/mcp/forge_brain_mcp.py`.
 
+> **In-repo caveat:** `${CLAUDE_PLUGIN_ROOT}` is defined **only** when Claude Code
+> loads this `.mcp.json` as a *plugin* manifest. If you open the Forge repo
+> directly, the same file is read as a *project-scoped* MCP config, the variable is
+> undefined, and the server won't start. For in-repo development, register it
+> manually with the `claude mcp add` command above (pointing at your clone).
+
 ## Verify it works
 
 ```bash
@@ -66,3 +95,8 @@ a `tools/list` result naming the five tools above. Diagnostics go to **stderr**;
   plugin adds no runtime package.
 - **Pairs with the brain's OKF layout.** `brain_list` + `index.md` give cheap
   progressive disclosure; `brain_why` reads the git history that `log.md` narrates.
+- **`brain_recall` here is plain substring search, not the skill.** This tool does a
+  case-insensitive line scan over the brain; it is intentionally simpler than the
+  [`brain-recall`](../skills/brain-recall/SKILL.md) skill's hybrid retrieval
+  (grep + tags + product/project filtering). Use it to locate files cheaply, then
+  `brain_read` them — don't assume ranked-relevance parity with the skill.

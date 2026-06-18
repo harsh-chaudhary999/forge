@@ -2,8 +2,9 @@
 name: reasoning-as-app-frontend
 description: "WHEN: Council is reasoning about a PRD. You are the app perspective (React Native/Kotlin/Swift). Analyze the PRD for mobile UI, API endpoints, offline-first patterns, native constraints, push notifications, device storage, version compatibility, sync conflicts, and platform-specific data persistence."
 type: rigid
+effort: high
 requires: [brain-read]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 1
 triggers:
   - "reasoning for app frontend"

@@ -325,7 +325,9 @@ Role names (`backend-api`, `frontend`, …) must match the `--repos <role>:<path
 - **No product code changes required** to adopt Forge — you describe topology in **`product.md`** / workspace flow.
 - **No third-party agent frameworks** in the plugin’s own rules (D5).
 - **Auditable brain** — git-backed markdown for decisions, specs, scans, QA, eval.
-- **Brain MCP server** — a read-only [MCP](https://modelcontextprotocol.io) server (`tools/mcp/forge_brain_mcp.py`, stdlib-only) exposes the brain (`brain_read`/`recall`/`why`/`conductor_status`) to any agent, no Forge session required. See [`docs/brain-mcp.md`](docs/brain-mcp.md).
+- **Brain MCP server** — a read-only [MCP](https://modelcontextprotocol.io) server (`tools/mcp/forge_brain_mcp.py`, stdlib-only) exposes the brain to any agent, no Forge session required: tools (`brain_read`/`recall`/`why`/`conductor_status`), the brain as MCP **resources** (`brain:///<path>`), and ready-made **prompts** (`task_brief`, …). See [`docs/brain-mcp.md`](docs/brain-mcp.md).
+- **Dynamic workflows + agent teams** — `/forge-council` runs the gate-free council span as a [Dynamic Workflow](docs/workflows.md); [agent teams](docs/agent-teams.md) cover the human-in-the-loop spans (live adversarial council, parallel review, competing-hypothesis self-heal).
+- **Two-axis eval** — the product verdict (`eval-judge`) plus a deterministic **trajectory** verdict (gate adherence, phase ordering, heal efficiency) with OpenTelemetry export for Langfuse / Braintrust / Phoenix. See [`docs/eval-trajectory.md`](docs/eval-trajectory.md).
 - **Anti-pattern preambles** on discipline skills — rationalization tables before workflows.
 - **Iron laws** on rigid skills — explicit non-negotiables (TDD, eval gate, intake, etc.).
 - **Documented edge cases & escalation** — `BLOCKED`, `NEEDS_CONTEXT`, `NEEDS_COORDINATION`, `NEEDS_INFRA_CHANGE`, `DONE_WITH_CONCERNS` across skills.

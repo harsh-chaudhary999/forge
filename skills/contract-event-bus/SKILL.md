@@ -2,8 +2,9 @@
 name: contract-event-bus
 description: "WHEN: Council has identified event bus conflicts across services and needs a locked contract. Negotiates topic schema, versioning, idempotency, ordering, retention, consumer groups, and dead-letter queues before any producer or consumer is written."
 type: rigid
+effort: high
 requires: [brain-read]
-version: 1.0.0
+version: 1.0.1
 preamble-tier: 3
 triggers:
   - "design event contract"

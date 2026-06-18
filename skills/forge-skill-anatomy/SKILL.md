@@ -2,7 +2,7 @@
 name: forge-skill-anatomy
 description: "WHEN: You are writing or reviewing a Forge skill and need the canonical template, rigor checklist, or CSO guidelines."
 type: reference
-version: 2.0.4
+version: 2.1.0
 preamble-tier: 1
 triggers:
   - "writing a new skill"
@@ -36,6 +36,48 @@ hooks:
     - destructive-command-check
 ---
 ```
+
+## Progressive Disclosure (HARD rule — Agent Skills standard)
+
+The [Agent Skills standard](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview)
+is **three-level**, and a SKILL.md that ignores it pays the full token cost on every
+invocation:
+
+| Level | What | Loaded |
+|---|---|---|
+| 1 | `name` + `description` frontmatter | always (cheap) |
+| 2 | **SKILL.md body** — the operational contract | when the skill triggers |
+| 3 | **`reference/*.md`** bundled files | only when the body points the agent to one |
+
+**Rules:**
+
+- **Keep SKILL.md ≤ ~400 lines.** It holds the operational contract: anti-pattern
+  preamble, iron law, red flags, the decision/workflow logic, edge-case **summary**,
+  and pointers. It is *behavior*, not a manual.
+- **Move catalogs and depth to `reference/`.** API/command references, exhaustive
+  examples, long detection/recovery code, per-target appendices → one or more files
+  under the skill's `reference/` directory, linked from the body ("full detail in
+  `reference/<file>.md`"). The agent reads the one it needs — this is a capability
+  *gain*: you can go far deeper in a reference file than a flat SKILL.md ever allowed,
+  at zero cost until it's needed.
+- **Never delete to slim.** Relocation only. If you carve a SKILL.md, account for the
+  lines (`wc -l` old vs new body + reference files) so nothing is lost.
+- **Shared, repeated prose lives once under `skills/_shared/`.** The blocking
+  human-input convention is [`skills/_shared/human-input.md`](../_shared/human-input.md);
+  driver families share a contract file. Point to it — do not paste the boilerplate
+  into every skill (the `_` prefix marks a non-skill support directory).
+- **Ritual is by type.** The full Anti-Pattern + Iron Law + Red Flags ritual is
+  **required for `rigid`** skills (D25). `reference`/lookup skills do **not** carry an
+  Iron Law or Red Flags — keep them lean.
+
+### `triggers` and `allowed-tools` status
+
+- `description` (with the CSO rules below) is the **only** field the host uses to route
+  invocation. `triggers` is **documentation of authoring intent**, not an invocation
+  signal — keep it short and accurate or omit it; do not let it drift from `description`.
+- `allowed-tools` documents the skill's tool contract and is read by
+  `tools/dev/lint_skill_allowed_tools.py` (rigid skills must declare it). Treat it as the
+  enforceable allowlist it is becoming under the standard — keep it truthful.
 
 ### CSO (Claude Search Optimization) for Descriptions
 

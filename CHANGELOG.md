@@ -79,6 +79,17 @@ move to dedicated branches.
   explicit "audits the log, not the run" caveat.
 
 ### Changed
+- **Progressive-disclosure refactor (begun).** `forge-skill-anatomy` (v2.0.4→2.1.0)
+  now mandates the Agent Skills three-level model: SKILL.md ≤ ~400 lines (operational
+  contract), catalogs/depth relocated to a skill's `reference/*.md` (loaded on demand),
+  shared boilerplate under `skills/_shared/`, ritual-by-type, and a `triggers`/
+  `allowed-tools` status note. New shared source of truth:
+  `skills/_shared/human-input.md` (replaces the multi-host human-input block repeated
+  across 21 skills). First skill refactored to the new standard:
+  **`eval-driver-android-adb`** (v1.0.3→1.1.0) — SKILL.md **1826→219 lines** with the
+  API catalog, edge-case code, and UIAutomator guide moved verbatim into
+  `reference/{adb-driver-api,edge-cases-and-lifecycle,uiautomator-guide}.md`
+  (line-accounted, zero content loss) and multi-host prose removed.
 - **Claude-only build.** `scripts/install.sh`, `scripts/verify-forge-plugin-install.sh`,
   and `scripts/forge-doctor.sh` now target Claude Code only. `install.sh` rejects
   `--platform` values other than `claude-code`.

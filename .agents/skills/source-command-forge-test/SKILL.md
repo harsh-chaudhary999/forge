@@ -1,0 +1,24 @@
+---
+name: "source-command-forge-test"
+description: "Meta — invoke forge-self-test against the bundled seed product to validate this Forge repo’s skills and pipeline wiring (not your production product)."
+---
+
+# source-command-forge-test
+
+Use this skill when the user asks to run the migrated source command `forge-test`.
+
+## Command Template
+
+Invoke the **`forge-self-test`** skill to run the **Forge repository self-test** only.
+
+This exercises the **synthetic seed** product (**`seed-product/`**, seed PRDs under **`seed/prds/`**) to validate: intake → council → tech plans → build → eval → review → PR coordination **as implemented in this plugin repo**.
+
+Reports: **pass/fail per phase**, timing, any skill invocation or output anomalies.
+
+<HARD-GATE>
+Do NOT confuse **`/forge-test`** with **`/forge`** — **`/forge-test`** validates **Forge itself**; **`/forge`** runs **your** task through **`conductor-orchestrate`** against **your** brain PRD and **`product.md`**.
+</HARD-GATE>
+
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns, **no defensive downstream-gate narration** mid-elicitation — **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**); **one blocking affordance per unrelated fork** (no bundled prose obligations); **no dual prompts** — **never** **`AskQuestion`** / **Questions** widget on **one** topic **and** a **long markdown question** on **another** in the **same** message; **no chat–widget duplicate** — long lists / same question body **once** in **chat**; **`AskQuestion`** = **short** title + **options** only (**`docs/forge-one-step-horizon.md`** **Chat vs `AskQuestion` / Questions widget**); **headline / first § = immediate next artifact** — **not** *What unlocks machine eval*, **`qa/semantic-automation.csv`**, or Step −1 **as the main heading** when **manual CSV** / **`qa-manual-test-cases-from-prd`** / **`qa-prd-analysis`** is still the next gate (**`docs/forge-one-step-horizon.md`** **Headline = immediate next step**); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
+
+**Forge plugin scope:** This repo + **`seed-product`**; not a substitute for product-specific **`/forge`**.

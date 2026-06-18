@@ -1,0 +1,781 @@
+---
+name: forge-glossary
+description: "WHEN: You encounter an unfamiliar Forge term and need its canonical definition."
+type: reference
+version: 1.0.13
+preamble-tier: 1
+triggers:
+  - "what does X mean"
+  - "forge glossary"
+  - "define forge term"
+  - "forge terminology"
+  - "product terminology"
+  - "terminology.md"
+  - "per-task terminology"
+allowed-tools:
+  - Bash
+  - Read
+  - AskUserQuestion
+---
+# Forge Glossary
+
+## Human input (all hosts)
+
+Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**) uses the same **host mapping** as all rigid skills — **`skills/using-forge/SKILL.md`** **Blocking interactive prompts**. See the term **Blocking interactive prompt** below.
+
+### Blocking interactive prompt
+
+**Definition:** The host-specific mechanism that gathers a human answer without advancing until answered — canonical skill tool **`AskUserQuestion`** (see **`allowed-tools`**); **Cursor** maps to **`AskQuestion`**; hosts **without** that tool use **numbered choices in chat + stop**. Full host table: **`using-forge`** **Blocking interactive prompts**. Applies to **every** Forge-supported IDE, not one vendor.
+
+**Cross-References:** **`using-forge`** (**Interactive human input**, **Stage-local questioning**).
+
+### Product terminology (`terminology.md`) — not this glossary
+
+**Definition:** The **per-task** product term sheet at **`~/forge/brain/prds/<task-id>/terminology.md`** (table of **canonical** names, disallowed variants, **open_doubts** in frontmatter). Authored in **intake** / aligned at **council**; used by **planning**, **QA**, and **assertion** text so **human-facing** copy matches **contracts** and the **PRD lock**.
+
+**Usage context:** This **forge-glossary** skill documents **Forge plugin** and **pipeline** terms only. For **branded** or **product** vocabulary, read **`terminology.md`** and [docs/terminology-review.md](../../docs/terminology-review.md) — not this file.
+
+**Cross-References:** [intake-interrogate](../intake-interrogate/SKILL.md), [council-multi-repo-negotiate](../council-multi-repo-negotiate/SKILL.md), [docs/terminology-review.md](../../docs/terminology-review.md), [docs/templates/terminology.md](../../docs/templates/terminology.md).
+
+### One-step horizon (horizon narration)
+
+**Definition:** In **assistant dialogue** (not static README/commands), name **only** the **immediate** next prerequisite, artifact, or skill — or a downstream step when the **current** question truly depends on it, or when the human asked “what comes next.” Do **not** preemptively enumerate full pipelines (council → tech plans → merge → …, or product-specific chains) during intake, council, planning, QA, or other **upstream** gates.
+
+**Usage Context:** Reduces confusion when the user is mid-interrogation and the model front-loads later phases. Complements **Stage-local questioning** in **`using-forge`**.
+
+**What It's NOT:** Not a ban on **documentation** — `README.md`, `commands/forge.md`, and brain templates may list full order. Not “never mention a later stage” — only **don’t** narrate it **before** the user is on that gate without cause.
+
+**Cross-References:** **`using-forge`** (**Horizon narration**, **Multi-question elicitation** item 5). Canonical doc: **`docs/forge-one-step-horizon.md`** — also **No defensive downstream-gate narration (repo-wide)**.
+
+### Defensive downstream-gate narration
+
+**Definition:** Assistant prose whose **primary job** is to explain why a **later** gate or artifact does not exist yet (*semantic manifest isn’t ready yet*, *orphan automation*, pasting a full **State 4b** chain, merge previews) **while** the human is still answering **earlier** phase questions.
+
+**Usage Context:** **Forbidden** as default filler **between** sequential elicitation turns — **any** Forge phase (**intake**, **`qa-prd-analysis`**, council, planning, …). **Allowed:** static **`commands/`** / **`README`** / **`SKILL.md`** tables; **skip-ahead refusal** (first missing prerequisite + next action); user **explicitly** asked *why* or *full order*.
+
+**Cross-References:** **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**; **`using-forge`** **Multi-question elicitation** items **7–8**.
+
+### Bundled unrelated decisions (example: “bundled intake”)
+
+**Definition:** One assistant message uses **one** **blocking interactive** affordance (e.g. **`AskQuestion`** for a single fork) while treating **other** needle-moving choices as **prose** *“also answer…”* without their own **blocking** turn — or pastes **phase-specific** waiver/roadmap copy from a **later** gate — or stacks **two different primaries** (e.g. **`Questions`** widget for **task-id** approval **and** a **long markdown** **Q1** checklist in the **same** message). **Intake example:** **task-id** modal while Q9 design authority, net-new vs reuse, or Figma locks appear **only** in prose in the same turn.
+
+**Usage Context:** Violates **`using-forge`** **Multi-question elicitation** item **6**. Correct shape: **one fork per turn** (or a **Confirm/Correct** batch only where the active skill allows).
+
+**Cross-References:** **`docs/forge-one-step-horizon.md`** **No bundled unrelated decisions**; **`commands/intake.md`**; **`intake-interrogate`**.
+
+### Question-forward elicitation (no reference-doc preface mid-answer)
+
+**Definition:** In **live chat**, when the next message’s **job** is to get **one** human answer, the assistant **does not** prefix with what **`commands/`** or **named skills** do, which **gates** are open, or which **later** artifacts do not exist — unless the user **asked** for status. **Does not** paste **defensive downstream-gate** essays between normal Q→Q turns (**forge-one-step-horizon** **No defensive downstream-gate narration**). **Does not** suffix with *not ready for …* / *needs … first* unless that is the **immediate** blocker or the user asked. Reference material stays in **`commands/`** and **README**.
+
+**Cross-References:** **`using-forge`** **Multi-question elicitation** items **7**–**8**; **`docs/forge-one-step-horizon.md`** **Question-forward elicitation** and **No defensive downstream-gate narration (repo-wide)**.
+
+---
+
+## Pipeline Stages
+
+### Intake
+
+**Definition:** The first non-skippable phase where a PRD is interrogated through 8 structured questions that lock scope, success criteria, constraints, and cross-service boundaries. Produces a locked PRD artifact.
+
+**Usage Context:** Triggered at the start of every Forge run. The conductor invokes `forge-intake-gate` to execute intake. Output is immutable — no scope changes after intake without restarting the pipeline.
+
+**What It's NOT:** Not a casual discussion or brainstorm. Not optional. Not a place to add features mid-interview. Not informal — every answer is logged in the brain with provenance (who answered, when, why that interpretation).
+
+**Cross-References:** Enforced by `forge-intake-gate` (HARD-GATE). Output feeds into `Council`. Related to PRD lock.
+
+---
+
+### Council
+
+**Definition:** Multi-surface contract negotiation where 4 domain surfaces (backend, web frontend, app frontend, infrastructure) reason about the locked PRD and agree on 5 contracts (REST APIs, event bus, cache, database schema, search). Produces the `shared-dev-spec`.
+
+**Usage Context:** Runs after intake. Each surface reasons independently from its domain perspective, then surfaces negotiate compatibility. Results in a single canonical spec that all repos follow. Cannot proceed to build until council produces a frozen spec.
+
+**What It's NOT:** Not a debate where one surface "wins." Not technical design — it's contract negotiation (interfaces, not implementation). Not optional; all 4 surfaces must participate. Not quick — requires disciplined negotiation across multiple services.
+
+**Cross-References:** Enforced by `forge-council-gate` (HARD-GATE). Uses `reasoning-as-backend`, `reasoning-as-web-frontend`, `reasoning-as-app-frontend`, `reasoning-as-infra`. Output is the `shared-dev-spec`. Involves contract skills: `contract-api-rest`, `contract-event-bus`, `contract-cache`, `contract-schema-db`, `contract-search`.
+
+---
+
+### Spec Freeze
+
+**Definition:** Immutable lock on `shared-dev-spec` after council completes. Changes are not allowed without full re-negotiation through council. Signals transition from design to implementation.
+
+**Usage Context:** Invoked via `spec-freeze` skill after council concludes. Once frozen, the spec becomes the single source of truth for all tasks in `Tech Plan`. Any surface discovering a conflict during build must escalate (not proceed).
+
+**What It's NOT:** Not a soft freeze. Not a guideline. Not flexible to "quick fixes." Once frozen, the spec cannot be modified by individual repos or developers — it requires re-opening council.
+
+**Cross-References:** Output of `Council`. Input to `Tech Plan`. Related to D24 (HARD-GATE discipline).
+
+---
+
+### Tech Plan
+
+**Definition:** Per-project breakdown of the `shared-dev-spec` into bite-sized implementation tasks (2–5 minutes each), with exact code snippets and exact commands. One tech plan per repository.
+
+**Usage Context:** Generated after spec freeze via `tech-plan-write-per-project`. Each task is atomic, measurable, and follows a standard format: description, code, commands, success criteria. Dev-implementer consumes these tasks sequentially in isolated worktrees.
+
+**What It's NOT:** Not a high-level roadmap. Not aspirational. Not flexibility for developers to improvise. Each task has exact code and commands — deviation is a red flag requiring escalation.
+
+**Cross-References:** Generated from `shared-dev-spec`. Consumed by `Build`. Related to D15 (TDD pressure scenarios).
+
+---
+
+### Build
+
+**Definition:** TDD implementation phase where `dev-implementer` subagent executes each task from the tech plan in an isolated worktree, writing tests first, then code. Produces code ready for review.
+
+**Usage Context:** Triggered after tech plan is complete. Dev-implementer is dispatched once per task. Each task runs in a fresh git worktree (D30) with no shared state. Reports status (DONE, DONE_WITH_CONCERNS, NEEDS_CONTEXT, BLOCKED) at task completion.
+
+**What It's NOT:** Not exploratory development. Not "let's see what works." Not a place to refactor specs. Not allowed to skip TDD — `forge-tdd` is a HARD-GATE.
+
+**Cross-References:** Implements tasks from `Tech Plan`. Enforced by `forge-tdd` (HARD-GATE). Output goes to `Review`. Related to `worktree-per-project-per-task` (D30).
+
+---
+
+### Eval
+
+**Definition:** End-to-end product test that brings up the full stack (all services), executes evaluation scenarios (user journeys, cross-service flows), and verifies critical success criteria. Produces a verdict (GREEN, YELLOW, RED).
+
+**Usage Context:** Runs after code is merged. Multiple eval drivers coordinate: API (HTTP), database (MySQL), cache (Redis), event bus (Kafka), search (Elasticsearch), web UI (Chrome DevTools Protocol), mobile (XCTest, ADB). All drivers report results to `eval-judge` which renders a verdict.
+
+**What It's NOT:** Not unit testing — it's integration testing at scale. Not optional; all critical scenarios must pass. Not local — assumes full multi-service stack is running. Not quick fixes during eval — failures require escalation to `self-heal` loop.
+
+**Cross-References:** Enforced by `forge-eval-gate` (HARD-GATE). Uses eval drivers: `eval-driver-api-http`, `eval-driver-db-mysql`, `eval-driver-cache-redis`, `eval-driver-bus-kafka`, `eval-driver-search-es`, `eval-driver-web-cdp`, `eval-driver-ios-xctest`, `eval-driver-android-adb`. Output feeds into `Self-Heal` (RED verdict) or `Review` (GREEN/YELLOW verdict).
+
+---
+
+### Semantic eval path
+
+**Definition:** The **Forge** machine-eval path: **`qa/semantic-automation.csv`** executed to produce **`qa/semantic-eval-manifest.json`** + **`qa/semantic-eval-run.log`** (**CSV execution results**) — NL-first steps + **DependsOn** DAG. Orchestrated by **`qa-semantic-csv-orchestrate`** / **`tools/run_semantic_csv_eval.py`**. **`eval-judge`** reads manifest + **`semantic-eval-run.log`**.
+
+**Usage Context:** Gates **`verify_forge_task.py`**, **`review-readiness`**, **`prompt-submit-gates`** (**`[P4.0-SEMANTIC-EVAL]`** / **`[P4.4-EVAL-GREEN] path=semantic`**). Self-heal uses **`semantic-eval-run.log`** JSON lines as primary evidence on RED — not driver tables.
+
+**Cross-References:** [docs/semantic-eval-csv.md](../../docs/semantic-eval-csv.md), [docs/forge-task-verification.md](../../docs/forge-task-verification.md), **`qa-semantic-csv-orchestrate`**, **`eval-judge`** § Semantic path.
+
+---
+
+### semantic-automation.csv
+
+**Definition:** Task-local CSV under **`~/forge/brain/prds/<task-id>/qa/semantic-automation.csv`** defining semantic automation steps (**Id**, **Surface**, **Intent**, **DependsOn**, …) per [docs/semantic-eval-csv.md](../../docs/semantic-eval-csv.md). Validated by **`tools/verify/semantic_csv.py`**.
+
+**What It's NOT:** Not **`manual-test-cases.csv`** (human TMS-style acceptance).
+
+---
+
+### semantic-eval-manifest.json
+
+**Definition:** JSON under **`~/forge/brain/prds/<task-id>/qa/semantic-eval-manifest.json`** recording **`schema_version`**, **`task_id`**, **`kind`** (e.g. **`semantic-csv-eval`**), **`outcome`** (**`pass`** | **`fail`** | **`yellow`**), **`recorded_at`**. **Required** for machine verification. **`semantic-eval-run.log`** holds per-step JSON lines for the run.
+
+---
+
+### [P4.0-QA-CSV]
+
+**Definition:** `conductor.log` marker logged after `~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv` has ≥1 approved row and Step 7 approval is granted in `qa-manual-test-cases-from-prd`. Format: `[P4.0-QA-CSV] task_id=<id> rows=<n> approved=yes`. When logging `skipped=not_required`, it is only valid on partial runs (`/plan`, `/build`, etc.) when `forge_qa_csv_before_eval` is `false`/unset in `product.md`. **Never** log `skipped=not_required` on a full `/forge` run.
+
+**Prerequisite for:** `[P4.0-SEMANTIC-EVAL]` must come after this marker. `conductor-orchestrate` State 4b enforces the ordering.
+
+**Cross-References:** `qa-manual-test-cases-from-prd`; `docs/conductor-log-format.md`; `conductor-orchestrate` State 4b step 0.
+
+---
+
+### [P4.0-SEMANTIC-EVAL]
+
+**Definition:** **`conductor.log`** marker logged after valid **`qa/semantic-eval-manifest.json`** exists on disk — **State 4b** machine-eval gate. **`qa/semantic-eval-run.log`** is the per-step **CSV execution trace**; commit it with the manifest whenever the runner produced it. Parsed by **`prompt-submit-gates.cjs`** (**`GATE_PATTERNS.SEMANTIC_EVAL`**).
+
+---
+
+### [P4.0-TDD-RED]
+
+**Definition:** `conductor.log` marker logged after TDD RED phase is confirmed per repo — failing tests have been written and watched fail before any production implementation code is committed. Format: `[P4.0-TDD-RED] task_id=<id> repo=<role> test_files=<list> red_confirmed=yes`. One marker per repo involved in the task.
+
+**Prerequisite for:** `[P4.1-DISPATCH]` — no production feature code dispatched until RED is confirmed.
+
+**Written by:** `forge-tdd` Output section (per the skill's Output instruction).
+
+**Cross-References:** `forge-tdd` § Output; `forge-verification` § Phase Authority Check; `conductor-orchestrate` State 4b step 2.
+
+---
+
+### [P4.2-DESIGN-PARITY]
+
+**Definition:** `conductor.log` marker logged after design parity check completes per repo during Phase 4.2 Review. Format: `[P4.2-DESIGN-PARITY] task_id=<id> repo=<role> reviewer=design-implementation-reviewer|figma-design-sync|skipped result=PASS|FAIL|SKIP`. Only written when `design_new_work: yes` and the repo is `web` or `app` (no `design_waiver: prd_only`).
+
+**When `result=SKIP`:** Harness not available — human sign-off required before advancing to Phase 4.3.
+
+**Cross-References:** `conductor-orchestrate` § Phase 4.2; `docs/conductor-log-format.md`.
+
+---
+
+### semantic-csv-eval (`kind`)
+
+**Definition:** Value for **`kind`** in **`semantic-eval-manifest.json`** when the manifest describes **semantic CSV** automation. **`verify_forge_task.py`** expects **`qa/semantic-automation.csv`** when this **`kind`** is set.
+
+---
+
+### Self-Heal
+
+**Definition:** Automated fault-finding and repair loop triggered by a RED eval verdict. Sequences: locate fault → triage → fix → verify. Max 3 retries before escalation to human.
+
+**Usage Context:** When eval returns RED, self-heal is invoked. `self-heal-locate-fault` identifies which service failed, `self-heal-triage` classifies the failure, `self-heal-systematic-debug` repairs, then eval re-runs. If 3 retries fail, escalates (BLOCKED).
+
+**What It's NOT:** Not a blanket retry mechanism. Not allowed to modify the spec. Not permitted to work around failures — must find root cause. Not infinite retries — capped at 3 by `self-heal-loop-cap`.
+
+**Cross-References:** Triggered by RED eval verdict. Uses `self-heal-locate-fault`, `self-heal-triage`, `self-heal-systematic-debug`, `self-heal-loop-cap`. Can escalate to `Review` after 3 retries fail.
+
+---
+
+### Review
+
+**Definition:** Two-stage code quality gate. First stage: `spec-reviewer` verifies implementation matches `shared-dev-spec` line-by-line in actual code. Second stage: `code-quality-reviewer` checks 8-point quality framework, performance, security, and observability.
+
+**Usage Context:** Runs after eval passes (GREEN or YELLOW). Both reviewers read actual code (D14: trust code), not reports. Produces APPROVED or CHANGE_REQUESTED. Required before PR merge.
+
+**What It's NOT:** Not a formality. Not allowed to approve without reading code. Not a place to nitpick style — only substantial quality and spec compliance. Not optional; all PRs must pass both stages.
+
+**Cross-References:** Triggered by passing eval. Enforced by `forge-trust-code` (HARD-GATE). Uses spec-reviewer and code-quality-reviewer subagents. Output feeds into `PR Set` merge coordination.
+
+---
+
+### Dream
+
+**Definition:** Post-merge retrospective where the `dreamer` subagent scores decisions, extracts patterns, and writes learnings to the `brain`. Captures what worked, what failed, and why.
+
+**Usage Context:** Runs after all PRs in the `PR Set` are merged and feature is live. Dreamer reviews eval results, conflict resolutions, code review feedback, and produces structured learnings. These learnings inform future PRD interpretations and skill enhancements.
+
+**What It's NOT:** Not a blame session. Not informal chat. Not optional — every shipped feature produces brain artifacts. Not skipped even for "small" features.
+
+**Cross-References:** Triggered after `PR Set` merge. Uses `dream-retrospect-post-pr` skill. Outputs to `brain` via `brain-write`. Related to `brain-recall` for future pattern matching.
+
+---
+
+### PR Set
+
+**Definition:** Coordinated set of pull requests across multiple repositories that must be merged in dependency order (services that others depend on merge first). Ensures cross-service compatibility during merge.
+
+**Usage Context:** After review passes, all PRs are staged as a `PR Set`. `pr-set-coordinate` creates all PRs simultaneously, then `pr-set-merge-order` determines merge sequence. Merges proceed in order; downstream repos can only merge after dependencies are live.
+
+**What It's NOT:** Not independent per-repo PRs. Not "merge whenever." Not allowed to reorder without service team sign-off. Not skipped for "simple" features.
+
+**Cross-References:** Output of `Review`. Uses `pr-set-coordinate` and `pr-set-merge-order`. Related to `council` (which negotiates service boundaries).
+
+---
+
+## Core Concepts
+
+### shared-dev-spec.md
+
+**Definition:** The canonical contract document produced by `Council` and locked by `spec-freeze`. Lives at `~/forge/brain/prds/<task-id>/shared-dev-spec.md`. Contains all 5 service contracts negotiated by the 4 surfaces: REST API (endpoints, payloads, status codes), event bus (topics, schemas), cache (keys, TTL, invalidation), database (tables, schema, migrations), search (document structure, analyzers). Immutable after `[P2-SPEC-FROZEN]` — changes require full SPEC-AMENDMENT Protocol (council re-vote + new `[P2-SPEC-AMENDED]` marker).
+
+**Usage Context:** All downstream phases read from this file. `tech-plan-write-per-project` breaks it into per-repo tasks. `spec-reviewer` verifies implementation matches it line-by-line. `forge-drift-check` detects divergence. Do not modify post-freeze without re-opening council.
+
+**What It's NOT:** Not a living document. Not per-repo. Not aspirational. Not a "first draft" — it is the signed contract.
+
+**Cross-References:** Written by `council-multi-repo-negotiate`; locked by `spec-freeze`; read by `tech-plan-write-per-project`, `spec-reviewer`, `forge-drift-check`; amended via `spec-freeze` § SPEC-AMENDMENT Protocol.
+
+---
+
+### product.md
+
+**Definition:** Per-product workspace config file at `~/forge/brain/products/<slug>/product.md`. Contains: product slug, repo paths (role → absolute path), start/health commands per service, `deploy_doc` for services with complex startup, and flags. The most important flag is `forge_qa_csv_before_eval` (boolean) — when `true` or when the entrypoint is `/forge`, `qa-manual-test-cases-from-prd` is mandatory before `[P4.0-SEMANTIC-EVAL]`.
+
+**Key fields:**
+- `forge_qa_csv_before_eval: true|false` — gates manual QA CSV requirement
+- `repos:` — role-to-path map (e.g., `backend: /abs/path/to/backend`)
+- `start:` — how to start each service for eval
+- `health:` — health check command per service
+
+**Cross-References:** Read by `conductor-orchestrate`, `eval-product-stack-up`, `deploy-driver-*`; `forge_qa_csv_before_eval` enforced by `conductor-orchestrate` State 4b.
+
+---
+
+### worktree-per-project-per-task (D30)
+
+**Definition:** D30 discipline enforced by the `worktree-per-project-per-task` skill. Every `dev-implementer` task must execute in a **fresh isolated git worktree** — never on the main working tree or a shared branch. One worktree per repo per task. The branch follows naming convention `task/<task-id>[-<repo-role>]`. Worktrees are created before `[P4.1-DISPATCH]` and confirmed by `forge-tdd` Step 0.
+
+**Why isolated:** Prevents state leakage between parallel tasks, ensures the RED test only sees the current task's code, and makes rollback clean (delete worktree, branch is gone).
+
+**Red flag:** If `git worktree list` shows the current directory on `main`/`master` or `HEAD` without a task branch — STOP. Invoke `worktree-per-project-per-task` first.
+
+**Cross-References:** Enforced by `forge-tdd` Step 0 HARD-GATE; `conductor-orchestrate` State 5 HARD-GATE; skill `worktree-per-project-per-task`.
+
+---
+
+### Brain Directory Structure
+
+**Definition:** The Forge brain is the append-only, git-backed evidence store at `~/forge/brain/`. Two subtrees:
+
+- `~/forge/brain/products/<slug>/` — persistent per-product config (`product.md`, `codebase/`, `terminology.md`, scan outputs)
+- `~/forge/brain/prds/<task-id>/` — per-task artifacts (all phases of a single pipeline run)
+
+**Per-task layout (`~/forge/brain/prds/<task-id>/`):**
+
+| Path | Contents |
+|---|---|
+| `prd-locked.md` | Intake output — immutable PRD with all 9 Q answers |
+| `terminology.md` | Canonical product term sheet |
+| `shared-dev-spec.md` | Council output — 5 contracts, frozen |
+| `tech-plans/<repo>.md` | Per-repo task breakdown |
+| `qa/manual-test-cases.csv` | Approved acceptance test cases |
+| `qa/semantic-automation.csv` | Machine-eval step DAG |
+| `qa/semantic-eval-manifest.json` | Eval run outcome |
+| `qa/semantic-eval-run.log` | Per-step JSON lines |
+| `design/` | Figma MCP ingest or Lovable sync artifacts |
+| `conductor.log` | Append-only phase marker log |
+| `decisions/` | Brain decisions (DREAM-*, SPECCHG-*) |
+| `blockers/` | Escalation files when BLOCKED |
+
+**Cross-References:** `brain-read`, `brain-write`, `brain-recall`, `forge-brain-layout`.
+
+---
+
+### prd-locked.md
+
+**Definition:** Immutable PRD artifact written to `~/forge/brain/prds/<task-id>/prd-locked.md` at the end of intake. Contains all 9 `intake-interrogate` question answers as structured sections. Key frontmatter fields: `product`, `goal`, `success_criteria`, `repos` (role list), `contracts` (which of 5 apply), `timeline`, `rollback_plan`, `metrics`, `design_new_work`, `design_intake_anchor`. Once written and `[P1-PRD-LOCKED]` is logged, this file is read-only — reopen intake if it must change.
+
+**Cross-References:** Written by `intake-interrogate`; read by all downstream skills; consumed by `council-multi-repo-negotiate`, `tech-plan-write-per-project`, `qa-prd-analysis`.
+
+---
+
+### terminology.md
+
+**Definition:** Per-task canonical term sheet at `~/forge/brain/prds/<task-id>/terminology.md`. Table of canonical product names, disallowed variants, and `open_doubts` in frontmatter. Authored in intake, aligned at council. Consumed by QA authoring (for `Intent`/`ExpectedHint` wording), tech plans (UI copy), and assertion text so human-facing copy matches contracts.
+
+**What It's NOT:** Not the `forge-glossary` (which covers Forge process terms). Not global — it is task-scoped. Not optional for UI-facing work.
+
+**Cross-References:** `intake-interrogate`; `council-multi-repo-negotiate`; `docs/terminology-review.md`; `forge-glossary` § Product terminology.
+
+---
+
+### Skill
+
+**Definition:** A reusable, discipline-enforcing capability packaged as a `SKILL.md` file with YAML frontmatter (name, description, type, requires). Skills can be rigid (must follow exactly) or flexible (principles-based). Each skill has optional red flags (STOP conditions), anti-patterns (common excuses), and edge cases (unusual scenarios).
+
+**Usage Context:** Invoked via the `invoke` command or through skill dependencies. A skill can require other skills, forming a dependency tree. Skills are discovered in `skills/` directory (repo root) and symlinked from `.Codex/skills/`. When you invoke a skill, the harness renders the markdown and passes context (PRD, spec, codebase) as needed.
+
+**What It's NOT:** Not a tool (tools are CLI utilities). Not a hook (hooks are session-level plugins). Not an agent (agents are independent processes). Not a prompt — skills are reusable references that adapt to your context.
+
+**Cross-References:** Related to `superpowers` (discipline-enforcing skills from Anthropic). Similar format to `agent` but lightweight. Enforced by `forge-skill-anatomy` (format checklist).
+
+---
+
+### Rigid Skill
+
+**Definition:** A skill that must be followed exactly as written, with no adaptation or shortcutting. Enforced by HARD-GATE markers and TDD pressure tests. Examples: `forge-tdd`, `forge-intake-gate`, `forge-eval-gate`.
+
+**Usage Context:** When you invoke a rigid skill, you are agreeing to follow every step. Deviations are red flags. Rigid skills typically have anti-pattern preambles (D25) that rationalize common excuses and rebut them.
+
+**What It's NOT:** Not flexible. Not subject to interpretation. Not "follow the spirit but skip steps." Not negotiable with schedule pressure.
+
+**Cross-References:** Contrast with `flexible-skill`. Enforced by D24 (HARD-GATE tags on non-skippable steps). Related to D15 (TDD pressure).
+
+---
+
+### Flexible Skill
+
+**Definition:** A skill that establishes principles and constraints but allows adaptation to context. Example: contract negotiation skills use a framework but adapt to service-specific boundaries. Developers can skip optional sections if justified.
+
+**Usage Context:** Invoke a flexible skill and apply its principles to your specific scenario. Document deviations. Flexible skills typically have edge cases (unusual conditions) that guide when to adapt vs. when to escalate.
+
+**What It's NOT:** Not a free pass to ignore it. Not "do whatever you want." Not permission to skip mandatory sections. Flexible skills still enforce core discipline — just with more context-sensitivity.
+
+**Cross-References:** Contrast with `rigid-skill`. Examples: reasoning skills (`reasoning-as-backend`, `reasoning-as-web-frontend`), contract skills.
+
+---
+
+### Red Flag
+
+**Definition:** An explicit STOP condition embedded in a skill that signals the skill cannot proceed as written. Red flags are safety valves — they prevent silent failures and force escalation. Each red flag is a single condition that, if true, halts execution.
+
+**Usage Context:** When executing a skill, check red flags before each major step. If a red flag condition is met, stop and escalate (do not rationalize or work around). Examples: "if service is not responding, RED FLAG: BLOCKED"; "if more than 3 retries fail, RED FLAG: escalate."
+
+**What It's NOT:** Not a warning. Not a hint to be careful. Not optional. Not a place for judgment — if condition is true, you must escalate.
+
+**Cross-References:** Often paired with anti-patterns (common excuses NOT to apply red flags). Enforced by D24. Related to `escalation` (next step after RED FLAG).
+
+---
+
+### Anti-Pattern
+
+**Definition:** A rationalization table (D25) that lists common excuses for skipping a discipline and rebuts each one. Embedded at the top of every discipline-enforcing skill. Example: forge-tdd lists "We're running late" → rebuttal: "TDD saves time because fewer bugs slip through."
+
+**Usage Context:** Before skipping any required step, consult the anti-pattern preamble. If your excuse is listed, read the rebuttal. If your excuse is NOT listed, escalate (do not improvise). Anti-patterns are git-backed and immutable — they evolve through dreamer retrospectives but never disappear.
+
+**What It's NOT:** Not permission to skip steps if your excuse isn't listed. Not a menu of excuses — it's a rebuttal table. Not formal policy; it's discipline enforcement via language.
+
+**Cross-References:** Required by D25. Paired with red flags. Related to HARD-GATE skills. Examples in `forge-tdd`, `forge-intake-gate`, `forge-eval-gate`.
+
+---
+
+### HARD-GATE
+
+**Definition:** A non-negotiable process gate marked with a HARD-GATE label. Enforced by 5+ MUST bullets that cannot be skipped or rationalized away. Examples: intake (MUST satisfy mandatory **prd-locked.md** fields via **`intake-interrogate`**, confidence-first), council (MUST negotiate all contracts), eval (MUST pass critical scenarios), TDD (MUST write test first).
+
+**Usage Context:** When you encounter a HARD-GATE, you have no choice but to execute it fully. It cannot be shortcut due to schedule pressure, complexity, or other factors. Red flags within HARD-GATE steps are not advisory — they are mandatory stop conditions.
+
+**What It's NOT:** Not advisory. Not "try to do this if possible." Not flexible to context. Not negotiable with stakeholders or schedule.
+
+**Cross-References:** Enforced by D24. Every HARD-GATE has associated skill. Examples: `forge-intake-gate`, `forge-council-gate`, `forge-eval-gate`, `forge-tdd`, `forge-worktree-gate`, `forge-trust-code`, `forge-verification`, `forge-letter-spirit`.
+
+---
+
+### Superpowers
+
+**Definition:** Collection of 10 discipline-enforcing skills from Anthropic (not Forge-specific) that cover planning, testing, debugging, code review, and development workflows. Superpowers are universal; Forge skills are product-specific. Superpowers include: writing-plans, brainstorming, executing-plans, dispatching-parallel-agents, test-driven-development, systematic-debugging, requesting-code-review, receiving-code-review, verification-before-completion, finishing-a-development-branch.
+
+**Usage Context:** Use superpowers when facing any task that matches their domain. Example: before implementation, invoke `superpowers:writing-plans`. During test-driven development, invoke `superpowers:test-driven-development`. Superpowers often parallel Forge skills but provide deeper guidance.
+
+**What It's NOT:** Not Forge-specific. Not baked into Forge pipeline — they are parallel resources you invoke as needed. Not required (though highly recommended). Not limited to Forge work — applicable to any Codex project.
+
+**Cross-References:** Related to Forge skills but orthogonal. Invoked alongside rigid/flexible skills. Examples: `superpowers:test-driven-development` parallels `forge-tdd`, `superpowers:writing-plans` parallels `tech-plan-write-per-project`.
+
+---
+
+### Phase
+
+**Definition:** Sequential batch of skill enhancements organized in the Forge roadmap. Each phase adds anti-patterns, edge cases, and decision trees to existing skills. Phases: P0 (foundation, complete), P1 (critical eval drivers, complete), P2 (surface reasoning + brain + deployment, complete), P3 (remaining skills, in progress).
+
+**Usage Context:** Phases guide skill maturity. P0 skills are foundational (always required). P1 skills enable multi-service eval. P2 skills add depth to reasoning and operations. P3 skills expand coverage to remaining domains. When invoking a skill, check which phase it's in — earlier phases are more stable.
+
+**What It's NOT:** Not arbitrary groupings. Not a "nice to have" roadmap. Not flexible timelines — phases complete in order before moving forward. Not skippable — all phases are required for full Forge capability.
+
+**Cross-References:** Related to `batch` (finer-grained grouping within a phase). Examples: P0 (intake, council, build), P1 (eval drivers: API, DB, cache, search, events), P2 (reasoning skills + brain skills + deploy drivers), P3 (remaining skills).
+
+---
+
+### Batch
+
+**Definition:** Finer-grained grouping of related skills within a phase. Example: P1 has 3 eval driver batches (HTTP/DB, cache/search, events/mobile) and 1 coordination batch (eval-judge, dream-resolve). P2 has 3 batches (reasoning, brain, deployment).
+
+**Usage Context:** Batches allow parallel work within a phase. If phase P2 Batch 1 (reasoning skills) is complete, you can start using those skills while Batch 2 (brain skills) is still in development. Batches ship together but are tracked separately.
+
+**What It's NOT:** Not independent from phases — batches are subdivisions of phases. Not arbitrary — batches group skills with strong dependencies.
+
+**Cross-References:** Subdivides `phase`. Examples: P2 Batch 1 (reasoning-as-backend, reasoning-as-web-frontend, reasoning-as-app-frontend), P2 Batch 2 (brain-read, brain-write, brain-recall, brain-why, brain-forget), P2 Batch 3 (deploy-driver-pm2-ssh, deploy-driver-docker-compose, deploy-driver-local-process, deploy-driver-systemd).
+
+---
+
+### P0/P1/P2/P3
+
+**Definition:** Phase numbering for the Forge skill enhancement roadmap. P0: foundation skills (intake, council, spec-freeze, tech-plan, build, eval, review, dream). P1: critical eval drivers (API, DB, cache, search, events, web, mobile). P2: surface reasoning + brain operations + deployment drivers. P3: remaining skills (in progress).
+
+**Usage Context:** Check phase number to understand skill maturity and feature completeness. P0 skills are required and stable. P1 skills enable multi-service product testing. P2 skills add reasoning depth and decision tracking. P3 skills expand to specialized domains.
+
+**What It's NOT:** Not marketing phases. Not "versions." Not flexible — phase order is locked.
+
+**Cross-References:** Each phase contains multiple `batch`es. Progress tracked in memory file at `/home/lordvoldemort/.Codex/projects/-home-lordvoldemort-Videos-forge/memory/MEMORY.md`.
+
+---
+
+### Seed Product
+
+**Definition:** ShopApp — a test e-commerce product used to pressure-test all Forge skills via realistic scenarios. Includes backend (Node.js), web frontend (React), mobile app (React Native or native), and infrastructure (Docker, Kubernetes). Lives in `seed-product/` directory.
+
+**Usage Context:** Every skill is validated against ShopApp before shipping. D15 requires all skills be TDD'd against seed product pressure scenarios. When developing a new skill, build a scenario on ShopApp first, then write the skill to handle it.
+
+**What It's NOT:** Not the only product Forge can work on — ShopApp is the validation vehicle. Not a finished product — it's intentionally simple to isolate skill behavior. Not source of truth for Forge patterns; it's a test bed.
+
+**Cross-References:** Related to D15 (TDD pressure scenarios). Used by skill tests. Part of `forge-self-test`.
+
+---
+
+### Surface
+
+**Definition:** A domain perspective in council and evaluation: backend (database, APIs, business logic), web frontend (browser UI, React), app frontend (mobile, native), infrastructure (deployment, operations). Each surface reasons about the PRD from its specialized viewpoint.
+
+**Usage Context:** During council, 4 surfaces negotiate contracts from their perspectives. During eval, surface-specific eval drivers test the surface (web-cdp for web, xctest for iOS, adb for Android, API for backend, DB for schema). When reasoning about a PRD, switch surfaces to see blind spots in your design.
+
+**What It's NOT:** Not vertical layers (frontend/backend split). Not silos — surfaces must negotiate with each other. Not optional — all 4 surfaces must participate in council.
+
+**Cross-References:** Used by council via `reasoning-as-backend`, `reasoning-as-web-frontend`, `reasoning-as-app-frontend`, `reasoning-as-infra`. Tested by surface-specific eval drivers.
+
+---
+
+### Discipline
+
+**Definition:** Non-negotiable practice embedded in Forge skills (TDD, HARD-GATE, two-stage review, isolation). Disciplines are enforced by anti-patterns (D25) and red flags (D24). Examples: test-driven-development (discipline), HARD-GATE enforcement (discipline), two-stage review (discipline), worktree isolation (discipline).
+
+**Usage Context:** When a skill enforces discipline, follow it exactly. Disciplines prevent the most common sources of bugs: untested code, unreviewed changes, shared state, incomplete specifications. If schedule pressure tempts you to skip a discipline, consult the skill's anti-pattern preamble.
+
+**What It's NOT:** Not bureaucracy. Not optional. Not "suggestions for quality." Not flexible to urgency or context.
+
+**Cross-References:** Enforced by D24 (HARD-GATE tags) and D25 (anti-pattern preambles). Examples: `forge-tdd`, `forge-trust-code`, `forge-worktree-gate`, `spec-freeze`.
+
+---
+
+### Contract
+
+**Definition:** Explicit negotiated specification for the interface between services. Covers: REST APIs (methods, endpoints, payloads), event bus (topic names, message schema), cache (keys, TTL, invalidation), database (table names, schema, migrations), search (document structure, analyzers). Contracts are part of `shared-dev-spec`.
+
+**Usage Context:** During council, services negotiate contracts. Each contract defines what data flows where, when, and in what format. Implementation must match contracts exactly (enforced by spec-reviewer). Changes to contracts require re-opening council.
+
+**What It's NOT:** Not internal API design. Not documentation of what you built — it's the agreement before you build. Not flexible post-lock. Not micro-optimization territory.
+
+**Cross-References:** Negotiated by `council-multi-repo-negotiate`. Skills: `contract-api-rest`, `contract-event-bus`, `contract-cache`, `contract-schema-db`, `contract-search`. Part of `shared-dev-spec`. Verified by `spec-reviewer` in review stage.
+
+---
+
+### Driver
+
+**Definition:** Implementation skill that "drives" a system by connecting to it, running operations, and verifying state. Two types: eval drivers (connect, run scenarios, verify results) and deploy drivers (start/stop services, check health). Examples: `eval-driver-api-http` (connect via HTTP, run API calls), `deploy-driver-docker-compose` (start containers, verify running).
+
+**Usage Context:** Eval drivers are invoked during eval stage to test each service. Deploy drivers are invoked to bring up the stack for eval or production. Each driver exposes functions (connect, disconnect, run, verify) that skills use to automate integration tests.
+
+**What It's NOT:** Not unit tests. Not mocks. Not local-only — drivers assume services are running. Not hardcoded to one service — drivers are reusable across products.
+
+**Cross-References:** Eval drivers: `eval-driver-api-http`, `eval-driver-db-mysql`, `eval-driver-cache-redis`, `eval-driver-bus-kafka`, `eval-driver-search-es`, `eval-driver-web-cdp`, `eval-driver-ios-xctest`, `eval-driver-android-adb`. Deploy drivers: `deploy-driver-pm2-ssh`, `deploy-driver-docker-compose`, `deploy-driver-local-process`, `deploy-driver-systemd`. Stack-up: `eval-product-stack-up`. Semantic execution: `qa-semantic-csv-orchestrate`.
+
+---
+
+### Escalation
+
+**Definition:** Signal that human judgment, context, or coordination is needed. Triggered by red flags, unrecovered failures, or scope ambiguity. Keywords: BLOCKED, NEEDS_CONTEXT, NEEDS_COORDINATION, NEEDS_INFRA_CHANGE. Escalation is not failure — it's the correct response when automation cannot proceed.
+
+**Usage Context:** When a skill hits a red flag, escalate immediately (do not work around). When dev-implementer reports BLOCKED, escalate to conductor. When eval fails 3 times, escalate. When contracts conflict, escalate. Escalation triggers human review, context addition, or re-negotiation.
+
+**What It's NOT:** Not a rare event. Not a sign of incompetence. Not shameful. Not the same as failure. Not permitting continued work around the issue.
+
+**Cross-References:** Related to red flags, self-heal retry cap, dev-implementer status codes. Handled by conductor or human team.
+
+---
+
+## Subagents
+
+### dev-implementer
+
+**Definition:** Subagent that executes tech plan tasks sequentially. Writes tests first (TDD), implements code, and reports status (DONE, DONE_WITH_CONCERNS, NEEDS_CONTEXT, BLOCKED). Each task runs in an isolated worktree with no shared state (D30).
+
+**Usage Context:** Dispatched once per task from the tech plan. Receives task description, context (PRD, spec, codebase), and success criteria. Reports status at completion. If BLOCKED, escalates to conductor.
+
+**Cross-References:** Related to `worktree-per-project-per-task`, `forge-tdd`. Part of Build stage.
+
+---
+
+### spec-reviewer
+
+**Definition:** Subagent that reads actual code line-by-line and verifies it matches `shared-dev-spec` exactly. Enforces D14: "trust code, not reports." Not allowed to skim or trust summaries. Runs a 9-phase verification scope: (1) API contract compliance, (2) DB schema compliance, (3) event bus contracts, (4) cache contracts, (5) search contracts, (6) cross-service integration wiring, (7) performance guard rails, (8) security requirements, (9) operational readiness (health endpoints, logging, metrics). Also checks for over-building (code not in spec) and under-building (spec requirements not implemented).
+
+**Usage Context:** Invoked during Review stage. Must read full implementation (not diffs or summaries) and cross-reference against spec. Reports APPROVED or CHANGE_REQUESTED with findings per phase.
+
+**Cross-References:** Enforced by `forge-trust-code` (HARD-GATE). Part of Review stage, first stage. Agent definition: `agents/spec-reviewer.md`.
+
+---
+
+### code-quality-reviewer
+
+**Definition:** Subagent that checks 8-point quality framework: (1) Naming Conventions & Clarity, (2) File Size & Organization, (3) Code Complexity & Readability, (4) Error Handling & Resilience, (5) Test Coverage & Quality, (6) Performance & Scalability, (7) Security Practices, (8) Observability & Debuggability. Plus Phase 4 cross-service quality checks (consistent error codes, cache key patterns, event schema field names, class/function naming conventions across services).
+
+**Usage Context:** Invoked during Review stage after spec-reviewer approves. Must read code and apply all 8 checks. Reports APPROVED or CHANGE_REQUESTED with issues categorized as Critical, Important, or Minor.
+
+**Cross-References:** Part of Review stage, second stage. Agent definition: `agents/code-quality-reviewer.md`.
+
+---
+
+### dreamer
+
+**Definition:** Subagent that runs two functions: inline conflict resolution (when eval surfaces incompatibilities between services) and post-merge retrospective (scoring decisions, extracting patterns, writing to brain). Dual role during and after the pipeline.
+
+**Usage Context:** Invoked during eval (if conflicts surface) and after PR set merge. Produces brain artifacts (decisions, learnings, patterns).
+
+**Cross-References:** Uses `dream-resolve-inline`, `dream-retrospect-post-pr`. Related to brain skills.
+
+---
+
+## Subagent Status Codes
+
+| Status | Meaning |
+|---|---|
+| **DONE** | Task completed successfully, all success criteria met. Proceed to review. |
+| **DONE_WITH_CONCERNS** | Task completed but code quality or correctness issues exist. Must be addressed before review. |
+| **NEEDS_CONTEXT** | Missing information to complete task (spec ambiguity, missing API docs, unclear requirement). Provide context and re-dispatch. |
+| **BLOCKED** | Cannot proceed. Escalate to conductor or human. (Example: required service not available, contract conflict, infrastructure unavailable.) |
+
+---
+
+## Decision References (D1-D30)
+
+Key locked decisions (only externally visible decisions are listed here; D1–D4, D6–D12, D16–D23, D26–D29 are internal implementation decisions recorded in `brain/decisions/` and not surfaced in the glossary because they affect tooling internals, not skill-level behavior):
+
+| Decision | Summary |
+|---|---|
+| D5 | No **LangChain-style agent frameworks** in **Forge plugin code**. **Product eval** may use **CDP, Playwright, Puppeteer, Appium, XCTest, MCP** on the host — **ask the operator** (browser MCP vs local CDP; **Appium MCP** vs ADB / XCTest for mobile) before locking the driver stack. |
+| D13 | No runtime dependency on any external plugin at runtime |
+| D14 | Trust code: spec-reviewer reads actual code, not reports or summaries |
+| D15 | Skills are TDD'd against seed product pressure scenarios |
+| D24 | HARD-GATE tags on every non-skippable step; red flags enforce them |
+| D25 | Anti-Pattern preambles on every discipline-enforcing skill |
+| D30 | Fresh worktree per project per task. No shared state. |
+
+---
+
+## Preamble-Tier System
+
+### preamble-tier
+
+**Definition:** Integer (1–4) in a skill's YAML frontmatter that controls how much of the skill's context is inlined into session-start by `session-start.cjs`. Tier 1 = minimal (name + one-line description only); Tier 4 = full content inlined. Higher tiers burn more context budget; use sparingly for skills that must be available before any tool invocation.
+
+**How it works:** On session start, `session-start.cjs` reads the active skill's `preamble-tier` from `~/.forge/.active-skill-tier`. The cache file is **per-active-skill** (global path, tracks whichever skill is currently active). Format: line 1 = tier digit `1`–`4`; line 2 = `# sha256=<hex>` (optional, new format). If line 2 is present and the SHA-256 of the current `SKILL.md` differs, the cache is invalidated and re-parsed. If line 2 is absent (older single-line format written by `echo N > ~/.forge/.active-skill-tier`), hash validation is skipped — the tier is used as-is. The tier determines how many sections are serialized into the IDE's system prompt injection.
+
+**Usage Context:** Set `preamble-tier: 1` for most skills (name + description sufficient). Set `preamble-tier: 3` or `preamble-tier: 4` only for foundational skills (`using-forge`, `forge-glossary`) that must deliver orientation context on every session. Never set `preamble-tier: 4` on a skill that has 500+ lines — it will saturate context.
+
+**Cross-References:** `using-forge` § **`~/.forge/.active-skill-tier`** (cache format). `session-start.cjs` implements the read/write logic.
+
+---
+
+### design_new_work
+
+**Definition:** Boolean field in `prd-locked.md` (from `intake-interrogate` Q9) indicating whether the PRD requires net-new UI design artifacts. When `design_new_work: yes`, the pipeline MUST run State 4b-design (`conductor-orchestrate`) before P4.1 dispatch — materializing design to `~/forge/brain/prds/<task-id>/design/` (Figma MCP ingest, Lovable sync, or manual exports) and logging `[DESIGN-INGEST] status=PASS` to `conductor.log`. When `design_new_work: no` or `design_waiver: prd_only`, State 4b-design is skipped.
+
+**How to set:** During `intake-interrogate` Q9, the agent asks whether new UI design artifacts are required. If yes, write `design_new_work: yes` in the YAML frontmatter of `prd-locked.md`. If no new design, write `design_new_work: no` (or `design_waiver: prd_only` with owner + risk justification).
+
+**Artifact Traceability:** `intake-interrogate Q9` → `prd-locked.md design_new_work: yes` → `State 4b-design` → `~/forge/brain/prds/<task-id>/design/MCP_INGEST.md` (or `LOVABLE_SYNC.md`) → `[DESIGN-INGEST] status=PASS` in `conductor.log` → P4.1 dispatch unlocked for web/app repos.
+
+**Cross-References:** `conductor-orchestrate` § State 4b-design; `intake-interrogate` Q9; `docs/conductor-log-format.md` `[DESIGN-INGEST]`.
+
+---
+
+## Eval Classification Terms
+
+### RED_INFRA
+
+**Definition:** Eval failure classification for infrastructure failures that are not code bugs — `ECONNREFUSED`, Docker service down, MCP unavailable, device/emulator not running. Classified by `self-heal-triage` before consuming any retry budget. RED_INFRA bypasses the self-heal retry cap: infrastructure must be restored first, then eval re-runs from scratch (the failed attempt does not count against the 3-retry budget).
+
+**Usage Context:** `self-heal-triage` checks for RED_INFRA symptoms before applying any other triage category. If RED_INFRA is detected: write BLOCKED escalation to `~/forge/brain/prds/<task-id>/blockers/`, log `[P4.4-RED-INFRA]` to `conductor.log`, and stop. Do NOT log the attempt as a self-heal retry.
+
+**What It's NOT:** Not a code bug. Not a test failure. Not a flaky test. Not a race condition. RED_INFRA is always an environment issue — fix the environment, not the code.
+
+**Cross-References:** `self-heal-triage` § RED_INFRA Pre-Check; `self-heal-loop-cap` § RED_INFRA bypass rule; `docs/conductor-log-format.md` `[P4.4-RED-INFRA]`.
+
+---
+
+### CONTEXT_GAP
+
+**Definition:** Outcome value for a semantic eval step (in `qa/semantic-eval-run.log`) when the step could not be fully evaluated. Two forms: (1) an upstream dependency step passed but returned an empty `result: {}`, so downstream `${stepId.result.field}` interpolation had no data; (2) external context required by the step (credentials, device, URL, test account) was not available at runtime. In both cases the step result is indeterminate — not a pass, not a product bug. `eval-judge` maps any `CONTEXT_GAP` entries to a YELLOW verdict if all non-skipped steps otherwise pass.
+
+**Usage Context:** When `eval-judge` sees `CONTEXT_GAP` in `semantic-eval-run.log`, the verdict is YELLOW (not RED). The appropriate response is to provide the missing context (credentials, device, test account) and re-run — not to enter the self-heal loop.
+
+**What It's NOT:** Not a test failure. Not RED_INFRA. Not a code bug. CONTEXT_GAP means "we don't know yet" — the step was not executed, not failed.
+
+**Cross-References:** `eval-judge` § Semantic path verdict table; `docs/semantic-eval-schema.md` § outcome enum; `qa-semantic-csv-orchestrate`.
+
+---
+
+### BLOCKED_DEPENDENCY
+
+**Definition:** Outcome value for a semantic eval step when the step was skipped because a step it `DependsOn` returned a non-PASS result. Propagated automatically by the CSV eval runner when upstream steps fail. `eval-judge` maps runs where all non-PASS outcomes are BLOCKED_DEPENDENCY to a YELLOW verdict (dependency issue, not a code bug in the current step).
+
+**Usage Context:** When debugging a RED eval run, distinguish BLOCKED_DEPENDENCY steps from genuine failures. A step marked BLOCKED_DEPENDENCY did not run — its result says nothing about the correctness of its own code. Fix the upstream failing step first, then re-run. When `manifest.outcome = fail` but **all** non-PASS steps are BLOCKED_DEPENDENCY, the eval-judge verdict is **YELLOW** (not RED) — the root failure is a dependency chain issue, not a code bug in the current implementation.
+
+**What It's NOT:** Not the same as CONTEXT_GAP (empty result vs. upstream failure). Not a code bug in the blocked step. Not skippable — if the dependency step is genuinely broken, it must be fixed.
+
+**Cross-References:** `eval-judge` § BLOCKED_DEPENDENCY verdict rule; `docs/semantic-eval-schema.md` § DependsOn propagation; `qa-semantic-csv-orchestrate` § dependency DAG.
+
+---
+
+## Eval Verdicts
+
+| Verdict | Meaning | Next Step |
+|---|---|---|
+| **GREEN** | All critical scenarios passed. Ready to merge. | Proceed to Review stage. |
+| **YELLOW** | All critical passed, some non-critical failed. Decide: fix or accept trade-off. | Review or return to Self-Heal. |
+| **RED** | Critical scenario failed. Cannot merge. | Enter Self-Heal loop (max 3 retries). |
+| **NOT_EXECUTED** | **QA pipeline / orchestrator** — no driver results (no stack, no env, agent session static check only). **Not** an **`eval-judge`** outcome; do not confuse with **YELLOW**. | Provide URL/device/credentials; re-run **`/qa-run`**. See **`qa-pipeline-orchestrate`** QA-P6, Edge case *Static validation only*. |
+
+---
+
+## Quick Reference: Pipeline Flow
+
+1. **Intake** (HARD-GATE) → lock PRD
+2. **Council** (HARD-GATE) → negotiate contracts, produce shared-dev-spec
+3. **Spec Freeze** → lock shared-dev-spec
+4. **Tech Plan** → break spec into per-project tasks
+5. **Build** (HARD-GATE: TDD) → dev-implementer executes tasks
+6. **Review** (two-stage: spec + quality) → spec-reviewer, code-quality-reviewer
+7. **PR Set** → coordinate PRs across repos in merge order
+8. **Eval** (HARD-GATE) → multi-driver product test
+9. **Self-Heal** (if RED) → locate fault, triage, fix, re-test (max 3 retries)
+10. **Dream** → retrospective, learnings to brain
+
+---
+
+## Quick Reference: Key Skills by Category
+
+**HARD-GATE Skills:**
+`forge-intake-gate`, `forge-council-gate`, `forge-eval-gate`, `forge-tdd`, `forge-worktree-gate`, `forge-trust-code`, `forge-verification`, `forge-letter-spirit`
+
+**Reasoning Skills (Council):**
+`reasoning-as-backend`, `reasoning-as-web-frontend`, `reasoning-as-app-frontend`, `reasoning-as-infra`
+
+**Contract Skills (Council):**
+`contract-api-rest`, `contract-event-bus`, `contract-cache`, `contract-schema-db`, `contract-search`
+
+**Eval Drivers:**
+`eval-driver-api-http`, `eval-driver-db-mysql`, `eval-driver-cache-redis`, `eval-driver-bus-kafka`, `eval-driver-search-es`, `eval-driver-web-cdp`, `eval-driver-ios-xctest`, `eval-driver-android-adb`
+
+**Deploy Drivers:**
+`deploy-driver-pm2-ssh`, `deploy-driver-docker-compose`, `deploy-driver-local-process`, `deploy-driver-systemd`
+
+**Brain Skills:**
+`brain-read`, `brain-write`, `brain-recall`, `brain-why`, `brain-forget`, `brain-link`
+
+**Self-Heal Skills:**
+`self-heal-locate-fault`, `self-heal-triage`, `self-heal-systematic-debug`, `self-heal-loop-cap`
+
+---
+
+## Edge Cases
+
+### Edge Case 1: Term Used with a Different Meaning Outside Forge
+
+**Symptom:** A user asks about "council" expecting a human committee or a governance process, not the Forge contract-negotiation phase between domain reasoning surfaces.
+
+**Do NOT:** Explain the Forge term without acknowledging the ambiguity.
+
+**Action:** When a term from the glossary collides with a common industry term (Council, Surface, Driver, Dream, Conductor), clarify the Forge-specific meaning upfront: "In Forge, 'Council' refers to the multi-surface contract negotiation phase — not a human committee. It's executed by 4 AI reasoning surfaces negotiating 5 service contracts."
+
+**Escalation:** If the user's intent is genuinely unclear (asking about a human council process vs. the Forge phase), ask once: "Do you mean the Forge council phase, or are you asking about a governance process outside Forge?"
+
+---
+
+### Edge Case 2: Term Appears in Brain Files or SKILL.md with Slightly Different Phrasing
+
+**Symptom:** A brain decision file says "negotiation round" where this glossary says "Council." A skill says "triage phase" where the glossary says "Self-Heal Triage." The user asks which is authoritative.
+
+**Do NOT:** Guess or arbitrarily prefer the glossary over the source file.
+
+**Action:** The source skill (`self-heal-triage/SKILL.md`, `forge-council-gate/SKILL.md`) is always authoritative for behavior. The glossary is authoritative for naming and definition. If they conflict on behavior, the skill wins. If they conflict on the name of a concept, the glossary wins. Document the discrepancy and suggest it be reconciled.
+
+**Escalation:** NEEDS_CONTEXT if the phrasing difference implies a behavioral difference (e.g., glossary says "max 3 retries" but a skill says "max 5 retries" — that is a real conflict, not just a naming difference).
+
+---
+
+### Edge Case 3: New Forge Term Encountered That Is Not in This Glossary
+
+**Symptom:** A skill, agent, or brain file uses a term like "pressure scenario," "seeder," or "gate bypass" that does not appear in this glossary.
+
+**Do NOT:** Invent a definition or silently treat it as undefined.
+
+**Action:**
+1. Search for the term in `skills/` and `agents/` with grep to find the canonical context in which it's used
+2. If found in a SKILL.md, derive the definition from the usage context
+3. If not found anywhere, treat it as a candidate for a missing glossary entry and surface it to the dreamer
+4. Do not propagate undefined terminology into brain decisions without clarifying its meaning first
+
+**Escalation:** NEEDS_CONTEXT — request a definition from the skill author before proceeding with work that depends on this term.
+
+---
+
+### Edge Case 4: Council Is Requested to Be Skipped Due to Time Pressure
+
+**Symptom:** "We already know the contracts, can we skip council and go straight to implementation?"
+
+**Do NOT:** Accept the skip request and proceed to tech plans without running `forge-council-gate`.
+
+**Action:**
+1. STOP. Council is a HARD-GATE — it is not optional even when contracts appear pre-negotiated.
+2. If contracts are documented elsewhere (prior PRD, wiki, existing spec), load them as the starting position for council, not as a substitute for it.
+3. Run `forge-council-gate` with the existing contract proposals as input — surfaces still negotiate, verify compatibility, and sign off.
+4. If the human insists on skipping: do not proceed. Log BLOCKED. Explain that council prevents integration bugs that surface during eval; skipping council means those bugs are discovered when they are expensive to fix.
+5. The only valid "skip" is `[ABORT_TASK]` logged to `conductor.log` by the human — which cancels the whole pipeline, not just council.
+
+**Escalation:** BLOCKED — council is non-negotiable per `forge-council-gate` Iron Law.

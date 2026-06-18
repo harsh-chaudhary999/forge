@@ -1,0 +1,26 @@
+---
+name: "source-command-forge-status"
+description: "Read-only snapshot of brain health: active product, pending PRDs, eval state, decisions, worktrees — no pipeline side effects."
+---
+
+# source-command-forge-status
+
+Use this skill when the user asks to run the migrated source command `forge-status`.
+
+## Command Template
+
+Produce a **concise status** summary for the **Forge brain** (read-only; no skill dispatch required unless the user asks to go deeper).
+
+1. Inspect **`~/forge/brain/`** for the most recently active **product** (e.g. under **`products/<slug>/`**).
+2. List **pending PRDs** (intake started but not locked), if detectable from **`prds/`** layout.
+3. Note any **in-progress eval** artifacts or logs if obvious from **`prds/<task-id>/`**.
+4. **Brain health:** last git commit on brain (if a repo), approximate **decisions** count under **`decisions/`** if present.
+5. **Worktrees:** list open worktrees tied to active products if discoverable via git or documented paths.
+
+Format: **one line per item**, scannable.
+
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns, **no defensive downstream-gate narration** mid-elicitation — **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**); **one blocking affordance per unrelated fork** (no bundled prose obligations); **no dual prompts** — **never** **`AskQuestion`** / **Questions** widget on **one** topic **and** a **long markdown question** on **another** in the **same** message; **no chat–widget duplicate** — long lists / same question body **once** in **chat**; **`AskQuestion`** = **short** title + **options** only (**`docs/forge-one-step-horizon.md`** **Chat vs `AskQuestion` / Questions widget**); **headline / first § = immediate next artifact** — **not** *What unlocks machine eval*, **`qa/semantic-automation.csv`**, or Step −1 **as the main heading** when **manual CSV** / **`qa-manual-test-cases-from-prd`** / **`qa-prd-analysis`** is still the next gate (**`docs/forge-one-step-horizon.md`** **Headline = immediate next step**); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
+
+**Forge plugin scope:** **`~/forge/brain/`** only; no third-party status APIs.
+
+**vs `/forge`:** Status is **observability**, not orchestration. Full E2E: **`commands/forge.md`**.

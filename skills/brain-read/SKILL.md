@@ -241,7 +241,7 @@ If grep is slow or ambiguous, escalate to brain-recall or brain-link.
 This skill works with other brain skills:
 
 - **brain-write:** Decisions are recorded to the brain via `brain-write`. This skill reads what was written.
-- **brain-recall:** Semantic search complement. Use `brain-read` for exact matches, `brain-recall` for conceptual search.
+- **brain-recall:** Ranked-search complement (grep + tag/status). Use `brain-read` for a known path, `brain-recall` to find decisions by keyword/tag when you don't know the path.
 - **brain-why:** Traces provenance—who decided, when, and why. Use this after `brain-read` finds a decision.
 - **brain-link:** Creates semantic edges between decisions. Shows decision dependencies found by `brain-read` grep patterns.
 - **brain-forget:** Archives deprecated decisions. Use `brain-read` to find candidates for archival.

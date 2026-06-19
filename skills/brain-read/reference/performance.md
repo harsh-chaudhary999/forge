@@ -58,9 +58,9 @@ grep -r "API versioning" . --include="*.md" -l
 - Structured data matching (tags, dates)
 
 **Use `brain-recall` (ranked grep + tag/status search):**
-- Conceptual search ("How do we handle backward compatibility?")
+- Keyword search when you don't know the path ("How do we handle backward compatibility?")
 - Finding related decisions across products
-- Fuzzy matching (misspellings, synonyms)
+- Tag/status-filtered queries
 - "What did we learn about..." queries
 
 **Use `brain-link` (semantic edges):**

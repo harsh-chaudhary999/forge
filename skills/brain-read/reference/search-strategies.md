@@ -17,7 +17,7 @@ grep -r "database.*migration\|schema.*change" products/*/decisions/ --include="*
 
 **Workflow:**
 1. Start with grep pattern above
-2. If results are sparse, use brain-recall for semantic matching
+2. If results are sparse, use brain-recall (broader keyword + tag/status ranking)
 3. If decision exists, use brain-why to understand rationale
 
 ### Use Case 2: Locating Contract for Specific Service
@@ -50,7 +50,7 @@ grep -r "versioning\|version.*strategy" products/*/decisions/ --include="*.md" -
 ```
 
 **Also use:**
-- `brain-recall`: For semantic clustering ("version management approaches")
+- `brain-recall`: For keyword/tag-ranked recall ("version management approaches")
 - `brain-link`: To show pattern relationships across products
 
 **Workflow:**

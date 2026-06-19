@@ -26,7 +26,7 @@
       ],
       "hard_gate": false,
       "path": "brain-forget/SKILL.md",
-      "type": "rigid"
+      "type": "flexible"
     },
     "brain-link": {
       "allowed_tools": [
@@ -35,7 +35,7 @@
       ],
       "hard_gate": false,
       "path": "brain-link/SKILL.md",
-      "type": "rigid"
+      "type": "flexible"
     },
     "brain-read": {
       "allowed_tools": [
@@ -57,7 +57,7 @@
       ],
       "hard_gate": false,
       "path": "brain-recall/SKILL.md",
-      "type": "rigid"
+      "type": "flexible"
     },
     "brain-why": {
       "allowed_tools": [
@@ -66,7 +66,7 @@
       ],
       "hard_gate": false,
       "path": "brain-why/SKILL.md",
-      "type": "rigid"
+      "type": "flexible"
     },
     "brain-write": {
       "allowed_tools": [

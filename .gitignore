@@ -40,3 +40,9 @@ tools/scan_forge/fixtures/
 
 # Accidental self-symlink at repo root (e.g. ln -s . forge)
 /forge
+
+# Non-Claude IDE/tool byproducts (this is the Claude-only branch — don't recommit)
+/.codex/
+/.agents/
+/.cursor/
+/.opencode/

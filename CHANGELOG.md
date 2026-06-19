@@ -101,10 +101,12 @@ move to dedicated branches.
 
 ### Removed
 - All non-Claude host artifacts: `.cursor/`, `.cursor-plugin/`, `.cursorrules`,
-  `.codex-plugin/`, `.opencode/`, `.agent/`, `gemini-extension.json`, `GEMINI.md`,
-  `references/copilot-tools.md`, `templates/junie-guidelines.md`, the Cursor hook
-  manifest, the `hooks/session-start` shell shim, and the non-Claude platform docs
-  under `docs/platforms/`.
+  `.codex-plugin/`, `.codex/`, `.opencode/`, `.agent/`, `.agents/` (a stale duplicate
+  skill tree), `gemini-extension.json`, `GEMINI.md`, `references/copilot-tools.md`,
+  `templates/junie-guidelines.md`, the Cursor hook manifest, the `hooks/session-start`
+  shell shim, and the non-Claude platform docs under `docs/platforms/`. `.gitignore`
+  now blocks `.codex/`, `.agents/`, `.cursor/`, `.opencode/` from being recommitted by
+  other-IDE tooling.
 
 ### Notes
 - `AGENTS.md` is retained — it is now a vendor-neutral standard (Linux Foundation)

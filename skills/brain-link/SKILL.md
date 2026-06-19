@@ -70,7 +70,7 @@ allowed-tools:
 
 **Enforcement — MUST:**
 - MUST check directionality before creating link; test: "Does A → B express the relationship correctly? What about B → A?"
-- MUST create reverse links explicitly (if D42 `depends-on` D17, also create D17 `required-by` D42)
+- MUST record the reverse side explicitly (a `replaces` link sets `superseded_by: D42` on D17; a `related`/`conflicts`/`complements`/`variant` link is written on both decisions' `related_decisions`)
 - MUST test traversal: "Show all decisions that replace D42" should return correct results, not reversed
 - MUST document directionality in link metadata (mark forward-only links explicitly)
 - MUST verify: one-directional `replaces` is correct; bidirectional `conflicts` is correct; variant should be directional (global → instance)
@@ -89,10 +89,10 @@ EVERY SEMANTIC EDGE MUST INCLUDE A DECLARED LINK TYPE, DIRECTIONALITY, AND PROVE
 
 If you notice any of these, STOP and do not proceed:
 
-- **A link is created without a declared `link_type`** — An untyped link is ambiguous: "related" means nothing specific when querying "what does D42 supersede?" or "what contradicts D42?". STOP. Every link must specify its type: `supersedes`, `depends-on`, `contradicts`, `implements`, `extends`, or `informs`.
-- **Only a forward link is created without the reverse** — A one-directional link means queries from the target side return no results. STOP. Every link must be created in both directions: if D42 `depends-on` D17, D17 must also have a `required-by` link pointing to D42.
+- **A link is created without a declared link type** — An untyped link is ambiguous: "related" means nothing specific when querying "what does D42 replace?" or "what conflicts with D42?". STOP. Every link must specify one of the canonical types defined in §1: `related`, `replaces`, `conflicts`, `complements`, or `variant`.
+- **Only a forward link is created without the reverse** — A one-directional link means queries from the target side return no results. STOP. Record both sides: a `replaces` link sets `superseded_by:` on the older decision; the reciprocal types (`related`/`conflicts`/`complements`/`variant`) are written on both decisions' `related_decisions` frontmatter.
 - **Links are created from memory of what decisions exist, not from brain-read** — Linking to a decision ID that doesn't exist creates dangling references that break provenance traces. STOP. Always query `brain-read` to verify both source and target decision IDs exist before creating any link.
-- **A `supersedes` link is created without marking the superseded decision's status** — A supersedes link without a status update leaves the old decision appearing active. STOP. When creating a `supersedes` link, also update the superseded decision's status to `superseded` via brain-forget or brain-write.
+- **A `replaces` link is created without marking the superseded decision** — leaving the old decision appearing active. STOP. When creating a `replaces` link, also set `superseded_by: D<new>` on the older decision and demote its status (`active` → `warm` → `cold`) via brain-forget/brain-write. There is no `superseded` status value — the canonical lifecycle is `active | warm | cold | archived`.
 - **Links are batched and created after multiple decisions are written** — Links created after the fact are reconstructions — they lose the reasoning that was present at decision time. STOP. Create links immediately when writing each decision.
 - **Link target is a product or project ID instead of a specific decision ID** — Coarse-grained links don't support precise provenance queries. STOP. Links must always point to specific decision IDs (e.g., `D42`), never to product slugs or repo names.
 
@@ -362,38 +362,36 @@ show decisions created in Q2-2023
 
 ## 6. Data Model
 
-### Decision Node
-```
-{
-  id: "D42",
-  title: "Graduated API versioning",
-  created: "2022-06-15",
-  product: ["shopapp", "production"],
-  domain: "api",
-  tags: ["#api-versioning", "#sync", "#breaking-change"],
-  status: "stable" | "current" | "deprecated" | "retired",
-  summary: "Support multiple API versions via URL path (/v1, /v2)",
-  details: { ... },
-  link_refs: ["D40", "D41", "D89"]
-}
+> **Storage of record is YAML frontmatter in the decision file** — not a separate
+> edge store or JSON node database. The JSON below is a **conceptual** view; the
+> authority for the on-disk shape is `brain-write` (frontmatter) and
+> `forge-brain-layout` (paths/naming/status). Links live as `related_decisions:`
+> and `superseded_by:` fields inside each `decisions/<category>/D<NNN>_<topic>.md`.
+
+### Canonical on-disk shape (what you actually write)
+```yaml
+# in ~/forge/brain/decisions/architecture/D042_graduated-api-versioning.md
+---
+decision_id: D042
+title: Graduated API versioning
+status: active            # active | warm | cold | archived
+tags: [api-versioning, sync, breaking-change]   # YAML array, no '#'
+related_decisions:
+  parent: [D040]
+  children: []
+  related: [D041]
+superseded_by:            # set to D<new> when a `replaces` link is created
+---
 ```
 
-### Link Edge
+### Conceptual node/edge view (illustration only — NOT a stored file)
 ```
-{
-  from: "D42",
-  to: "D89",
-  type: "replaces",
-  when: "2023-02-20",
-  why: "Reduce URL clutter, improve load balancing",
-  status: "stable",
-  impact: {
-    products: ["shopapp", "production"],
-    breaking: true,
-    migration_timeline: "6 months"
-  }
-}
+node  { id: "D042", type: "decision", status: "active", related_decisions: {...}, superseded_by: null }
+edge  { from: "D042", to: "D089", type: "replaces", when: "2023-02-20", why: "Reduce URL clutter" }
 ```
+An edge of type `replaces` is realized on disk as `superseded_by: D042` on the
+older decision (D089); `related`/`conflicts`/`complements`/`variant` edges are
+realized as entries under `related_decisions.related` on both decisions.
 
 ### Tag Index
 ```

@@ -50,6 +50,13 @@ Trace the provenance of any decision. Given a decision ID, this skill walks thro
 
 ## 1. Decision Lookup
 
+> **Preferred path: the brain MCP `brain_why` tool** (read-only) returns a
+> decision's frontmatter + git history in one call — exactly what this skill does
+> by hand. See [`forge-brain-layout`](../forge-brain-layout/SKILL.md) (MCP query map)
+> and [`docs/brain-mcp.md`](../../docs/brain-mcp.md). Caveat: enable with
+> `claude mcp add forge-brain` (bundled `.mcp.json` ships `mcpServers: {}`); the
+> manual `git log` / `grep` walk below is the live fallback.
+
 When invoked with a decision ID (e.g., `D42`, `D123`), the skill performs:
 
 - **Query the decision index** in the brain (via `brain-read`) to locate the decision file

@@ -40,6 +40,27 @@ The brain is, by construction, an [Open Knowledge Format](https://cloud.google.c
 
 **Memory-tool alignment.** The brain doubles as an [Anthropic Memory-tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool) directory: a filesystem the agent reads, writes, and updates across sessions and across context-editing / compaction boundaries. Brain files are the durable memory that survives compaction — write the decision to brain via `brain-write`, never leave it only in the conversation. `index.md` / `log.md` give that memory layer a cheap table of contents and an audit trail.
 
+## Querying via the brain MCP server (read-only)
+
+Forge ships a dependency-free, **read-only** MCP server over the brain
+(`tools/mcp/forge_brain_mcp.py`; see [`docs/brain-mcp.md`](../../docs/brain-mcp.md)).
+It is the **preferred read path when configured** — it computes the brain root
+itself (`FORGE_BRAIN` → `FORGE_BRAIN_PATH` → `~/forge/brain`), so it cannot hit a
+wrong-path bug — with `grep`/`cat` as the live fallback.
+
+| Navigation task | MCP tool |
+|---|---|
+| Read a brain file / list a directory | `brain_read`, `brain_list` |
+| Find decisions by keyword (substring scan) | `brain_recall` |
+| Provenance: frontmatter + git history of a decision | `brain_why` |
+| Latest conductor phase markers for a task | `brain_conductor_status` |
+
+It is read-only by construction — brain **mutation** stays with `brain-write` /
+`brain-forget` (audited, committed). **Caveat:** the bundled `.mcp.json` currently
+ships `mcpServers: {}`; register the server with `claude mcp add forge-brain --
+python3 ~/forge/tools/forge_brain_mcp.py` to enable it (until then, use the
+`grep`/`cat` fallback). Sibling brain skills point here for the read path.
+
 ## Directory Tree
 
 ```

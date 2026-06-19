@@ -37,7 +37,17 @@ NEVER INFER OR ASSUME BRAIN CONTENT FROM CHAT CONTEXT — READ THE FILE.
 IF THE BRAIN FILE DOES NOT EXIST, STOP AND FLAG MISSING — DO NOT PROCEED WITH ASSUMED DATA.
 ```
 
-The brain at `~/forge/brain/` is git-backed markdown. Read patterns:
+The brain at `~/forge/brain/` is git-backed markdown.
+
+> **Preferred read path: the brain MCP** (read-only) — `brain_read`, `brain_list`,
+> `brain_recall`, `brain_why`, `brain_conductor_status` (the last is exactly the
+> Task Scope HARD-GATE check below). It resolves the brain root itself, so it can't
+> hit a wrong-path bug. See the MCP query map in [`forge-brain-layout`](../forge-brain-layout/SKILL.md)
+> and [`docs/brain-mcp.md`](../../docs/brain-mcp.md). Caveat: enable it with
+> `claude mcp add forge-brain` (bundled `.mcp.json` ships `mcpServers: {}`); the
+> `cat`/`grep` patterns below are the live fallback.
+
+Read patterns:
 
 ## Task Scope Verification (HARD-GATE)
 

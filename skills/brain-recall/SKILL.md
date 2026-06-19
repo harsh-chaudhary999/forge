@@ -630,24 +630,21 @@ if [ "$DECISION_COUNT" -gt 5000 ]; then
 fi
 ```
 
-**How to mitigate?**
-1. **Build a brain index file** (update weekly):
-   ```bash
-   # brain/index.json: {filename, title, product, project, tags, date, type}
-   # Query against JSON instead of grepping all files
-   jq '.[] | select(.product == "shopapp" and .tags[] == "#cache")' brain/index.json
-   ```
-2. **Use filename conventions:** Encode metadata in filename
-   - `YYYY-MM-DD_PRODUCT_PROJECT_TYPE_TITLE.md`
-   - Query filenames before content grep
-3. **Lazy load file contents:** For ranking, read only frontmatter (first 20 lines), not full file
-4. **Parallel search:** Use `grep -r` with `xargs -P 4` for multi-core systems
-5. **Archive old decisions:** Move decisions >2 years old to `~/forge/brain/archived/` to reduce active brain size
+**How to mitigate?** (using what exists today)
+1. **Index-first via OKF `index.md`:** read the scope's `decisions/<category>/index.md` (a one-row-per-file table — see `forge-brain-layout`) before grepping bodies; it's the cheap table of contents.
+2. **Prefer the brain MCP `brain_recall`** (read-only substring scan that computes the brain root itself) over hand-rolled greps; see [`docs/brain-mcp.md`](../../docs/brain-mcp.md).
+3. **Lazy-load for ranking:** read only frontmatter (first ~20 lines) per file, not the full body.
+4. **Parallel search:** `grep -rl ... | xargs -P 4 ...` on multi-core systems.
+5. **Archive old decisions:** move decisions >2 years old to `~/forge/brain/archived/` to shrink the active set.
 
 **When to escalate?**
-- Escalate to `brain-link` if you need full-text semantic search (requires pre-computed embeddings)
-- Escalate to `brain-why` if you need provenance/lineage (may require different indexing strategy)
-- Consider moving to dedicated search backend (Elasticsearch) for brains >10k decisions
+- Use `brain-why` for provenance/lineage (frontmatter + git history; the MCP `brain_why` tool does this in one call).
+
+> **Not implemented today (design-intent only):** a precomputed `brain/index.json`,
+> embedding/vector search, and an Elasticsearch backend do **not** exist in Forge and
+> are **not** how recall works — do not instruct an operator to build or query them.
+> Forward-looking retrieval (FTS/embeddings) is tracked once, optionally, in
+> `forge-brain-layout` ("Phase 2 prep"); treat that as the single source for futures.
 
 ---
 

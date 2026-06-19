@@ -53,9 +53,22 @@ cat > ~/forge/brain/prds/<task-id>/shared-dev-spec.md <<'EOF'
 EOF
 ```
 
-## 2. Commit with context
+## 1b. Update the scope's OKF index.md + log.md (required, not optional)
+The brain is an [OKF](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing/) +
+Memory-tool directory (see `forge-brain-layout`). Before committing, in the **same
+scope directory** you just wrote into:
 ```bash
-git -C ~/forge/brain add prds/<task-id>/shared-dev-spec.md
+SCOPE=~/forge/brain/prds/<task-id>
+# 1) add/refresh the file's row in the scope index (create index.md if absent)
+#    "| shared-dev-spec.md | spec | locked contracts for <task-id> |"
+# 2) append a dated, newest-first entry to the scope changelog (create log.md if absent)
+printf '## %s\n- wrote shared-dev-spec.md — locked contracts for <task-id>\n\n' \
+  "$(date -u +%Y-%m-%d)" | cat - "$SCOPE/log.md" 2>/dev/null > "$SCOPE/log.md.tmp" && mv "$SCOPE/log.md.tmp" "$SCOPE/log.md"
+```
+
+## 2. Commit with context (include index.md + log.md)
+```bash
+git -C ~/forge/brain add prds/<task-id>/shared-dev-spec.md prds/<task-id>/index.md prds/<task-id>/log.md
 git -C ~/forge/brain commit -m "spec: lock shared dev spec for <task-id>
 
 Converged across: backend, web, app, infra

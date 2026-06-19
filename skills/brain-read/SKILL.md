@@ -654,12 +654,11 @@ ls -la ~/forge/brain/products/ ~/forge/brain/prds/ ~/forge/brain/decisions/
 **Do NOT:** Assume brain paths are relative. Do NOT use different brain locations without explicit verification.
 
 **Mitigation:**
-1. Verify correct brain path: `echo ~/forge/brain`
-2. Confirm location matches git config: `cd ~/forge && git config forge.brain-path`
-3. Check symlinks: `ls -l .claude/brain` (should link to `~/forge/brain`)
-4. Explicit path in all commands: `grep -r "term" ~/forge/brain --include="*.md"`
+1. Resolve the brain root via the real precedence chain: `${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}` (the same order the brain MCP uses).
+2. Confirm it is a git repo: `git -C "$BRAIN" rev-parse --is-inside-work-tree`.
+3. Explicit path in all commands: `grep -r "term" ~/forge/brain --include="*.md"`.
 
-**Escalation:** NEEDS_INFRA_CHANGE — Brain location is wrong or symlink is broken. Check environment setup or contact platform team to fix path configuration.
+**Escalation:** NEEDS_INFRA_CHANGE — Brain root is missing or not a git repo. Set `FORGE_BRAIN`/`FORGE_BRAIN_PATH`, or initialize the brain (`/workspace`). (There is no `git config forge.brain-path` or `.claude/brain` symlink mechanism — the env-precedence chain above is authoritative.)
 
 ---
 

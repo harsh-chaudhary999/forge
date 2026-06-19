@@ -432,7 +432,7 @@ for message in consumer:
 
 ## Example Output: Complete Event Bus Contract
 
-**File:** `~/forge/brain/prds/<task-id>/contracts/event-bus.md`
+**File:** `~/forge/brain/prds/<task-id>/contracts/event-contract.md` (council convention: `<domain>-contract.md`)
 
 ```markdown
 # Event Bus Contract: Payment Service

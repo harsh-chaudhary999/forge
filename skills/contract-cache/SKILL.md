@@ -569,8 +569,8 @@ Who needs to write to this key?
 
 - **brain-read:** Look up past cache contracts and domain decisions
 - **reasoning-as-infra:** Analyze caching, database, and scaling requirements
-- **contract-api:** Define REST contracts that interact with cached data
-- **contract-db:** Define database schemas and denormalization for cache warming
+- **contract-api-rest:** Define REST contracts that interact with cached data
+- **contract-schema-db:** Define database schemas and denormalization for cache warming
 
 ## Cross-References
 

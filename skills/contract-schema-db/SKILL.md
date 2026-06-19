@@ -725,7 +725,7 @@ FROM user_2fa;
   4. **Approval**: Non-reversible migrations require explicit sign-off from infra team and product.
 - **Reversible alternative**: Instead of `DROP COLUMN`, `ALTER COLUMN legacy_id to NULL and add trigger to hide from app`. This is reversible.
 
-**Escalation**: If migration must be non-reversible, escalate to NEEDS_APPROVAL - Infra team and product must explicitly approve the risk of no rollback.
+**Escalation**: If migration must be non-reversible, escalate to BLOCKED - Infra team and product must explicitly approve the risk of no rollback.
 
 ---
 
@@ -803,7 +803,7 @@ FROM user_2fa;
   - Option 2: Add constraint but allow NULL for legacy service: `UNIQUE KEY (order_id, user_id) WHERE user_id IS NOT NULL` (partial index).
   - Option 3: Change legacy service code to not insert NULL.
 
-**Escalation**: If multiple services depend on NULL values, escalate to NEEDS_COORD - Services must agree on constraint level before migration.
+**Escalation**: If multiple services depend on NULL values, escalate to NEEDS_COORDINATION - Services must agree on constraint level before migration.
 
 ---
 
@@ -1005,7 +1005,7 @@ How critical is this constraint to data integrity?
 
 ---
 
-**Escalation**: If multiple services depend on NULL values, escalate to NEEDS_COORD - Services must agree on constraint level before migration.
+**Escalation**: If multiple services depend on NULL values, escalate to NEEDS_COORDINATION - Services must agree on constraint level before migration.
 
 ### Post-Implementation Checklist: Did I Follow the Skill?
 

@@ -577,7 +577,7 @@ How many services will write to this index?
 
 - **brain-read**: Retrieve product topology and contracts from the brain
 - **reasoning-as-infra**: Full discussion of Elasticsearch scaling, sharding, cluster topology
-- **code-quality-reviewer**: Review indexing code (consumer, dual-write, bulk API)
+- **code-quality-reviewer** (agent, not a skill): dispatched after implementation to review indexing code (consumer, dual-write, bulk API)
 
 ## Checklist
 

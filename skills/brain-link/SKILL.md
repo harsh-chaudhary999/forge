@@ -113,109 +113,42 @@ Built on top of brain-read, which provides decision metadata and history.
 
 ## 1. Link Types
 
-Define how decisions relate to each other:
+Define how decisions relate to each other. These five are canonical — every link
+declares exactly one:
 
-### **Related**
-Decisions that influenced each other without formal ordering.
-```
-D40: REST design principles
-  --related--> D41: Error handling strategy
-  --related--> D42: Graduated API versioning
-```
-Use when decisions share context or emerged together.
+- **Related** — decisions that influenced each other without formal ordering. Use
+  when decisions share context or emerged together. Bidirectional.
+- **Replaces** — newer decision supersedes older; tracks decision evolution. Use
+  when a better approach emerges or constraints change. Directional (old → new).
+- **Conflicts** — mutually exclusive choices; cannot both be true in same system.
+  Use when decisions represent alternative designs. Bidirectional.
+- **Complements** — works together as a system; neither sufficient alone. Use
+  when decisions form a cohesive whole. Bidirectional.
+- **Variant** — same pattern applied in different products/contexts; allows "show
+  all instances". Use when a pattern is instantiated differently across products.
+  Directional (global → instance).
 
-### **Replaces**
-Newer decision supersedes older decision. Tracks decision evolution.
+Worked example notation for each type:
 ```
-D42: Graduated API versioning (2022-06)
-  --replaces--> D89: Header-based versioning (2023-02)
-  --replaces--> D127: Content-negotiation versioning (2024-01)
+related:     D40 --related--> D41 --related--> D42
+replaces:    D42 (2022-06) --replaces--> D89 (2023-02) --replaces--> D127 (2024-01)
+conflicts:   D30 --conflicts--> D31 ; D30 --conflicts--> D32
+complements: D42 --complements--> D46 ; D42 --complements--> D47
+variant:     D42 (global) --variant--> D43 (shopapp) / D44 (production) / D45 (mobile)
 ```
-Use when a better approach emerges or constraints change.
-
-### **Conflicts**
-Mutually exclusive choices. Cannot both be true in same system.
-```
-D30: Cache-aside strategy
-  --conflicts--> D31: Write-through caching
-  --conflicts--> D32: Write-behind caching
-```
-Use when decisions represent alternative designs.
-
-### **Complements**
-Works together as a system. Neither sufficient alone.
-```
-D42: Graduated API versioning
-  --complements--> D46: Error code taxonomy
-  --complements--> D47: Deprecation timeline strategy
-```
-Use when decisions form a cohesive whole.
-
-### **Variant**
-Same pattern applied in different products/contexts. Allows "show all instances".
-```
-D42: Graduated API versioning (global decision)
-  --variant--> D43 (shopapp instance)
-  --variant--> D44 (production instance)
-  --variant--> D45 (mobile instance)
-```
-Use when same pattern instantiated differently across products.
+See [reference/example-graph.md](reference/example-graph.md) for these types
+composed into a full graph.
 
 ---
 
 ## 2. Semantic Tags
 
-Tags enable cross-cutting queries and pattern discovery.
+Tags enable cross-cutting queries and pattern discovery. Stored as a YAML array
+in each decision's frontmatter (`tags: [...]`, no `#` on disk); the `#` prefix is
+the query/display convention.
 
-### Concept Tags
-Abstract ideas and principles:
-- `#api-versioning` — API evolution strategy
-- `#eventual-consistency` — Consistency model
-- `#cache-invalidation` — Cache freshness
-- `#rate-limiting` — Traffic control
-- `#observability` — Monitoring and tracing
-- `#resilience` — Fault tolerance
-- `#idempotency` — Repeated operation safety
-
-### Pattern Tags
-Proven design patterns:
-- `#circuit-breaker` — Fault isolation
-- `#bulkhead` — Resource isolation
-- `#saga` — Distributed transaction
-- `#bloom-filter` — Set membership
-- `#backpressure` — Flow control
-- `#exponential-backoff` — Retry strategy
-- `#gossip` — Peer-to-peer sync
-
-### Domain Tags
-Business/feature areas:
-- `#auth` — Authentication & authorization
-- `#payments` — Payment processing
-- `#search` — Search functionality
-- `#notifications` — Messaging system
-- `#inventory` — Stock management
-- `#catalog` — Product data
-- `#recommendations` — ML-based suggestions
-
-### Architectural Tags
-System design dimensions:
-- `#async` — Asynchronous pattern
-- `#sync` — Synchronous pattern
-- `#hybrid` — Mixed sync/async
-- `#event-driven` — Event-based architecture
-- `#request-reply` — RPC-style communication
-- `#publish-subscribe` — Pub/sub messaging
-- `#database` — Data persistence
-- `#cache` — In-memory storage
-
-### Metadata Tags
-Decision properties:
-- `#breaking-change` — Client-incompatible
-- `#deprecation` — Phased retirement
-- `#rollback-plan` — Can unwind if needed
-- `#tech-debt` — Known limitation
-- `#performance-critical` — SLO-impacting
-- `#security-critical` — Security-relevant
+See [reference/tags.md](reference/tags.md) for the full tag catalog (concept,
+pattern, domain, architectural, and metadata tags).
 
 ---
 
@@ -232,24 +165,10 @@ Products in the system:
 
 ### Linking Strategy
 
-**Global decision** → **Product instances**:
-```
-D42: Graduated API versioning (global, 2022-06)
-  --variant--> D43 (shopapp, 2022-07)
-       Product: shopapp
-       Status: stable
-       Notes: v1, v2, v3 endpoints active
-  
-  --variant--> D44 (production, 2022-08)
-       Product: production
-       Status: stable
-       Notes: v1, v2 active; v0 deprecated
-  
-  --variant--> D45 (mobile, 2023-01)
-       Product: mobile
-       Status: stable
-       Notes: v1 only (reduced API surface)
-```
+**Global decision** → **product instances**: write one `variant` link per product
+(global → instance), recording each instance's product, status, and notes. See
+[reference/cross-linking-examples.md](reference/cross-linking-examples.md) for a
+worked global→instance illustration.
 
 ### Query Examples
 - "Show D42 instances across all products"
@@ -263,22 +182,10 @@ D42: Graduated API versioning (global, 2022-06)
 Track how decisions evolve and change over time.
 
 ### Evolution Chains
-Show progression from original to current:
-```
-D42: Graduated API versioning (2022-06, REST endpoints)
-  Status: stable
-  Details: /v1/users, /v2/products, etc.
-  
-  --replaces--> D89: Header-based versioning (2023-02)
-    Trigger: Reduced URL clutter, easier load balancing
-    Details: X-API-Version: 2 header
-    Status: stable
-    
-    --replaces--> D127: Content-negotiation versioning (2024-01)
-      Trigger: GraphQL adoption, unified versioning strategy
-      Details: Accept: application/vnd.api+json;version=2
-      Status: current
-```
+Show progression from original to current by chaining `replaces` links
+(old → new), recording trigger, details, and status at each hop. See
+[reference/cross-linking-examples.md](reference/cross-linking-examples.md) for a
+worked three-hop evolution chain.
 
 ### Tracking Change Rationale
 Include in each link:
@@ -296,68 +203,19 @@ Include in each link:
 
 ## 5. Query Interface
 
-Standard query syntax for decision graph traversal.
+Standard query syntax for decision graph traversal. Common cases:
 
-### Basic Queries
-
-**By Decision ID**:
 ```
-show decisions linked to D42
-show D42 variants
-show D42 successors
-show D42 predecessors
-```
-
-**By Tag**:
-```
+show decisions linked to D42        # neighbors
+show D42 closure (depth=2)          # bounded traversal
 show all decisions tagged #api-versioning
-show decisions tagged #api-versioning AND #breaking-change
-show decisions tagged (#circuit-breaker OR #bulkhead)
-```
-
-**By Product**:
-```
-show all decisions on product=shopapp
-show decisions on product=shopapp AND tag=#async
-show product=shopapp AND status=current
-```
-
-**By Domain**:
-```
-show decisions on domain=auth
-show decisions on domain=auth AND tag=#resilience
-```
-
-### Advanced Queries
-
-**Evolution Tracking**:
-```
+show all decisions on product=shopapp AND status=current
 show evolution chain: D42 → current
-show all replacements: D42 → D89 → D127 → ?
-show change history: D42 (when/why/impact)
 ```
 
-**Cross-Product Patterns**:
-```
-show all products using #api-versioning
-show product=shopapp using pattern=#circuit-breaker
-show decisions varying by product (D42 variants)
-```
-
-**Graph Traversal**:
-```
-show neighbors: D42 (depth=1)
-show closure: D42 (depth=2)
-show related-decisions: tag=#eventual-consistency (depth=all)
-```
-
-**Aggregations**:
-```
-count decisions by tag
-count decisions by product
-count decisions by status
-show decisions created in Q2-2023
-```
+See [reference/query-interface.md](reference/query-interface.md) for the full
+query catalog (by decision ID / tag / product / domain, plus advanced evolution,
+cross-product, graph-traversal, and aggregation queries).
 
 ---
 
@@ -409,186 +267,16 @@ realized as entries under `related_decisions.related` on both decisions.
 
 ## 7. Example Graph
 
-Complete decision graph showing all relationship types:
-
-```
-D40: REST design principles (2022-04)
-  tags: #sync, #api
-  ├─→ (complements) D41: Error handling strategy
-  │    └─→ (variant) D41a (shopapp), D41b (production)
-  │
-  └─→ (complements) D42: Graduated API versioning
-       tags: #api-versioning, #sync, #breaking-change
-       ├─→ (variant) D43 (shopapp, 2022-07)
-       │    tags: product=shopapp
-       │    ├─→ (complements) D46: Error code taxonomy
-       │    │    tags: #error-handling, #api
-       │    │    ├─→ (variant) D46a (shopapp), D46b (production)
-       │    │    └─→ (related) D47: Deprecation timeline
-       │    │
-       │    └─→ (replaces) D89: Header-based versioning (2023-02)
-       │         tags: #api-versioning, #sync
-       │         migration_timeline: "6 months"
-       │         ├─→ (variant) D89a (shopapp), D89b (production)
-       │         └─→ (replaces) D127: Content-negotiation (2024-01)
-       │              tags: #api-versioning, #async-ready
-       │              status: current
-       │
-       ├─→ (variant) D44 (production, 2022-08)
-       │    tags: product=production
-       │    └─→ (complements) D46: Error code taxonomy
-       │
-       └─→ (variant) D45 (mobile, 2023-01)
-            tags: product=mobile, #mobile
-
-D30: Cache-aside strategy (2021-11)
-  tags: #cache, #eventual-consistency
-  ├─→ (conflicts) D31: Write-through caching
-  ├─→ (conflicts) D32: Write-behind caching
-  ├─→ (complements) D20: Cache invalidation
-  │    tags: #eventual-consistency, #cache-invalidation
-  │    └─→ (related) D70: Search freshness SLO
-  │         tags: #search, #eventual-consistency
-  │
-  └─→ (variant) D30a (shopapp), D30b (production)
-
-D50: Kafka for events (2023-06)
-  tags: #event-driven, #async, #resilience
-  ├─→ (complements) D51: Dead-letter queue strategy
-  │    tags: #error-handling, #resilience
-  ├─→ (complements) D52: Event versioning
-  │    tags: #api-versioning, #event-driven
-  │    └─→ (replaces) D100: Header-based event versioning
-  │
-  └─→ (variant) D50a (shopapp), D50b (production)
-
-Tag: #api-versioning
-  Decisions: D40, D42, D43, D44, D45, D46, D89, D127, D52
-  Concepts: API evolution, backward compatibility
-  Products: shopapp, production, mobile
-
-Tag: #eventual-consistency
-  Decisions: D20, D30, D30a, D30b, D70
-  Concepts: Consistency model, cache freshness
-  Domains: search, notifications
-
-Product: shopapp
-  Decisions: D1-D100 (full product topology)
-  Tags: #api-versioning, #async, #cache, #resilience
-  Status: production
-```
+See [reference/example-graph.md](reference/example-graph.md) for a complete
+decision graph showing all relationship types plus tag/product rollups.
 
 ---
 
 ## 8. Usage Examples
 
-### Query: "Show all API versioning patterns"
-```
-brain-link: query tag=#api-versioning
-
-Results:
-├─ D40: REST design principles (2022-04) [related decisions]
-├─ D42: Graduated API versioning (2022-06) [anchor]
-│  ├─ D43 (shopapp variant, 2022-07)
-│  ├─ D44 (production variant, 2022-08)
-│  ├─ D45 (mobile variant, 2023-01)
-│  ├─ D46: Error code taxonomy (complements)
-│  ├─ D47: Deprecation timeline (related)
-│  └─ D89: Header-based versioning (replaces, 2023-02)
-│     └─ D127: Content-negotiation (replaces, 2024-01) [current]
-├─ D52: Event versioning (2023-08)
-│  └─ D100: Header-based event versioning (replaces)
-└─ (7 total decisions)
-
-Insights:
-- Evolution: URL → Headers → Content-negotiation
-- Pattern adopted across 3 products
-- 2 generations, 1 current approach
-- Related: error handling, deprecation, domain-based strategy
-```
-
-### Query: "Show all decisions linked to D42"
-```
-brain-link: show D42 closure (depth=all)
-
-Results:
-Direct links (depth=1):
-  ← D40: REST design (related)
-  ← D41: Error handling (related)
-  → D43, D44, D45 (variants)
-  → D46: Error codes (complements)
-  → D47: Deprecation (related)
-  → D89: Header versioning (replaces)
-
-Transitive links (depth=2):
-  → D46 → D46a, D46b (variants)
-  → D47 → D48: Sunset strategy (related)
-  → D89 → D89a, D89b (variants)
-  → D89 → D127: Content-negotiation (replaces)
-
-Full closure: [D40, D41, D42, D43, D44, D45, D46, D46a, D46b, 
-              D47, D48, D89, D89a, D89b, D127]
-(15 decisions in full closure)
-```
-
-### Query: "Show evolution chain: D42 → current"
-```
-brain-link: evolution D42
-
-Timeline:
-┌─────────────────────────────────────────────────────┐
-│ D42: Graduated API versioning (2022-06)             │
-│ Pattern: URL path versioning (/v1, /v2)              │
-│ Status: stable, active in shopapp, production       │
-│ Products: shopapp, production, mobile               │
-└─────────────────────────────────────────────────────┘
-                        ↓ (replaces)
-          Why: Reduce URL clutter, simpler
-          When: 2023-02
-          Migration: 6 months
-┌─────────────────────────────────────────────────────┐
-│ D89: Header-based versioning (2023-02)              │
-│ Pattern: X-API-Version header                       │
-│ Status: stable, active in shopapp, production       │
-│ Benefits: Cleaner URLs, better load balancing       │
-└─────────────────────────────────────────────────────┘
-                        ↓ (replaces)
-          Why: Unified strategy for GraphQL
-          When: 2024-01
-          Migration: 3 months
-┌─────────────────────────────────────────────────────┐
-│ D127: Content-negotiation versioning (2024-01)      │
-│ Pattern: Accept header (application/vnd.api+...)   │
-│ Status: current                                     │
-│ Benefits: GraphQL + REST unified, W3C standard      │
-└─────────────────────────────────────────────────────┘
-
-Change drivers:
-- Load balancing constraints → headers
-- GraphQL adoption → content negotiation
-- Operational simplification → unified strategy
-```
-
-### Query: "Show decisions on product=shopapp AND tag=async"
-```
-brain-link: query product=shopapp tag=#async
-
-Results:
-├─ D50: Kafka for events (2023-06)
-│  ├─ D50a (shopapp variant)
-│  └─ D51: Dead-letter queue strategy (complements)
-├─ D70: Search freshness SLO (2023-09)
-│  └─ D71: Search async indexing (relates)
-└─ D85: Background job processing (2024-02)
-   └─ D86: Retries + exponential backoff (complements)
-
-(3 decisions)
-
-Insights:
-- All async decisions involve event/messaging
-- All include resilience/error handling complements
-- Timeline: 2023-2024, recent additions
-```
+See [reference/examples.md](reference/examples.md) for four worked query
+examples (tag query, closure, evolution chain, product+tag) with result shapes
+and insight summaries.
 
 ---
 
@@ -645,215 +333,43 @@ The two skills are complementary:
 
 ## 11. Edge Cases
 
-### Edge Case 1: Circular Link Graph
+Summary (full symptom / Do-NOT / action / escalation in the reference):
 
-**Symptom**: D001 complements D002, D002 replaces D001, creating a cycle.
+| # | Edge case | First move | Escalation |
+|---|---|---|---|
+| 1 | Circular link graph (D1↔D2 cycle) | Detect + reject before write; list the cycle | NEEDS_CONTEXT |
+| 2 | Decision superseded by multiple heirs | Accept; mark old superseded, `succeeded_by: [..]` | NEEDS_COORDINATION |
+| 3 | Link target not found | Search near-match; reject if none; no dangling link | NEEDS_CONTEXT |
+| 4 | Conflicting links between active decisions | Warn; deprecate one or scope by product | NEEDS_COORDINATION |
+| 5 | Graph traversal timeout on large brain | Don't use partial results; narrow filter / limit depth | NEEDS_CONTEXT |
 
-**Do NOT**: Silently accept the cycle. Circular dependencies in a decision graph indicate unresolved conflicts or miscategorized relationships.
-
-**Action**:
-1. Detect cycle before write (graph validation during link creation)
-2. Reject with error message listing the cycle: "Cannot create link D002 replaces D001: would create cycle D001 → D002 → D001"
-3. Prompt user: "Did you mean variant relationship instead of replaces? Or does this indicate two conflicting decisions that should both be marked?"
-
-**Escalation**: NEEDS_CONTEXT
-- User must clarify: Is this variant instantiation? Bidirectional conflict? Misclassified relationship?
-- If true circular dependency exists, both decisions need status review (cannot both be active)
-
----
-
-### Edge Case 2: Decision Superseded by Multiple Heirs
-
-**Symptom**: D003 replaces D001 AND D007 replaces D001 (parallel supersession).
-
-**Do NOT**: Treat as invalid — this is valid in parallel supersession scenarios (e.g., different products adopt different successors).
-
-**Action**:
-1. Accept link creation (this is valid)
-2. Mark D001 status = `superseded` (not `deprecated`)
-3. Reference both successors in D001's metadata: `succeeded_by: [D003, D007]`
-4. Ensure each heir has `replaces: D001` link explicitly
-5. Document why parallel supersession occurred (product divergence, feature split, etc.)
-
-**Escalation**: NEEDS_COORDINATION
-- When multiple heirs exist, council should document the split point
-- Each heir must have clear domain/product scope so they don't create false conflicts
-
----
-
-### Edge Case 3: Link Target Not Found
-
-**Symptom**: `brain-link create D042 replaces D099` but D099.md doesn't exist in the brain.
-
-**Do NOT**: Create dangling link pointing to non-existent decision.
-
-**Action**:
-1. Search brain for near-match (similar ID range, similar creation date, similar tags)
-2. Return candidates: "Did you mean D098 (similar era) or D109 (similar domain)?"
-3. If no match found, reject with error: "D099 not found in brain. Create decision first, then link."
-4. Store as tombstone link if D099 is confirmed deleted: `replaces: D099 [ARCHIVED]`
-
-**Escalation**: NEEDS_CONTEXT
-- If target is confirmed deleted (in brain archive), document as superseded by archive
-- If target never existed, return error: user must verify ID before linking
-
----
-
-### Edge Case 4: Conflicting Links Between Active Decisions
-
-**Symptom**: D010 conflicts D015, both status=active, both in production across multiple products.
-
-**Do NOT**: Silently coexist. Active conflicting decisions indicate unresolved architectural choice.
-
-**Action**:
-1. Detect conflict during link creation
-2. Query both decisions: confirm both are status=active
-3. Escalate with warning: "Creating conflict between two active decisions. One must be deprecated."
-4. Force user to: mark one as deprecated OR verify they serve different products
-5. If product-divergent, update link metadata: `applies_to: {D010: [product_a, product_b], D015: [product_c, product_d]}`
-
-**Escalation**: NEEDS_COORDINATION
-- Active conflicts require council decision to resolve
-- Document resolution in both decisions: "Conflict resolved Q3-2024: D010 for product_a, D015 for product_c"
-- Set timeline for convergence (if applicable)
-
----
-
-### Edge Case 5: Graph Traversal Timeout on Large Brain
-
-**Symptom**: `brain-link query tag=#api-versioning depth=all` returns partial results after 5-second timeout on brain with >500 decisions.
-
-**Do NOT**: Use partial results for analysis. Partial graph closure gives false negatives.
-
-**Action**:
-1. Detect timeout during query execution
-2. Return partial results with warning: "Query incomplete (timeout). 287 of ~400 decisions returned."
-3. Suggest narrowing: "Add filter: `tag=#api-versioning AND product=shopapp` (returns in <1s)"
-4. Suggest depth limit: "Use `depth=2` instead of `depth=all` (returns immediate neighbors)"
-5. Recommend indexing: "For >500 decisions, enable tag index via brain-read config"
-
-**Escalation**: NEEDS_CONTEXT
-- User should narrow query using product/tag filters
-- If full graph traversal required, may need to optimize brain structure (split by domain)
-- For production brains >1000 decisions, graph indexing becomes mandatory
+See [reference/edge-cases.md](reference/edge-cases.md) for the full detail on all
+five edge cases.
 
 ---
 
 ## 12. Decision Trees
 
-### Decision Tree 1: Which Link Type to Use?
+Quick selection summary (full walkthroughs in the reference):
 
-```
-START: You need to link two decisions
+| If the two decisions are… | Use | Directionality |
+|---|---|---|
+| equivalent across products/contexts | `variant` | directional (global → instance) |
+| one supersedes the other | `replaces` | directional (old → new); mark old superseded |
+| mutually exclusive | `conflicts` | bidirectional |
+| working together as a system | `complements` | bidirectional |
+| sharing context, no formal relationship | `related` | bidirectional (use sparingly) |
 
-├─ Are these decisions equivalent across products/contexts?
-│  ├─ YES → Use VARIANT
-│  │        (D42 global → D43 shopapp instance)
-│  │        Direction: global → instance
-│  │        Query: "Show all instances of D42"
-│  │
-│  └─ NO → Continue
-
-├─ Does one decision replace/supersede the other?
-│  ├─ YES → Use REPLACES
-│  │        (D42 v1 → D89 v2)
-│  │        Direction: old → new (required)
-│  │        Query: "Evolution chain: D42 → current"
-│  │        Also mark old as status=deprecated/superseded
-│  │
-│  └─ NO → Continue
-
-├─ Are these decisions mutually exclusive?
-│  ├─ YES → Use CONFLICTS
-│  │        (cache-aside vs write-through)
-│  │        Direction: bidirectional (both directions okay)
-│  │        Query: "Alternatives to D30"
-│  │        Note: Both active only if they apply to different products
-│  │
-│  └─ NO → Continue
-
-├─ Do these decisions work together to form a system?
-│  ├─ YES → Use COMPLEMENTS
-│  │        (API versioning + deprecation strategy)
-│  │        Direction: bidirectional (both directions okay)
-│  │        Query: "What goes with D42?"
-│  │        Note: Neither sufficient alone
-│  │
-│  └─ NO → Continue
-
-└─ Do these decisions share context but no formal relationship?
-   └─ YES → Use RELATED
-            (REST principles ← → Error handling)
-            Direction: bidirectional (both directions okay)
-            Query: "Related to D40"
-            Note: Weakest link type; use sparingly
-
-END: Link created with correct type
-```
-
----
-
-### Decision Tree 2: Bidirectional vs Directional Link
-
-```
-START: You've chosen a link type. Create forward or reverse link too?
-
-├─ Link type is REPLACES?
-│  ├─ YES → DIRECTIONAL ONLY
-│  │        Create: D42 --replaces--> D89
-│  │        Do NOT create: D89 --replaces--> D42
-│  │        Reason: Direction matters for evolution queries
-│  │        Test: "Show what replaced D42" should find D89, not vice versa
-│  │
-│  └─ NO → Continue
-
-├─ Link type is VARIANT?
-│  ├─ YES → DIRECTIONAL ONLY
-│  │        Create: D42_global --variant--> D43_shopapp
-│  │        Direction: abstract/global → concrete/instance
-│  │        Do NOT reverse (instance → global doesn't make sense)
-│  │        Test: "Show instances of D42" finds D43, D44, D45
-│  │
-│  └─ NO → Continue
-
-├─ Link type is CONFLICTS?
-│  ├─ YES → BIDIRECTIONAL
-│  │        Create: D30 <--conflicts--> D31
-│  │        Reason: Conflict is symmetric
-│  │        Test: "What conflicts with D30" finds D31, and vice versa
-│  │
-│  └─ NO → Continue
-
-├─ Link type is COMPLEMENTS?
-│  ├─ YES → BIDIRECTIONAL
-│  │        Create: D42 <--complements--> D46
-│  │        Reason: Complementary relationship is mutual
-│  │        Test: "What goes with D42" finds D46, and vice versa
-│  │
-│  └─ NO → Continue
-
-└─ Link type is RELATED?
-   └─ YES → BIDIRECTIONAL
-            Create: D40 <--related--> D41
-            Reason: Related is symmetric
-            Test: "Related to D40" finds D41, and vice versa
-
-END: Link created with correct directionality
-     Verify: Can you traverse from both directions?
-```
+See [reference/decision-trees.md](reference/decision-trees.md) for the two full
+decision trees (link-type selection and bidirectional-vs-directional).
 
 ---
 
 ## 13. Extending brain-link
 
-Future enhancements:
-
-- **Impact analysis**: "Which decisions would be affected if we change D42?"
-- **Change impact**: "Which products would be affected by deprecating D89?"
-- **Pattern suggestions**: "You're considering a saga pattern — here are similar decisions"
-- **Cross-linking**: Link to code (commit SHAs, file paths, class definitions)
-- **Timeline visualization**: Calendar view of decision evolution
-- **Collaboration**: Decision committee tracking, approval chains
+See [reference/glossary-index.md](reference/glossary-index.md) for planned
+future enhancements (impact analysis, change impact, pattern suggestions,
+code cross-linking, timeline visualization, collaboration).
 
 ---
 
@@ -900,41 +416,12 @@ Future enhancements:
 
 ---
 
-## 15. Glossary
+## 15. Glossary & Index
 
-**Bidirectional Link**: A link that travels in both directions. Used for CONFLICTS, COMPLEMENTS, RELATED. Query "What conflicts with D30?" finds D31 and vice versa.
-
-**Circular Dependency**: A cycle in the link graph (D1 → D2 → D1). Invalid in decision graphs; indicates unresolved conflicts or miscategorization.
-
-**Closure** (graph closure): The set of all reachable decisions from a starting decision, following all link types up to a specified depth.
-
-**Decision Node**: A single decision (D42) with metadata: ID, title, creation date, product, domain, tags, status, summary.
-
-**Directional Link**: A link with a source and target that are not interchangeable. Used for REPLACES and VARIANT. "D42 replaces D89" ≠ "D89 replaces D42".
-
-**Provenance**: The history of when and why a link was created. Essential for understanding decision rationale.
-
-**Supersession**: When one decision replaces another. Created with `replaces` link. Old decision marked `status=superseded`.
-
-**Variant**: An instance of a pattern applied in a different product or context. Created with `variant` link. Used for cross-product queries.
-
----
-
-## 16. Index
-
-- **Link Types**: Related, Replaces, Conflicts, Complements, Variant (Section 1)
-- **Semantic Tags**: Concept, Pattern, Domain, Architectural, Metadata (Section 2)
-- **Cross-Product Linking**: Strategy for global → instance links (Section 3)
-- **Cross-Time Linking**: Evolution chains and change rationale (Section 4)
-- **Query Interface**: Basic and advanced query syntax (Section 5)
-- **Data Model**: Decision nodes, link edges, tag indexes (Section 6)
-- **Example Graph**: Complete decision graph with all relationship types (Section 7)
-- **Usage Examples**: Four detailed example queries (Section 8)
-- **Integration with brain-read**: Complementary skills and workflow (Section 9)
-- **Best Practices**: When to link, link hygiene, tag strategy, query strategy (Section 10)
-- **Edge Cases**: 5 edge cases with escalation paths (Section 11)
-- **Decision Trees**: Link type selection and directionality (Section 12)
-- **Related Skills**: brain-write, brain-why, brain-recall, brain-forget (Section 14)
+See [reference/glossary-index.md](reference/glossary-index.md) for term
+definitions (bidirectional/directional link, closure, supersession, variant,
+etc.) and the section-by-section topic index mapping each topic to its inline
+section or `reference/*.md` file.
 
 ## Checklist
 

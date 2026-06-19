@@ -1454,7 +1454,7 @@ Timeline: D42 → (6mo) Warm → (6mo) Cold → (1y) Archived; D89 in use
 **Do NOT:** Create duplicate decision with same content. Do NOT ignore archived decision.
 
 **Mitigation:**
-1. Search archive for similar decisions: `grep -r "keyword" ~/forge/brain/archive --include="*.md"`
+1. Search archive for similar decisions: `grep -r "keyword" ~/forge/brain/archived --include="*.md"`
 2. If exact match found: Reactivate by changing `status: archived` → `status: warm` or `status: active`
 3. Add reactivation note: `reactivated_date: <date>`, `reactivation_reason: "Pattern needed again due to <context>"`
 4. Update links if children were reparented during archival

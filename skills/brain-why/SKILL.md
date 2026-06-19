@@ -60,7 +60,7 @@ When invoked with a decision ID (e.g., `D42`, `D123`), the skill performs:
 Example:
 ```
 /brain-why D42
-→ Loads: /home/lordvoldemort/Videos/forge/.claude/brain/decisions/D42.md
+→ Loads: ~/forge/brain/decisions/architecture/D042_api-versioning.md
 → Linked context: D41 (parent), D43, D44 (children)
 ```
 
@@ -1033,7 +1033,7 @@ Problem: File was deleted during storage cleanup
 Better evidence:
   "2024 incident report (archived): 32 outages from rapid deprecation
    Root cause: Clients not notified before endpoint removal
-   See: /brain/archive/2024-deprecation-incident.md (permanent archive)"
+   See: ~/forge/brain/archived/2024-deprecation-incident.md (permanent archive)"
 ```
 
 ## Pitfall 4: Single-Source Evidence (Only Internal Opinion, No External Reference)
@@ -1112,7 +1112,7 @@ Correct dependency:
 
 When you invoke `/brain-why D42`, internally it calls `/brain-read` to:
 1. Query the decision index (where is D42?)
-2. Load the decision file from `/brain/decisions/D42.md`
+2. Load the decision file from `~/forge/brain/decisions/architecture/D042_api-versioning.md`
 3. Fetch linked context (parent decisions, child decisions)
 4. Validate decision exists and is accessible
 
@@ -1123,8 +1123,8 @@ When you invoke `/brain-why D42`, internally it calls `/brain-read` to:
 ```
 /brain-why D42
 → brain-why queries brain-read: "Load D42 and its context"
-→ brain-read searches /brain/decisions index
-→ brain-read finds /brain/decisions/D42.md
+→ brain-read searches ~/forge/brain/decisions/ index
+→ brain-read finds ~/forge/brain/decisions/architecture/D042_api-versioning.md
 → brain-read loads all linked decisions (D41, D43, D44, D45)
 → brain-why formats the output and returns it
 ```
@@ -1144,7 +1144,7 @@ When you create a decision via `/brain-write`, it prompts you for:
 ```
 /brain-write D42 "API Versioning Strategy"
 → brain-write prompts for all 5 provenance layers
-→ Saves to /brain/decisions/D42.md
+→ Saves to ~/forge/brain/decisions/architecture/D042_api-versioning.md
 → Later: /brain-why D42
 → brain-why reads what brain-write created
 ```
@@ -1323,7 +1323,7 @@ Returns a formatted walk through all 5 sections, with linked references to:
 
 **Mitigation:**
 1. Verify referenced decision exists: `grep -r "^decision_id: D<parent-id>" ~/forge/brain --include="*.md"`
-2. If not found, check archive: `grep -r "^decision_id: D<parent-id>" ~/forge/brain/archive --include="*.md"`
+2. If not found, check archive: `grep -r "^decision_id: D<parent-id>" ~/forge/brain/archived --include="*.md"`
 3. If archived: Note in provenance that parent was archived; flag for investigation
 4. If truly deleted: Flag as data integrity issue — decisions should never be deleted
 

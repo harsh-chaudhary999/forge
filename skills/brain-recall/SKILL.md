@@ -80,29 +80,29 @@ The brain-recall skill enables agents and developers to:
 Search the brain knowledge base for keywords across decision records, patterns, and learnings.
 
 **Locations:**
-- `/home/lordvoldemort/Videos/forge/brain/decisions/` - decision records
-- `/home/lordvoldemort/Videos/forge/brain/patterns/` - architectural patterns
-- `/home/lordvoldemort/Videos/forge/brain/learnings/` - lessons learned
-- `/home/lordvoldemort/Videos/forge/brain/contracts/` - API/schema/event contracts
+- `~/forge/brain/decisions/` - decision records
+- `~/forge/brain/patterns/` - architectural patterns
+- `~/forge/brain/learnings/` - lessons learned
+- `~/forge/brain/contracts/` - API/schema/event contracts
 
 **Search command template:**
 ```bash
-grep -r "KEYWORD" ~/Videos/forge/brain/{decisions,patterns,learnings,contracts}/ \
+grep -r "KEYWORD" ~/forge/brain/{decisions,patterns,learnings,contracts}/ \
   --include="*.md" -l | head -20
 ```
 
 **Examples:**
 - Search for API versioning decisions:
   ```bash
-  grep -r "API versioning" ~/Videos/forge/brain/decisions/ --include="*.md" -l
+  grep -r "API versioning" ~/forge/brain/decisions/ --include="*.md" -l
   ```
 - Search for cache patterns:
   ```bash
-  grep -r "cache" ~/Videos/forge/brain/patterns/ --include="*.md" -l
+  grep -r "cache" ~/forge/brain/patterns/ --include="*.md" -l
   ```
 - Search across all brain documents:
   ```bash
-  grep -r "eventual consistency" ~/Videos/forge/brain/ --include="*.md" -A 2
+  grep -r "eventual consistency" ~/forge/brain/ --include="*.md" -A 2
   ```
 
 **Ranking within grep results:**
@@ -124,36 +124,36 @@ Filter decisions, patterns, and learnings by structured tags. Tags enable cross-
 ### Single tag query
 ```bash
 # Find all resolved API decisions
-grep -r "#api" ~/Videos/forge/brain/decisions/ --include="*.md" | grep "#resolved"
+grep -r "#api" ~/forge/brain/decisions/ --include="*.md" | grep "#resolved"
 ```
 
 ### Multi-tag AND query
 ```bash
 # Find database decisions that are both patterns AND resolved
-grep -r "#database" ~/Videos/forge/brain/ --include="*.md" | grep "#pattern" | grep "#resolved"
+grep -r "#database" ~/forge/brain/ --include="*.md" | grep "#pattern" | grep "#resolved"
 ```
 
 ### Tag extraction from frontmatter
 ```bash
 # Extract tags from YAML frontmatter
-grep -A 20 "^---" ~/Videos/forge/brain/decisions/*.md | grep "tags:" -A 10
+grep -A 20 "^---" ~/forge/brain/decisions/*.md | grep "tags:" -A 10
 ```
 
 **Example tag-based queries:**
 
 - "Show me all #database decisions"
   ```bash
-  grep -r "#database" ~/Videos/forge/brain/decisions/ --include="*.md" -l
+  grep -r "#database" ~/forge/brain/decisions/ --include="*.md" -l
   ```
 
 - "What patterns exist for #cache AND #eventual-consistency?"
   ```bash
-  grep -r "#cache" ~/Videos/forge/brain/patterns/ --include="*.md" | grep "#eventual-consistency"
+  grep -r "#cache" ~/forge/brain/patterns/ --include="*.md" | grep "#eventual-consistency"
   ```
 
 - "Show #urgent #unresolved issues"
   ```bash
-  grep -r "#urgent" ~/Videos/forge/brain/decisions/ --include="*.md" | grep -v "#resolved"
+  grep -r "#urgent" ~/forge/brain/decisions/ --include="*.md" | grep -v "#resolved"
   ```
 
 ## 3. Product/Project Filtering
@@ -174,39 +174,39 @@ tags: [#api, #versioning, #resolved]
 **Filtering by product:**
 ```bash
 # All decisions for shopapp product
-grep -l "product: shopapp" ~/Videos/forge/brain/decisions/*.md
+grep -l "product: shopapp" ~/forge/brain/decisions/*.md
 
 # All patterns for production
-grep -l "product: production" ~/Videos/forge/brain/patterns/*.md
+grep -l "product: production" ~/forge/brain/patterns/*.md
 ```
 
 **Filtering by project:**
 ```bash
 # All decisions for backend-api project
-grep -l "project: backend-api" ~/Videos/forge/brain/decisions/*.md
+grep -l "project: backend-api" ~/forge/brain/decisions/*.md
 ```
 
 **Combined product + keyword search:**
 ```bash
 # API decisions for shopapp product
-grep -l "product: shopapp" ~/Videos/forge/brain/decisions/*.md | xargs grep -l "API versioning"
+grep -l "product: shopapp" ~/forge/brain/decisions/*.md | xargs grep -l "API versioning"
 ```
 
 **Example product/project queries:**
 
 - "Show API decisions for shopapp"
   ```bash
-  grep -l "product: shopapp" ~/Videos/forge/brain/decisions/*.md | xargs grep -l "#api"
+  grep -l "product: shopapp" ~/forge/brain/decisions/*.md | xargs grep -l "#api"
   ```
 
 - "Web-dashboard learnings"
   ```bash
-  grep -l "project: web-dashboard" ~/Videos/forge/brain/learnings/*.md
+  grep -l "project: web-dashboard" ~/forge/brain/learnings/*.md
   ```
 
 - "Database migrations in production"
   ```bash
-  grep -l "product: production" ~/Videos/forge/brain/decisions/*.md | xargs grep -l "migration"
+  grep -l "product: production" ~/forge/brain/decisions/*.md | xargs grep -l "migration"
   ```
 
 ## 4. Relevance Ranking
@@ -242,7 +242,7 @@ Results are ranked by multiple factors to surface the most applicable decisions:
 results=()
 
 # 1. Find matching files
-for file in $(grep -r "$KEYWORD" ~/Videos/forge/brain --include="*.md" -l); do
+for file in $(grep -r "$KEYWORD" ~/forge/brain --include="*.md" -l); do
   score=0
   
   # Factor 1: Product/project match
@@ -353,7 +353,7 @@ Implemented URL path versioning (`/api/v1/`, `/api/v2/`) with header-based clien
 ```bash
 # 1. Grep for API versioning keywords
 grep -r "API versioning\|API version\|api.*version" \
-  ~/Videos/forge/brain/decisions/ --include="*.md" -l
+  ~/forge/brain/decisions/ --include="*.md" -l
 
 # 2. Extract and rank results
 # (use ranking algorithm from Section 4)
@@ -369,11 +369,11 @@ grep -r "API versioning\|API version\|api.*version" \
 
 ```bash
 # 1. Tag-based search for #cache and #eventual-consistency
-grep -r "#eventual-consistency" ~/Videos/forge/brain/patterns/ --include="*.md" -l | \
+grep -r "#eventual-consistency" ~/forge/brain/patterns/ --include="*.md" -l | \
   xargs grep -l "#cache"
 
 # 2. Alternative: keyword search in patterns
-grep -r "eventual consistency" ~/Videos/forge/brain/patterns/ --include="*.md" -l
+grep -r "eventual consistency" ~/forge/brain/patterns/ --include="*.md" -l
 
 # 3. Rank by pattern status (#pattern tag) and recency
 ```
@@ -386,11 +386,11 @@ grep -r "eventual consistency" ~/Videos/forge/brain/patterns/ --include="*.md" -
 
 ```bash
 # 1. Search learnings for migration + database
-grep -r "migration\|migrate" ~/Videos/forge/brain/learnings/ --include="*.md" | \
+grep -r "migration\|migrate" ~/forge/brain/learnings/ --include="*.md" | \
   grep -i "database\|table\|schema"
 
 # 2. Extract gotcha/warning tags (#gotcha)
-grep -r "#gotcha" ~/Videos/forge/brain/learnings/ --include="*.md" | \
+grep -r "#gotcha" ~/forge/brain/learnings/ --include="*.md" | \
   grep -i "migration\|database"
 
 # 3. Rank by recency (since gotchas improve over time)
@@ -404,7 +404,7 @@ grep -r "#gotcha" ~/Videos/forge/brain/learnings/ --include="*.md" | \
 
 ```bash
 # 1. Filter by project
-grep -l "project: web-dashboard" ~/Videos/forge/brain/decisions/*.md
+grep -l "project: web-dashboard" ~/forge/brain/decisions/*.md
 
 # 2. Filter by tag
 ... | xargs grep -l "#database"
@@ -426,7 +426,7 @@ grep -l "project: web-dashboard" ~/Videos/forge/brain/decisions/*.md
 
 ### Brain directory structure (assumed)
 ```
-~/Videos/forge/brain/
+~/forge/brain/
 ├── decisions/              # Decision records (YYYY-MM-DD-*.md)
 ├── patterns/               # Architectural patterns
 ├── learnings/              # Lessons learned & gotchas
@@ -518,7 +518,7 @@ A brain-recall query is successful when:
 ## 11. Troubleshooting
 
 **Q: No results found for my query**
-- A: Try broader keywords or check available tags with `grep -r "^tags:" ~/Videos/forge/brain/`
+- A: Try broader keywords or check available tags with `grep -r "^tags:" ~/forge/brain/`
 - A: Search in a specific section (decisions/ vs patterns/ vs learnings/)
 - A: Check if the brain file exists for your product/project
 
@@ -558,7 +558,7 @@ A brain-recall query is successful when:
 **How to detect it?**
 ```bash
 # Count results for a broad keyword
-COUNT=$(grep -r "cache" ~/Videos/forge/brain/decisions/ --include="*.md" -l | wc -l)
+COUNT=$(grep -r "cache" ~/forge/brain/decisions/ --include="*.md" -l | wc -l)
 if [ "$COUNT" -gt 100 ]; then
   echo "EDGE CASE: $COUNT results found. Apply filters."
 fi
@@ -598,7 +598,7 @@ fi
 ```bash
 # Measure grep performance
 time_start=$(date +%s%N)
-grep -r "cache" ~/Videos/forge/brain/ --include="*.md" -l > /dev/null
+grep -r "cache" ~/forge/brain/ --include="*.md" -l > /dev/null
 time_end=$(date +%s%N)
 duration_ms=$(( (time_end - time_start) / 1000000 ))
 
@@ -607,7 +607,7 @@ if [ "$duration_ms" -gt 1000 ]; then
 fi
 
 # Check brain file count
-DECISION_COUNT=$(find ~/Videos/forge/brain/decisions -type f | wc -l)
+DECISION_COUNT=$(find ~/forge/brain/decisions -type f | wc -l)
 if [ "$DECISION_COUNT" -gt 5000 ]; then
   echo "WARNING: Brain has $DECISION_COUNT decisions. Indexing recommended."
 fi
@@ -625,7 +625,7 @@ fi
    - Query filenames before content grep
 3. **Lazy load file contents:** For ranking, read only frontmatter (first 20 lines), not full file
 4. **Parallel search:** Use `grep -r` with `xargs -P 4` for multi-core systems
-5. **Archive old decisions:** Move decisions >2 years old to `brain/archive/` to reduce active brain size
+5. **Archive old decisions:** Move decisions >2 years old to `~/forge/brain/archived/` to reduce active brain size
 
 **When to escalate?**
 - Escalate to `brain-link` if you need full-text semantic search (requires pre-computed embeddings)
@@ -651,10 +651,10 @@ fi
 **How to detect it?**
 ```bash
 # Find decisions with #archived or #deprecated
-grep -r "#archived\|#deprecated" ~/Videos/forge/brain/decisions/ --include="*.md" -l
+grep -r "#archived\|#deprecated" ~/forge/brain/decisions/ --include="*.md" -l
 
 # Check if recent search includes old decisions
-grep -r "API version" ~/Videos/forge/brain/decisions/ --include="*.md" | \
+grep -r "API version" ~/forge/brain/decisions/ --include="*.md" | \
   grep -E "2024|2025-01|2025-02"  # Find old dates
 ```
 
@@ -662,7 +662,7 @@ grep -r "API version" ~/Videos/forge/brain/decisions/ --include="*.md" | \
 1. **Exclude archived by default:**
    ```bash
    # Standard search (exclude archived)
-   grep -r "API version" ~/Videos/forge/brain/decisions/ --include="*.md" | \
+   grep -r "API version" ~/forge/brain/decisions/ --include="*.md" | \
      grep -v "#archived" | grep -v "#deprecated"
    ```
 2. **Show replacement decision:** If result is #archived, include link to newer decision
@@ -700,7 +700,7 @@ grep -r "API version" ~/Videos/forge/brain/decisions/ --include="*.md" | \
 ```bash
 # Find similar decisions across products
 # Compare title + first 3 sentences to detect likely duplicates
-for file in ~/Videos/forge/brain/decisions/*.md; do
+for file in ~/forge/brain/decisions/*.md; do
   title=$(grep "^title:" "$file" | cut -d: -f2-)
   product=$(grep "^product:" "$file" | cut -d: -f2-)
   echo "$title | $product"
@@ -743,12 +743,12 @@ done | sort | uniq -d | grep -v '^$'
 **How to detect it?**
 ```bash
 # List all unique tags in brain
-grep -r "^tags:" ~/Videos/forge/brain/ --include="*.md" | \
+grep -r "^tags:" ~/forge/brain/ --include="*.md" | \
   sed 's/.*tags: //g' | tr ',' '\n' | tr -d '[]" ' | sort | uniq | wc -l
 
 # If > 80, tag explosion likely
 # Show tag frequency to identify unused tags
-grep -r "^tags:" ~/Videos/forge/brain/ --include="*.md" | \
+grep -r "^tags:" ~/forge/brain/ --include="*.md" | \
   sed 's/.*tags: //g' | tr ',' '\n' | tr -d '[]" ' | sort | uniq -c | sort -n | tail -20
 ```
 
@@ -788,13 +788,13 @@ grep -r "^tags:" ~/Videos/forge/brain/ --include="*.md" | \
 ```bash
 # Find decisions with similar content but different keywords
 # Calculate content hash of first 3 sentences
-for file in ~/Videos/forge/brain/decisions/*.md; do
+for file in ~/forge/brain/decisions/*.md; do
   tail -n +5 "$file" | head -3 | sha256sum | awk '{print $1}' > "${file}.hash"
 done
 # Group by hash to find similar content with different titles
 
 # Or manually: check for decision titles with different terminology
-grep "^title:" ~/Videos/forge/brain/decisions/*.md | grep -i "saga\|transaction\|orchestration\|workflow"
+grep "^title:" ~/forge/brain/decisions/*.md | grep -i "saga\|transaction\|orchestration\|workflow"
 ```
 
 **How to mitigate?**
@@ -836,7 +836,7 @@ grep "^title:" ~/Videos/forge/brain/decisions/*.md | grep -i "saga\|transaction\
 **How to detect it?**
 ```bash
 # Find mismatches: recent decisions without #resolved tag
-grep -r "^date: 2025-04" ~/Videos/forge/brain/decisions/ --include="*.md" | \
+grep -r "^date: 2025-04" ~/forge/brain/decisions/ --include="*.md" | \
   while read file; do
     if ! grep -q "#resolved\|#pattern" "$file"; then
       echo "EDGE CASE: Recent draft decision: $file"
@@ -882,7 +882,7 @@ PRODUCT="${2:-}"  # Optional product filter
 declare -A scores
 
 # Find all matching files
-for file in $(grep -r "$KEYWORD" ~/Videos/forge/brain --include="*.md" -l); do
+for file in $(grep -r "$KEYWORD" ~/forge/brain --include="*.md" -l); do
   score=0
   
   # Factor 1: Status multiplier (heaviest weight)
@@ -951,19 +951,19 @@ done | sort -rn | cut -d' ' -f2-
 
 ```bash
 # Show only production-ready guidance
-grep -l "#pattern\|#resolved" ~/Videos/forge/brain/decisions/*.md
+grep -l "#pattern\|#resolved" ~/forge/brain/decisions/*.md
 
 # Show open discussions (in-progress decision-making)
-grep -l "#open" ~/Videos/forge/brain/decisions/*.md
+grep -l "#open" ~/forge/brain/decisions/*.md
 
 # Show gotchas and warnings
-grep -l "#gotcha\|#urgent" ~/Videos/forge/brain/learnings/*.md
+grep -l "#gotcha\|#urgent" ~/forge/brain/learnings/*.md
 
 # Exclude experimental/draft
-grep -v "#experimental\|#draft" ~/Videos/forge/brain/decisions/*.md
+grep -v "#experimental\|#draft" ~/forge/brain/decisions/*.md
 
 # Show only "warm" decisions (touched in last 6 months)
-find ~/Videos/forge/brain/decisions -type f -mtime -180 -name "*.md"
+find ~/forge/brain/decisions -type f -mtime -180 -name "*.md"
 ```
 
 ---
@@ -974,7 +974,7 @@ find ~/Videos/forge/brain/decisions -type f -mtime -180 -name "*.md"
 
 ```bash
 # Find database decisions that are both patterns AND resolved
-grep -l "#database" ~/Videos/forge/brain/ -r --include="*.md" | \
+grep -l "#database" ~/forge/brain/ -r --include="*.md" | \
   xargs grep -l "#pattern" | \
   xargs grep -l "#resolved"
 ```
@@ -984,14 +984,14 @@ grep -l "#database" ~/Videos/forge/brain/ -r --include="*.md" | \
 ```bash
 # Find any consistency-related decision
 grep -l "#eventual-consistency\|#strong-consistency\|#consistency" \
-  ~/Videos/forge/brain/decisions/ -r --include="*.md"
+  ~/forge/brain/decisions/ -r --include="*.md"
 ```
 
 **NOT queries** (exclude these tags):
 
 ```bash
 # Cache patterns excluding Redis (find Memcached, in-memory strategies)
-grep -l "#cache" ~/Videos/forge/brain/patterns/ -r --include="*.md" | \
+grep -l "#cache" ~/forge/brain/patterns/ -r --include="*.md" | \
   xargs grep -v "#redis"
 ```
 
@@ -999,7 +999,7 @@ grep -l "#cache" ~/Videos/forge/brain/patterns/ -r --include="*.md" | \
 
 ```bash
 # Find: (Database OR Cache) AND Pattern AND Resolved AND NOT Archived
-grep -l "#database\|#cache" ~/Videos/forge/brain/ -r --include="*.md" | \
+grep -l "#database\|#cache" ~/forge/brain/ -r --include="*.md" | \
   xargs grep -l "#pattern" | \
   xargs grep -l "#resolved" | \
   xargs grep -v "#archived"
@@ -1019,7 +1019,7 @@ grep -l "#database\|#cache" ~/Videos/forge/brain/ -r --include="*.md" | \
 
 declare -A seen_hashes
 
-for file in $(grep -r "cache strategy" ~/Videos/forge/brain/ --include="*.md" -l); do
+for file in $(grep -r "cache strategy" ~/forge/brain/ --include="*.md" -l); do
   # Extract content hash from title + first 3 sentences
   hash=$(cat "$file" | head -10 | sha256sum | cut -d' ' -f1)
   
@@ -1056,10 +1056,10 @@ done
 
 ```bash
 # Show top 5 with scores
-top_results=$(grep -r "$KEYWORD" ~/Videos/forge/brain --include="*.md" -l | \
+top_results=$(grep -r "$KEYWORD" ~/forge/brain --include="*.md" -l | \
   head -5)
 
-echo "Showing 1-5 of $(grep -r "$KEYWORD" ~/Videos/forge/brain --include="*.md" -l | wc -l) results"
+echo "Showing 1-5 of $(grep -r "$KEYWORD" ~/forge/brain --include="*.md" -l | wc -l) results"
 echo ""
 echo "Commands:"
 echo "  show next     - show results 6-10"
@@ -1092,7 +1092,7 @@ START: I need to find something in the brain
 │   │
 │   ├─→ "Search is simple (1-2 keywords, no filters)"
 │   │   └─→ USE: grep alone
-│   │       grep -r "API versioning" ~/Videos/forge/brain/decisions/
+│   │       grep -r "API versioning" ~/forge/brain/decisions/
 │   │
 │   ├─→ "I want to filter by product/status/tags"
 │   │   └─→ USE: brain-recall with filters
@@ -1125,10 +1125,10 @@ START: I need to find something in the brain
 **How to fix:**
 ```bash
 # Instead of:
-grep -r "cache" ~/Videos/forge/brain/
+grep -r "cache" ~/forge/brain/
 
 # Do:
-grep -r "cache" ~/Videos/forge/brain/decisions/ | \
+grep -r "cache" ~/forge/brain/decisions/ | \
   grep "product: shopapp" | \
   grep "#pattern\|#resolved" | \
   head -5  # Top 5 results only
@@ -1147,11 +1147,11 @@ grep -r "cache" ~/Videos/forge/brain/decisions/ | \
 **How to fix:**
 ```bash
 # Exclude archived by default
-grep -r "API version" ~/Videos/forge/brain/decisions/ --include="*.md" | \
+grep -r "API version" ~/forge/brain/decisions/ --include="*.md" | \
   grep -v "#archived" | grep -v "#deprecated"
 
 # Check for "superseded_by" link
-grep -A 20 "superseded_by" ~/Videos/forge/brain/decisions/*.md
+grep -A 20 "superseded_by" ~/forge/brain/decisions/*.md
 ```
 
 **Lesson:** Exclude #archived/#deprecated unless explicitly requested. Look for "superseded_by" links.
@@ -1172,7 +1172,7 @@ grep -A 20 "superseded_by" ~/Videos/forge/brain/decisions/*.md
 2. Search with multiple terms:
    ```bash
    grep -r "saga\|orchestration\|distributed.transaction\|distributed.workflow" \
-     ~/Videos/forge/brain/ --include="*.md"
+     ~/forge/brain/ --include="*.md"
    ```
 
 **Lesson:** If first search returns 0 results, try synonyms. Use `brain-link` for semantic relationships.
@@ -1189,7 +1189,7 @@ grep -A 20 "superseded_by" ~/Videos/forge/brain/decisions/*.md
 
 ```bash
 # Don't just pipe to `head`:
-grep -r "cache" ~/Videos/forge/brain/ --include="*.md" -l | head -5
+grep -r "cache" ~/forge/brain/ --include="*.md" -l | head -5
 
 # Instead, score and rank:
 # (use ranking pseudocode from Section 13)
@@ -1289,7 +1289,7 @@ grep -r "cache" ~/Videos/forge/brain/ --include="*.md" -l | head -5
 **Implementation sketch:**
 ```bash
 # Phase 1: Build embeddings for all decisions
-for file in ~/Videos/forge/brain/decisions/*.md; do
+for file in ~/forge/brain/decisions/*.md; do
   title=$(grep "^title:" "$file")
   content=$(tail -n +5 "$file" | head -20)
   embedding=$(call_claude_api "$title\n$content")

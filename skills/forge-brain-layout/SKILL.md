@@ -172,6 +172,10 @@ python3 ~/forge/tools/forge_brain_mcp.py` to enable it (until then, use the
 │   ├── D095_deprecated_auth_flow.md         # Reason: replaced by D102
 │   └── ...
 │
+├── links/                                  # Cross-reference edges between decisions (brain-link)
+│   ├── D001-to-D050.md                      # {source}-to-{target}.md
+│   └── ...
+│
 └── README.md                                # Brain overview and navigation guide
 ```
 
@@ -322,11 +326,10 @@ git commit -m "fix typo in D042"
 - Direct edits are only for bootstrapping (empty brain)
 - All mutations logged in git with structured commit messages
 
-**Enforcement:**
+**Enforcement (convention, not tooling):**
 ```
-brain-persist: detects direct edits, raises alert
-Pre-commit hook: warns on direct brain file modifications
-brain-why: traces all changes back to skill invocations
+forge-brain-persist: commit-discipline gate — every decision is a committed brain file
+brain-why: traces changes via git history (git log on the decision file)
 ```
 
 ## Edge Cases: How to Handle Unusual Situations

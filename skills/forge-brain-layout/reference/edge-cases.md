@@ -34,8 +34,8 @@
 
 **Escalation:** NEEDS_INFRA_CHANGE
 - Document in project setup guide
-- Add to git post-clone hook
-- Include in forge-init script
+- Initialize via `/workspace` (the supported bootstrap) or `bash scripts/install.sh`
+  — there is no `forge-init` script
 
 ### Edge Case 2: Brain Corrupted or Lost
 

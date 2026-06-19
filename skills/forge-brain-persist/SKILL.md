@@ -78,13 +78,18 @@ If you notice any of these, STOP and do not proceed:
 ### Structure Decision Record
 For each decision, record in brain:
 
-**Format: Decision ID (D prefix)**
+**Format: Decision ID** — defer to `forge-brain-layout` (the naming authority) and
+`brain-write`'s `decision_id:` field. Canonical global decisions are zero-padded
+`D{NNN}` filed under a category:
 ```
-D<YYYY><MM><DD>-<SEQUENCE>-<SHORTNAME>
-Example: D20240415-001-prd-intake-auth
-Example: D20240415-002-spec-locked-auth
-Example: D20240415-003-schema-decision-postgres
+~/forge/brain/decisions/<category>/D<NNN>_<short-topic>.md
+Example: decisions/product/D102_session-timeout-strategy.md   (decision_id: D102)
+Example: decisions/engineering/D201_orm-vs-raw-sql.md         (decision_id: D201)
 ```
+PRD-scoped records may use the datestamp variant `D<YYYYMMDD>-<NNN>` (as in
+`commands/why.md`, e.g. `D20260410-001`). Pick the scheme the active scope uses;
+do not invent a third. (This persist/why.md vs layout split is a known
+divergence — flag it to forge-brain-layout's owner rather than forking a new form.)
 
 **Required fields:**
 

@@ -2,9 +2,9 @@
 
 ## Forks and remotes
 
-- **Clone URL:** Use **`https://github.com/<YOUR_GITHUB_ORG_OR_USERNAME>/forge`** (replace with your fork or the upstream you trust). Platform docs and `README.md` use the same placeholder.
+- **Clone URL:** Use **`https://github.com/harsh-chaudhary999/forge`** (or your own fork).
 - **Brain CI sparse-checkout** (when copying [**forge-brain-guard.yml**](../.github/workflows/forge-brain-guard.yml) into a brain repo): set GitHub Actions variable **`FORGE_TOOLS_REPO`** to **`owner/repo`** of the Forge clone that hosts `tools/verify_forge_task.py`. If unset, the workflow defaults to **`harsh-chaudhary999/forge`** so out-of-the-box copies keep working.
-- **Publishing a plugin fork:** Update **`package.json`**, **`gemini-extension.json`**, and **`.*-plugin/plugin.json`** `homepage` / `repository` fields if you want npm / marketplace metadata to point at your fork.
+- **Publishing a plugin fork:** Update **`package.json`** and **`.claude-plugin/plugin.json`** + **`.claude-plugin/marketplace.json`** `homepage` / `repository` fields if you want npm / marketplace metadata to point at your fork.
 
 ## Skill catalog count
 
@@ -22,7 +22,7 @@ Forge does not notify installs by itself. **Nothing tags or bumps versions autom
 
 If you maintain a fork or upstream:
 
-1. **Bump** `package.json` `version` and the `version` field in **`.claude-plugin/plugin.json`**, **`.cursor-plugin/plugin.json`**, **`.codex-plugin/plugin.json`** when you cut a meaningful drop (`install.sh` reads `package.json` for some install metadata).
+1. **Bump** `package.json` `version` and the `version` field in **`.claude-plugin/plugin.json`** and **`.claude-plugin/marketplace.json`** when you cut a meaningful drop (`install.sh` reads `package.json` for the cache path).
 2. **Tag** in git (e.g. `v1.0.1`) and publish a **GitHub Release** with short notes — users watching **Releases** get an email/feed.
 3. **Optional automation:** In GitHub, run **[`.github/workflows/release-tag.yml`](../.github/workflows/release-tag.yml)** (**Actions → Tag release → Run workflow**) after merging the version-bump PR. It only **creates and pushes** the tag you type (semver `vX.Y.Z`); it does **not** edit `package.json`.
 4. For **fully automatic** “tag every merge to `main`”, add your own workflow (not shipped here) — teams disagree on semver rules and changelog sources.

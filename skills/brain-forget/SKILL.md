@@ -2,7 +2,7 @@
 name: brain-forget
 description: "WHEN: A decision is being superseded, deprecated, or has aged out. Archive it without deletion — marks as warm→cold→archived with full audit trail."
 type: flexible
-requires: [brain-read]
+requires: [brain-read, brain-write, brain-link]
 version: 1.0.0
 preamble-tier: 2
 triggers:
@@ -343,7 +343,7 @@ Result:
 - [ ] The demotion (status change) was committed to git with `git -C ~/forge/brain commit`, and `git log --oneline -1` shows the commit
 - [ ] The commit message specifies which decision, from what status, to what status, and the demotion rule that triggered it — no vague "cleaned up" messages
 - [ ] A grep for cross-references to the demoted decision ID returned no dangling Active decisions that depended on it without a migration path
-- [ ] If a conductor marker was required, the `[P*-BRAIN-FORGET]` log line appears in the conductor transcript before claiming the demotion complete
+- [ ] If the conductor required a brain-mutation marker for this demotion, the agreed marker line appears in `conductor.log` before claiming the demotion complete (there is no dedicated `[P*-BRAIN-FORGET]` marker in the registry — use the marker the active conductor phase specifies, or none)
 
 ## Checklist
 

@@ -157,11 +157,11 @@ pattern, domain, architectural, and metadata tags).
 Link same decisions across product instances to enable cross-product queries.
 
 ### Product Inventory
-Products in the system:
-- `shopapp` — Customer shopping app
-- `production` — Admin/operations dashboard
-- `mobile` — Native mobile app
-- `future-product` — Planned product
+Product slugs are **per-operator** — read the real list from `~/forge/brain/products/*/product.md`
+before linking; do not assume these. The names below are **illustrative only**:
+- `shopapp` — (example) customer shopping app
+- `production` — (example) admin/operations dashboard
+- `mobile` — (example) native mobile app
 
 ### Linking Strategy
 

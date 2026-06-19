@@ -44,11 +44,11 @@ Forge ships a feature across **multiple repos** without embedding a runtime fram
 ### 1. Clone
 
 ```bash
-git clone https://github.com/<YOUR_GITHUB_ORG_OR_USERNAME>/forge ~/forge
+git clone https://github.com/harsh-chaudhary999/forge ~/forge
 cd ~/forge
 ```
 
-Use your fork or upstream; see **[Forks and remotes](docs/contributing.md#forks-and-remotes)**.
+Use the upstream above, or your own fork; see **[Forks and remotes](docs/contributing.md#forks-and-remotes)**.
 
 ### 2. Install
 
@@ -59,6 +59,8 @@ bash scripts/install.sh
 ```
 
 Installs the Forge plugin into the Claude Code plugin cache and registers its hooks + commands in `~/.claude/`. See [docs/platforms/claude-code.md](docs/platforms/claude-code.md).
+
+> **Install method:** the supported path is **clone + `install.sh`** above (it registers hooks directly in `~/.claude/settings.json` and avoids marketplace validation). The bundled **`.claude-plugin/marketplace.json`** is metadata for plugin-marketplace discovery; if you prefer the native flow, `/plugin marketplace add harsh-chaudhary999/forge` then `/plugin install forge@forge` also works once the repo is published.
 
 ### 3. Restart Claude Code
 
@@ -92,7 +94,7 @@ cd ~/forge && git pull && bash scripts/install.sh
 
 Restart Claude Code (or start a new session) after a meaningful skill or hook change. See **[`docs/platforms/claude-code.md`](docs/platforms/claude-code.md)**.
 
-**Version today:** `package.json` and **`.*-plugin/plugin.json`** carry **`1.0.0`** — bump these when you want installers and manifests to reflect a new drop; tags + Release notes help watchers. **Tags are not created automatically** on push; maintainers bump versions in a PR, then may run the optional **`Tag release`** GitHub Action (see **`docs/contributing.md` → Releases**) to push `vX.Y.Z`.
+**Version today:** the current plugin version lives in **`package.json`** and **`.claude-plugin/plugin.json`** (and **`.claude-plugin/marketplace.json`**) — read it there rather than trusting a number copied into prose. Bump all three when you cut a new drop. **Tags are not created automatically** on push; maintainers bump versions in a PR, then may run the optional **`Tag release`** GitHub Action (see **`docs/contributing.md` → Releases**) to push `vX.Y.Z`, and publish a GitHub Release with the matching **`CHANGELOG.md`** section so watchers hear about it.
 
 ---
 

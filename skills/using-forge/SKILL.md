@@ -1,8 +1,8 @@
 ---
 name: using-forge
-description: "Bootstrap skill — inlined by session-start hook for every Forge-supported host (Claude Code, Cursor, Gemini CLI, JetBrains AI, Codex, Copilot CLI, IDX, Antigravity, OpenCode, etc.)"
+description: "Bootstrap skill — inlined by the session-start hook for every Claude Code session"
 type: rigid
-version: 1.0.22
+version: 1.0.23
 preamble-tier: 4
 triggers:
   - "how to use forge"
@@ -19,18 +19,9 @@ allowed-tools:
 
 This skill is auto-loaded by the session-start hook. Do not manually invoke it as a task skill; treat it as baseline session policy context.
 
-## Blocking interactive prompts (host mapping — all IDEs)
+## Blocking interactive prompts
 
-Rigid skills declare the canonical tool name **`AskUserQuestion`** in **`allowed-tools`** (Claude Code policy + repo lint). **Semantics are host-agnostic:** every supported Forge IDE must obtain human answers through a **blocking interactive prompt** — never prose-only handoffs.
-
-| Host / surface | Use this for discrete choices |
-|----------------|-------------------------------|
-| **Claude Code** | **`AskUserQuestion`** (matches skill `allowed-tools`) |
-| **Cursor** | **`AskQuestion`** — same payload as `AskUserQuestion`; project **`.cursor/rules/forge.mdc`** documents the alias (**do not** mass-rename skills) |
-| **Gemini CLI, OpenAI Codex, GitHub Copilot CLI, Google Antigravity, JetBrains AI, Project IDX, OpenCode,** and other hosts **without** a named blocking tool | **Numbered options** in the assistant message **plus stop and wait** — identical semantics to a blocking prompt |
-| **Any host** when the blocking UI is unavailable | Same **numbered list** fallback |
-
-**Do not** fork **SKILL.md** files per IDE to rename **`AskUserQuestion`** in prose — hosts map at runtime per this table.
+Rigid skills declare **`AskUserQuestion`** in **`allowed-tools`** (Claude Code policy + repo lint) and use it for every blocking human decision — task-id, doubt, waiver, fork, driver choice — never a prose-only "reply if…" handoff. Canonical convention + live-dialogue norms: **[`skills/_shared/human-input.md`](../_shared/human-input.md)**.
 
 ### Interactive human input — project standard (all hosts, all doubts / choices)
 
@@ -96,7 +87,7 @@ If there's even a 1% chance a Forge skill might apply, you absolutely must invok
 
 Forge **automates** repeatable work: structured artifacts under **`~/forge/brain/`**, semantic machine-eval CSV + manifests, scans, verification CLIs, coordinated phases. It **does not** grant permission to **guess** scope, design authority, waivers, prioritization, or “confirmed” interrogation answers.
 
-**Needle-moving decisions** — anything that would change what ships, what is tested, what is locked, or what the human thinks they approved — require an **explicit human turn** via **blocking interactive prompts** (host mapping above) or **numbered list + wait** — see **Interactive human input** and **Multi-question elicitation** above. Examples: intake locks, council conflict resolution, **`qa-prd-analysis`** Step 0.5 (**Multi-question elicitation** for Q1–Q8 — see **`qa-prd-analysis`**), cutting surfaces or test types, signing off samples/count for **`manual-test-cases.csv`**. **Automation-before-manual-CSV** waiver (**verbatim quote** in **`qa-analysis.md`**): **`qa-manual-test-cases-from-prd`** / **`/qa-write`** **only** when that skill is active — **never** paste that waiver script during **`qa-prd-analysis`** coverage rounds (**`docs/forge-one-step-horizon.md`**).
+**Needle-moving decisions** — anything that would change what ships, what is tested, what is locked, or what the human thinks they approved — require an **explicit human turn** via **`AskUserQuestion`** (see **Blocking interactive prompts** above and **[`skills/_shared/human-input.md`](../_shared/human-input.md)**) — see **Interactive human input** and **Multi-question elicitation** above. Examples: intake locks, council conflict resolution, **`qa-prd-analysis`** Step 0.5 (**Multi-question elicitation** for Q1–Q8 — see **`qa-prd-analysis`**), cutting surfaces or test types, signing off samples/count for **`manual-test-cases.csv`**. **Automation-before-manual-CSV** waiver (**verbatim quote** in **`qa-analysis.md`**): **`qa-manual-test-cases-from-prd`** / **`/qa-write`** **only** when that skill is active — **never** paste that waiver script during **`qa-prd-analysis`** coverage rounds (**`docs/forge-one-step-horizon.md`**).
 
 **Forbidden:** Filling frontmatter or brain files with “confirmed,” waivers, or design sources **inferred** from Confluence/PRD/Figma metadata **without** the user having answered or approved in this workflow. **Verbose automation without that loop is worse than slow manual review** — it ships false confidence.
 

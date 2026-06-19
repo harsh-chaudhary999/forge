@@ -37,9 +37,9 @@ Inventing a solution for an unresolved blocker almost always creates a bigger pr
 
 During **intake**, **council**, **`qa-prd-analysis` Step 0.5**, **tech-plan** rounds, and any **sequential** human elicitation: **stay on the current question** — do **not** prefix or suffix messages with essays about **later** gates (e.g. *semantic machine eval isn’t ready yet*, full **ordering-table** / merge / waiver chains). That reads like a **lost thread** or **invented** rule and **erodes trust** even when the rest of the work is correct. **Allowed:** one-line handoff when the **active skill** says so; **refusing** a skip-ahead (**first missing** prerequisite + next step); user **asked** *why* / *full order*. Canonical: **`docs/forge-one-step-horizon.md`** — **No defensive downstream-gate narration (repo-wide)**.
 
-**One surface per turn (Cursor):** Do **not** combine a **`Questions`** / **`AskQuestion`** on **task-id** / **prd-locked** approval **with** a **different** long markdown block (**Q1** checklist, intake question, …) in the **same** message — **sequence** two turns. **`docs/forge-one-step-horizon.md`** — **No bundled unrelated decisions**.
+**One surface per turn:** Do **not** combine an **`AskUserQuestion`** on **task-id** / **prd-locked** approval **with** a **different** long markdown block (**Q1** checklist, intake question, …) in the **same** message — **sequence** two turns. **`docs/forge-one-step-horizon.md`** — **No bundled unrelated decisions**.
 
-**Same question, one pane for prose:** If **chat** already has the **full** Qn list + prompt, **`AskQuestion`** must be a **short** title + **options** — **not** the **same** long block again (**Chat vs `AskQuestion` / Questions widget** in **`docs/forge-one-step-horizon.md`**).
+**Same question, one pane for prose:** If **chat** already has the **full** Qn list + prompt, **`AskUserQuestion`** must be a **short** title + **options** — **not** the **same** long block again (**Chat vs `AskUserQuestion` widget** in **`docs/forge-one-step-horizon.md`**).
 
 ## Completeness
 

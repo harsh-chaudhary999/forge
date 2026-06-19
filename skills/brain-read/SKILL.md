@@ -93,7 +93,7 @@ cat prds/<task-id>/shared-dev-spec.md
 ## Contract Details
 ```bash
 cat products/<product-slug>/contracts/api-rest.md
-cat products/<product-slug>/contracts/schema-mysql.md
+cat products/<product-slug>/contracts/schema-db.md
 ```
 
 ## Search
@@ -150,7 +150,7 @@ ls -la ~/forge/brain/products/ ~/forge/brain/prds/ ~/forge/brain/decisions/
 2. Try broader search: `grep -r "keyword" ~/forge/brain --include="*.md"`
 3. Check for archived decisions: `grep -r "keyword" ~/forge/brain/archive --include="*.md"`
 
-**Escalation:** NEEDS_CONTEXT — Decision may not exist yet, be archived, or be named differently. Use `brain-recall` for fuzzy semantic search instead.
+**Escalation:** NEEDS_CONTEXT — Decision may not exist yet, be archived, or be named differently. Use `brain-recall` (ranked keyword + tag/status search) or the brain MCP `brain_recall` tool instead.
 
 ---
 
@@ -215,7 +215,7 @@ Do you know the product, service, or contract type?
 └─ NO → Continue below
 
 Are you searching for a concept or pattern (not exact phrase)?
-├─ YES → Use `brain-recall` for semantic search (returns ranked, related decisions)
+├─ YES → Use `brain-recall` for ranked keyword + tag/status search (grep-based, returns ranked decisions)
 └─ NO → Continue below
 
 Is the phrase common across multiple files (decision, contract, spec)?

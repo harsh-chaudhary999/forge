@@ -12,7 +12,7 @@ grep -r "database.*migration\|schema.*change" products/*/decisions/ --include="*
 ```
 
 **Also use:**
-- `brain-recall`: For fuzzy semantic search ("How have we upgraded databases?")
+- `brain-recall`: For ranked keyword + tag/status search across the brain ("How have we upgraded databases?")
 - `brain-why`: To trace why old approaches were deprecated
 
 **Workflow:**

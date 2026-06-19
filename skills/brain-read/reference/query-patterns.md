@@ -81,7 +81,7 @@ find . -path "*/contracts/api-*.md" -o -path "*/contracts/schema-*.md" -o -path 
 **Example output:**
 ```
 products/payment/contracts/api-rest.md
-products/payment/contracts/schema-mysql.md
+products/payment/contracts/schema-db.md
 products/events/contracts/events-kafka.md
 ```
 

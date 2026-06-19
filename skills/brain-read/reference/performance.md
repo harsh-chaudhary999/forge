@@ -37,7 +37,7 @@ grep -r "contract" ~/forge/brain --include="*.md"
 **Use --exclude to skip slow areas:**
 ```bash
 # Exclude archived decisions to speed search
-grep -r "status.*proposed" products/ --include="*.md" --exclude-dir="archive"
+grep -r "status.*proposed" products/ --include="*.md" --exclude-dir="archived"
 ```
 
 **Combine grep with other tools:**
@@ -57,7 +57,7 @@ grep -r "API versioning" . --include="*.md" -l
 - Quick lookup (< 1 second search)
 - Structured data matching (tags, dates)
 
-**Use `brain-recall` (semantic search):**
+**Use `brain-recall` (ranked grep + tag/status search):**
 - Conceptual search ("How do we handle backward compatibility?")
 - Finding related decisions across products
 - Fuzzy matching (misspellings, synonyms)
@@ -94,9 +94,9 @@ find ~/forge/brain/products -name "*.md" -mmin -30
 - Fast for small brains (< 1000 decisions)
 - Sufficient for manual exploration
 
-**Future (Phase 2):**
-- `brain-link` adds semantic tags to decisions
-- `brain-recall` adds full-text indexing
+**Future (Phase 2 — not implemented today; see `forge-brain-layout` Phase-2 prep):**
+- `brain-link` adds semantic edges between decisions
+- full-text / embedding indexing over the brain
 - `brain-why` adds provenance index
 - Enables sub-100ms queries on large brains (> 10k decisions)
 - Maintains markdown as source of truth

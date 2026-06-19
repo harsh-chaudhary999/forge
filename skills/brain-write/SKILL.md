@@ -172,7 +172,7 @@ evidence:
   - type: contract
     link: "contracts/grpc-service-definitions.proto"
     finding: All 47 services can express APIs in gRPC
-review_date: 2026-06-15  # Quarterly review of adoption metrics
+review_date: <~90 days out, e.g. 2026-09-30>  # Quarterly review of adoption metrics
 deprecation_planned: 2027-01-01  # REST API fully sunset
 ---
 ```
@@ -194,7 +194,7 @@ deprecation_planned: 2027-01-01  # REST API fully sunset
 | `related_decisions` | Links to parent/child/related | parent: D042, children: [D088, ...] |
 | `tags` | Searchable tags for brain-recall | #api, #performance, #scaling |
 | `evidence` | Links to proof (tests, metrics, incidents) | load-test: URL, incident: link |
-| `review_date` | When to revisit this decision | 2026-06-15 (quarterly) |
+| `review_date` | When to revisit this decision | a future date ~1 quarter out (quarterly) |
 | `deprecation_planned` | When to sunset if applicable | 2027-01-01 |
 
 **Link conventions for decision graphs:**

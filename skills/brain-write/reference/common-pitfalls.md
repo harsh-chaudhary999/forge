@@ -13,7 +13,7 @@ git commit -m "spec: update shared dev spec"
 git commit -m "spec: lock shared dev spec for PRD-2025-11-streaming
 
 Converged on: backend, web, app, infra
-Contracts locked: gRPC v1 service definitions, PostgreSQL schema v3, Redis config
+Contracts locked: gRPC v1 service definitions, MySQL schema v3, Redis config
 Key assumption: 100k RPS sustainable with 3 service instances per region
 Next: Run tech-plan-write-per-project; unblocks implementation
 
@@ -105,7 +105,7 @@ status: active  # Actually invalid since 2025-09 due to new SLA requirements
 ```yaml
 status: warm  # Being phased out; superseded by D095 (new SLA strategy)
 superseded_by: D095
-review_date: 2026-06-15  # Quarterly check on status
+review_date: <~90 days out, e.g. 2026-09-30>  # Quarterly check on status
 deprecation_planned: 2027-01-01  # Final sunset; still referenced in runbooks
 ```
 

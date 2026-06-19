@@ -96,7 +96,7 @@ When writing a decision to the brain, capture these elements systematically. Eac
 - **Example:**
   ```yaml
   status: active  # In force until Dec 31, 2026
-  review_date: 2026-06-15  # Quarterly review of gRPC adoption metrics
+  review_date: <~90 days out, e.g. 2026-09-30>  # Quarterly review of gRPC adoption metrics
   deprecation_planned: 2027-01-01  # REST API fully sunset
   ```
 - **Production pattern:** `active` (in force), `warm` (being phased out), `cold` (deprecated, kept for ref), `archived` (historical only)

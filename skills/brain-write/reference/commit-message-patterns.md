@@ -18,7 +18,7 @@ Example:
 spec: lock shared dev spec for PRD-2025-11-streaming
 
 Converged on: backend, web, app, infra
-Contracts locked: gRPC service definitions, PostgreSQL schema v3, Redis cluster config
+Contracts locked: gRPC service definitions, MySQL schema v3, Redis cluster config
 Assumptions validated: QPS projections (100k RPS sustainable), latency SLA (p99 < 50ms)
 Next: Run tech-plan-write-per-project per team
 Resolves: D087 (gRPC adoption)

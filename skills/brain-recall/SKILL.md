@@ -112,64 +112,81 @@ grep -r "KEYWORD" ~/forge/brain/{decisions,patterns,learnings,contracts}/ \
 
 ## 2. Tag-Based Filtering
 
-Filter decisions, patterns, and learnings by structured tags. Tags enable cross-cutting queries across multiple decision types.
+Filter decisions by structured tags. **Tags are a YAML array of bare words** in the
+decision's frontmatter — `tags: [api, versioning, breaking-change]` — **not**
+`#hashtags`. Lifecycle is a separate `status:` field (`active | warm | cold |
+archived` per brain-write/brain-forget), **not** a tag like `#resolved`/`#open`.
 
-**Available Tags:**
-- **Domain tags:** `#api`, `#database`, `#cache`, `#frontend`, `#mobile`, `#events`, `#search`, `#infra`
-- **Status tags:** `#resolved`, `#open`, `#deprecated`, `#pattern`, `#gotcha`, `#urgent`
-- **Category tags:** `#scaling`, `#migration`, `#versioning`, `#backward-compat`, `#performance`, `#observability`, `#security`
+**Common tag values** (bare words, domain/category): `api`, `database`, `cache`,
+`frontend`, `mobile`, `events`, `search`, `infra`, `scaling`, `migration`,
+`versioning`, `backward-compat`, `performance`, `observability`, `security`.
 
-**Tag filtering strategies:**
+**Tag filtering strategies** (match inside the YAML `tags:` array):
 
 ### Single tag query
 ```bash
-# Find all resolved API decisions
-grep -r "#api" ~/forge/brain/decisions/ --include="*.md" | grep "#resolved"
+# Find all active API decisions
+grep -rlE "^tags:.*\bapi\b" ~/forge/brain/decisions/ --include="*.md" \
+  | xargs grep -l "^status: active"
 ```
 
 ### Multi-tag AND query
 ```bash
-# Find database decisions that are both patterns AND resolved
-grep -r "#database" ~/forge/brain/ --include="*.md" | grep "#pattern" | grep "#resolved"
+# Find database decisions tagged both 'migration' and 'performance'
+grep -rlE "^tags:.*\bdatabase\b" ~/forge/brain/decisions/ --include="*.md" \
+  | xargs grep -lE "^tags:.*\bmigration\b" | xargs grep -lE "^tags:.*\bperformance\b"
 ```
 
-### Tag extraction from frontmatter
+### Tag + status extraction from frontmatter
 ```bash
-# Extract tags from YAML frontmatter
-grep -A 20 "^---" ~/forge/brain/decisions/*.md | grep "tags:" -A 10
+# Show the tags and status of each decision
+grep -A 25 "^---" ~/forge/brain/decisions/**/*.md | grep -E "^(tags|status):"
 ```
 
 **Example tag-based queries:**
 
-- "Show me all #database decisions"
+- "Show me all database decisions"
   ```bash
-  grep -r "#database" ~/forge/brain/decisions/ --include="*.md" -l
+  grep -rlE "^tags:.*\bdatabase\b" ~/forge/brain/decisions/ --include="*.md"
   ```
 
-- "What patterns exist for #cache AND #eventual-consistency?"
+- "Which decisions are tagged both 'cache' and 'eventual-consistency'?"
   ```bash
-  grep -r "#cache" ~/forge/brain/patterns/ --include="*.md" | grep "#eventual-consistency"
+  grep -rlE "^tags:.*\bcache\b" ~/forge/brain/decisions/ --include="*.md" \
+    | xargs grep -lE "^tags:.*\beventual-consistency\b"
   ```
 
-- "Show #urgent #unresolved issues"
+- "Show active decisions tagged 'security' (exclude archived)"
   ```bash
-  grep -r "#urgent" ~/forge/brain/decisions/ --include="*.md" | grep -v "#resolved"
+  grep -rlE "^tags:.*\bsecurity\b" ~/forge/brain/decisions/ --include="*.md" \
+    | xargs grep -l "^status: active"
   ```
+
+> The shipped read-only **brain MCP** `brain_recall` tool does this scan for you
+> (case-insensitive substring over the brain) and computes the brain root itself —
+> prefer it when configured; the greps above are the live fallback. See
+> [`docs/brain-mcp.md`](../../docs/brain-mcp.md).
 
 ## 3. Product/Project Filtering
 
-Filter brain records by specific products (shopapp, production, etc.) and projects (backend-api, web-dashboard, etc.).
+Filter brain records by product (slug under `products/<slug>/`) and the repos/projects in that product's `product.md`.
 
-**Frontmatter structure:**
+**Canonical decision frontmatter** (see `forge-brain-layout` / `brain-write`):
 ```yaml
 ---
 title: Decision title
-date: 2025-11-15
-product: shopapp
-project: backend-api
-tags: [#api, #versioning, #resolved]
+date_locked: 2026-04-10T14:30:00Z
+status: active          # active | warm | cold | archived
+category: product       # architecture | product | engineering | ops
+decision_number: D102
+tags: [api, versioning]
+relates_to: [D001, D050]
 ---
 ```
+
+Global decisions live at `decisions/<category>/D<NNN>_<topic>.md`; product-scoped
+context lives under `products/<slug>/`. There is no top-level `product:`/`project:`
+frontmatter pair on a global decision — scope comes from the path.
 
 **Filtering by product:**
 ```bash
@@ -218,9 +235,9 @@ Results are ranked by multiple factors to surface the most applicable decisions:
 1. **Same product/project match** (weight: 3x)
    - If query includes product/project filter, matching results rank 3x higher
 
-2. **Resolution status** (weight: 2x)
-   - Decisions tagged #resolved rank 2x higher than #open
-   - Patterns tagged #pattern rank higher than ad-hoc decisions
+2. **Lifecycle status** (weight: 2x)
+   - `status: active` decisions rank 2x higher than `warm`/`cold`; `archived` ranks lowest
+   - `LOCKED` decisions rank higher than `DRAFT` proposals
 
 3. **Recency** (weight: 1.5x)
    - Decisions from last 90 days rank 1.5x higher
@@ -245,20 +262,20 @@ results=()
 for file in $(grep -r "$KEYWORD" ~/forge/brain --include="*.md" -l); do
   score=0
   
-  # Factor 1: Product/project match
-  if grep -q "product: $PRODUCT" "$file"; then
+  # Factor 1: Product scope match (path-based: decision under products/<slug>/)
+  if [[ "$file" == *"/products/$PRODUCT/"* ]]; then
     score=$((score + 30))
   fi
   
-  # Factor 2: Resolution status
-  if grep -q "#resolved" "$file"; then
+  # Factor 2: Lifecycle status
+  if grep -q "^status: active" "$file"; then
     score=$((score + 20))
-  elif grep -q "#pattern" "$file"; then
+  elif grep -q "^status: warm" "$file"; then
     score=$((score + 15))
   fi
   
   # Factor 3: Recency (extract date from frontmatter)
-  date=$(grep "^date:" "$file" | cut -d: -f2 | xargs)
+  date=$(grep -E "^date(_locked)?:" "$file" | head -1 | cut -d: -f2- | xargs)
   days_old=$(( ($(date +%s) - $(date -d "$date" +%s)) / 86400 ))
   if [ "$days_old" -lt 90 ]; then
     score=$((score + 15))
@@ -885,26 +902,24 @@ declare -A scores
 for file in $(grep -r "$KEYWORD" ~/forge/brain --include="*.md" -l); do
   score=0
   
-  # Factor 1: Status multiplier (heaviest weight)
-  if grep -q "#pattern" "$file"; then
-    score=$((score + 50))  # Proven pattern
-  elif grep -q "#resolved" "$file"; then
-    score=$((score + 30))  # Confirmed decision
-  elif grep -q "#open" "$file"; then
-    score=$((score + 10))  # In discussion
-  elif grep -q "#experimental" "$file"; then
-    score=$((score + 5))   # Try this
+  # Factor 1: Lifecycle status multiplier (heaviest weight)
+  if grep -q "^status: active" "$file"; then
+    score=$((score + 50))  # Active
+  elif grep -q "^status: warm" "$file"; then
+    score=$((score + 30))  # Recently demoted, still relevant
+  elif grep -q "^status: cold" "$file"; then
+    score=$((score + 10))  # Aging out
+  elif grep -q "^status: archived" "$file"; then
+    score=$((score + 5))   # Superseded/deprecated
   fi
   
-  # Factor 2: Product/project match (3x multiplier)
-  if [ -n "$PRODUCT" ]; then
-    if grep -q "product: $PRODUCT" "$file"; then
-      score=$((score + 45))
-    fi
+  # Factor 2: Product scope match (path-based, 3x multiplier)
+  if [ -n "$PRODUCT" ] && [[ "$file" == *"/products/$PRODUCT/"* ]]; then
+    score=$((score + 45))
   fi
   
   # Factor 3: Recency (weighted by status)
-  date=$(grep "^date:" "$file" | cut -d: -f2 | xargs)
+  date=$(grep -E "^date(_locked)?:" "$file" | head -1 | cut -d: -f2- | xargs)
   if [ -n "$date" ]; then
     days_old=$(( ($(date +%s) - $(date -d "$date" +%s 2>/dev/null || echo 0)) / 86400 ))
     if [ "$days_old" -lt 30 ]; then
@@ -914,8 +929,8 @@ for file in $(grep -r "$KEYWORD" ~/forge/brain --include="*.md" -l); do
     elif [ "$days_old" -lt 365 ]; then
       score=$((score + 10))
     fi
-    # For very old decisions, apply decay only if not #pattern
-    if [ "$days_old" -gt 730 ] && ! grep -q "#pattern" "$file"; then
+    # For very old decisions, apply decay unless still active
+    if [ "$days_old" -gt 730 ] && ! grep -q "^status: active" "$file"; then
       score=$((score / 2))
     fi
   fi

@@ -13,6 +13,7 @@ allowed-tools:
   - Edit
   - Read
   - Write
+  - AskUserQuestion
 ---
 # Brain Persistence (Immutable Record)
 

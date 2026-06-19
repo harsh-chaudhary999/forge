@@ -22,7 +22,8 @@
     "brain-forget": {
       "allowed_tools": [
         "Bash",
-        "Write"
+        "Write",
+        "AskUserQuestion"
       ],
       "hard_gate": false,
       "path": "brain-forget/SKILL.md",
@@ -31,7 +32,8 @@
     "brain-link": {
       "allowed_tools": [
         "Bash",
-        "Write"
+        "Write",
+        "AskUserQuestion"
       ],
       "hard_gate": false,
       "path": "brain-link/SKILL.md",
@@ -40,9 +42,8 @@
     "brain-read": {
       "allowed_tools": [
         "Bash",
-        "Edit",
         "Read",
-        "Write"
+        "AskUserQuestion"
       ],
       "hard_gate": false,
       "path": "brain-read/SKILL.md",
@@ -62,7 +63,8 @@
     "brain-why": {
       "allowed_tools": [
         "Bash",
-        "Write"
+        "Write",
+        "AskUserQuestion"
       ],
       "hard_gate": false,
       "path": "brain-why/SKILL.md",
@@ -73,7 +75,8 @@
         "Bash",
         "Edit",
         "Read",
-        "Write"
+        "Write",
+        "AskUserQuestion"
       ],
       "hard_gate": false,
       "path": "brain-write/SKILL.md",
@@ -334,7 +337,8 @@
         "Bash",
         "Edit",
         "Read",
-        "Write"
+        "Write",
+        "AskUserQuestion"
       ],
       "hard_gate": true,
       "path": "forge-brain-persist/SKILL.md",

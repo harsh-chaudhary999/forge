@@ -19,9 +19,9 @@ allowed-tools:
 
 # Brain Recall Skill
 
-## Human input (all hosts)
+## Human input
 
-This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**.
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** and uses it for any blocking human decision (task-scope confirmation, decision-vs-pattern disambiguation). Canonical convention: **[`skills/_shared/human-input.md`](../_shared/human-input.md)**.
 
 ## Anti-Pattern Preamble
 

@@ -12,6 +12,7 @@ triggers:
 allowed-tools:
   - Bash
   - Write
+  - AskUserQuestion
 ---
 
 # brain-why Skill

@@ -13,6 +13,7 @@ triggers:
 allowed-tools:
   - Bash
   - Write
+  - AskUserQuestion
 ---
 
 # brain-forget: Decision Archival System

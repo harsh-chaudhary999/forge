@@ -15,6 +15,7 @@ allowed-tools:
   - Edit
   - Read
   - Write
+  - AskUserQuestion
 ---
 
 # Brain Write

@@ -11,9 +11,8 @@ triggers:
   - "look up brain"
 allowed-tools:
   - Bash
-  - Edit
   - Read
-  - Write
+  - AskUserQuestion
 ---
 
 # Brain Read

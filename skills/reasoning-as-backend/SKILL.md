@@ -12,6 +12,7 @@ triggers:
   - "backend architecture reasoning"
 allowed-tools:
   - Write
+  - mcp__*
 ---
 
 # Reasoning as Backend
@@ -34,7 +35,7 @@ BACKEND REASONING COVERS ALL API CONTRACTS, MIGRATION PLANS, AND SLOs BEFORE COU
 
 ## Adjacent domains & pipelines (MUST — one explicit block)
 
-Before listing endpoints or schema, add a short subsection **“Adjacent domains & pipelines”** naming **other** backend or batch domains the PRD might collide with (**use neutral names from the PRD**). For each: **read/write touchpoints**, **shared tables or flags**, **ordering or exclusion rules**, **explicit “no interaction”** where true. Align output with **`docs/adjacency-and-cohorts.md`** / **`touchpoints/COHORT-AND-ADJACENCY.md`** — silence here is unreviewed integration risk.
+Before listing endpoints or schema, add a short subsection **“Adjacent domains & pipelines”** naming **other** backend or batch domains the PRD might collide with (**use neutral names from the PRD**). For each: **read/write touchpoints**, **shared tables or flags**, **ordering or exclusion rules**, **explicit “no interaction”** where true. Follow **`docs/adjacency-and-cohorts.md`** and produce this per the template **`docs/templates/adjacency-cohort-and-signals.template.md`** (council/tech-plan emit the per-task `touchpoints/` artifact from it — it is something this surface helps *produce*, not an existing doc to read) — silence here is unreviewed integration risk.
 
 ## Red Flags — STOP
 
@@ -661,12 +662,15 @@ Every detail must be locked before code starts. API contracts and database schem
   ```
   GET /user/profile when Auth Service can't reach User Service:
   Response 202 Accepted (degraded mode):
+
+  Headers:
+    X-Degraded: true
+    Retry-After: 10        # standard header, seconds — not an X- body field
+  JSON body:
   {
     "user_id": 123,
     "name": null,
-    "email": null,
-    "X-Degraded": "true",
-    "X-Retry-After": "10s"
+    "email": null
   }
   ```
 
@@ -680,7 +684,7 @@ Every detail must be locked before code starts. API contracts and database schem
   ```
   if latency > 5000ms:
     close connection
-    return 504 with X-Retry-After: 10s
+    return 504 with Retry-After: 10   (standard header, seconds)
     emit metric: upstream_latency{service=user_service, latency_ms=5234}
   ```
 

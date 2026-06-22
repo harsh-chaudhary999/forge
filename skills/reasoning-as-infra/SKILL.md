@@ -12,6 +12,7 @@ triggers:
   - "infra architecture"
 allowed-tools:
   - Write
+  - mcp__*
 ---
 
 # Reasoning as Infrastructure
@@ -1295,15 +1296,18 @@ Step 3: Switchback (optional)
 
 ### Brain Tools
 
-**brain-read:**
-- Use when: Starting infra reasoning, need to recall prior decisions
-- Link: Check if replication strategy, caching policy, partitioning already locked
-- Command: `brain-read product={product_id}` → returns prior infra decisions
+**Recall prior infra decisions (read) — preferred path: the read-only brain MCP**
+(`brain_recall`, `brain_read`, `brain_why`; see [`docs/brain-mcp.md`](../../docs/brain-mcp.md)).
+- Use when: starting infra reasoning — check whether the replication strategy,
+  caching policy, or partitioning is already locked before proposing a new one.
+- `brain_recall "<entity> replication|cache|partition"` (or grep `~/forge/brain/prds/<task-id>/` and `decisions/`). Caveat: the bundled `.mcp.json` ships `mcpServers: {}` — enable with `claude mcp add forge-brain`; cat/grep is the live fallback.
 
-**brain-write:**
-- Use when: Locking infra decision (database schema, cache strategy)
-- Link: Record decision + rationale for future reference
-- Command: `brain-write key=infra.database.schema value={decision}` → locks decision
+**Record the infra decision (write) — via `brain-write`**, which writes a **markdown
+decision file** (not a key=value pair):
+- Use when: locking an infra decision (schema, cache strategy, deployment topology).
+- Write the surface's reasoning to `~/forge/brain/prds/<task-id>/council/infra.md`
+  (and a `decisions/<category>/D<NNN>_<topic>.md` if it's a durable decision), with
+  rationale + alternatives. There is no `brain-write key=… value=…` CLI.
 
 ---
 

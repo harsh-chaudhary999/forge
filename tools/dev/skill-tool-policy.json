@@ -637,7 +637,8 @@
     },
     "reasoning-as-backend": {
       "allowed_tools": [
-        "Write"
+        "Write",
+        "mcp__*"
       ],
       "hard_gate": false,
       "path": "reasoning-as-backend/SKILL.md",
@@ -645,7 +646,8 @@
     },
     "reasoning-as-infra": {
       "allowed_tools": [
-        "Write"
+        "Write",
+        "mcp__*"
       ],
       "hard_gate": false,
       "path": "reasoning-as-infra/SKILL.md",

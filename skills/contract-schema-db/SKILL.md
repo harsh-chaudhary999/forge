@@ -536,8 +536,8 @@ Every migration must have a tested rollback plan.
 
 ```sql
 -- Rollback for: "Add is_2fa_enabled column to users"
--- Migration date: 2024-01-15
--- Backward compatibility: code supports both old+new until 2024-02-15
+-- Migration date: 2026-04-15
+-- Backward compatibility: code supports both old+new until 2026-05-15
 
 -- STEP 1: Verify pre-migration state
 SELECT COUNT(*) as total_users FROM users;  -- Should match expected count
@@ -590,7 +590,7 @@ SELECT
   MIN(created_at) as oldest_record,
   MAX(updated_at) as most_recent
 FROM user_sessions;
--- Result: 1,245,000 rows, 50,000 users, 2024-01-01, 2024-01-15
+-- Result: 1,245,000 rows, 50,000 users, 2026-04-01, 2026-04-15
 
 -- After rollback (should match):
 SELECT 
@@ -599,7 +599,7 @@ SELECT
   MIN(created_at) as oldest_record,
   MAX(updated_at) as most_recent
 FROM user_sessions;
--- Result: 1,245,000 rows, 50,000 users, 2024-01-01, 2024-01-15
+-- Result: 1,245,000 rows, 50,000 users, 2026-04-01, 2026-04-15
 
 -- If mismatch: rollback failed, DO NOT proceed
 ```

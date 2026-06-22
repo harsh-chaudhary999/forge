@@ -22,6 +22,10 @@ allowed-tools:
 
 Resolve every human-decision fork (NEEDS_CONTEXT / NEEDS_COORDINATION / NEEDS_INFRA_CHANGE / BLOCKED) through **`AskUserQuestion`** (in `allowed-tools`) — never a prose-only "reply if…". Canonical convention: [`skills/_shared/human-input.md`](../_shared/human-input.md).
 
+## Step 0 — Recall prior contracts (before negotiating)
+
+This skill declares `requires: [brain-read]` — exercise it. Before proposing the REST contract: `brain_recall`/grep the product topology (`products/<slug>/product.md`) and any existing `api-rest-contract.md` + prior API decisions for the affected entity, so this contract supersedes rather than duplicates prior locks. Record the resulting `contract_id` (brain decision id / commit SHA) in the LOCK checklist.
+
 ## Anti-Pattern Preamble: REST Contract Failures
 
 | "Rationalization" | Counter-truth |

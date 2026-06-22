@@ -21,6 +21,10 @@ allowed-tools:
 
 Resolve every human-decision fork (NEEDS_CONTEXT / NEEDS_COORDINATION / NEEDS_INFRA_CHANGE / BLOCKED) through **`AskUserQuestion`** (in `allowed-tools`) — never a prose-only "escalate to user". Canonical convention: [`skills/_shared/human-input.md`](../_shared/human-input.md).
 
+## Step 0 — Recall prior schema decisions (before negotiating)
+
+This skill declares `requires: [brain-read]` — exercise it. Before proposing schema changes: `brain_recall`/grep the affected tables + prior `contract-schema-db` decisions and the product topology, so the migration supersedes rather than re-litigates prior locks. Record the resulting `contract_id` (brain decision id / commit SHA) in the Post-Implementation Checklist.
+
 ## Anti-Pattern Preamble
 
 | Rationalization | Why It Fails |

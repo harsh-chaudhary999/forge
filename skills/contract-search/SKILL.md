@@ -21,6 +21,10 @@ allowed-tools:
 
 Resolve every human-decision fork (NEEDS_CONTEXT / NEEDS_COORDINATION / NEEDS_INFRA_CHANGE / BLOCKED) through **`AskUserQuestion`** (in `allowed-tools`) — never a prose-only "reply if…". Canonical convention: [`skills/_shared/human-input.md`](../_shared/human-input.md).
 
+## Step 0 — Recall prior search contracts (before negotiating)
+
+This skill declares `requires: [brain-read]` — exercise it. Before proposing the search contract: `brain_recall`/grep the product topology and any existing `search-contract.md` + prior index/reindex/mapping decisions for the entity, so this contract supersedes rather than duplicates prior locks. Record the resulting `contract_id` (brain decision id / commit SHA) in the LOCK checklist.
+
 Teaches teams to negotiate Elasticsearch contracts with explicit specifications for index design, analyzer strategy, consistency model, and update semantics. Bridges requirements to operational search contracts.
 
 ## Anti-Pattern Preamble: Search Contract Failures

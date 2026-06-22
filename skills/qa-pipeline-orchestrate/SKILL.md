@@ -49,7 +49,7 @@ Standalone QA pipeline that runs from brain artifacts (PRD + tech plans) through
 | "The QA run failed but I'll fix it manually and not re-run" | A manual fix without a re-run produces no evidence. The verdict must come from an automated run, not a claim. |
 | "I don't need to write results to brain — I can see them in the terminal" | Terminal output is ephemeral. Brain artifacts are auditable across sessions, teams, and CI runs. |
 | "`/qa` invoked — I'll use a blocking prompt about eval/CSV waiver before checking brain" | **Violates stage-local questioning** (`using-forge`): **`prd-locked`** → **`qa-prd-analysis`** (**Step 0.5** per **`using-forge`**) → **`manual-test-cases.csv`** (or valid waiver) → **then** **`qa/semantic-automation.csv`** + manifest via **`qa-semantic-csv-orchestrate`**. Read brain **first**; surface the **first missing** artifact. |
-| "I'll output **What to do next** runbook prose (intake → qa-analysis → CSV → qa-write) and end with *reply with task-id…* only — no **`AskQuestion`** / numbered list" | **Violates `using-forge` Interactive human input.** Same message must include **`AskQuestion`** or **numbered options + stop** for the **first** fork — never runbook-only. |
+| "I'll output **What to do next** runbook prose (intake → qa-analysis → CSV → qa-write) and end with *reply with task-id…* only — no blocking prompt" | **Violates `using-forge` Interactive human input.** The same message must include an **`AskUserQuestion`** for the **first** fork — never runbook-only. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -203,9 +203,9 @@ Log:
 
 ## Phase QA-P3 — Branch Checkout and Env Prep
 
-Invoke `qa-branch-env-prep`. **Authoritative host-capability discovery** runs in **`qa-branch-env-prep` Step 0.0** (**`uname`**, **`which adb`**, **`emulator -list-avds`**, browser **`which`**) **before** Step 0.1 run-mode **`AskQuestion`** — so **A/B/C/D** reflect **this machine** (see that skill). If the agent skipped 0.0 and picked **`url-only`**, local **emulator / CDP** preflight may never run; **re-run QA-P3** if QA-P5 later finds the chosen mode **cannot** satisfy in-scope surfaces.
+Invoke `qa-branch-env-prep`. **Authoritative host-capability discovery** runs in **`qa-branch-env-prep` Step 0.0** (**`uname`**, **`which adb`**, **`emulator -list-avds`**, browser **`which`**) **before** Step 0.1 run-mode **`AskUserQuestion`** — so **A/B/C/D** reflect **this machine** (see that skill). If the agent skipped 0.0 and picked **`url-only`**, local **emulator / CDP** preflight may never run; **re-run QA-P3** if QA-P5 later finds the chosen mode **cannot** satisfy in-scope surfaces.
 
-It will then prompt for a run mode using **blocking interactive prompts** per **`using-forge`** (see that skill **Step 0.1** — **`AskQuestion`** / **numbered A–D** + **stop**), not prose-only *pick a mode*:
+It will then prompt for a run mode using **`AskUserQuestion`** (see that skill **Step 0.1** — options **A–D**), not prose-only *pick a mode*:
 
 | Run mode | What happens next |
 |---|---|
@@ -335,85 +335,11 @@ If verdict **RED** and Jira MCP is configured: after **`self-heal-triage`**, opt
 
 **Execution vs product verdict:** Use **`execution_scope: full`** when drivers ran. Use **`execution_scope: static_only`** when only CSV/schema validation (or manifest writes) occurred — set **`product_verdict: null`** and **`pipeline_verdict: NOT_EXECUTED`** (do **not** put **YELLOW** here). **`verdict`** in frontmatter may duplicate **`product_verdict`** for backward compatibility when **`execution_scope: full`**.
 
-```markdown
----
-task_id: <task-id>
-run_at: <ISO8601>
-execution_scope: full | static_only
-product_verdict: GREEN | RED | YELLOW | null
-pipeline_verdict: GREEN | RED | YELLOW | NOT_EXECUTED
-verdict: GREEN | RED | YELLOW | NOT_EXECUTED
-brain_git_sha: <git -C ~/forge/brain rev-parse HEAD>
-forge_task_id_env: <FORGE_TASK_ID or empty>
-flake_suspected: false | true
-static_validation: PASS | FAIL | SKIPPED | null
-# Optional — set when terminology.md exists (see Phase QA-P7 body text)
-terminology_status: draft | review | locked | null
-terminology_open_doubts: none | pending | null
----
-
-# QA Run Report
-
-**task_id:** <task-id>
-**run_at:** <ISO8601>
-**execution_scope:** full | static_only
-**product verdict (GREEN/RED/YELLOW):** … or **N/A — drivers did not run**
-**pipeline verdict:** GREEN | RED | YELLOW | **NOT_EXECUTED**
-**duration:** <total seconds>
-
-## Branch State
-
-| Repo | Branch | SHA |
-|---|---|---|
-| backend-api | feature/payment-v2 | a1b2c3d |
-| web-dashboard | feature/payment-ui | e4f5g6h |
-
-## Environment
-
-| Variable | Value |
-|---|---|
-| BASE_URL | http://localhost:3000 |
-| DEVICE_ID | emulator-5554 |
-
-## Scenario Results
-
-| Scenario ID | Surface | Status | Duration | Notes |
-|---|---|---|---|---|
-| SC-AUTH-001 | web + api + db | PASS | 2.4s | |
-| SC-AUTH-001-negative | web | PASS | 0.8s | |
-| SC-PAYMENT-001 | web + api + db | FAIL | 5.1s | DB row not written after checkout |
-
-## Failures (if any)
-
-### SC-PAYMENT-001 — FAIL
-- **Step:** DB verification — `SELECT * FROM orders WHERE user_id = ...`
-- **Expected:** 1 row
-- **Got:** 0 rows
-- **Evidence:** screenshot `eval-evidence/SC-PAYMENT-001-step-4.png`
-- **Classification:** functional regression — backend did not persist order on checkout
-
-## Next Actions
-
-- [ ] Fix: `backend-api/src/services/payment.service.ts` — order persistence missing `await`
-- [ ] Re-run `/qa-run` after fix to verify GREEN
-```
-
-**When `execution_scope: static_only`** — add sections **Why automation did not run** (stack-up skipped, no env, agent session policy, etc.) and **How to get a real verdict** (bullet list: `url-only` / `branch-local` + credentials, device IDs, `/qa-run` from a machine that can reach the target). Tone: **expected limitation**, not failure.
-
-```markdown
-## Why WebDriver / Appium / ADB did not run
-
-| Gate | Status | Meaning |
-|---|---|---|
-| QA-P4 | SKIP | Stack-up not executed — nothing to open in browser or on device |
-| QA-P5 | SKIP | Eval drivers not invoked — no resolved env / no stack |
-| QA-P6 | NOT_EXECUTED | No driver payload for `eval-judge` — **not** the same as YELLOW |
-
-## How to obtain GREEN / RED / YELLOW
-
-1. Provide **`BASE_URL`** (or run mode **`url-only`** / **`branch-local`**) and any **`DEVICE_ID`** / simulator IDs required by scenarios.
-2. Re-run **`/qa-run <task-id>`** from an environment that can start or reach the stack.
-```
+See **[reference/report-template.md](reference/report-template.md)** for the full
+`qa-run-report-<ts>.md` body (frontmatter + Branch State / Environment / Scenario
+Results / Failures / Next Actions), the **`execution_scope: static_only`** addendum
+(**Why automation did not run** + **How to obtain GREEN/RED/YELLOW**), and the
+**Full Pipeline Log** end-state example.
 
 Commit to brain:
 ```bash
@@ -430,38 +356,13 @@ Log:
 
 ## Full Pipeline Log (end state)
 
-At completion, `qa-pipeline.log` must contain phase gate lines in order. **Full execution path** example:
-
-```
-[QA-P1-LOAD]       task_id=PRD-042 ...
-[QA-P2-SCENARIOS]  task_id=PRD-042 ...
-[QA-BRANCH-ENV]    task_id=PRD-042 ...
-[QA-P4-STACK]      task_id=PRD-042 ...
-[QA-P5-EXEC]       task_id=PRD-042 ...
-[QA-P6-VERDICT]    task_id=PRD-042 verdict=GREEN
-[QA-P7-REPORT]     task_id=PRD-042 ...
-```
-
-**Static-only / execution blocked** path is valid when documented: QA-P4 or QA-P5 may log **SKIP**, then **`[QA-P6-VERDICT] … verdict=NOT_EXECUTED`** — still complete if QA-P7 records **`execution_scope: static_only`** and explains the gap. Do not treat **NOT_EXECUTED** as **YELLOW**.
+At completion, `qa-pipeline.log` must contain phase gate lines in order (e.g.
+`[QA-P1-LOAD] … [QA-P7-REPORT] …`). A **static-only / execution-blocked** path is
+valid when documented (QA-P4/QA-P5 log **SKIP**, QA-P6 logs **NOT_EXECUTED**). The
+worked end-state example is in **[reference/report-template.md](reference/report-template.md)**.
 
 ## Edge Cases
 
-### RED verdict and immediate re-run
-After a RED, if the user fixes the bug and invokes `/qa-run` again: start from QA-P3 (branch prep) not QA-P1, unless the user changed which branch to test. Use `--from=QA-P3` shorthand in the command.
-
-### Partial surface run (`--surface web`)
-All non-web scenarios get status `SKIPPED (surface filter)` in the report. Verdict only covers the requested surfaces. Report must note: "Verdict is partial — `api`, `db` surfaces not run. Re-run without `--surface` filter for full verdict."
-
-### Remote mode (testing staging)
-Skip QA-P4. In the report, note the remote BASE_URL as the test target. Record that the branch state is informational (the remote may be running a different commit than local HEAD).
-
-### Static validation only (no stack, no drivers — common in agent sessions)
-
-When the session validates **`qa/semantic-automation.csv`** and/or writes **`semantic-eval-manifest.json`** but **does not** start a stack or invoke drivers (no **`BASE_URL`**, no device, no credentials, or policy forbids long-running services):
-
-- Label the outcome **`pipeline_verdict: NOT_EXECUTED`** and **`execution_scope: static_only`** — **not** **YELLOW**.
-- **YELLOW** remains reserved for **`eval-judge`** when drivers ran and non-critical steps failed.
-- The human summary should read like **“automation not run — environment gap”**, not **“partial pass.”**
-
-### No tech plans in brain
-Semantic CSV authoring needs targets from tech plans + contracts. The pipeline logs `[QA-P2-SCENARIOS] status=BLOCKED reason=no-tech-plans`. Ask user: "Tech plans are absent. Would you like to (1) run `/plan` first, (2) provide a brief description for minimal **`qa/semantic-automation.csv`** rows from the PRD only, or (3) supply **`qa/semantic-automation.csv`** + **`semantic-eval-manifest.json`** manually?"
+Full catalog in **[reference/edge-cases.md](reference/edge-cases.md)**: RED re-run
+entry point (`--from=QA-Pn`), partial-surface runs, remote mode, **static-only ≠
+YELLOW**, **self-heal loop-cap exhaustion → BLOCKED**, and the no-tech-plans block.

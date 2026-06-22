@@ -957,10 +957,10 @@ When reasoning about a PRD:
 - `brain-write` - Record Council reasoning output to brain for future reference.
 
 **Persuasion & Authority:**
-- Forge Decision D14: Persuasion Principles - Applied in this skill via:
+- Persuasion-grounded design (a forge-writing-skills methodology, not a Forge decision) - applied in this skill via:
   - **Authority:** State management decision tree provides expert guidance with clear trade-offs
   - **Clarity:** Edge cases documented with scannable "Scenario → Action → Escalation" format
-  - **Social Proof:** Cross-references to established patterns (React Hook Form, React Query, react-window) signal industry consensus
+  - **Durable principle:** prefer declarative form + async-state libraries with explicit validation schemas (e.g. React Hook Form, React Query, react-window) over hand-rolled equivalents — name the principle, not just the packages
 
 **Evaluation & Verification:**
 - `eval-driver-web-cdp` - Chrome DevTools Protocol for testing web frontend. Use to verify performance budgets and accessibility in eval.

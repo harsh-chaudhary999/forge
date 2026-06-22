@@ -254,7 +254,7 @@ Choose approach based on data semantics (in backend contract, reasoning-as-backe
 - If conflict affects non-critical data (preferences): Use server-wins silently, log event
 - If local mutations are lost: Offer undo stack (24h retention) to user
 
-**Related:** reasoning-as-backend (server-side idempotency keys), Forge Decision D14 (persuasion: explain what happened)
+**Related:** reasoning-as-backend (server-side idempotency keys), persuasion-grounded design (explain what happened — see forge-writing-skills)
 
 ---
 
@@ -318,7 +318,7 @@ Choose approach based on data semantics (in backend contract, reasoning-as-backe
 - If optional field missing but endpoint works: WARN in logs, no user notification
 - If schema incompatible but app old: Show "Update available" banner (non-blocking)
 
-**Related:** reasoning-as-backend (API versioning contracts), Forge Decision D14 (authority: document deprecation timelines)
+**Related:** reasoning-as-backend (API versioning contracts), persuasion-grounded design (authority: document deprecation timelines — see forge-writing-skills)
 
 ---
 
@@ -650,7 +650,7 @@ Timeline:
 - If foreground/background conflict detected: BLOCKER, show "Sync error, tap to resolve"
 - If transaction log fills up (>1000 pending): BLOCKER, force sync immediately
 
-**Related:** reasoning-as-infra (concurrency control), Forge Decision D14 (explain what's syncing)
+**Related:** reasoning-as-infra (concurrency control), persuasion-grounded design (explain what's syncing — see forge-writing-skills)
 
 ---
 
@@ -774,7 +774,7 @@ onAppLaunchFromColdStart() {
 - If push timestamp is >5 min old: Always do fresh sync before showing data
 - If cold start >3s: WARN user, recommend app restart
 
-**Related:** reasoning-as-infra (push delivery SLA), Forge Decision D14 (transparency about delays)
+**Related:** reasoning-as-infra (push delivery SLA), persuasion-grounded design (transparency about delays — see forge-writing-skills)
 
 ---
 
@@ -1417,7 +1417,7 @@ Write to `~/forge/brain/prds/<task-id>/council/app.md`:
 - scan-codebase: Produces `structure.txt`, `code-style.md`, and `SCAN.json` required before reasoning about any screen, component, or navigation flow
 
 **Related Forge Decisions:**
-- D14 (Persuasion Principles): Explain conflicts to users with clarity and authority
+- Persuasion-grounded design (forge-writing-skills methodology): Explain conflicts to users with clarity and authority
 - D30 (Worktree-per-project-per-task): Isolation for parallel app development
 
 **Related Brain Concepts:**

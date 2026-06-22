@@ -9,7 +9,7 @@ description: Initialize or open a Forge workspace. Point it at any folder — it
 
 Set up a Forge workspace by scanning an existing folder structure. Works with any layout — Forge detects git repos, infers roles, and auto-detects languages. Only asks what it cannot figure out itself.
 
-**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns, **no defensive downstream-gate narration** mid-elicitation — **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**); **one blocking affordance per unrelated fork** (no bundled prose obligations); **no dual prompts** — **never** **`AskQuestion`** / **Questions** widget on **one** topic **and** a **long markdown question** on **another** in the **same** message; **no chat–widget duplicate** — long lists / same question body **once** in **chat**; **`AskQuestion`** = **short** title + **options** only (**`docs/forge-one-step-horizon.md`** **Chat vs `AskQuestion` / Questions widget**); **headline / first § = immediate next artifact** — **not** *What unlocks machine eval*, **`qa/semantic-automation.csv`**, or Step −1 **as the main heading** when **manual CSV** / **`qa-manual-test-cases-from-prd`** / **`qa-prd-analysis`** is still the next gate (**`docs/forge-one-step-horizon.md`** **Headline = immediate next step**); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns, **no defensive downstream-gate narration** mid-elicitation — **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**); **one blocking affordance per unrelated fork** (no bundled prose obligations); **no dual prompts** — **never** the **`AskUserQuestion`** widget on **one** topic **and** a **long markdown question** on **another** in the **same** message; **no chat–widget duplicate** — long lists / same question body **once** in **chat**; **`AskUserQuestion`** = **short** title + **options** only (**`docs/forge-one-step-horizon.md`** **Chat vs `AskUserQuestion` widget**); **headline / first § = immediate next artifact** — **not** *What unlocks machine eval*, **`qa/semantic-automation.csv`**, or Step −1 **as the main heading** when **manual CSV** / **`qa-manual-test-cases-from-prd`** / **`qa-prd-analysis`** is still the next gate (**`docs/forge-one-step-horizon.md`** **Headline = immediate next step**); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
 
 ## Usage
 
@@ -37,7 +37,7 @@ Set up a Forge workspace by scanning an existing folder structure. Works with an
 ls ~/forge/brain/products/ 2>/dev/null
 ```
 
-If workspaces exist, show them and use a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** — e.g. **`AskQuestion`** or **numbered options** (new workspace / open existing `<slug>`) + **stop** — not only a bare sentence with no clickable or numbered choices.
+If workspaces exist, show them and use a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** — e.g. **`AskUserQuestion`** or **numbered options** (new workspace / open existing `<slug>`) + **stop** — not only a bare sentence with no clickable or numbered choices.
 
 ---
 
@@ -85,7 +85,7 @@ Apply this mapping automatically — no need to ask if the name is unambiguous:
 | `shared`, `common`, `lib`, `packages`, `sdk` | `shared` |
 | `infra`, `devops`, `deploy`, `k8s`, `terraform` | `infra` |
 
-If the folder name is ambiguous (e.g. `src`, `code`, `main`), use a **blocking interactive prompt** per **`using-forge`** for role — **`AskQuestion`** or **numbered list** of the five roles + **stop** — for **`<folder-name>`**.
+If the folder name is ambiguous (e.g. `src`, `code`, `main`), use a **blocking interactive prompt** per **`using-forge`** for role — **`AskUserQuestion`** or **numbered list** of the five roles + **stop** — for **`<folder-name>`**.
 
 ---
 
@@ -124,7 +124,7 @@ For **each** detected repo (before writing Step 5 `product.md`):
 
 Optionally copy explicit `start`, `stop`, `health`, `port` into `product.md` **only when** they are unambiguous from the doc; otherwise leave them blank — `deploy_doc` is still the source of truth.
 
-**If not sufficient:** **STOP** before Step 5 and use a **blocking interactive prompt** per **`using-forge`** for each repo (one message can cover all repos in a small table). Present **A** vs **B** via **`AskQuestion`** or **numbered 1–2** + **stop**; then collect the path or paste — not only prose *provide A or B* with no same-turn fork.
+**If not sufficient:** **STOP** before Step 5 and use a **blocking interactive prompt** per **`using-forge`** for each repo (one message can cover all repos in a small table). Present **A** vs **B** via **`AskUserQuestion`** or **numbered 1–2** + **stop**; then collect the path or paste — not only prose *provide A or B* with no same-turn fork.
 
 - **A)** Path **relative to repo root** to the file that contains deploy / local run steps (Forge will use this for stack-up and eval prep), **or**
 - **B)** Paste the lines to store as `start`, optional `stop`, `health`, optional `port` in `product.md`.
@@ -253,7 +253,7 @@ EOF
 **Step 5a.2 — Copy Obsidian config from Forge template:**
 
 ```bash
-FORGE_DIR=$(find ~/.claude/plugins ~/.cursor/plugins ~/.cursor/plugins/local ~/.config/gemini/plugins \
+FORGE_DIR=$(find ~/.claude/plugins \
   -path "*/forge/brain-template" -type d 2>/dev/null | head -1 | sed 's|/brain-template||')
 # Fallback: common direct clone locations (covers a forge git clone without plugin layout)
 [ -z "$FORGE_DIR" ] && FORGE_DIR=$(find ~/forge ~/Videos/forge -maxdepth 1 -name "brain-template" -type d 2>/dev/null | head -1 | sed 's|/brain-template||')
@@ -297,7 +297,7 @@ If **all** of `app.json`, `graph.json`, `workspace.json`, `core-plugins.json`, a
 **Repair an existing brain that only has partial `.obsidian/` (one-liner):**
 
 ```bash
-FORGE_DIR="$(find ~/.cursor/plugins ~/.cursor/plugins/local ~/.claude/plugins ~/.config/gemini/plugins \
+FORGE_DIR="$(find ~/.claude/plugins \
   -path '*/forge/brain-template' -type d 2>/dev/null | head -1 | sed 's|/brain-template||')"
 BT="$FORGE_DIR/brain-template/.obsidian"
 mkdir -p ~/forge/brain/.obsidian

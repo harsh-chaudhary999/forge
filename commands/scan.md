@@ -5,11 +5,11 @@ description: Map an existing codebase into the Forge brain. Produces an Obsidian
 
 # /scan
 
-**Forge plugin:** Invokes **`scan-codebase`** / **`forge_scan.py`**; outputs go under **`~/forge/brain/products/<slug>/codebase/`** (per skill). Not a substitute for **`/forge`** delivery. **`scripts/install.sh`** (Cursor + Claude Code) copies the full **`tools/`** tree into the plugin dir so **`classes/`**, **`methods/`**, and the rest of the pipeline run from an installed plugin — not module-only stubs from a missing scanner.
+**Forge plugin:** Invokes **`scan-codebase`** / **`forge_scan.py`**; outputs go under **`~/forge/brain/products/<slug>/codebase/`** (per skill). Not a substitute for **`/forge`** delivery. **`scripts/install.sh`** copies the full **`tools/`** tree into the plugin dir so **`classes/`**, **`methods/`**, and the rest of the pipeline run from an installed plugin — not module-only stubs from a missing scanner.
 
 Build a codebase knowledge graph for the Forge brain. Works on any existing repo — no prior Forge setup needed. Produces navigable Obsidian markdown files that agents can query without re-reading source code.
 
-**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns, **no defensive downstream-gate narration** mid-elicitation — **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**); **one blocking affordance per unrelated fork** (no bundled prose obligations); **no dual prompts** — **never** **`AskQuestion`** / **Questions** widget on **one** topic **and** a **long markdown question** on **another** in the **same** message; **no chat–widget duplicate** — long lists / same question body **once** in **chat**; **`AskQuestion`** = **short** title + **options** only (**`docs/forge-one-step-horizon.md`** **Chat vs `AskQuestion` / Questions widget**); **headline / first § = immediate next artifact** — **not** *What unlocks machine eval*, **`qa/semantic-automation.csv`**, or Step −1 **as the main heading** when **manual CSV** / **`qa-manual-test-cases-from-prd`** / **`qa-prd-analysis`** is still the next gate (**`docs/forge-one-step-horizon.md`** **Headline = immediate next step**); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
+**Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns, **no defensive downstream-gate narration** mid-elicitation — **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**); **one blocking affordance per unrelated fork** (no bundled prose obligations); **no dual prompts** — **never** the **`AskUserQuestion`** widget on **one** topic **and** a **long markdown question** on **another** in the **same** message; **no chat–widget duplicate** — long lists / same question body **once** in **chat**; **`AskUserQuestion`** = **short** title + **options** only (**`docs/forge-one-step-horizon.md`** **Chat vs `AskUserQuestion` widget**); **headline / first § = immediate next artifact** — **not** *What unlocks machine eval*, **`qa/semantic-automation.csv`**, or Step −1 **as the main heading** when **manual CSV** / **`qa-manual-test-cases-from-prd`** / **`qa-prd-analysis`** is still the next gate (**`docs/forge-one-step-horizon.md`** **Headline = immediate next step**); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
 
 ## Usage
 
@@ -30,7 +30,7 @@ Build a codebase knowledge graph for the Forge brain. Works on any existing repo
 **If no slug given:**
 - Check if a workspace is open (look for `~/forge/brain/products/*/product.md`)
 - If exactly one workspace exists → use it
-- If multiple exist → list them and use a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (**`AskQuestion`** / **numbered slugs + stop**)
+- If multiple exist → list them and use a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (**`AskUserQuestion`** / **numbered slugs + stop**)
 - If none exist → use a **blocking interactive prompt** to choose: e.g. run **`/workspace`** now vs provide path — not only prose *Run `/workspace` first* with no same-turn choices
 
 **If slug given:**
@@ -107,10 +107,9 @@ Run the scan-codebase skill for each project role. Process roles in this order:
 **Runner (multi-repo — see `scan-codebase` SKILL):** one invocation with **`forge_scan.py`** and `--brain-codebase`, `--repos role:path …`, optional `--product-md`, optional `--phase57-write-report`, optional **`--cleanup`**, optional **`--incremental`** (or `FORGE_SCAN_INCREMENTAL=1`). Phases 1 → 3.5 → 4 → 5 → 56 → 57 run in order inside `tools/scan_forge/`; in incremental mode, unchanged roles may skip phase 1/3.5/4 and still regenerate summaries/manifest/state. See `tools/README.md`.
 
 **Which `forge_scan.py`:** Prefer **`python3 tools/forge_scan.py`** when the workspace is a Forge git checkout and **`tools/forge_scan.py`** exists. Otherwise call the scanner from the merged plugin **`tools/`** tree (copied by **`install.sh`**):
-- **Cursor:** `python3 "$HOME/.cursor/plugins/local/forge/tools/forge_scan.py"`
 - **Claude Code:** under **`$HOME/.claude/plugins/cache/forge-plugin/forge/<version>/tools/forge_scan.py`** where **`<version>`** matches **`package.json`** in that directory (run **`ls ~/.claude/plugins/cache/forge-plugin/forge/`** if unsure).
 
-Optional equivalent: **`PYTHONPATH=$HOME/.cursor/plugins/local/forge/tools python3 -m scan_forge`** (adjust **`PYTHONPATH`** to the same **`tools`** directory you used for **`forge_scan.py`**).
+Optional equivalent: **`PYTHONPATH=$HOME$HOME/.claude/plugins/cache/forge-plugin/forge/<version>/tools python3 -m scan_forge`** (adjust **`PYTHONPATH`** to the same **`tools`** directory you used for **`forge_scan.py`**).
 
 Hand verification uses the same prefix: **`python3 …/tools/verify_scan_outputs.py ~/forge/brain/products/<slug>/codebase`**.
 

@@ -140,7 +140,7 @@ There is **no “skip deploy” path** — you cannot run a meaningful **`eval-p
 After scan, elicit **only** what is missing and cannot be inferred, using **blocking interactive prompts** per **`using-forge`** where the answer is a **finite choice** (confirm inferred name → yes/no or pick from list):
 
 1. **Product name** — if not obvious from folder name or repo names
-   - e.g. `jh` → prompt with **AskQuestion** or **numbered options** for name candidates + **stop**
+   - e.g. `jh` → prompt with **AskUserQuestion** or **numbered options** for name candidates + **stop**
    - e.g. `my-startup-backend` → infer "my-startup", then **confirm** with a one-tap/numbered confirm
 
 2. **Role clarification** — only for ambiguous folder names (see Step 2)

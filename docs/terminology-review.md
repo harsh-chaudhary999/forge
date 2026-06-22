@@ -22,13 +22,13 @@ Do not merge the two. In skills and commands, refer to **“product terminology�
 2. **Human-facing copy in QA and eval:** Prefer **locked** rows in **`terminology.md`** for customer-visible nouns, button labels, and scenario wording—**after** council renames, **update** `terminology.md` and add a **Revision** row.
 3. **`prd-locked.md`:** Success criteria text is authoritative for **scope**; if council **renames** a concept, reflect the final name in `terminology.md`.
 
-## Interactive review protocol (all hosts)
+## Interactive review protocol
 
 1. **Publish:** Write or update `terminology.md` under the task `qa/` sibling path’s parent (`prds/<task-id>/`). Show a **short excerpt** in chat (table header + 1–2 rows) or the **absolute path** so the transcript is auditable.
-2. **Review turn (blocking):** Use **`AskUserQuestion`** / **`AskQuestion`** / **numbered options + stop** per [using-forge](../skills/using-forge/SKILL.md) **Blocking interactive prompts**. **One primary topic per message** for approval—do not bundle unrelated tech-plan or branch decisions in the same turn ([docs/forge-one-step-horizon.md](forge-one-step-horizon.md)).
+2. **Review turn (blocking):** Use **`AskUserQuestion`** / **numbered options + stop** per [using-forge](../skills/using-forge/SKILL.md) **Blocking interactive prompts**. **One primary topic per message** for approval—do not bundle unrelated tech-plan or branch decisions in the same turn ([docs/forge-one-step-horizon.md](forge-one-step-horizon.md)).
 3. **Merge:** Apply edits to the file; set frontmatter `status: review` or `locked` and `open_doubts: none` when resolved. Unresolved items may go to `planning-doubts.md` (see [forge-brain-layout](../skills/forge-brain-layout/SKILL.md)) with a back-link.
 
-Optional: **PR/MR** review on the brain repo, or **Cursor Canvas** for a one-off snapshot (optional; not required for Forge).
+Optional: **PR/MR** review on the brain repo (optional; not required for Forge).
 
 ## Planning docs, comments, and checklists
 
@@ -38,7 +38,7 @@ Optional: **PR/MR** review on the brain repo, or **Cursor Canvas** for a one-off
 
 ## Entrypoint matrix — commands + slice skills (v1)
 
-**How to read:** **Command** = user-facing `/slash` entry; **Primary skill** = the skill the command invokes (or the skill if invoked without a command). **Review / process** = [Interactive review protocol (all hosts)](#interactive-review-protocol-all-hosts) + [Planning docs, comments, and checklists](#planning-docs-comments-and-checklists).
+**How to read:** **Command** = user-facing `/slash` entry; **Primary skill** = the skill the command invokes (or the skill if invoked without a command). **Review / process** = [Interactive review protocol](#interactive-review-protocol) + [Planning docs, comments, and checklists](#planning-docs-comments-and-checklists).
 
 ### Slash commands
 

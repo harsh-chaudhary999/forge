@@ -4,7 +4,7 @@ description: "WHEN: You've been given a PRD for a multi-repo product and need to
 type: rigid
 effort: high
 requires: [brain-write]
-version: 1.0.9
+version: version: 1.0.10
 preamble-tier: 2
 triggers:
   - "interrogate PRD"
@@ -42,7 +42,7 @@ allowed-tools:
 | "I'll phrase option A as the narrowest scope so it looks like the right pick" | Narrowest ≠ correct. MCQ **order** and **only** wording bias humans and models toward A. STOP. When **PRD audience or surface** (who uses it: customer, partner, admin, internal, …) **conflicts** with a **project `role` name** or parent path segment, **do not** present a single-repo “100% confident” option — lead with **escalation / Other**. |
 | "**Forge intake is exactly eight questions in fixed order with no design question** — I stayed inside the gate" | **False.** This skill is **`intake-interrogate`**, not a literal eight-chat-turn script. **`prd-locked.md` must include defined sections** (see **Lock dimensions**); **Q9 (design / UI)** applies when web, app, or **user-visible UI** is in scope — including the **verbatim design source-of-truth blockquote** in the thread and **`design_intake_anchor`**. A Figma link in the PRD **does not** replace Q9 or the blockquote. Claiming “no ninth question” is **misreading Forge**; if you locked without Q9 when UI applied, **re-open intake** — do not defend it. |
 | "I'll prepend *after intake comes council, then tech plans, then …* every turn so the user sees the roadmap" | **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Horizon narration**. Stay on the **current** elicitation; full pipeline order is documented outside chat. |
-| "I'll use **one** **`AskQuestion`** for **task-id** (or one fork) and put Q9 design authority, net-new vs reuse, Figma confirmation, **and** unrelated roadmap or waiver copy **in prose** in the same message" | **Invalid — bundled unrelated decisions.** **`using-forge`** **Multi-question elicitation** item **6** — discrete needle-moving decisions each need **blocking interactive** turns **or** sequential turns after each reply; **not** one modal + *reply with everything*. **`docs/forge-one-step-horizon.md`** **No bundled unrelated decisions**. |
+| "I'll use **one** **`AskUserQuestion`** for **task-id** (or one fork) and put Q9 design authority, net-new vs reuse, Figma confirmation, **and** unrelated roadmap or waiver copy **in prose** in the same message" | **Invalid — bundled unrelated decisions.** **`using-forge`** **Multi-question elicitation** item **6** — discrete needle-moving decisions each need **blocking interactive** turns **or** sequential turns after each reply; **not** one modal + *reply with everything*. **`docs/forge-one-step-horizon.md`** **No bundled unrelated decisions**. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -269,7 +269,7 @@ When the PRD centers on an entity type that likely participates in **multiple pr
 
 **Not** [forge-glossary](../forge-glossary/SKILL.md) (Forge process terms). **Product/domain** terms for this task go in **`~/forge/brain/prds/<task-id>/terminology.md`** per [docs/terminology-review.md](../../docs/terminology-review.md) and [docs/templates/terminology.md](../../docs/templates/terminology.md).
 
-1. **Extract** candidate entities, roles, metrics, and flags from the PRD and success criteria while eliciting lock fields. **Blocking** interactive prompts for ambiguous nouns (same host mapping as this skill’s **`AskUserQuestion`** / **`AskQuestion`** / **numbered + stop**).
+1. **Extract** candidate entities, roles, metrics, and flags from the PRD and success criteria while eliciting lock fields. **Blocking** interactive prompts for ambiguous nouns (same host mapping as this skill’s **`AskUserQuestion`** / **`AskUserQuestion`** / **numbered + stop**).
 2. **Write** `terminology.md` in the same task directory as `prd-locked.md`, with `status: draft` and `open_doubts: none` only when all listed doubts are **resolved** or explicitly deferred in `planning-doubts.md` (see [forge-brain-layout](../forge-brain-layout/SKILL.md) directory tree).
 3. **Review turn:** Before council, offer the **terminology review protocol** in [docs/terminology-review.md](../../docs/terminology-review.md) — one approval turn, not bundled with unrelated decisions ([docs/forge-one-step-horizon.md](../../docs/forge-one-step-horizon.md)).
 4. After user approval, set **frontmatter** `status: review` or `locked` as appropriate.

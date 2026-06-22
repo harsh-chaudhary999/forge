@@ -2,7 +2,7 @@
 name: learn
 description: "WHEN: You've discovered something worth capturing — a pattern, a gotcha, a process improvement — and want to preserve it so future sessions can benefit. Invoke at end of session or when asked to 'save this insight', 'capture learning', 'log lesson'."
 type: flexible
-version: 1.0.1
+version: version: 1.0.2
 preamble-tier: 2
 triggers:
   - "what did we learn"
@@ -61,7 +61,7 @@ This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for 
 
 ### Step 1 — Determine category and insight
 
-If invoked as bare `/learn`, use a **blocking interactive prompt** per **`using-forge`** — e.g. **`AskQuestion`** with options **pattern | gotcha | process**, then a follow-up for one-sentence insight (or a single multi-field prompt if the host supports it). **Do not** rely on prose-only *what’s the category and insight?* with no **AskQuestion** / **numbered options** in the **same** turn.
+If invoked as bare `/learn`, use a **blocking interactive prompt** per **`using-forge`** — e.g. **`AskUserQuestion`** with options **pattern | gotcha | process**, then a follow-up for one-sentence insight (or a single multi-field prompt if the host supports it). **Do not** rely on prose-only *what’s the category and insight?* with no **AskUserQuestion** / **numbered options** in the **same** turn.
 
 If invoked as `/learn "<category>: <insight>"`, parse directly — no prompting.
 

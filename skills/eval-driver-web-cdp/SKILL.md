@@ -3,7 +3,7 @@ name: eval-driver-web-cdp
 description: "WHEN: qa-semantic-csv-orchestrate or run_semantic_csv_eval dispatches an automation step that requires web UI interaction or assertion. Chrome DevTools Protocol: launch(), navigate(), interact(click/type/scroll), screenshot(), getDOM(), teardown()."
 type: rigid
 requires: [brain-read]
-version: 1.0.4
+version: version: 1.0.5
 preamble-tier: 3
 triggers:
   - "eval web UI"
@@ -62,14 +62,14 @@ If you notice any of these, STOP and do not proceed:
 
 1. **`mkdir -p ~/forge/brain/prds/<task-id>/qa/logs`** (see **`skills/forge-brain-layout/SKILL.md`** **qa/logs/**).
 2. **Discover binaries** — run **`which`** / common paths: **`google-chrome-stable`**, **`google-chrome`**, **`chromium`**, **`chromium-browser`**, **`microsoft-edge`** (distro-dependent); on macOS, **`/Applications/Google Chrome.app/...`**. Append **`--- web ---`** section + command output to **`eval-preflight-<ISO8601>.log`**.
-3. **`AskUserQuestion`** / **`AskQuestion`**: which browser binary + profile (headless vs headed) + **`--remote-debugging-port=<port>`** (must match driver config). **Do not** assume Chrome if only Chromium exists.
+3. **`AskUserQuestion`** / **`AskUserQuestion`**: which browser binary + profile (headless vs headed) + **`--remote-debugging-port=<port>`** (must match driver config). **Do not** assume Chrome if only Chromium exists.
 4. **Raw CDP path:** start the chosen browser with **`--remote-debugging-port=...`** (and **`--user-data-dir`** if isolated profile needed); **verify** port listens (**`ss`**, **`lsof`**, or HTTP to **`/json/version`**) before scenarios — log failures.
 5. **Playwright / Playwright MCP path:** If the human picks **Playwright** or **[microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp)** — ensure **Node** is present (`node -v`, `npm -v`). Install MCP per upstream docs; run **`npx playwright install`** (or project-local install) for browsers. On **missing Node**, tell the user to install **Node LTS**, then retry — log stderr to **`qa/logs/`**.
 6. **Browser MCP path:** If IDE exposes browser MCP tools, record tool names and timeouts in the task brain — same log file may reference MCP probe results.
 
 ## Host implementation choice (CDP, Playwright, Puppeteer, MCP)
 
-**MUST** elicit with a **blocking interactive prompt** per **`using-forge`** how web UI eval should run **before** treating any stack as decided — **`AskQuestion`** / **numbered 1–3** + **stop**, not prose-only *which stack?*:
+**MUST** elicit with a **blocking interactive prompt** per **`using-forge`** how web UI eval should run **before** treating any stack as decided — **`AskUserQuestion`** / **numbered 1–3** + **stop**, not prose-only *which stack?*:
 
 1. **Raw CDP** — WebSocket client / `chrome-remote-interface` / minimal driver (matches the API shape in this skill). Requires a running browser with **`--remote-debugging-port`** (**Preflight** above).
 2. **Playwright or Puppeteer** — running on the **operator’s machine or CI** against the **product** browser (allowed for **product eval**; D5 still forbids **LangChain-style** orchestration **inside Forge’s shipped plugin code**). Optional IDE integration: **[microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp)** — install per upstream; **`npx playwright install`** for bundled browsers.

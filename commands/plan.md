@@ -9,7 +9,7 @@ Invoke the **`tech-plan-write-per-project`** skill to author **per-repository te
 
 **Brevity split (MUST):** **Short** = **Section 0** + **chat** only. **Section 1b**, **`### 1b.2a`**, **Section 2** = **as verbose as completeness requires** — see **`tech-plan-write-per-project` Section 0.0**; do not compress elaboration for “readability.”
 
-This requires a **locked shared dev spec** from council. If **`shared-dev-spec.md`** is not locked for the task, **STOP** and use a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (e.g. run **`/council`**, provide spec path, or wait) — not only *direct the user* in prose with no same-turn **AskQuestion** / **numbered options**.
+This requires a **locked shared dev spec** from council. If **`shared-dev-spec.md`** is not locked for the task, **STOP** and use a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (e.g. run **`/council`**, provide spec path, or wait) — not only *direct the user* in prose with no same-turn **AskUserQuestion** / **numbered options**.
 
 **Product terms:** Use **`~/forge/brain/prds/<task-id>/terminology.md`** when it exists for **user-visible** strings in tasks and **Section 1b**; **`tech-plan-self-review`** and [docs/terminology-review.md](../docs/terminology-review.md) apply.
 

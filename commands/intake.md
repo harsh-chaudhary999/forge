@@ -11,7 +11,7 @@ If the user provided a PRD or description after this command, use it as the init
 
 The intake process locks the PRD under **`~/forge/brain/prds/<task-id>/`** as **`prd-locked.md`**: **variable** number of user turns — confidence-first; **stop** when mandatory lock fields are concrete (no fixed “eight questions” quota). When web, app, or user-visible UI is in scope, **Q9 design / UI** is mandatory per **`intake-interrogate`**.
 
-**Product terms:** When the PRD names **concepts, features, or labels** that will appear in **UI, API, or support copy**, maintain **`terminology.md`** in the same task path per **`intake-interrogate`** and [docs/terminology-review.md](../docs/terminology-review.md) (interactive **AskQuestion**-style review; file is source of truth).
+**Product terms:** When the PRD names **concepts, features, or labels** that will appear in **UI, API, or support copy**, maintain **`terminology.md`** in the same task path per **`intake-interrogate`** and [docs/terminology-review.md](../docs/terminology-review.md) (interactive **AskUserQuestion**-style review; file is source of truth).
 
 **Process “todos” (v1):** Long **Q&A** and follow-ups belong in **`planning-doubts.md`**; do **not** add a freestanding **`task-progress.md`** per [docs/terminology-review.md](../docs/terminology-review.md) unless the team later adopts and documents it in **`forge-brain-layout`**. **Entrypoint row:** same doc, **§ Entrypoint matrix — commands + slice skills (v1)**.
 

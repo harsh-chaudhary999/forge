@@ -30,7 +30,7 @@ Abort: log `[ABORT_TASK: <task-id>]` to conductor.log at any point — see **Abo
 Invoke the `conductor-orchestrate` skill to run the **full end-to-end** Forge pipeline for this task.
 
 If the user provided a PRD or product description after this command, use it as the initial input.
-If no PRD was provided, elicit one in chat (open-ended: describe goals, paste, or path to a doc). **Discrete forks** (which task, run **`/intake`** vs supply lock file, product slug) must use a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** — not runbook-only *What to do next* without **AskQuestion** / **numbered options** in the **same** turn.
+If no PRD was provided, elicit one in chat (open-ended: describe goals, paste, or path to a doc). **Discrete forks** (which task, run **`/intake`** vs supply lock file, product slug) must use a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** — not runbook-only *What to do next* without **AskUserQuestion** / **numbered options** in the **same** turn.
 
 **`/forge` = E2E (all stages + QA):** Continue until **`conductor-orchestrate`** completes **delivery and shipping** for a non-aborted task: **intake → product context → council → tech plans → State 4b (manual QA CSV + semantic CSV/manifest machine-eval + TDD RED + design ingest when applicable) → P4.1 dispatch (GREEN) → reviews → P4.4 multi-surface eval → self-heal if needed → coordinated PRs → merge order → dreamer retrospective / brain learnings** — not “planning only.” **Do not** treat tech plans as the finish line. **Do not** skip **P4.4 eval** or **PR set** on a claimed-complete feature unless the human logs **`[ABORT_TASK]`** per conductor.
 

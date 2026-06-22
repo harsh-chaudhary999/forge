@@ -281,11 +281,11 @@ Replication factor: 3
   - Pause processing during rebalance (seconds to minutes)
   - Can cause duplicate processing if offset not committed before rebalance
 
-- **Stop-the-world rebalance:** All consumers pause
-  - Use: When order/exactly-once semantics critical
+- **Cooperative (incremental) rebalance — default (Kafka 2.4+):** only the moved partitions pause; the rest keep consuming. Use `partition.assignment.strategy: CooperativeStickyAssignor`. Prefer this; it bounds reprocessing on rebalance (see Edge Case 4).
+  - Use: the default for nearly all consumer groups.
 
-- **Cooperative rebalance:** Gradual partition reassignment (Kafka 2.4+)
-  - Use: When throughput > consistency
+- **Stop-the-world (eager) rebalance — legacy exception:** all consumers pause and reassign together (eager assignors like RoundRobin/Range).
+  - Use: only when an assignor constraint forces it; document why.
 
 **Max in-flight messages:**
 
@@ -304,7 +304,7 @@ enable.auto.commit: false          # Manual commit
 auto.offset.reset: latest          # Skip lost offsets
 max.poll.records: 100              # Batch size
 session.timeout.ms: 30000          # Rebalance timeout
-partition.assignment.strategy: RoundRobin
+partition.assignment.strategy: CooperativeStickyAssignor   # incremental rebalance (default); RoundRobin/Range only if forced
 ```
 
 ### 5. Dead-Letter Queues & Retry Strategy
@@ -585,7 +585,7 @@ producer.send('payment.transaction.completed',
 | `auto.offset.reset` | latest | Skip corrupted/lost offsets |
 | `max.poll.records` | 100 | Batch 100 messages per poll |
 | `session.timeout.ms` | 30000 | 30s timeout for rebalance |
-| `partition.assignment.strategy` | RoundRobin | Balanced distribution |
+| `partition.assignment.strategy` | CooperativeStickyAssignor | Incremental rebalance (default); eager RoundRobin/Range only if forced |
 | `max.in.flight.requests.per.connection` | 5 | Bounded concurrency |
 
 ### Processing pattern:
@@ -857,7 +857,7 @@ Is duplicate processing acceptable?
   - Offset commit: [auto | manual after processing]
   - Idempotency: [required | optional | not needed]
   - Dedup window: [24 hours | 7 days | never]
-  - SLA: "99.9% of messages processed exactly once"
+  - SLA: "<example — derive from slowest-consumer lag + business criticality, e.g. 99.9% of messages processed effectively-once (at-least-once delivery + idempotent processing)>"
 
 - **Monitoring**:
   - Track duplicate rate: "Should be < 0.1%"

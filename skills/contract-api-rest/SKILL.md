@@ -150,11 +150,10 @@ GET /users/123?api_version=2
 
 **Example Timeline:**
 ```
-v1 Launch: 2024-01-01
-v2 Launch: 2025-01-01 (v1 still active)
-v1 Deprecation Notice: 2025-01-01
-v1 Sunset Date: 2026-01-01 (12 months support)
-v1 Shut Down: 2026-01-01
+v1 Launch:             2024-01-01
+v2 Launch:             2025-01-01 (v1 still active)
+v1 Deprecation Notice: 2026-01-15
+v1 Sunset (shut down): 2027-01-15  (12 months after the deprecation notice)
 ```
 
 ### Backward Compatibility Guarantees
@@ -377,7 +376,9 @@ GET /v2/users/{user-id}         # Use underscores, not hyphens
 
 ### Standard Error Response Format
 
-**All 4xx and 5xx responses must follow this format:**
+**Baseline: [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457) (`application/problem+json`)** is the interoperable error envelope — prefer it, or map the fields below onto its members (`type`, `title`, `status`, `detail`, `instance` + extensions). The contract MUST state which envelope is locked and why. The bespoke shape below maps to problem-details as: `error`→`detail`, `code`→a `type` URI (or an extension), `status`→`status`, `details`→extension members, `request_id`/`trace_url`→extensions.
+
+**All 4xx and 5xx responses must follow the locked format** (example, bespoke shape):
 
 ```json
 {

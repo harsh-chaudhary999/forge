@@ -570,6 +570,8 @@ Who needs to write to this key?
 - [ ] `contract_cache_status: negotiated` is set in the `shared-dev-spec.md` frontmatter — not `draft` or `open`
 - [ ] No open items remain: every key has a single named owner service, a serialization format, an invalidation trigger, and a fallback behavior when cache is unavailable
 
+**Persistence (how the locked contract is recorded):** write the cache contract into `~/forge/brain/prds/<task-id>/shared-dev-spec.md` (cache section) with `contract_cache_status: negotiated`, via `brain-write`/`forge-brain-persist` — then it is locked by `spec-freeze` at the `[P2-SPEC-FROZEN]` handshake (see `council-multi-repo-negotiate`). The status key alone is not the persistence step; the committed brain file is.
+
 ## References & Related Skills
 
 - **brain-read:** Look up past cache contracts and domain decisions

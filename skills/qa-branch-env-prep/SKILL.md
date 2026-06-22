@@ -65,8 +65,8 @@ Before invoking this skill, verify:
 
 - [ ] `task_id` is known and `prd-locked.md` exists in brain for it (needed for **`qa/logs`** path under **`prds/<task-id>/`**)
 - [ ] Product slug is known — `product.md` must be readable **before Steps 1+** (Step **0.0–0.1** only need **`task_id`** for logging and run-mode choice)
-- [ ] Branch names are provided for each repo that needs switching (or `mode: remote` is confirmed)
-- [ ] Target environment is specified: `local` (start stack here) or `remote` (test existing deployment)
+- [ ] Branch names are provided for each repo that needs switching (or a no-checkout mode — `url-only` / `branch-tracking` — is confirmed)
+- [ ] `run_mode` is chosen from the 4-way taxonomy: `url-only` | `branch-local` | `branch-code-validate` | `branch-tracking`
 - [ ] You are NOT about to use production credentials — QA env only
 
 ## Pre-Implementation Checklist
@@ -80,14 +80,15 @@ Before running any `git` commands:
 
 ## Post-Implementation Checklist
 
-Before marking this skill complete:
+Before marking this skill complete (items are **conditional per `run_mode`** — this
+mirrors the Step 8 HARD-GATE, which is the single source of truth):
 
-- [ ] All requested branches checked out and post-checkout SHA recorded
-- [ ] `.eval-env` written to `brain/prds/<task-id>/.eval-env` with `chmod 600`
-- [ ] `.eval-env` entry added to brain's `.gitignore`
-- [ ] `branch-env-manifest.md` committed to brain (credentials redacted)
+- [ ] **(branch-* modes)** All requested branches checked out and post-checkout SHA recorded
+- [ ] **(url-only / branch-local / branch-tracking)** `.eval-env` written with `chmod 600` and present in brain's `.gitignore`
+- [ ] **(branch-code-validate)** `[QA-CODE-VALIDATE]` gate logged with pass/fail counts + raw logs under `qa/logs/`
+- [ ] `branch-env-manifest.md` committed to brain (credentials redacted, `run_mode` recorded)
 - [ ] `[QA-BRANCH-ENV]` gate line logged to `qa-pipeline.log`
-- [ ] Connectivity check results noted in manifest (warnings OK in local mode)
+- [ ] Connectivity check results noted in manifest (warnings OK in branch-local mode)
 
 ---
 
@@ -140,7 +141,7 @@ FOR BRANCH-CODE-VALIDATE: RECORD RAW TEST OUTPUT TO BRAIN — "TESTS PASSED" IN 
 
 ### Step 0.0 — Host hardware discovery (HARD-GATE — before Step 0.1)
 
-**Run this before** **`AskQuestion`** for run mode and **before** reading **`product.md`** for repo lists (discovery needs **no** product parse — only the shell).
+**Run this before** the Step 0.1 run-mode **`AskUserQuestion`** and **before** reading **`product.md`** for repo lists (discovery needs **no** product parse — only the shell).
 
 1. **`mkdir -p ~/forge/brain/prds/<task-id>/qa/logs`** (see **`skills/forge-brain-layout/SKILL.md`** **qa/logs/**).
 2. Append a **`--- qa-branch-env-prep Step0 ---`** section to **`eval-preflight-<ISO8601>.log`** (same filename convention as **`eval-driver-*`** preflight — one log per run is OK; use **one** timestamp for the session).
@@ -156,36 +157,15 @@ This discovery **feeds QA-P3** (authoritative fit for run mode). **`qa-pipeline-
 
 ### Step 0.1 — Determine run mode (HARD-GATE)
 
-**After Step 0.0**, present **A–D** via **`AskQuestion`** / **`AskUserQuestion`** or **numbered 1–4** + **stop** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** — **not** generic boilerplate. **Prepend** the Step 0.0 summary so each option is **grounded**:
+**After Step 0.0**, present **A–D** via **`AskUserQuestion`** (see [`skills/_shared/human-input.md`](../_shared/human-input.md)) — **not** generic boilerplate. **Prepend** the Step 0.0 summary so each option is **grounded**:
 
 - State which modes are **viable on this machine** given discovery — e.g. *“**B) Branch-local** is viable: Chrome at `<path>` and AVD `<name>` exists (emulator not running yet — will boot at QA-P5 / driver preflight per **`eval-driver-android-adb`**).”*
 - *“**A) URL-only** always works if you have a reachable URL; it does **not** start local emulator or Chrome CDP — use when targeting **remote** staging only.”*
 - If **`uname`** is not **Darwin**, say explicitly: *“**iOS XCTest scenarios cannot run here** — use a Mac/CI for iOS or mark iOS N/A.”*
 - **Do not** silently steer toward **`url-only`** when **`branch-local`** is viable and the PRD expects multi-surface eval — let the user choose with eyes open.
 
-Template body (fill **`<DISCOVERY>`** from Step 0.0). **Do not** shorten to literal ellipsis — use the full lines below (or copy the matching row from the **Run mode** table in this skill’s intro).
-
-```
-How do you want to run these tests?
-
-<DISCOVERY — short bullets: OS, adb/AVDs, KVM on Linux, browser, iOS note>
-
-  A) URL-only — Target an already-running environment (staging / preview / CI deploy). You provide:
-     BASE_URL, API_BASE_URL, plus any driver secrets (DB_DSN, REDIS_URL, TEST_USER_*, …) needed for eval.
-     No git checkout, no local stack, no booting AVD/emulator or local Chrome CDP unless drivers point at reachable endpoints.
-
-  B) Branch-local — Check out feature branches, bring up the product stack per product.md, then run eval drivers
-     (eval-product-stack-up → qa-pipeline QA-P5). Requires branches map + runtime env (BASE_URL after stack-up,
-     DEVICE_ID / IOS_SIMULATOR_ID / DB_DSN / REDIS_URL as scenarios require). Uses host resources from discovery
-     (Chrome for CDP, emulator if Android in scope — see KVM note on Linux).
-
-  C) Branch-code-validate — Check out branches and run each repo’s native test suite only (npm test, pytest,
-     go test, …). No full product stack or eval-driver UI automation. Same branches map; optional test_commands
-     overrides from product.md.
-
-  D) Branch-tracking — You provide BASE_URL to the deployed stack; record which branch/SHA is live per repo
-     in the branch-env manifest for traceability (optional shallow checkout for diff only — see workflow notes).
-```
+Use the full A–D prompt body (fill `<DISCOVERY>` from Step 0.0) from
+**[reference/templates.md](reference/templates.md)** — do **not** shorten to a literal ellipsis.
 
 Record the answer as `run_mode: url-only | branch-local | branch-code-validate | branch-tracking`. (**Hotfix** is not a separate mode — use **`branch-local`** or **`branch-code-validate`** and list **`hotfix_surfaces`** in **`qa-analysis.md`** so QA-P5 runs a narrowed surface set.)
 
@@ -223,41 +203,10 @@ done
 
 ## Inputs
 
-The skill accepts a structured input — either provided inline or read from `~/forge/brain/prds/<task-id>/qa-run-config.yaml` if it exists:
-
-```yaml
-task_id: PRD-042
-slug: shopapp                       # product slug — resolves repos from product.md
-run_mode: url-only | branch-local | branch-code-validate | branch-tracking
-
-# For branch-local, branch-code-validate, and branch-tracking: branch overrides per repo
-branches:
-  backend-api: feature/payment-v2
-  web-dashboard: feature/payment-ui
-
-# For branch-code-validate: test commands per repo (if not in product.md)
-test_commands:
-  backend-api: "npm test"
-  web-dashboard: "npm run test:unit"
-  # Fallback: if absent, read test_command from product.md Projects section for that repo
-
-# Runtime env — injected into .eval-env for eval drivers (branch-local / url-only only)
-env:
-  BASE_URL: https://staging.shopapp.com
-  API_BASE_URL: https://api.staging.shopapp.com
-  DB_DSN: mysql://root:root@localhost:3306/shopapp_test
-  REDIS_URL: redis://localhost:6379/1
-  DEVICE_ID: emulator-5554
-  IOS_SIMULATOR_ID: booted
-  TEST_USER_EMAIL: qa@example.com
-  TEST_USER_PASSWORD: qapassword123
-```
-
-**Required minimum per mode:**
-- `url-only`: `task_id`, `slug`, `run_mode`, `BASE_URL`
-- `branch-local`: `task_id`, `slug`, `run_mode`, at least one `branches` entry
-- `branch-code-validate`: `task_id`, `slug`, `run_mode`, at least one `branches` entry (test commands from `product.md` or `test_commands` override)
-- `branch-tracking`: `task_id`, `slug`, `run_mode`, `BASE_URL`, at least one `branches` entry
+The skill accepts a structured input — provided inline or read from
+`~/forge/brain/prds/<task-id>/qa-run-config.yaml`. Full YAML schema (all fields, the
+per-mode env block) and the **required minimum per mode** are in
+**[reference/inputs-schema.md](reference/inputs-schema.md)**.
 
 ## Workflow
 
@@ -347,151 +296,61 @@ If any checkout fails: STOP. Report the failure. Do not proceed to env config wi
 
 ### Step 4b — Run Test Suite (branch-code-validate mode only)
 
-> Skip this step for all other run modes.
+> Applies only to `run_mode: branch-code-validate`; skip otherwise.
 
-For each repo in the `branches` map, run the configured test command:
-
-```bash
-REPO=<path>
-TEST_CMD=<test_command from product.md or test_commands override>
-
-echo "=== Running tests in $REPO ==="
-echo "Command: $TEST_CMD"
-echo "Branch: $(git -C "$REPO" rev-parse --abbrev-ref HEAD) @ $(git -C "$REPO" rev-parse --short HEAD)"
-
-# Run the test suite and capture output + exit code
-cd "$REPO" && $TEST_CMD 2>&1 | tee /tmp/qa-test-output-$(basename "$REPO").txt
-TEST_EXIT_CODE=$?
-
-if [ $TEST_EXIT_CODE -eq 0 ]; then
-  echo "PASS: $REPO — test suite exited 0"
-else
-  echo "FAIL: $REPO — test suite exited $TEST_EXIT_CODE"
-fi
-```
-
-**How to resolve the test command per repo:**
-1. Check `test_commands` in the input config (explicit override)
-2. Else read `product.md` for the repo's `test_command` field in the Projects section
-3. Else detect from repo structure: `package.json` → `npm test`, `pytest.ini`/`setup.py` → `pytest`, `go.mod` → `go test ./...`, `pom.xml` → `mvn test`, `build.gradle` → `./gradlew test`
-4. If still unknown: STOP. Use a **blocking interactive prompt** per **`using-forge`** — paste **`product.md`** `test_command`, pick from numbered detector guesses, or free-text **one** command — **never guess** without confirmation.
-
-**Record results per repo:**
-
-```
-Repo               Test Command     Exit Code   Tests Run   Pass   Fail   Skip
-backend-api        npm test         0           142         142    0      0
-web-dashboard      npm run test:unit 1          87          80     7      0
-```
-
-If any repo exits non-zero: record as FAIL. Do not stop the entire run — run all repos first, then surface all failures at the end.
-
-**Write raw test output to brain:**
-```bash
-cp /tmp/qa-test-output-<repo>.txt ~/forge/brain/prds/<task-id>/qa/test-output-<repo>-<ts>.txt
-```
-
-**HARD-GATE (branch-code-validate):** After running all repos:
-- [ ] Test results table written to `branch-env-manifest.md`
-- [ ] Raw test output files copied to `brain/prds/<task-id>/qa/`
-- [ ] Overall result recorded: PASS (all repos 0) or FAIL (any repo non-zero) + which repos failed
-- [ ] `[QA-CODE-VALIDATE]` gate line logged to `qa-pipeline.log`:
-
-```bash
-echo "[QA-CODE-VALIDATE] task_id=<task-id> repos=<n> pass=<n> fail=<n> status=<PASS|FAIL>" \
-  >> ~/forge/brain/prds/<task-id>/qa-pipeline.log
-```
-
-After this step, proceed directly to Step 7 (manifest) and Step 8 (log gate). Skip Steps 5–6.
+Run each repo's native test suite (output `tee`'d directly into
+`brain/prds/<task-id>/qa/logs/`), record per-repo pass/fail, write the results table
+to the manifest, and log the `[QA-CODE-VALIDATE]` gate — then go to Step 7 + Step 8
+(skip Steps 5–6). Full procedure (test-command resolution, results table, HARD-GATE)
+in **[reference/branch-code-validate.md](reference/branch-code-validate.md)**.
 
 ---
 
 ### Step 5 — Write `.eval-env`
 
-Write to `~/forge/brain/prds/<task-id>/.eval-env`:
+Write `~/forge/brain/prds/<task-id>/.eval-env` from the env block (template in
+**[reference/templates.md](reference/templates.md)**), then `chmod 600` it —
+credentials, owner-only.
+
+**Security:** `.eval-env` must never be committed to brain git. Add the ignore rule
+**only if absent** (don't append + commit on every run):
 
 ```bash
-EVAL_ENV=~/forge/brain/prds/<task-id>/.eval-env
-
-cat > "$EVAL_ENV" << 'ENVEOF'
-# QA eval runtime environment
-# Generated by qa-branch-env-prep — do not edit manually
-# task_id: <task-id>
-# generated_at: <ISO8601>
-
-BASE_URL=http://localhost:3000
-API_BASE_URL=http://localhost:4000
-DB_DSN=mysql://root:root@localhost:3306/shopapp_test
-REDIS_URL=redis://localhost:6379/1
-DEVICE_ID=emulator-5554
-IOS_SIMULATOR_ID=booted
-TEST_USER_EMAIL=qa@example.com
-TEST_USER_PASSWORD=qapassword123
-ENVEOF
-
-chmod 600 "$EVAL_ENV"   # credentials — restrict to owner only
+GI=~/forge/brain/.gitignore
+if ! grep -qxF 'prds/*/.eval-env' "$GI" 2>/dev/null; then
+  echo 'prds/*/.eval-env' >> "$GI"
+  git -C ~/forge/brain add .gitignore
+  git -C ~/forge/brain commit -m "qa: exclude .eval-env from brain git (credentials)"
+fi
 ```
 
-**Security:** `.eval-env` must never be committed to brain git (contains credentials). Add to brain's `.gitignore`:
+### Step 6 — Connectivity check (`url-only` / `branch-tracking`, or any BASE_URL set)
 
 ```bash
-echo "prds/*/.eval-env" >> ~/forge/brain/.gitignore
-git -C ~/forge/brain add .gitignore
-git -C ~/forge/brain commit -m "qa: exclude .eval-env from brain git (credentials)"
-```
-
-### Step 6 — Connectivity check (remote mode or BASE_URL set)
-
-```bash
-# Check BASE_URL is reachable
-curl -sf --max-time 5 "${BASE_URL}/health" > /dev/null 2>&1 \
+# Check BASE_URL is reachable. HEALTH_PATH from product.md (or input config); default '/'.
+HEALTH_PATH="${HEALTH_PATH:-/}"
+curl -sf --max-time 5 "${BASE_URL}${HEALTH_PATH}" > /dev/null 2>&1 \
   && echo "✓ BASE_URL reachable" \
   || echo "⚠ BASE_URL not reachable — stack may not be running yet"
 
-# Check DB
+# Check DB — prefer the DB MCP (mcp__db__query "SELECT 1") when configured;
+# fall back to the mysql/psql client only if present on this host.
 mysql -h <host> -u <user> -p<pass> <db> -e "SELECT 1" > /dev/null 2>&1 \
   && echo "✓ DB reachable" \
   || echo "⚠ DB not reachable"
 ```
 
-In `local` mode, unreachable services at this stage is expected (stack-up runs next). Log warnings but do not block.
-In `remote` mode, unreachable services at this stage is a **STOP** condition.
+In `branch-local` mode, unreachable services at this stage is expected (stack-up runs next). Log warnings but do not block.
+In `url-only` / `branch-tracking` mode (targeting an already-deployed stack), unreachable services at this stage is a **STOP** condition.
 
 ### Step 7 — Write reproducibility manifest
 
+Write `~/forge/brain/prds/<task-id>/qa/branch-env-manifest.md` from the manifest
+template in **[reference/templates.md](reference/templates.md)** (frontmatter with the
+4-way `run_mode`, the **Pre-checkout state** restore anchor, Repo State, redacted Env
+Variables, Connectivity), then stage + commit:
+
 ```bash
-cat > ~/forge/brain/prds/<task-id>/qa/branch-env-manifest.md << 'EOF'
-# QA Branch & Env Manifest
-
-**task_id:** <task-id>
-**prepared_at:** <ISO8601>
-**mode:** local | remote
-
-## Repo State (post-checkout)
-
-| Repo | Branch | SHA | Status |
-|---|---|---|---|
-| backend-api | feature/payment-v2 | a1b2c3d | clean |
-| web-dashboard | feature/payment-ui | e4f5g6h | clean |
-| app-mobile | main (unchanged) | i7j8k9l | clean |
-
-## Env Variables Written to .eval-env
-
-| Variable | Value |
-|---|---|
-| BASE_URL | http://localhost:3000 |
-| API_BASE_URL | http://localhost:4000 |
-| DB_DSN | mysql://root:***@localhost:3306/shopapp_test |
-| DEVICE_ID | emulator-5554 |
-| TEST_USER_EMAIL | qa@example.com |
-| TEST_USER_PASSWORD | *** (redacted) |
-
-## Connectivity (at prep time)
-
-- BASE_URL: ⚠ not reachable (local mode — stack not yet started)
-- DB: ⚠ not reachable (local mode)
-EOF
-
 git -C ~/forge/brain add prds/<task-id>/qa/branch-env-manifest.md
 git -C ~/forge/brain commit -m "qa: branch-env manifest for <task-id>"
 ```
@@ -513,17 +372,7 @@ echo "[QA-BRANCH-ENV] task_id=<task-id> run_mode=<url-only|branch-local|branch-c
 
 ## Edge Cases
 
-### Branch not found on remote
-Ask user: "Branch `<name>` not found on remote for `<repo>`. Options: (1) Push the branch and retry, (2) Use a different branch name, (3) Skip this repo and stay on current branch."
-
-### Repo not in branches list
-Stay on current branch. Log to manifest as "unchanged". This is expected — only repos with feature branches in scope need switching.
-
-### Remote mode with no branches provided
-Valid: user is testing against an already-deployed remote stack (CI/staging). Skip Steps 2–4 entirely. Still write `.eval-env` and the manifest.
-
-### Credentials in env
-If `TEST_USER_PASSWORD`, `API_KEY`, or similar secrets are provided: confirm they are safe for the test environment. Never use production credentials. Redact all `*_PASSWORD`, `*_SECRET`, `*_KEY` values in the manifest.
-
-### Monorepo (all services in one git repository)
-When `product.md` lists multiple services that all live in the same git repo (e.g. a monorepo at a single path), treat that repo as a single checkout target. The `branches` map entry uses the monorepo path as the key. Do not attempt separate checkouts per logical service — there is only one working tree. Record the single post-checkout SHA in the manifest against all logical services that share it.
+Full catalog in **[reference/edge-cases.md](reference/edge-cases.md)**: branch not
+found on remote, repo not in branches list, remote/branch-tracking with no branches,
+credentials in env (redaction), monorepo single-checkout, and **restoring the
+operator's working tree (D30)** via the manifest's Pre-checkout state anchor.

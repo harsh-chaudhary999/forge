@@ -528,7 +528,7 @@ for message in consumer:
 
 **Window:** 24 hours
 
-**Semantics:** Exactly-once delivery per producer
+**Semantics:** At-least-once delivery + idempotent processing = effectively-once (true exactly-once delivery requires Kafka transactions/EOS; the dedup mechanism below is the effectively-once pattern)
 
 **Deduplication implementation:**
 - Consumer maintains Redis cache: `{transaction_id} → {processed_timestamp}`
@@ -783,8 +783,8 @@ Ready for: Shared-dev-spec lock
 → **Duplicate processing is acceptable (notifications, analytics, logs)**
   - Model: **At-Least-Once** delivery
   - Guarantee: Message delivered at least once (may be duplicated)
-  - Consumer responsibility: None (duplicates OK)
-  - Implementation: Easier, auto-commit OK, no idempotency needed
+  - Consumer responsibility: idempotent processing REQUIRED unless the op is naturally idempotent or duplicate side-effects are provably harmless (see Edge Case 4 — rebalancing can re-deliver and double-charge)
+  - Implementation: commit offsets only after the side-effect is committed; use an idempotency key when the op is not naturally idempotent
   - Pros: Simple, high throughput
   - Cons: Duplicates possible, notification spam risk
   - Cost: Customers may see duplicate email/SMS notifications

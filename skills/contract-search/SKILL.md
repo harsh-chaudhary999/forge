@@ -108,7 +108,7 @@ Define the structure of your Elasticsearch index with explicit field types and a
 Choose tokenization, stemming, and synonym handling to match search semantics.
 
 **Standard Analyzers:**
-- `standard`: Tokenizer (whitespace/punctuation), lowercase, stop-word filter (common for general text)
+- `standard`: Unicode-aware tokenizer + lowercase, **no stop-word removal by default** (default stopwords are `_none_`; only the `english` analyzer removes stop words by default)
 - `english`: standard tokenizer + porter_stem (English stemming) + stop-word filter (product descriptions, content)
 - `whitespace`: Split on whitespace only, lowercase (when stemming is unwanted)
 - `keyword`: No tokenization (for exact match fields, if text type is misused)
@@ -149,7 +149,7 @@ Define read-after-write guarantees and acceptable staleness.
 
 **Strongly Consistent (Immediate reads):**
 - Every write immediately visible to reads
-- Requires `refresh_interval: "0"` or explicit refresh call
+- Requires `refresh=wait_for` (or `refresh=true`) on the write, or an explicit `POST /{index}/_refresh` after writing (ES has no `refresh_interval: "0"`; `-1` only disables auto-refresh)
 - Use when: user profile updates, permission changes, critical account data
 - Cost: higher write latency, lower indexing throughput
 
@@ -288,7 +288,7 @@ POST _aliases
 
 ## Analyzer Strategy
 
-- **name**: standard analyzer (whitespace + lowercase + stop words)
+- **name**: standard analyzer (Unicode tokenizer + lowercase; no stop-word removal by default)
 - **bio**: english analyzer (whitespace + lowercase + porter_stem + stop words + synonyms: "engineer↔developer", "fast↔quick")
 - **email, company, tier**: keyword (no analysis)
 
@@ -406,7 +406,7 @@ Before finalizing a search contract, verify:
 **Do NOT:** Assume DSL is standardized.
 
 **Mitigation:**
-- Commit to search backend in contract: "Elasticsearch 7.x only. DSL: Lucene query syntax."
+- Commit to search backend in contract: "Elasticsearch 8.x (or OpenSearch 2.x). DSL: Lucene query syntax." (7.x is EOL — align with `eval-driver-search-es`)
 - Document query format: "Queries use Elasticsearch query_string syntax: `(title:iPhone OR description:iPhone) AND -broken`"
 - Example query layer: "API accepts simple filters (name, status, date_range). API translates to ES DSL internally. Clients never write raw DSL."
 - If backend changes: New contract required, API layer absorbs DSL differences

@@ -582,6 +582,7 @@
     "qa-manual-test-cases-from-prd": {
       "allowed_tools": [
         "Bash",
+        "Read",
         "Write",
         "AskUserQuestion",
         "mcp__*"

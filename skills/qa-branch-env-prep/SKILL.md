@@ -492,7 +492,7 @@ cat > ~/forge/brain/prds/<task-id>/qa/branch-env-manifest.md << 'EOF'
 - DB: ⚠ not reachable (local mode)
 EOF
 
-git -C ~/forge/brain add qa/branch-env-manifest.md
+git -C ~/forge/brain add prds/<task-id>/qa/branch-env-manifest.md
 git -C ~/forge/brain commit -m "qa: branch-env manifest for <task-id>"
 ```
 

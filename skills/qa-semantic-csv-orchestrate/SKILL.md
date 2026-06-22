@@ -59,7 +59,9 @@ ASK THE HUMAN FOR DRIVER STRATEGY (MCP vs LOCAL) BEFORE IMPLEMENTING REAL BROWSE
 3. **Host driver** — Default CLI **`noop`** records structure. For real execution, extend the operator environment (Playwright, **`eval-driver-*` skills**, MCP tools) **outside** Forge plugin core; keep **Intent** + **Surface** as the contract rows.
 4. **Write artifacts** — Runner writes **`qa/semantic-eval-manifest.json`** (**`schema_version`**: **1**, **`kind`**: **`semantic-csv-eval`**, **`outcome`**, **`recorded_at`**). Append **`qa/semantic-eval-run.log`** (JSON lines per step).
 5. **Conductor marker** — Append to **`conductor.log`**:  
-   `YYYY-MM-DDTHH:MM:SSZ [P4.0-SEMANTIC-EVAL] task_id=<id> kind=semantic-csv-eval outcome=<pass|fail|yellow> manifest=qa/semantic-eval-manifest.json`
+   `YYYY-MM-DDTHH:MM:SSZ [P4.0-SEMANTIC-EVAL] task_id=<id> kind=semantic-csv-eval outcome=<pass|fail|yellow|red_infra> manifest=qa/semantic-eval-manifest.json`
+
+   **`red_infra`** = the stack/driver/MCP was unreachable (ECONNREFUSED, Docker down, device offline) — an infrastructure failure, **not** a product-code failure. `eval-judge` renders it YELLOW (not RED) and self-heal-triage handles it per the RED_INFRA path; do not log it as `fail`.
 6. **Verify** — Run **`python3 tools/verify/verify_forge_task.py --task-id <id> --brain <brain>`** and confirm exit **0**.
 
 ### Pre-Invocation Checklist: Do I Need This Skill?
@@ -107,6 +109,7 @@ If any NO: machine gate or conductor discipline failed — fix before merge.
 |---|---|---|
 | Manifest **`outcome`** contradicts **`semantic-eval-run.log`** | Reconcile or **RED** — **`eval-judge`** requires consistent evidence. | Shipping on mismatched logs is false GREEN. |
 | CSV references **Surface** not supported on this host (e.g. iOS on Linux) | Mark step **SKIPPED** in log with reason; document **N/A** in manifest outcome or narrow **`qa-analysis.md`** surfaces. | Blind **FAIL** blocks honest partial verification. |
+| Stack / driver / MCP unreachable (ECONNREFUSED, Docker down, device offline) | Record per-step `status: BLOCKED_DEPENDENCY` and set manifest **`outcome=red_infra`**; escalate per **self-heal-triage** RED_INFRA path. | Logging infra failure as `fail` triggers product-bug self-heal on a healthy product. |
 | **`DependsOn`** references a step **Id** in **`manual-test-cases.csv`** only | Ensure **`Id`** exists in **`semantic-automation.csv`** — DependsOn targets **CSV row Ids**, not TMS strings alone. | Resolver returns unknown Id → validation failure. |
 | Large CSV (>100 rows) | Validate with **`semantic_csv.py`** first; batch driver runs with timeouts per **`eval-driver-*`** policy. | Timeouts mid-run without structured **SKIPPED** look like product bugs. |
 | Operator refuses MCP — only local ADB | Record brain decision; use **`eval-driver-android-adb`** / CDP on host; keep **`semantic-eval-run.log`** evidence of driver choice. | **D5** violation if automation is assumed without recorded choice. |
@@ -115,12 +118,16 @@ If any NO: machine gate or conductor discipline failed — fix before merge.
 
 When step B lists `DependsOn: step-A-id`, the driver must pass step A's result to step B's execution context:
 
-**Step result format (all drivers return):**
+**Step result format (all drivers return).** Per-step uses **`status`** (matching the
+shipped runner `run_semantic_csv_eval.py`, which emits per-step `status` =
+`PASSED`/`VALIDATED`/`SKIPPED`/`FAILED`); the **top-level manifest** aggregates to
+**`outcome`** (`pass`/`fail`/`yellow`) — that is the field `eval-judge` reads. Do not
+confuse the two. Canonical schema: [`docs/semantic-eval-schema.md`](../../docs/semantic-eval-schema.md).
 ```json
 {
   "stepId": "step-create-user",
   "surface": "api",
-  "outcome": "PASS",
+  "status": "PASSED",
   "result": {
     "userId": "user_abc123",
     "email": "test@example.com"

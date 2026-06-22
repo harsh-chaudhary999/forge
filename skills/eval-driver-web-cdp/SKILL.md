@@ -3,7 +3,7 @@ name: eval-driver-web-cdp
 description: "WHEN: qa-semantic-csv-orchestrate or run_semantic_csv_eval dispatches an automation step that requires web UI interaction or assertion. Chrome DevTools Protocol: launch(), navigate(), interact(click/type/scroll), screenshot(), getDOM(), teardown()."
 type: rigid
 requires: [brain-read]
-version: 1.0.3
+version: 1.0.4
 preamble-tier: 3
 triggers:
   - "eval web UI"
@@ -22,9 +22,11 @@ allowed-tools:
 
 Automates browser interactions and state inspection using Chrome DevTools Protocol. Provides a programmatic interface for launching headless Chrome, navigating URLs, interacting with UI elements, capturing screenshots, and extracting DOM state.
 
-## Human input (all hosts)
+## Human input
 
-This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input** (e.g. when choosing Appium MCP vs local CDP per **CLAUDE.md** D5).
+Blocking human decisions (browser/profile choice, CDP-vs-Playwright-vs-MCP driver pick)
+use **`AskUserQuestion`** — see **[`skills/_shared/human-input.md`](../_shared/human-input.md)**
+for the canonical convention. The web-driver implementation choice is the **CLAUDE.md** D5 decision.
 
 ## Anti-Pattern Preamble
 

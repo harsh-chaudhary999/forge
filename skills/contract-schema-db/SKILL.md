@@ -88,7 +88,7 @@ ALTER TABLE users ADD COLUMN country VARCHAR(2) NOT NULL;  -- WILL FAIL if table
 
 **Rules:**
 - Always include a DEFAULT value for NOT NULL columns, or make the column NULL
-- Default values are applied immediately to existing rows (instant operation)
+- On MySQL 8.0.12+, `ADD COLUMN ... DEFAULT` is `ALGORITHM=INSTANT` (metadata-only, no table rewrite); on 5.7/earlier it rebuilds the table (use `INPLACE`/pt-online-schema-change)
 - Backward compatible: old code ignores the new column
 
 **Timeline:**
@@ -362,6 +362,7 @@ CREATE TABLE user_sessions (
   INDEX idx_user_id (user_id),  -- For lookups
   INDEX idx_status (status),     -- For filtering
   INDEX idx_last_activity (last_activity),  -- For ORDER BY
+  INDEX idx_device_type (device_type),  -- (created speculatively; never read -> dropped in the unused-index example below)
   INDEX idx_user_status (user_id, status)   -- Composite: both WHERE clauses
 );
 
@@ -525,22 +526,22 @@ Every migration must have a tested rollback plan.
 ### Rollback Script Template
 
 ```sql
--- Rollback for: "Add 2fa_enabled column to users"
+-- Rollback for: "Add is_2fa_enabled column to users"
 -- Migration date: 2024-01-15
 -- Backward compatibility: code supports both old+new until 2024-02-15
 
 -- STEP 1: Verify pre-migration state
 SELECT COUNT(*) as total_users FROM users;  -- Should match expected count
-SELECT COUNT(*) as with_2fa FROM users WHERE 2fa_enabled = TRUE;  -- Check data
+SELECT COUNT(*) as with_2fa FROM users WHERE is_2fa_enabled = TRUE;  -- Check data
 
 -- STEP 2: Drop new column
-ALTER TABLE users DROP COLUMN 2fa_enabled;
+ALTER TABLE users DROP COLUMN is_2fa_enabled;
 
 -- STEP 3: Deploy old code that doesn't reference column
 -- (Done separately by dev team)
 
 -- STEP 4: Verify rollback
-DESCRIBE users;  -- Should NOT have 2fa_enabled column
+DESCRIBE users;  -- Should NOT have is_2fa_enabled column
 ```
 
 ### Rollback for Backward-Compatible Schema
@@ -1004,8 +1005,6 @@ How critical is this constraint to data integrity?
 ```
 
 ---
-
-**Escalation**: If multiple services depend on NULL values, escalate to NEEDS_COORDINATION - Services must agree on constraint level before migration.
 
 ### Post-Implementation Checklist: Did I Follow the Skill?
 

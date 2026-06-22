@@ -571,7 +571,9 @@
     },
     "qa-live-app": {
       "allowed_tools": [
-        "Bash"
+        "Bash",
+        "Read",
+        "AskUserQuestion"
       ],
       "hard_gate": false,
       "path": "qa-live-app/SKILL.md",

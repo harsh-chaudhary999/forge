@@ -2,8 +2,8 @@
 name: qa-live-app
 description: "WHEN: A feature has shipped to staging or preview and you need to verify approved QA test cases against the live URL. Run after deployment, before sign-off."
 type: flexible
-version: 1.0.0
-preamble-tier: 3
+version: 1.1.0
+preamble-tier: 4
 triggers:
   - "test against live"
   - "QA staging"
@@ -12,6 +12,8 @@ triggers:
   - "smoke test live"
 allowed-tools:
   - Bash
+  - Read
+  - AskUserQuestion
 ---
 
 # qa-live-app
@@ -33,9 +35,11 @@ Runs approved QA test cases from `manual-test-cases.csv` against a live applicat
 
 ## Invocation Modes
 
-- `/qa-live-app <base-url>` — runs all approved test cases against the given URL
-- `/qa-live-app <base-url> --journey <journey-id>` — runs only cases for a specific journey
-- `/qa-live-app status` — shows path to last run results in brain
+Trigger by asking (no dedicated slash command ships for this skill):
+
+- "run QA on live app `<base-url>`" — verify every CSV row against the given URL
+- "...`<base-url>` for feature `<name>`" — filter to rows whose **Feature Categorization** matches `<name>`
+- "qa-live-app status" — show the path to the last run's results in brain
 
 ## Workflow
 
@@ -64,42 +68,52 @@ Stop after displaying.
 ```bash
 BASE_URL="<user-provided base URL>"
 HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$BASE_URL" 2>/dev/null)
-if [ "$HTTP_STATUS" = "000" ] || [ -z "$HTTP_STATUS" ]; then
-  echo "ERROR: $BASE_URL is not reachable (no response). Verify the URL and try again."
-  exit 1
-fi
-echo "Base URL reachable: $BASE_URL (HTTP $HTTP_STATUS)"
+echo "Base URL: $BASE_URL (HTTP ${HTTP_STATUS:-no-response})"
 ```
+
+If `HTTP_STATUS` is `000`/empty, **STOP** — do **not** `exit` (these blocks run in the
+agent's own shell; `exit` would kill the session). Use **`AskUserQuestion`** to offer:
+retry, fix the URL, or abort. Proceed only once the URL responds.
 
 **Step 2 — Find and read the QA CSV:**
 
 ```bash
 BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
-TASK_DIR=$(ls -td "$BRAIN_DIR/prds"/*/ 2>/dev/null | head -1)
-TASK_ID=$(basename "$TASK_DIR")
-QA_CSV=$(find "$TASK_DIR" -name "*.csv" 2>/dev/null | head -1)
+# Confirm the active task-id (set FORGE_TASK_ID when multiple tasks exist).
+TASK_ID="${FORGE_TASK_ID:-$(ls -td "$BRAIN_DIR/prds"/*/ 2>/dev/null | head -1 | xargs -r basename)}"
+TASK_DIR="$BRAIN_DIR/prds/$TASK_ID"
+QA_CSV="$TASK_DIR/qa/manual-test-cases.csv"   # canonical path, not a *.csv glob
 
-if [ -z "$QA_CSV" ]; then
-  echo "ERROR: No QA CSV found under $TASK_DIR. Run /qa-manual-test-cases-from-prd first."
-  exit 1
+echo "Task: $TASK_ID"
+if [ ! -f "$QA_CSV" ]; then
+  echo "MISSING: $QA_CSV"
 fi
-
-echo "QA CSV: $QA_CSV"
-APPROVED_COUNT=$(grep -ci "approved" "$QA_CSV" 2>/dev/null || echo "0")
-echo "Approved test cases: $APPROVED_COUNT"
+# Count DATA rows (not a bogus "approved" substring grep — there is no approval column;
+# approval is the qa-manual-test-cases-from-prd Step-7 count gate, recorded by commit).
+ROWS=$(tail -n +2 "$QA_CSV" 2>/dev/null | grep -c . || echo 0)
+echo "QA CSV: $QA_CSV  (data rows: $ROWS)"
 ```
 
-**Step 3 — Read and group test cases by journey:**
+If `qa/manual-test-cases.csv` is absent, **STOP** (do not `exit`) and use
+**`AskUserQuestion`**: run `qa-manual-test-cases-from-prd` first, point at a
+different task-id, or abort.
 
-Read the CSV rows where status is `approved`. If `--journey <id>` was provided, filter to rows matching that journey ID. Group the remaining rows by their Journey ID column.
+**Step 3 — Read and group test cases:**
 
-For each test case row, extract: ID, Journey ID, Title, Steps, Expected Result.
+Read the CSV with the canonical 8-column schema (`qa-manual-test-cases-from-prd`):
+`Id, Platform, Summary, Description, Expected Result, Automatable, Type, Feature Categorization`
+(plus optional `Preconditions`, `Source`). There is **no** `Journey`, `Steps`, or
+`status` column — run **all** data rows. If a feature filter was given, keep rows whose
+**Feature Categorization** matches. Group the remaining rows by **Feature Categorization**.
+
+For each row, use: `Id`, `Platform`, `Summary`, `Description` (the numbered action
+steps), `Expected Result`, and `Preconditions` (setup) when present.
 
 **Step 4 — Execute test cases:**
 
-For each test case in each journey group:
+For each test case in each feature group, branch on the **Platform** column:
 
-- **API test cases** (where Steps contain a URL path like `/api/`, `GET`, `POST`):
+- **API test cases** (`Platform` = `API`, or `Description` contains `/api/`, `GET`, `POST`):
   ```bash
   # Example: test case steps contain "POST /api/auth/register with body {...}"
   RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$BASE_URL/api/auth/register" \
@@ -111,11 +125,11 @@ For each test case in each journey group:
   # Compare HTTP_CODE and BODY against Expected Result
   ```
 
-- **Web/UI test cases** (where Steps describe browser actions):
-  - If `/eval-driver-web-cdp` is available: delegate to it
-  - Otherwise: mark as MANUAL-REQUIRED and skip with a note
+- **Web/UI test cases** (`Platform` = `Web`, or `Description` describes browser actions):
+  - If `eval-driver-web-cdp` (CDP) is available: drive it; for visual/UI cases, **capture a screenshot, Read it, and render a model-judged PASS/FAIL** with the image path as evidence.
+  - Otherwise: mark as MANUAL-REQUIRED with a note.
 
-- **Visual check steps**: always mark as MANUAL-REQUIRED
+- **Visual checks with no CDP**: mark MANUAL-REQUIRED. (Reserve MANUAL-REQUIRED only for cases that genuinely cannot be screenshot-judged — e.g. native-device-only behavior.)
 
 For each test case, record: ID, PASS / FAIL / MANUAL-REQUIRED, actual result if FAIL.
 
@@ -133,6 +147,7 @@ Write the results file with this structure:
 
 ```markdown
 ---
+type: eval
 base_url: <BASE_URL>
 timestamp: <ISO8601>
 task_id: <TASK_ID>
@@ -184,25 +199,20 @@ If any test failed: append `Action required: investigate failing test cases befo
 
 **HARD-GATE: You cannot claim QA complete or mark test cases as passed without the following artifacts:**
 
-1. **Results file written to brain:**
-   ```bash
-   # Write results to brain
-   mkdir -p ~/forge/brain/prds/<task-id>/qa/logs/
-   cat > ~/forge/brain/prds/<task-id>/qa/logs/live-app-qa-<timestamp>.md <<EOF
-   # Live App QA Results — $(date -u +%Y-%m-%dT%H:%M:%SZ)
-   task_id: <task-id>
-   tester: <agent-or-human>
-   
-   ## Test Cases Executed
-   | ID | Description | Result | Evidence |
-   |---|---|---|---|
-   | TC-001 | ... | PASS/FAIL | screenshot/log path |
-   EOF
-   ```
+1. **Results file written to brain** — the **single** canonical artifact is the
+   Step 5 file at `$TASK_DIR/qa-live-results/<timestamp>-<slug>.md` (with `type: eval`
+   frontmatter). Do **not** write a second copy under `qa/logs/`. Update the
+   `qa-live-results/index.md` row and append a dated `log.md` entry (OKF conventions,
+   per `forge-brain-layout`).
 
-2. **All approved test cases executed** — not sampled. Every row in `qa/manual-test-cases.csv` with status `approved` must have a result row.
+2. **Every CSV data row executed** — not sampled. Every row in
+   `qa/manual-test-cases.csv` must have a result row (PASS / FAIL / MANUAL-REQUIRED /
+   SKIPPED). (There is no `approved` column — approval was the
+   `qa-manual-test-cases-from-prd` Step-7 count gate.)
 
-3. **Results committed to brain** via `brain-write` with `task_id:` anchor.
+3. **Results committed to brain** — `git -C ~/forge/brain add` the
+   `qa-live-results/` file + index.md + log.md and commit (the discipline the
+   `brain-write` / `forge-brain-persist` skills describe).
 
 4. **Claiming "tested and works" without these artifacts is a skill violation.**
 
@@ -210,10 +220,8 @@ If any test case cannot be executed (environment issue, surface unavailable): ma
 
 ## Cross-References
 
-- `qa-semantic-csv-orchestrate`: Generates `qa/semantic-automation.csv` steps that qa-live-app executes against the live stack.
-- `qa-prd-analysis`: Produces the test coverage plan that determines which scenarios qa-live-app must cover.
-- `forge-eval-gate`: Consumes the `semantic-eval-manifest.json` written by this skill to gate PR merge.
-- `eval-judge`: Aggregates step outcomes into a final PASS/FAIL/YELLOW verdict.
-- `conductor-orchestrate`: Sequences `[P4.0-SEMANTIC-EVAL]` before `[P4.1-DISPATCH]` — qa-live-app must complete before dispatch.
-- `docs/semantic-eval-csv.md`: Column definitions, Surface→Driver mapping, and result interpolation syntax for the CSV this skill runs.
-- `docs/semantic-eval-schema.md`: JSON schema for `semantic-eval-manifest.json` and `semantic-eval-run.log` produced by this skill.
+- `qa-manual-test-cases-from-prd`: Produces the `qa/manual-test-cases.csv` (8-column acceptance inventory) that this skill reads and verifies against the live URL.
+- `qa-prd-analysis`: Produces the coverage plan that determined which cases the CSV contains.
+- `eval-driver-web-cdp`: Web/UI cases delegate to it when CDP is available (screenshot + DOM assertions); otherwise they are MANUAL-REQUIRED.
+- `forge-eval-gate`: The local-stack automated eval gate — distinct from this live-URL walk (this skill does NOT produce a semantic-eval manifest).
+- `forge-brain-layout`: results frontmatter follows the OKF `type:`/index.md/log.md conventions used under the task dir.

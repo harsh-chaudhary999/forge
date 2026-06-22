@@ -153,14 +153,17 @@ Each phase logs a gate line to `~/forge/brain/prds/<task-id>/qa-pipeline.log`.
 
 **Before QA-P2:** If **`prd-locked.md`** missing, **BLOCK** (user runs **`/intake`**); if **`qa/qa-analysis.md`** missing or Step 0.5 **sequential interrogation** not completed in chat (**`using-forge`** **QA PRD analysis**), run **`qa-prd-analysis`** first; if CSV baseline missing and no valid waiver, **`qa-manual-test-cases-from-prd`** before authoring **`qa/semantic-automation.csv`**. Do not prompt the user about downstream waivers until upstream steps exist.
 
+Prefer the read-only brain MCP when connected (`brain_read`/`brain_list` for these
+loads, `brain_conductor_status` to confirm the task's prior phase markers); the
+`cat`/`ls` block is the fallback.
+
 ```bash
-BRAIN=~/forge/brain
+BRAIN="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 TASK=<task-id>
 SLUG=<slug>
 
-# Verify required artifacts exist
-test -f "$BRAIN/prds/$TASK/prd-locked.md" \
-  || { echo "BLOCKED: prd-locked.md not found for task $TASK"; exit 1; }
+# Verify required artifacts exist (echo BLOCKED — do not `exit`, these run in the agent shell)
+[ -s "$BRAIN/prds/$TASK/prd-locked.md" ] || echo "BLOCKED: prd-locked.md not found for task $TASK"
 
 cat "$BRAIN/prds/$TASK/prd-locked.md"
 cat "$BRAIN/prds/$TASK/terminology.md" 2>/dev/null

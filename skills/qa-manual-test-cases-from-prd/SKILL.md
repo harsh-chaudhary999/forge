@@ -102,13 +102,13 @@ SUMMARY MUST READ AS PLAIN ENGLISH TO A NEW QA READER (NO ACRONYM SOUP / INTERNA
 
 | Token | Meaning | Example |
 |---|---|---|
-| `<TASK_ID>` | Forge / task folder | `feature-auth-mfa` |
+| `<task-id>` | Forge / task folder | `feature-auth-mfa` |
 | `<PRD_SOURCE>` | PRD location | wiki URL, PDF path, markdown |
 | `<EXISTING_TESTS>` | Prior cases | Xray folder via MCP, TestRail export CSV, or “none” |
 | `<KB_PATH>` | Internal rules/docs | `@docs/recruiter` style path or “none” |
 | `<WEB_BASE_URL>` | Default web entry | from `product.md` or user |
 | `<ADMIN_BASE_URL>` | Optional | user-supplied |
-| `<OUTPUT_CSV>` | Writable output | default: `~/forge/brain/prds/<TASK_ID>/qa/manual-test-cases.csv` |
+| `<OUTPUT_CSV>` | Writable output | default: `~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv` |
 | `<VALIDATION_CODE>` | Team secret to prove rules were read | e.g. `TESTCASE_FORMAT_<TEAM>` — user provides |
 
 **MCP tools (optional):** If the host provides Atlassian, Xray, or other TMS MCPs, read the **live tool schema** before calling. If MCPs are absent, require **exported** JSON/CSV from the user for `<EXISTING_TESTS>`.
@@ -159,7 +159,7 @@ When **`~/forge/brain/prds/<task-id>/qa/qa-analysis.md`** frontmatter has **`cov
 | **External integrations** | Partner sandbox, webhook replay, third-party error injection | **Ask** stub vs live and **environment** (staging URL scope). |
 | **Prior workflow** | “Order already placed,” “invoice overdue” | State as precondition steps or seed — **split** into a separate case if the setup is itself a full journey. |
 
-**Human clarification (blocking):** If the PRD or brain artifacts **do not** specify how to reach the starting state (e.g. “suspended recruiter” with no suspension mechanism documented), use **`AskUserQuestion`** / **`AskQuestion`** / **numbered options + stop** per **`using-forge`** — **before** writing final CSV rows that assume that state. **Forbidden:** silent placeholders like *“appropriate test user”* without definition agreed in chat or KB.
+**Human clarification (blocking):** If the PRD or brain artifacts **do not** specify how to reach the starting state (e.g. “suspended recruiter” with no suspension mechanism documented), use **`AskUserQuestion`** (see [`skills/_shared/human-input.md`](../_shared/human-input.md)) — **before** writing final CSV rows that assume that state. **Forbidden:** silent placeholders like *“appropriate test user”* without definition agreed in chat or KB.
 
 ### Where test data lives (no extra column in the 8-column base)
 
@@ -225,7 +225,7 @@ If an agent only fills **Summary** and **Expected Result**, **Description** is *
 2. Ingest `<EXISTING_TESTS>` (MCP or file); index summaries for reuse and gaps.
 3. Ingest `<KB_PATH>` if present; note rules not stated in the PRD.
 4. Synthesize: gaps, reuse, deprecated candidates, conflicts.
-5. **MANDATORY:** Ask the user **all** clarifying questions; get verbatim answers. For **discrete** clarifications (yes/no, pick scope, approve assumption), use **blocking interactive prompts** per **`skills/using-forge`** (**`AskQuestion`** / **numbered options + stop**); open-ended follow-ups may be plain chat after those forks resolve.
+5. **MANDATORY:** Ask the user **all** clarifying questions; get verbatim answers. For **discrete** clarifications (yes/no, pick scope, approve assumption), use **`AskUserQuestion`** (see [`skills/_shared/human-input.md`](../_shared/human-input.md)); open-ended follow-ups may be plain chat after those forks resolve.
 6. **MANDATORY:** **Read `qa-analysis.md`** for **`coverage_depth`**. If **`comprehensive`** (or equivalent maximum-coverage commitment), **lock** the planned CSV header to include **`Source`** + **`Preconditions`** columns — **Preconditions column — mandatory for comprehensive**. Do **not** plan an **8-column-only** deliverable for that task.
 7. **MANDATORY:** Confirm **new feature vs change to existing** — quote the user.
 8. **Preconditions pass:** From PRD + contracts + tech plans, list **starting states** each case will need (roles, seeded entities, flags, environments). Where the doc is silent or ambiguous on **how** testers establish that state — **stop** and elicit answers with **blocking prompts** (same as item 5); do **not** bake guessed seeds into CSV.
@@ -234,10 +234,10 @@ If an agent only fills **Summary** and **Expected Result**, **Description** is *
 
 **Why:** `qa-prd-analysis` already loads the brain once; this skill **must not** collapse that work into a short summary when writing cases. **Primary artifacts** hold acceptance wording, routes, error codes, SLAs, and integration edges — **`qa-analysis.md` alone cannot substitute.**
 
-Resolve **`<slug>`** from `prd-locked.md` or `product.md` reference. Then **Read/cat each path that exists** (skip missing paths only after recording a **`CONTEXT_GAP`** line for Step 8):
+Resolve **`<slug>`** from `prd-locked.md` or `product.md` reference. Then **Read/cat each path that exists** (skip missing paths only after recording a **`CONTEXT_GAP`** line for Step 8). Prefer the read-only brain MCP when connected (`brain_read`/`brain_list` for the reload, `brain_recall` for prior-QA / REGRESSION discovery); the `cat` heredoc is the fallback.
 
 ```bash
-BRAIN=~/forge/brain
+BRAIN="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 TASK=<task-id>
 SLUG=<product-slug>
 
@@ -297,7 +297,7 @@ List IDs/keys from `<EXISTING_TESTS>` that are reusable (not copied into the new
 1. List cases contradicted or superseded by the PRD.
 2. If uncertain → user review list **before** any TMS write.
 3. If your TMS is **Jira** and policy allows: add label `Deprecated` via API/MCP **merging** with existing labels.
-4. If no TMS automation: document deprecation list in `~/forge/brain/prds/<TASK_ID>/qa/DEPRECATED_TESTS.md` and treat manual follow-up as a **tracked action**.
+4. If no TMS automation: document deprecation list in `~/forge/brain/prds/<task-id>/qa/DEPRECATED_TESTS.md` and treat manual follow-up as a **tracked action**.
 
 ### Step 5 — Generate new cases
 
@@ -335,8 +335,8 @@ After count approval, deliver a summary with:
 | Artifact | Path (default) |
 |---|---|
 | Manual cases CSV | `<OUTPUT_CSV>` |
-| Deprecation log | `~/forge/brain/prds/<TASK_ID>/qa/DEPRECATED_TESTS.md` (when TMS not updated) |
-| Final report | `~/forge/brain/prds/<TASK_ID>/qa/TEST_SUITE_REPORT.md` |
+| Deprecation log | `~/forge/brain/prds/<task-id>/qa/DEPRECATED_TESTS.md` (when TMS not updated) |
+| Final report | `~/forge/brain/prds/<task-id>/qa/TEST_SUITE_REPORT.md` |
 
 Commit to brain when your workflow uses git-backed brain.
 
@@ -346,9 +346,9 @@ Commit to brain when your workflow uses git-backed brain.
 
 **Do not** end the session with a **prose-only** *“please provide X, Y, Z”* list — that is not **interactive** (**`using-forge`** **Interactive human input**).
 
-1. **One gap per assistant turn** — same norm as **`qa-prd-analysis`** sequential elicitation: **no** multi-gap essay + *reply in chat* without **`AskQuestion`**.
-2. For the **current** gap, use **`AskUserQuestion`** / **`AskQuestion`** (or **numbered options + stop**) with **discrete** options, e.g.: (a) user **supplies** the missing value (seed id, admin path, flag default, contract section); (b) user **authorizes** a **brain write** with pasted content; (c) **Risk-accept** with **owner + date** (log in **`TEST_SUITE_REPORT.md`**); (d) **Defer** with **named** follow-up and **log** — still one **blocking** choice per turn.
-3. After each answer, **update** **`manual-test-cases.csv`** (Preconditions / Description) and **remove or mark resolved** that gap in the report. Continue until **no** **open** **CONTEXT_GAP** remains **or** the user **explicitly** approves shipping with **only** **risk-accepted** / **deferred** rows (via **one** summary **`AskQuestion`** after per-gap turns have been offered).
+1. **One gap per assistant turn** — same norm as **`qa-prd-analysis`** sequential elicitation: **no** multi-gap essay + *reply in chat* without a blocking **`AskUserQuestion`**.
+2. For the **current** gap, use **`AskUserQuestion`** with **discrete** options, e.g.: (a) user **supplies** the missing value (seed id, admin path, flag default, contract section); (b) user **authorizes** a **brain write** with pasted content; (c) **Risk-accept** with **owner + date** (log in **`TEST_SUITE_REPORT.md`**); (d) **Defer** with **named** follow-up and **log** — still one **blocking** choice per turn.
+3. After each answer, **update** **`manual-test-cases.csv`** (Preconditions / Description) and **remove or mark resolved** that gap in the report. Continue until **no** **open** **CONTEXT_GAP** remains **or** the user **explicitly** approves shipping with **only** **risk-accepted** / **deferred** rows (via **one** summary **`AskUserQuestion`** after per-gap turns have been offered).
 
 **Why this exists:** Gaps in **test cases** are the **highest-risk** omissions — they look like coverage but are not reproducible. Interactive closure forces **traceable** resolution.
 

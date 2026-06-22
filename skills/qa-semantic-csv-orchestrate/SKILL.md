@@ -52,7 +52,7 @@ ASK THE HUMAN FOR DRIVER STRATEGY (MCP vs LOCAL) BEFORE IMPLEMENTING REAL BROWSE
 
 ## Procedure
 
-1. **Load brain paths** — **`~/forge/brain/prds/<task-id>/qa/semantic-automation.csv`** (see **`forge-brain-layout`**). If missing and the task chose semantic path, **STOP** — author CSV per **`docs/semantic-eval-csv.md`**.
+1. **Load brain paths** — **`~/forge/brain/prds/<task-id>/qa/semantic-automation.csv`** (see **`forge-brain-layout`**). Prefer the read-only brain MCP when connected (`brain_read`/`brain_list` to locate the CSV + manifest, `brain_conductor_status` to confirm prior phase markers); fall back to `cat`/`ls`. If missing and the task chose semantic path, **STOP** — author CSV per **`docs/semantic-eval-csv.md`**.
 2. **Validate locally** — From Forge repo root:  
    `python3 tools/run_semantic_csv_eval.py --task-id <id> --brain <brain> --dry-run`  
    Fix reported errors (unknown **Surface**, **DependsOn** cycles, unknown **Id** references).

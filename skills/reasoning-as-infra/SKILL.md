@@ -125,6 +125,18 @@ Example:
 
 ---
 
+## Escalation transport (council subagent)
+
+This skill runs as an **autonomous council subagent** that does **not** share the
+human's chat — so it does **not** call `AskUserQuestion`. To escalate, write a
+flagged marker block into `council/infra.md`: `[BLOCKED] …`, `[NEEDS-COORDINATION] …`,
+or — critically — `[CONFLICT] …` when infra reasoning surfaces a constraint that
+**breaks an already-negotiated contract** (e.g. a replication/partition limit that
+violates the locked DB or cache contract). That `[CONFLICT]` block signals
+`council-multi-repo-negotiate` **Edge Case 4** (re-negotiation), rather than silently
+proposing a workaround. Never imply a live UI prompt; human tradeoff forks are
+surfaced by the conductor (see [`skills/_shared/human-input.md`](../_shared/human-input.md)).
+
 ## Output
 
 Write to `~/forge/brain/prds/<task-id>/council/infra.md`:

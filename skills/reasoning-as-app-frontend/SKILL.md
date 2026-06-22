@@ -1426,6 +1426,17 @@ Write to `~/forge/brain/prds/<task-id>/council/app.md`:
 - Idempotency: Safe replay of mutations
 - Causality Tracking: Maintain order during network delays
 
+## Escalation transport (council subagent)
+
+This skill runs as an **autonomous council subagent** that does **not** share the
+human's chat — so it does **not** call `AskUserQuestion`. To escalate (intake gap,
+missing/insufficient design source, cross-surface conflict), write a flagged marker
+block into `council/app.md` — `[BLOCKED] …`, `[INTAKE-GAP] …`, or `[CONFLICT] …`
+with the specific question — for `council-multi-repo-negotiate` / the conductor to
+act on. Never silently invent the missing input; never imply a live UI prompt.
+(Human-facing decisions are surfaced by the conductor, per
+[`skills/_shared/human-input.md`](../_shared/human-input.md).)
+
 ## Checklist
 
 Before submitting app frontend reasoning to council:

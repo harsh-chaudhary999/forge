@@ -268,6 +268,17 @@ Patterns:
 - [ ] State management follows the project's established pattern (not a new ad-hoc approach).
 - [ ] At least one visual regression or RTL smoke test covers the new component.
 
+## Escalation transport (council subagent)
+
+This skill runs as an **autonomous council subagent** that does **not** share the
+human's chat — so it does **not** call `AskUserQuestion`. To escalate (intake gap,
+missing design source, a constraint that conflicts with another surface), write a
+flagged marker block into `council/web.md` — `[BLOCKED] …`, `[INTAKE-GAP] …`, or
+`[CONFLICT] …` with the specific question — for `council-multi-repo-negotiate` /
+the conductor to act on. Never silently invent the missing input; never imply a
+live UI prompt. (Human-facing decisions are surfaced by the conductor, per
+[`skills/_shared/human-input.md`](../_shared/human-input.md).)
+
 ## Output Format
 
 Generate output to `~/forge/brain/prds/<task-id>/council/web.md`:

@@ -216,11 +216,17 @@ User Service → Kafka topic (user.events) → ES Consumer → Elasticsearch Ind
 
 Plan major index changes and recovery from corruption or schema evolution.
 
-**Reindex via Alias Swapping:**
+**Prefer ES-native mechanisms; specify which one the contract uses:**
+- **`_reindex` API** — server-side copy from old → new index (no app round-trips); pair with alias swap for zero downtime.
+- **ILM (Index Lifecycle Management)** — hot/warm/cold + delete phases and rollover for time-series indices, instead of ad-hoc periodic index deletion.
+- **Data streams** — append-only time-series backing indices with automatic rollover.
+- Hand-rolled scan+bulk / Kafka replay / dual-write is the **manual fallback** when `_reindex` can't express the transform.
+
+**Reindex via Alias Swapping (zero-downtime cutover):**
 
 Procedure:
 1. Create new index with updated mapping: `index_v2`
-2. Populate from source (Kafka replay, scan + bulk, or app writes dual-write)
+2. Populate from source — prefer the `_reindex` API (server-side); else Kafka replay, scan + bulk, or dual-write
 3. Validate data (count, sample queries)
 4. Create alias pointing to current index
 5. Update alias to point to `index_v2` (atomic operation)

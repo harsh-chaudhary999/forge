@@ -333,7 +333,7 @@ inventory:456:stock = <binary msgpack>
 - **Time-based:** TTL ensures eventual freshness
 
 ## Stampede Prevention
-- **xfetch:** Refresh inventory:{id}:stock at 80% TTL (every 0.8 sec), 5% probability
+- **xfetch:** probabilistic early refresh as the key approaches expiry (e.g. for a 60s-TTL key, the refresh probability rises over the last ~20% of the TTL window — there is no fixed interval; it is computed per read from time-to-expiry and the recompute cost)
 - **Mutex:** inventory:{id}:stock:lock (SETNX, 2 sec timeout) during DB refetch
 - **Stale fallback:** Return stale inventory count while refetching (brief inconsistency acceptable)
 
@@ -405,9 +405,8 @@ Before claiming completion:
 
 **Mitigation:**
 - Lock contract TTL and document its semantics: "TTL is server-side only. Clients must not cache responses locally beyond server TTL."
-- Add cache-control headers: `Cache-Control: max-age=60, must-revalidate` (enforce client-side TTL)
-- Alternative: Use shorter server TTL (30s) + `ETag` for client validation without refetch
-- Document: "If client caches, multiply server TTL by 0.8 to prevent data older than TTL"
+- **Server-assisted client-side caching (Redis 7+/RESP3):** `CLIENT TRACKING` + invalidation push lets the server notify RESP3-capable clients the instant a key changes — the purpose-built primitive when clients cache beyond TTL. Trade-off: requires RESP3 clients and server tracking-table memory. Specify it in the contract when clients hold their own cache.
+- HTTP-layer fallback: `Cache-Control: max-age=60, must-revalidate`, or a shorter server TTL (30s) + `ETag` for client validation without refetch.
 
 **Escalation:** NEEDS_CONTEXT — Do clients implement their own caching? If yes, coordinate TTLs before lock.
 

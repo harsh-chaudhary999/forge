@@ -49,17 +49,13 @@ allowed-tools:
 | "I'll skip accessibility/security — not in scope" | Accessibility is a legal requirement in many jurisdictions. Security is always in scope for any data-handling feature. Both require explicit user waiver to omit, not silent skipping. |
 | "Cross-functional impact is backend's problem" | UI, API, cache, events, and search change together. Analysis that ignores surfaces ships blind spots. |
 | "I'll skip the brain load — I remember the PRD" | Memory is not a brain artifact. The scan, contracts, and tech plans change the picture every time. Load fresh. |
-| "Figma is in frontmatter / PRD — I don't need to ask about design in QA interrogation" | **UI test quality needs traceability from PRD to what testers assert** — but if **planning / intake / tech plans / design/** already documented PRD↔screen↔fixture mapping, **QA must inherit and cite those artifacts**, not duplicate a second full mapping workshop. Use Q8 to **confirm + fill gaps only**. |
-| "QA must rebuild the whole PRD→design matrix from zero every time" | **Violates reuse.** Council, tech plans, `shared-dev-spec`, `prd-locked` design fields, and `design/` exist precisely so downstream phases do not re-specify. Q8 is **verify completeness for test authoring**, not replace planning. |
+| "Figma is in frontmatter — I either skip design in QA, or rebuild the whole PRD→design matrix from zero" | **Both wrong — violates reuse.** UI test quality needs PRD→assert traceability, but council / tech plans / `shared-dev-spec` / `prd-locked` design fields / `design/` already document it. **Inherit and cite** those artifacts; Q8 is **confirm + fill gaps only**, not a second full mapping workshop. |
 | "I'll write `qa-analysis.md` with Q1–Q8 marked confirmed from PRD alone — user wasn't available" | **Invalid.** Step 0.5 requires interrogation **completed in chat** (**sequential / adaptive** per this skill) with real answers or explicit risk-accept. Frontmatter **`test_types` / `surfaces`** copied from defaults without a user turn is **not** confirmation — downstream automation rows will claim false legitimacy. |
-| "I'll paste the entire Q1–Q8 in one message **and** append **`AskQuestion`** *How should we proceed…* with options that overlap Q3/Q4 or bundle **CSV / automation-order waiver**" | **Invalid UX + wrong gate.** One **primary** interaction model per turn; **waivers** belong to **`qa-manual-test-cases-from-prd`** / **`/qa-write`**, not **`qa-prd-analysis`**. **Sequential** turns only — never wall + unrelated modal. |
-| "I'll put **Q1** (full test-type checklist) in the chat message **and** use **`AskQuestion`** / **Questions** for *approve task-id / prd-locked / what next?*" | **Invalid — dual prompt.** **One turn = one primary question.** Prerequisite confirmation (**task-id**, draft **`prd-locked`**) is **turn A only** (widget **or** numbered options — **no** Q1 in that message). **Q1** is **turn B only** (full checklist — **no** second widget on another topic). See **`docs/forge-one-step-horizon.md`** **No bundled unrelated decisions** (Cursor example). |
-| "I'll paste the **full** Q4 (or Qn) block in **chat** **and** repeat the **same** full text in **`AskQuestion`**" | **Invalid — duplicate read.** **Chat** holds the long list + question **once**; **`AskQuestion`** = **short** title + **options** only — **`docs/forge-one-step-horizon.md`** **Chat vs `AskQuestion` / Questions widget**. |
+| "I'll combine a Q-template with a second **`AskUserQuestion`** in the same turn — bundling prerequisites (task-id/prd-locked), CSV/automation-order waivers, *how should we proceed* meta-options, or repeating the full chat text inside the widget" | **Invalid — dual prompt / wrong gate.** **One turn = one primary question.** Prerequisite confirms are their **own preceding turn**; **waivers** belong to **`qa-manual-test-cases-from-prd`** / **`/qa-write`**, not here. The widget carries a **short** title + options only — the long list lives in chat **once** (see **`docs/forge-one-step-horizon.md`** **No bundled unrelated decisions**). |
 | "I'll offer **single bulk**, **approve recommendations**, or **hybrid** so the user can skip the back-and-forth" | **Invalid for Step 0.5.** Interrogation is **mandatorily sequential and interactive** — no menu to bypass dialogue. Speed is not a substitute for doubt closure. |
 | "I must ask Q2 verbatim even though Q1 already fixed surfaces and depth" | **Invalid.** **Adaptive reconciliation** — skip or shorten template prompts when already answered; ask **net-new** doubts instead. |
 | "I'll ask Q1 using only **Full / Lean / Custom** (or similar presets) **without** showing the full test-type checklist" | **Invalid.** The human must **see** every category (functional, non-functional, security, accessibility rows) to choose or waive — presets **hide capability**. Show the **full fenced Q1 menu** below first; optional presets **below** the menu are OK as shortcuts **after** visibility. |
-| "I'll prepend *Why semantic machine eval isn't ready yet* / *orphan automation* between every Step 0.5 answer" | **Invalid UX — repo-wide norm.** **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**. That copy is **reference** or **skip-ahead refusal** only — **not** between Q1→Q2→Q3. Stay on the **current** question; one-line forward pointers at handoff only when the skill says so. |
-| "I'll narrate the path *QA analysis → CSV → semantic automation → /qa-run* in every Q1–Q8 message so the user sees the ‘big picture’" | **Invalid.** **`using-forge`** — **do not** mention downstream stages unless **immediate** next dependency or user asked. Step 0.5 stays **coverage-only**; **`manual-test-cases.csv`** is the **next** artifact after **`qa-analysis.md`** — name it **only** when closing Step 0.5 / handing off, **not** before every answer. |
+| "Between every Step 0.5 answer I'll narrate the downstream path (*why semantic eval isn't ready*, *QA analysis → CSV → /qa-run*) so the user sees the big picture" | **Invalid — repo-wide norm** (**`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration**). Stay on the **current** question; Step 0.5 is **coverage-only**. Name the **immediate** next dependency (**`manual-test-cases.csv`**) **only** at handoff — not before every answer. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -141,7 +137,7 @@ KEEP ASKING UNTIL ZERO AMBIGUITIES REMAIN — NOT UNTIL YOU'VE ASKED EXACTLY EIG
 - **Analysis written only in chat** — STOP. Write to brain. Chat is ephemeral.
 - **Questions only in `qa-analysis.md` or only via a blocking prompt UI with no pasted text in the assistant message** — STOP. User must see each interrogation topic **in the visible thread** before “confirmed” analysis — **one topic per turn** (plus adaptive follow-ups); **forbidden:** modal-only with no chat text (**Step 0.5 HARD-GATE — Questions visible in chat**).
 - **Full Q1–Q8 wall in one message, or “single bulk / approve all” shortcuts** — STOP. Step 0.5 is **sequential interactive** only; **no** dump of all templates, **no** opt-out of turn-by-turn dialogue.
-- **Full Q1–Q8 wall + a second meta `AskQuestion` (*How should we proceed…*) in the same turn** — STOP. Overloads the human and makes the modal incoherent (**Step 0.5**).
+- **Full Q1–Q8 wall + a second meta `AskUserQuestion` (*How should we proceed…*) in the same turn** — STOP. Overloads the human and makes the modal incoherent (**Step 0.5**).
 - **`design_source` / Figma / `figma_file_key` filled in `qa-analysis.md` frontmatter or body but the user never saw Q8 in chat** — STOP. Copying keys from **`prd-locked.md`** or Confluence **does not** replace the **Q8** question: the human must still **confirm** authoritative design source, reuse path, or **N/A** in thread.
 - **Web/app in scope but neither inherited mapping citations nor Q8 gap-fill recorded** — STOP. Either planning already owns PRD↔UI traceability (cite it) or Q8 must supply it.
 - **`qa-analysis.md` claims Q1–Q8 "confirmed" but there was no Step 0.5 chat turn** — STOP. Analysis is **invalid** for downstream **`/qa-write`** / **`qa-semantic-csv-orchestrate`** strict gates; re-run interrogation or mark body **`PROVISIONAL — interrogation not completed in chat`** and do not treat frontmatter as user-approved.
@@ -152,44 +148,31 @@ KEEP ASKING UNTIL ZERO AMBIGUITIES REMAIN — NOT UNTIL YOU'VE ASKED EXACTLY EIG
 
 **This step is mandatory. Do not skip any sub-step. Do not ask the user anything until this step is complete.**
 
+**Prefer the read-only brain MCP** when it is connected (`brain_read` for files,
+`brain_list` for directory trees, `brain_recall` to find existing QA artifacts /
+Jira-linked tests) — it honours the same `FORGE_BRAIN` root. The raw `cat`/`ls` block
+below is the fallback when the MCP is not available.
+
 ```bash
-BRAIN=~/forge/brain
+BRAIN="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 TASK=<task-id>
 
-# 1. Product topology
-cat "$BRAIN/products/$SLUG/product.md" 2>/dev/null
+# GUARD: the locked PRD is the source of all requirements. If it is missing/empty,
+# STOP — do not interrogate. Escalate BLOCKED/NEEDS_CONTEXT back to forge-intake-gate
+# / intake-interrogate (the PRD must be locked before QA analysis).
+[ -s "$BRAIN/prds/$TASK/prd-locked.md" ] || echo "BLOCKED: prd-locked.md missing/empty for $TASK"
 
-# 2. Locked PRD — the source of all requirements
-cat "$BRAIN/prds/$TASK/prd-locked.md"
-
-# 2a. Product terminology (when present) — canonical labels for assertions / steps
-cat "$BRAIN/prds/$TASK/terminology.md" 2>/dev/null
-
-# 3. Shared dev spec — cross-surface contracts and SLAs
-cat "$BRAIN/prds/$TASK/shared-dev-spec.md" 2>/dev/null
-
-# 4. All tech plans — concrete routes, schemas, components, task IDs
-ls "$BRAIN/prds/$TASK/tech-plans/" 2>/dev/null
-for f in "$BRAIN/prds/$TASK/tech-plans/"*.md; do
-  echo "=== $f ===" && cat "$f"
+cat "$BRAIN/products/$SLUG/product.md" 2>/dev/null            # 1. product topology
+cat "$BRAIN/prds/$TASK/prd-locked.md"                          # 2. locked PRD (requirements)
+cat "$BRAIN/prds/$TASK/terminology.md" 2>/dev/null             # 2a. canonical labels for asserts
+cat "$BRAIN/prds/$TASK/shared-dev-spec.md" 2>/dev/null         # 3. cross-surface contracts + SLAs
+cat "$BRAIN/prds/$TASK/qa/manual-test-cases.csv" 2>/dev/null   # 7. existing QA (avoid dup)
+for d in "prds/$TASK/tech-plans" "products/$SLUG/contracts" "prds/$TASK/design"; do
+  # 4 tech-plans (routes/schemas/testids), 5 contracts, 8 design/UI (don't skip if figma_file_key set)
+  for f in "$BRAIN/$d/"*.md; do [ -f "$f" ] && echo "=== $f ===" && cat "$f"; done
 done
-
-# 5. Contracts
-ls "$BRAIN/products/$SLUG/contracts/" 2>/dev/null
-for f in "$BRAIN/products/$SLUG/contracts/"*.md; do
-  echo "=== $f ===" && cat "$f"
-done
-
-# 6. Codebase scan (architecture context)
-cat "$BRAIN/products/$SLUG/codebase/SCAN.json" 2>/dev/null
+cat "$BRAIN/products/$SLUG/codebase/SCAN.json" 2>/dev/null     # 6. architecture (Tier-1 hubs)
 cat "$BRAIN/products/$SLUG/codebase/index.md" 2>/dev/null
-
-# 7. Existing QA artifacts (avoid duplication)
-ls "$BRAIN/prds/$TASK/qa/" 2>/dev/null
-cat "$BRAIN/prds/$TASK/qa/manual-test-cases.csv" 2>/dev/null
-# 8. Design / UI source (when PRD or frontmatter references UI — do not skip if figma_file_key or design_intake exists)
-ls "$BRAIN/prds/$TASK/design/" 2>/dev/null
-for f in "$BRAIN/prds/$TASK/design/"*.md; do [ -f "$f" ] && echo "=== $f ===" && cat "$f"; done
 ```
 
 After reading, build an internal summary:
@@ -217,10 +200,10 @@ The human must **see Q1–Q7 and Q8 (when UI in scope)** in the **chat thread** 
 
 ```yaml
 interrogation_sessions:
-  - date: “2025-11-15”
-    session_note: “Q1–Q3 covered (test types, surfaces, scope)”
-  - date: “2025-11-16”
-    session_note: “Q4–Q8 covered (security, performance, design mapping)”
+  - date: "<ISO8601-date>"
+    session_note: "Q1–Q3 covered (test types, surfaces, scope)"
+  - date: "<ISO8601-date>"
+    session_note: "Q4–Q8 covered (security, performance, design mapping)"
 ```
 
 This field is informational (no machine validation) but enables auditors to verify which questions were answered when. If all questions were answered in one session, a single entry suffices.
@@ -229,7 +212,7 @@ This field is informational (no machine validation) but enables auditors to veri
 
 **How the dialogue runs**
 
-1. **One assistant message ≈ one coverage dimension** — usually **one** of Q1–Q8 at a time, using the templates below. **Each dimension’s message includes that dimension’s full template** (e.g. **Q1** = entire test-type fence below — that is **one** topic, not “Q1–Q8”). Use **`AskUserQuestion`** / **`AskQuestion`** / **numbered options + stop** per **`using-forge`** for optional **shortcuts** only **after** the full checklist is visible where this skill requires it. **Do not** paste Q2–Q8 in the same turn as Q1.
+1. **One assistant message ≈ one coverage dimension** — usually **one** of Q1–Q8 at a time, using the templates in [reference/interrogation-templates.md](reference/interrogation-templates.md). **Each dimension’s message includes that dimension’s full template** (e.g. **Q1** = entire test-type fence — that is **one** topic, not “Q1–Q8”). Use **`AskUserQuestion`** (see [`skills/_shared/human-input.md`](../_shared/human-input.md)) for optional **shortcuts** only **after** the full checklist is visible where this skill requires it. **Do not** paste Q2–Q8 in the same turn as Q1.
 
 2. **Optional opener** — You may send **one** short line of context after Step 0 (e.g. “Brain loaded for `<task-id>`; starting coverage interrogation.”) **without** any fork like “how do you want to answer?” **There is no user choice** between bulk vs sequential — sequential is **required**.
 
@@ -252,194 +235,27 @@ This field is informational (no machine validation) but enables auditors to veri
 
 ---
 
-### Q1 — Test Types (mandatory)
+**The full Q1–Q8 fenced templates** (with brain-informed ☑/○, the Q8 reuse-first
+short form + full workshop, the D5 mobile-driver note on Q2, and the Lovable
+GitHub-repo design-source phrasing on Q8) live in
+**[reference/interrogation-templates.md](reference/interrogation-templates.md)**:
 
-Ask as the **first** interrogation turn after Step 0 (after optional one-line context). **Only** Q1 content in that turn — then **wait**. **HARD-GATE — No dual prompt with prerequisites:** If **`prd-locked`** / **task-id** still need a **blocking** human confirm, that confirm is **its own** preceding turn — **do not** combine that **`AskQuestion`** with **Q1** in the **same** assistant message (**Cursor** / any host: markdown **Q1** + widget **≠** one turn).
+| # | Dimension | Mandatory? |
+|---|---|---|
+| Q1 | Test Types (Functional / Non-Functional / Security / Accessibility menu) | yes |
+| Q2 | Surfaces (web/api/android/ios/db/cache/events/search) | yes |
+| Q3 | Coverage Depth (smoke / standard / comprehensive) | — |
+| Q4 | Feature Priority (test density per area) | — |
+| Q5 | Regression Scope (Tier-1 hubs from scan) | — |
+| Q6 | Open Ambiguities (enumerated from the PRD read) | — |
+| Q7 | Environment and Data (creds, seed state, stubs, flakes) | — |
+| Q8 | Design source of truth & PRD → UI mapping | yes if Web/Android/iOS in scope |
 
-**HARD-GATE — Full checklist visible:** Paste the **complete** fenced menu below (Functional → Accessibility) with brain-informed ☑/○ — **every row the skill lists**. **Forbidden:** replacing Q1 with **only** prose plus **Full / Lean CI / Custom** (or similar) **without** the full structured list above it — users cannot consent to types they cannot see. **Allowed:** **after** the full menu, add optional shortcuts (*e.g.* “Reply **All recommended**, **Lean CI**, or line-by-line yes/no”) **below** the fence — shortcuts may **not** substitute for the checklist.
-
-Show the menu with brain-informed recommendations:
-
-```
-Which test types do you want for this QA run?
-[Based on reading the PRD + tech plans, I recommend: ✓ items below]
-
-Functional Testing
-  ☑ Positive / Happy Path     — valid inputs, expected success flows
-  ☑ Negative                  — invalid inputs, error handling, rejections
-  ☑ Boundary Value Analysis   — at and around input limits (min, max, min±1, max±1)
-  ☑ Equivalence Partitioning  — representative values per input class
-  ☑ Edge Cases                — unusual-but-valid inputs, empty states, concurrency
-
-Non-Functional Testing
-  ☑ Smoke                     — critical path quick sanity (run first, fast)
-  ☑ Regression                — verify existing behavior not broken by this change
-  ○ Performance / SLA         — response times against SLA thresholds [recommend if SLA in spec]
-  ○ Compatibility             — cross-browser, device sizes, OS versions [recommend if multi-platform]
-
-Security Testing (OWASP Top 10 for this surface)
-  ☑ Authentication / AuthZ    — login bypass, privilege escalation, session fixation
-  ☑ Input Validation          — SQLi, XSS, path traversal in all input fields
-  ○ Sensitive Data Exposure   — tokens in logs, unmasked fields, insecure storage [recommend if PII]
-  ○ Rate Limiting / DoS       — brute force, request flooding protection [recommend if auth surface]
-
-Accessibility (WCAG 2.1 AA)
-  ○ Keyboard Navigation       — all flows reachable without mouse
-  ○ Screen Reader             — ARIA labels, landmark roles, focus management
-  ○ Color Contrast            — 4.5:1 for normal text, 3:1 for large text
-  ○ Focus Indicators          — visible focus ring on all interactive elements
-
-Select all that apply. Mark ○ items as yes/no. Or type "all" for maximum coverage.
-```
-
-Adjust the pre-checked (☑) items based on what the PRD actually contains. Pre-check an item if the PRD or tech plans have clear scope for it. Leave ○ if absent from PRD unless it is always required (positive, negative, edge case are always required).
-
----
-
-### Q2 — Surfaces (mandatory)
-
-Show only surfaces that exist in `product.md` for this product:
-
-```
-Which surfaces should scenarios be generated for?
-[Surfaces registered in product.md for <slug>:]
-
-  ☑ Web ({{ web-dashboard repo }}) — browser via Chrome DevTools Protocol
-  ☑ API ({{ backend-api repo }})   — REST/GraphQL via HTTP driver
-  ○ Android ({{ app-mobile repo }}) — ADB + UIAutomator / Appium MCP
-  ○ iOS ({{ app-mobile repo }})     — XCTest / Appium MCP
-  ☑ Database (MySQL/Postgres)       — schema and data integrity checks
-  ○ Cache (Redis)                   — key presence, TTL, invalidation
-  ○ Event Bus (Kafka)               — event publish/consume verification
-  ○ Search (Elasticsearch)          — index update, query result checks
-
-Pre-checked surfaces appear in both the PRD and product.md.
-Answer: which surfaces should have scenarios generated? (or "all")
-```
-
----
-
-### Q3 — Coverage Depth
-
-```
-Coverage depth for this run?
-
-  A) Smoke only       — critical path, fast (10–20 scenarios total)
-  B) Standard         — happy + negative + boundary per feature (50–100+ scenarios)
-  C) Comprehensive    — all types selected in Q1, maximum coverage, no gaps
-                        (100–300+ scenarios depending on PRD size)
-
-[Recommended: C — Comprehensive, based on <reason from PRD e.g. "payment feature with PII"]
-```
-
----
-
-### Q4 — Feature Priority
-
-Based on the PRD sections read, list the top feature areas and ask:
-
-```
-Which feature areas need the highest test density?
-[From PRD, I identified these feature areas:]
-
-  1. Authentication (login/logout/session)
-  2. Payment checkout flow
-  3. Order management
-  4. User profile / settings
-  5. Admin dashboard
-
-Mark priority: High / Medium / Low per area, or "all high".
-High = maximum scenario count. Medium = standard. Low = smoke only.
-```
-
----
-
-### Q5 — Regression Scope
-
-```
-For regression testing, which existing functionality must not break?
-[From codebase scan, I see these Tier 1 architectural hubs that touch this feature:]
-  - auth.service.ts (referenced by 12 modules)
-  - payment.service.ts (referenced by 8 modules)
-  - user.repository.ts (referenced by 9 modules)
-
-List any additional areas to regression-test, or confirm the above is complete.
-```
-
-Only ask this if codebase scan is present. If absent, ask: "List any existing flows that must not break with this change."
-
----
-
-### Q6 — Open Ambiguities
-
-Based on PRD reading, list every ambiguity found:
-
-```
-I found the following open questions in the PRD. Answer each:
-
-  1. [<specific ambiguity from PRD, e.g. "PRD says 'validate email' but doesn't specify the format rule">]
-  2. [<specific ambiguity, e.g. "SLA not specified for checkout API — what is the P95 target?">]
-  3. [<specific ambiguity, e.g. "Error message for duplicate email: what exact text?">]
-  ...
-
-Answer each, or mark as 'accept risk' with your name.
-```
-
-Generate this list entirely from the PRD read in Step 0 — do not ask generic questions like "any edge cases I should know about?" that the user must answer from scratch. You read the PRD — find the gaps yourself.
-
----
-
-### Q7 — Environment and Data
-
-```
-Test environment details (I'll use these to write concrete test data into scenarios):
-
-  a) Test user credentials format? (e.g. qa+{n}@example.com / password format)
-  b) Test data state: seeded DB or agent creates data during the test?
-  c) Any third-party services to stub/mock? (e.g. payment gateway, SMS OTP)
-  d) Known flaky areas or test isolation issues to work around?
-```
-
----
-
-### Q8 — Design source of truth & PRD → UI mapping (mandatory if Web, Android, or iOS is in scope)
-
-**Skip only if** confirmed surfaces are exclusively API/DB/cache/events/search with **no** user-visible UI for this feature — state **N/A** in chat and in `qa-analysis.md`.
-
-**Reuse-first (do this before the full questionnaire):** If **planning / development already produced** PRD↔UI traceability — e.g. **tech plans** with screens and testids, **`shared-dev-spec.md`** user-visible behaviors, **`prd-locked.md`** design/Q9 fields, **`design/MCP_INGEST.md`** or Figma refs — then **Q8 is not a greenfield mapping exercise**. You **summarize what exists** (brain paths + section titles), list **only gaps** (missing component for a PRD bullet, unknown fixture, conflicting testid), and elicit **confirm or patch** for those gaps with **blocking interactive prompts** per **`using-forge`** when the gap is a **discrete** choice. Paste this **short form** in chat when reuse applies:
-
-```
-Q8 — Inherited PRD ↔ design mapping (confirm / gap-fill)
-
-Already documented (read in Step 0):
-  - <path#heading> — what it covers
-  - ...
-
-For QA test authoring, confirm:
-  (A) Accurate as-is — proceed to cases using citations above
-  (B) Needs updates — list only deltas: <gap 1>, <gap 2>, ...
-
-If (B): answer only the gaps (authoritative source, testid, fixture, E2E order).
-```
-
-**Full Q8 workshop** — use **only** when no adequate mapping exists in brain artifacts, or after **(B)** to capture **remaining** items:
-
-```
-Design & UI (maps PRD language to what testers assert on screen):
-
-  a) **Authoritative design source** — Figma file/key + node(s), and/or paths under brain/prds/<task-id>/design/ (e.g. MCP_INGEST.md), Lovable export — which wins when they disagree?
-  b) **For each major PRD user-visible requirement** (e.g. "blacklisted banner after login", "Step 1 tab", "restricted crawl"): name the **screen or component**, **data-testid** or accessibility label if known, and **preconditions** (account state, tier, due date, feature flag).
-  c) **End-to-end flow** — ordered steps from entry (e.g. login) through the assertion (e.g. banner visible on home), including **where** copy/layout must match design vs PRD prose only.
-  d) **Fixtures** — which seeded users / tokens / DB rows are required so the UI can reach each state (blacklisted, overdue, L2 only, etc.)?
-
-If Figma MCP or design files are unavailable: record **CONTEXT_GAP** and the minimum **user-supplied** screenshots or testids needed before writing UI automation rows or manual web rows.
-```
-
----
-
-**Wait until every dimension** for Q1–Q7 (+ Q8 when UI in scope) is **resolved or explicitly risk-accepted**, using **sequential turns** and **adaptive skips/substitutions** as above, before proceeding to Step 1. After **each** reply, reconcile; chase **new doubts** before advancing the default Q sequence.
-
-Record all Q&A verbatim in the output artifact (including *skipped — subsumed by …*). Do not proceed on partial answers — ask again for any unanswered item. There is no upper limit on **tailored** follow-up questions: **zero ambiguities** is the stop condition, not “asked Q8 verbatim.”
+Run them as **sequential** turns (one dimension per message, full template each),
+reconciling after every reply. **Wait until every Q1–Q7 dimension (+ Q8 when UI in
+scope) is resolved or explicitly risk-accepted** before Step 1 — zero ambiguities is
+the stop condition, not "asked Q8 verbatim." Record all Q&A verbatim in the output
+(including *skipped — subsumed by …*).
 
 ---
 
@@ -482,32 +298,11 @@ For each feature or change:
 
 ## Step 4 — Test Scenario Matrix
 
-Build a full matrix:
-
-`Feature Areas × Test Types × Surfaces × User Roles × States × Input Partitions`
-
-Use **test design techniques** to ensure completeness:
-
-| Technique | When to apply |
-|---|---|
-| **Equivalence Partitioning** | Any input field — group valid and invalid classes |
-| **Boundary Value Analysis** | Any numeric, string-length, or date input — test min, max, min−1, max+1 |
-| **Decision Table** | Business rules with multiple conditions (e.g. role=admin AND status=active) |
-| **State Transition** | Any entity with a state machine (order status, user status, payment state) |
-| **Pairwise / Combinatorial** | Multiple independent inputs — use pairwise to cover interactions without factorial explosion |
-| **Error Guessing** | Known failure patterns from production, similar features, OWASP |
-| **Use Case Testing** | All alternate and exception flows in every use case, not just main flow |
-
-**Minimum scenario expectations per feature area (enforce, do not reduce):**
-
-| Feature complexity | Minimum scenarios |
-|---|---|
-| Simple CRUD (1 entity, 2-3 fields) | 25–40 |
-| Medium (multi-field form, validation, roles) | 50–80 |
-| Complex (multi-step flow, payment, auth) | 100–150 |
-| Cross-surface end-to-end | +20–30 per surface added |
-
-These are **floors**, not targets. Exceed them freely; never fall below.
+Build a full matrix: `Feature Areas × Test Types × Surfaces × User Roles × States ×
+Input Partitions`. The **test-design techniques** (EP, BVA, decision table, state
+transition, pairwise, error guessing, use-case) and the **per-complexity minimum
+scenario floors** (enforce, never fall below) are in
+**[reference/coverage-techniques.md](reference/coverage-techniques.md)**.
 
 ---
 
@@ -522,51 +317,11 @@ These are **floors**, not targets. Exceed them freely; never fall below.
 
 ## Step 6 — Coverage Map by Test Type
 
-For each confirmed test type from Q1, write an explicit coverage plan:
-
-```markdown
-### Smoke Coverage
-- SC-AUTH-SMOKE-001: Login success → dashboard loads
-- SC-PAYMENT-SMOKE-001: Add to cart → checkout → order created
-
-### Positive Coverage
-- SC-AUTH-POS-001: Login with valid email + password
-- SC-AUTH-POS-002: Login via Google OAuth
-- SC-AUTH-POS-003: Login with "remember me" checked → session persists 30d
-...
-
-### Negative Coverage
-- SC-AUTH-NEG-001: Login with wrong password → error message shown
-- SC-AUTH-NEG-002: Login with unregistered email → error message shown
-- SC-AUTH-NEG-003: Login with empty email → field validation
-- SC-AUTH-NEG-004: Login with empty password → field validation
-- SC-AUTH-NEG-005: Login with SQL injection in email field → rejected
-...
-
-### Boundary Coverage
-- SC-AUTH-BVA-001: Password at minimum length (8 chars) → accepted
-- SC-AUTH-BVA-002: Password at min−1 (7 chars) → rejected
-- SC-AUTH-BVA-003: Password at maximum length (128 chars) → accepted
-- SC-AUTH-BVA-004: Password at max+1 (129 chars) → truncated or rejected
-- SC-AUTH-BVA-005: Email at maximum length (254 chars) → accepted
-...
-
-### Security Coverage
-- SC-AUTH-SEC-001: SQL injection in email field
-- SC-AUTH-SEC-002: XSS payload in email field
-- SC-AUTH-SEC-003: Brute force 10 attempts → account locked
-- SC-AUTH-SEC-004: Session token in URL → rejected
-- SC-AUTH-SEC-005: Expired JWT → 401 returned
-...
-
-### Accessibility Coverage
-- SC-AUTH-A11Y-001: Tab through login form → all fields reachable
-- SC-AUTH-A11Y-002: Error message announced by screen reader
-- SC-AUTH-A11Y-003: Submit button accessible via keyboard Enter
-...
-```
-
-Complete this map for every feature area before calling this skill done.
+For each confirmed test type from Q1, write an explicit coverage plan
+(`### Smoke / Positive / Negative / Boundary / Security / Accessibility Coverage`
+with `SC-<AREA>-<TYPE>-NNN` scenario IDs). A worked example for an auth feature is in
+**[reference/coverage-techniques.md](reference/coverage-techniques.md)**. Complete this
+map for **every** feature area before calling this skill done.
 
 ---
 
@@ -616,20 +371,10 @@ git -C ~/forge/brain commit -m "qa: PRD analysis for <task-id> — types=<list> 
 
 ## Surface Specification Reference
 
-**How to specify surfaces for test case generation and execution:**
-
-| Surface | `/qa-write` flag | `/qa-run` flag | Driver used |
-|---|---|---|---|
-| Web browser | `--surface web` | `--surface web` | `eval-driver-web-cdp` |
-| Android app | `--surface android` | `--surface android --env DEVICE_ID=emulator-5554` | `eval-driver-android-adb` |
-| iOS app | `--surface ios` | `--surface ios --env IOS_SIMULATOR_ID=booted` | `eval-driver-ios-xctest` |
-| REST/GraphQL API | `--surface api` | `--surface api` | `eval-driver-api-http` |
-| Database | `--surface db` | `--surface db` | `eval-driver-db-mysql` |
-| Cache | `--surface cache` | `--surface cache` | `eval-driver-cache-redis` |
-| All surfaces | `--surface all` | `--surface all` | all drivers |
-| Web + API only | `--surface web,api` | `--surface web,api` | web-cdp + api-http |
-
-**Surface selection in this analysis step** determines which **Surface** values appear in **`qa/semantic-automation.csv`** and how hosts filter execution. The **`--surface`** flag on **`/qa-run`** filters which surfaces run.
+The surface→`/qa-write`/`/qa-run` flag → driver mapping table is in
+**[reference/surface-reference.md](reference/surface-reference.md)**. Surface selection
+here determines which **Surface** values appear in **`qa/semantic-automation.csv`**;
+the **`--surface`** flag on **`/qa-run`** filters which surfaces run.
 
 ---
 

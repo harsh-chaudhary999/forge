@@ -597,7 +597,7 @@ Every detail must be locked before code starts. API contracts and database schem
 **API Versioning Strategy**
 - **v1 (Deprecated):** Old clients using 2FA via TOTP only
   - Endpoint: POST /auth/2fa/enable → {method: implicit "totp"}
-  - Sunset: 2026-10-01 (6 months from now)
+  - Sunset: 2026-10-01 (≈6 months after v2 GA)
   - Monitoring: Emit `api_version_usage{version=v1}` metric
 
 - **v2 (Current):** New clients with SMS + TOTP + recovery codes

@@ -96,7 +96,7 @@ The `description` field is how the AI decides whether to invoke a skill. Optimiz
 
 ### New Frontmatter Fields
 
-Four optional fields for all new skills. Existing skills do not need to be updated immediately — add them when a skill is touched.
+Optional frontmatter fields for new skills. Existing skills do not need to be updated immediately — add them when a skill is touched.
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
@@ -105,6 +105,7 @@ Four optional fields for all new skills. Existing skills do not need to be updat
 | `triggers` | Optional | string list | Natural-language phrases that strongly suggest this skill should be invoked. Informational in the current implementation — helps skill authors document intent. |
 | `allowed-tools` | Optional | string list | Tools this skill is permitted to use. Documents intent; not enforced at runtime currently. |
 | `hooks` | Optional | object | Declares which `PreToolUse` enforcement checks this skill activates. Values correspond to named checks in `pre-tool-use.cjs` (`freeze-scope-check`, `destructive-command-check`). Purely declarative — hooks run automatically when their preconditions are met, but this field documents which ones are relevant to the skill's safety contract. |
+| `effort` | Optional | `low`/`medium`/`high` | Native Claude Code subagent **reasoning-effort** hint, honored when this skill drives a subagent (the same field as on `agents/*.md` frontmatter). Set `high` on reasoning-heavy skills (council surfaces, contracts, tech-plan); omit to inherit the session/dispatch effort. Other native subagent fields (`model`, `maxTurns`, `disallowedTools`, `isolation`) may likewise appear on skills that map to subagents — standard hosts ignore unknown keys. |
 
 ### Human input (`AskUserQuestion` in `allowed-tools`)
 

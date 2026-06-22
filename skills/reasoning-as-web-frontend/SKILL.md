@@ -23,7 +23,7 @@ allowed-tools:
 | Rationalization | Why It Fails |
 |---|---|
 | "This is just a UI change, no API impact" | UI changes always reveal API contract gaps. State management decisions determine what the backend must return. Frontend must speak first. |
-| "Performance budgets can be added after build" | Post-build performance fixes require component rewrites. LCP, FID, and bundle targets must be set at council, not after code ships. |
+| "Performance budgets can be added after build" | Post-build performance fixes require component rewrites. LCP, INP, and bundle targets must be set at council, not after code ships. |
 | "Accessibility is a nice-to-have" | Accessibility is a legal requirement in many jurisdictions and a WCAG commitment for every product. Absent from spec = absent from build. |
 | "We'll figure out the state boundaries during build" | State boundary decisions determine component structure, data flow, and API call frequency. Changing them mid-build requires rebuilding the data layer. |
 | "Web is the same as mobile for this feature" | Web has different network patterns, screen sizes, keyboard navigation, and browser APIs. "Same as mobile" always produces a sub-standard web experience. |
@@ -40,7 +40,7 @@ If you notice any of these, STOP and do not proceed:
 
 - **Web surface produces no analysis and says "no frontend impact"** — Every PRD touches the web surface at minimum through state changes and API contracts. STOP. Produce analysis even if it is "no new pages; existing state management suffices; no bundle changes."
 - **API contract is defined without web surface input** — The API shape will not match what the frontend needs. STOP. Web surface must specify its data requirements before contracts are locked.
-- **Performance budget is absent from the analysis** — Unspecified budgets mean unreviewed regressions. STOP. State explicit Core Web Vitals targets (LCP, FID, CLS) and bundle size constraints before spec freeze.
+- **Performance budget is absent from the analysis** — Unspecified budgets mean unreviewed regressions. STOP. State explicit Core Web Vitals targets (LCP, INP, CLS) and bundle size constraints before spec freeze.
 - **Accessibility requirements are absent** — Accessibility is a legal and product requirement, not optional. STOP. State WCAG level and any known constraints before spec freeze.
 - **Web surface reasoning relies on API shape before backend surface has produced its analysis** — Unilateral assumption about API contract. STOP. Run all 4 surfaces in parallel, then resolve conflicts in negotiation.
 - **State management approach is left as "TBD"** — Undefined state architecture creates integration conflicts during build. STOP. Specify state boundaries (app/page/component) before locking the spec.
@@ -85,7 +85,7 @@ You represent:
 
 1. **Readable files on disk** — Paths under `~/forge/brain/prds/<task-id>/design/` or repo-relative exports listed in `prd-locked.md` / `shared-dev-spec.md`. **Read them first** with the Read tool (images + `README.md` / ingest notes).
 2. **Lovable + GitHub (AI-built UI)** — When `prd-locked.md` locks **`lovable_github_repo`** (`owner/repo`) and optional **`lovable_path_prefix`** (e.g. subfolder inside a monorepo), treat that **synced** tree as the live UI source: inventory `src/` routes, layouts, and shadcn/Tailwind usage from **files**, not from a bare `lovable.dev` link. Persist **`~/forge/brain/prds/<task-id>/design/LOVABLE_SYNC.md`** when you ingest (repo, branch or SHA, who resolves Lovable ↔ product-repo conflicts). If only a Lovable **browser URL** is given with **no** GitHub repo + ref and **no** brain exports, **STOP** — same implementability bar as a bare Figma URL (see **`docs/platforms/lovable.md`**).
-3. **Figma MCP (when the host provides it — e.g. Cursor)** — If `prd-locked.md` contains **`figma_file_key`** + **`figma_root_node_ids`**, use the **Figma MCP** tools to fetch file metadata, nodes, variables, and dev-mode context **before** asking a human for PNGs. Persist a short summary under `~/forge/brain/prds/<task-id>/design/MCP_INGEST.md` (timestamp, nodes pulled, tool used) so council threads and subagents do not depend on chat.
+3. **Figma MCP (when the host exposes it — Claude Code ships `mcp__claude_ai_Figma__*`)** — If `prd-locked.md` contains **`figma_file_key`** + **`figma_root_node_ids`**, use the **Figma MCP** tools to fetch file metadata, nodes, variables, and dev-mode context **before** asking a human for PNGs. Persist a short summary under `~/forge/brain/prds/<task-id>/design/MCP_INGEST.md` (timestamp, nodes pulled, tool used) so council threads and subagents do not depend on chat.
 4. **Figma REST API** — If MCP is unavailable but the user provides a **personal access token** and **file key**, use `GET https://api.figma.com/v1/files/{file_key}` (and nodes endpoint as needed). Same persistence rule: capture enough structured detail in the brain so downstream phases are not chat-scoped.
 5. **Human export** — Only when MCP and API are unavailable or unauthorized: request PNG/SVG exports into `~/forge/brain/prds/<task-id>/design/` and re-lock paths in intake if necessary.
 
@@ -211,7 +211,7 @@ Format:
 Define measurable performance targets:
 
 - **Largest Contentful Paint (LCP)** - Target: <2.5s
-- **First Input Delay (FID)** / **Interaction to Next Paint (INP)** - Target: <100ms
+- **Interaction to Next Paint (INP)** — primary Core Web Vital (replaced FID Mar 2024). Target: ≤200ms ("good"). (FID is legacy; its old target was ≤100ms.)
 - **Cumulative Layout Shift (CLS)** - Target: <0.1
 - **Initial page load time** - Target (depends on feature)
 - **Bundle size** - Frontend code target (depends on feature)
@@ -227,7 +227,7 @@ Considerations:
 
 ### 5. Accessibility
 
-Ensure WCAG 2.1 AA compliance:
+Ensure WCAG 2.2 AA compliance (W3C Recommendation since Oct 2023; adds focus-not-obscured, target-size 2.5.8, dragging alternatives, accessible authentication):
 
 - **Keyboard navigation** - All interactions keyboard accessible
 - **Screen reader support** - ARIA labels, semantic HTML, roles
@@ -436,7 +436,7 @@ Ready for: Council negotiation
 
 ## Accessibility
 
-- **WCAG 2.1 AA** - All 2FA flows must pass automated + manual audit
+- **WCAG 2.2 AA** - All 2FA flows must pass automated + manual audit
 - **Keyboard Navigation:**
   - Tab through all code inputs without mouse
   - Enter submits verification code
@@ -995,7 +995,7 @@ Before submitting web frontend reasoning to council:
 - [ ] All pages and key components are enumerated with their data sources
 - [ ] State boundaries defined (global/page/component) with rationale
 - [ ] API contract requirements stated from the frontend's perspective (fields, formats, pagination)
-- [ ] Performance budgets locked (LCP, FID, CLS, bundle size in concrete numbers)
+- [ ] Performance budgets locked (LCP, INP, CLS, bundle size in concrete numbers)
 - [ ] Accessibility requirements stated (WCAG level, keyboard navigation, screen reader support)
 - [ ] No component listed as "TBD" or "similar to existing"
 - [ ] All user flows cover loading, error, and empty states

@@ -76,7 +76,7 @@ Bare Figma/wiki URLs without **file key + node ids** or **on-disk exports** are 
 
 1. **Readable files on disk** — `~/forge/brain/prds/<task-id>/design/` or repo paths from `prd-locked.md` / `shared-dev-spec.md`. Read with the Read tool.
 2. **Lovable + GitHub** — When **`lovable_github_repo`** is locked, read the synced **React/TS** tree (and optional **`lovable_path_prefix`**) the same way as web **`reasoning-as-web-frontend`**: routes, layouts, shared components. Persist **`design/LOVABLE_SYNC.md`** on ingest when helpful. Web-first Lovable exports still inform **native shell** flows (navigation, forms) when the PRD ties them together.
-3. **Figma MCP (e.g. Cursor)** — When `figma_file_key` + `figma_root_node_ids` are locked, use **Figma MCP** to fetch nodes, variables, and dev-mode constraints before asking for PNGs. Write `~/forge/brain/prds/<task-id>/design/MCP_INGEST.md` (timestamp, nodes, summary) for downstream agents.
+3. **Figma MCP (when the host exposes it — Claude Code ships `mcp__claude_ai_Figma__*`)** — When `figma_file_key` + `figma_root_node_ids` are locked, use **Figma MCP** to fetch nodes, variables, and dev-mode constraints before asking for PNGs. Write `~/forge/brain/prds/<task-id>/design/MCP_INGEST.md` (timestamp, nodes, summary) for downstream agents.
 4. **Figma REST** — If MCP unavailable and user provides token + file key, use `GET https://api.figma.com/v1/files/{file_key}`; persist structured notes under `design/`.
 5. **Human export** — Request PNG exports into `~/forge/brain/prds/<task-id>/design/` only when 2–4 are not available.
 

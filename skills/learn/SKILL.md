@@ -30,9 +30,9 @@ Writes session learnings to brain so future sessions benefit. Unlike `brain-writ
 
 **Rule of thumb:** "This will help me on the next PRD" → `learn`. "This reflects how this task went" → `retro`. "I just decided X because Y" → `brain-write`.
 
-## Human input (all hosts)
+## Human input
 
-This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**.
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Blocking prompts follow **[`skills/_shared/human-input.md`](../_shared/human-input.md)**. See **`using-forge`** **Interactive human input**.
 
 ## Anti-Pattern Preamble
 

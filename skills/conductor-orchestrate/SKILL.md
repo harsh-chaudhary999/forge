@@ -19,9 +19,9 @@ allowed-tools:
 
 # Conductor Orchestrate — Master State Machine
 
-## Human input (all hosts)
+## Human input
 
-This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input** and **Stage-local questioning**. Assistant dialogue: **`docs/forge-one-step-horizon.md`** and **`using-forge`** **Multi-question elicitation** items **4–8** (same as the **`Assistant chat`** line in **`commands/`** — **no defensive downstream-gate narration** mid-elicitation).
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Blocking prompts follow **[`skills/_shared/human-input.md`](../_shared/human-input.md)**. See **`using-forge`** **Interactive human input** and **Stage-local questioning**. Assistant dialogue: **`docs/forge-one-step-horizon.md`** and **`using-forge`** **Multi-question elicitation** items **4–8** (same as the **`Assistant chat`** line in **`commands/`** — **no defensive downstream-gate narration** mid-elicitation).
 
 ## Anti-Pattern Preamble
 
@@ -599,7 +599,7 @@ Skipping this step and creating a new file when an existing one should be modifi
      - Spec reviewer checks: Does code implement the tech plan? All success criteria met?
      - If **FAIL** → detailed feedback to dev-implementer; do not advance that repo toward Phase 4.3.
      - If **PASS** → when **`design_new_work: yes`** and this repo is **web** or **app** (and no `design_waiver: prd_only`), immediately run **design parity** on that repo:
-       - Dispatch **`design-implementation-reviewer`** or **`figma-design-sync`** (Task tool / Cursor subagents **when the harness exposes them**) against locked Figma nodes or `~/forge/brain/prds/<task-id>/design/` baselines.
+       - Dispatch **`design-implementation-reviewer`** or **`figma-design-sync`** (via the Task tool **when the harness exposes them**) against locked Figma nodes or `~/forge/brain/prds/<task-id>/design/` baselines.
        - If neither exists, log `[P4.2-DESIGN-PARITY] skipped=no_harness` and **block merge** until a human records visual sign-off in brain or conductor log (or waive in writing).
        - Design parity **FAIL** → same handling as spec FAIL (feedback to dev-implementer).
      - When spec and (if applicable) design parity both **PASS** for that repo, it may advance toward Phase 4.3 with the batch.

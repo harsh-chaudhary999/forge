@@ -2,7 +2,7 @@
 name: forge-skill-anatomy
 description: "WHEN: You are writing or reviewing a Forge skill and need the canonical template, rigor checklist, or CSO guidelines."
 type: reference
-version: 2.1.0
+version: 2.1.1
 preamble-tier: 1
 triggers:
   - "writing a new skill"
@@ -109,13 +109,12 @@ Optional frontmatter fields for new skills. Existing skills do not need to be up
 
 ### Human input (`AskUserQuestion` in `allowed-tools`)
 
-If **`AskUserQuestion`** appears in **`allowed-tools`**, the skill body **must** include a short **Human input (all hosts)** section (after the title is fine) that:
+If **`AskUserQuestion`** appears in **`allowed-tools`**, the skill body **must** include a short **`## Human input`** section (after the title is fine) that:
 
-1. States that **`AskUserQuestion`** is **canonical** for Claude Code + **`tools/lint_skill_allowed_tools.py`** — **do not** rename per IDE in **`SKILL.md`**.
-2. Points to **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** for the **full host table** (Cursor **`AskQuestion`**; CLIs / editors without the tool: **numbered options + stop**).
-3. Points to **`using-forge`** **Interactive human input** for prose vs structured blocking choices.
-4. If the skill elicits **multiple** human answers in sequence, points to **`using-forge`** **Multi-question elicitation** (transcript-first, one primary topic per turn when applicable, reconcile) — unless the skill documents a deliberate exception.
-5. Points to **`docs/forge-one-step-horizon.md`** and **`using-forge`** **Multi-question elicitation** items **4–8** for **all** live-dialogue norms — **one-step horizon**, **question-forward**, **no bundled** unrelated forks, **no trailing** later-stage reminders, **no defensive downstream-gate narration** mid-elicitation (**forge-one-step-horizon** section of that name), **phase-specific** waivers — **not** tied to one product path; applies to **every** skill that guides chat behavior.
+1. States that **`AskUserQuestion`** is the canonical blocking-input tool (Claude Code + **`tools/lint_skill_allowed_tools.py`**) and **points to [`skills/_shared/human-input.md`](../_shared/human-input.md)** for the convention — do **not** paste host boilerplate inline, and do **not** re-introduce per-IDE renames (this branch is Claude-only).
+2. Keeps only **skill-specific** human-input rules inline (e.g. a verbatim blockquote a gate must show, a Questioning Protocol, stage-local rules); everything host-generic lives in `_shared/human-input.md`.
+3. If the skill elicits **multiple** answers in sequence, follows **`using-forge`** **Multi-question elicitation** (transcript-first, one primary topic per turn, reconcile) — unless the skill documents a deliberate exception.
+4. For live-dialogue norms (**one-step horizon**, **question-forward**, **no bundled** unrelated forks, **no trailing** later-stage reminders, **no defensive downstream-gate narration** mid-elicitation, **phase-specific** waivers), points to **`docs/forge-one-step-horizon.md`** and **`using-forge`** **Multi-question elicitation** items **4–8** — applies to **every** skill that guides chat behavior.
 
 Gate and interrogation skills should **also** ensure chat-visible question text where **`using-forge`** or the skill already requires it — this section does not replace those HARD-GATEs.
 

@@ -17,9 +17,9 @@ allowed-tools:
 
 # tech-plan-write-per-project
 
-## Human input (all hosts)
+## Human input
 
-**Judgment rounds** (**Section 0.1** / **Section 0.2**) run **in chat** — the plan file summarizes outcomes, not a substitute for dialogue. Follow **`skills/using-forge/SKILL.md`** **Multi-question elicitation**: **transcript-visible** questions, **one coherent topic per message** when multiple decisions remain, **blocking interactive prompts** / **numbered options + stop** for discrete forks (**Cursor** **`AskQuestion`** maps canonical **`AskUserQuestion`**). Do **not** paste the whole interactive workshop into Section 0 as if the human answered inside the markdown (**Anti-Pattern** rows below).
+**Judgment rounds** (**Section 0.1** / **Section 0.2**) run **in chat** — the plan file summarizes outcomes, not a substitute for dialogue. Follow **`skills/using-forge/SKILL.md`** **Multi-question elicitation**: **transcript-visible** questions, **one coherent topic per message** when multiple decisions remain, **blocking interactive prompts** for discrete forks (see **[`skills/_shared/human-input.md`](../_shared/human-input.md)**). Do **not** paste the whole interactive workshop into Section 0 as if the human answered inside the markdown (**Anti-Pattern** rows below).
 
 **Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**.
 

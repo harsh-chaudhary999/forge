@@ -20,7 +20,7 @@ allowed-tools:
 
 # Intake Interrogation — PRD Lock
 
-## Human input (all hosts)
+## Human input
 
 **`AskUserQuestion`** in **`allowed-tools`** is the canonical tool name (Claude Code + lint). **Every IDE** maps it per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** — not prose-only questions. The **Questioning Protocol** below defines *what* to elicit; *how* to run multi-turn elicitation follows **`using-forge`** **Multi-question elicitation** (**transcript-first**, **one primary topic per message** when asking distinct things, **reconcile** after replies — aligns with confidence-first and **Anti-Pattern** “one question at a time”). **Q9** verbatim blockquote remains a **chat-visible** one-shot per this skill. See **`using-forge`** **Interactive human input**.
 
@@ -94,7 +94,7 @@ If you notice any of these, STOP and do not proceed:
 
 ## Questioning Protocol
 
-**Use a blocking interactive prompt for every elicited field** — canonical tool name in skills is **`AskUserQuestion`**; map per host (**`using-forge`** **Blocking interactive prompts** — Cursor: **`AskQuestion`**; CLIs / hosts without the tool: **numbered options + stop**). Not plain prose-only questions. One blocking turn per question. Structure: present 2–4 concrete options that cover the realistic answer space; Claude Code’s tool appends an "Other / custom" option for free text. For open-ended fields with no bounded option set (e.g. Q2 goal sentence, Q3 success criteria), still use the blocking prompt with the most common shapes as options so the user can navigate rather than type from scratch.
+**Use a blocking interactive prompt for every elicited field** — canonical tool name in skills is **`AskUserQuestion`**; map per **[`skills/_shared/human-input.md`](../_shared/human-input.md)**. Not plain prose-only questions. One blocking turn per question. Structure: present 2–4 concrete options that cover the realistic answer space; Claude Code’s tool appends an "Other / custom" option for free text. For open-ended fields with no bounded option set (e.g. Q2 goal sentence, Q3 success criteria), still use the blocking prompt with the most common shapes as options so the user can navigate rather than type from scratch.
 
 Never ask multiple fields in a single blocking prompt unless the fields are tightly coupled (e.g. confirm + tighten). Batch only when the second field’s options depend on the first field’s answer being already resolved.
 
@@ -216,7 +216,7 @@ When the PRD centers on an entity type that likely participates in **multiple pr
 
 3. If **no new design** but UI still changes: confirm **who owns layout/interaction decisions** during implementation (e.g. team lead, existing design system only).
 
-4. **If Figma is authoritative:** Does your environment have **Figma MCP** (e.g. Cursor)? If yes, we will pull nodes by **file key + node id**; if no, we need **checked-in exports** or REST access — not a bare browser URL alone."
+4. **If Figma is authoritative:** Does your environment have **Figma MCP**? If yes, we will pull nodes by **file key + node id**; if no, we need **checked-in exports** or REST access — not a bare browser URL alone."
 
 **Lock in `prd-locked.md` (concrete, no TBD when web/app in scope):**
 

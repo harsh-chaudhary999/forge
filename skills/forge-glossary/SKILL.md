@@ -19,7 +19,7 @@ allowed-tools:
 ---
 # Forge Glossary
 
-## Human input (all hosts)
+## Human input
 
 Optional disambiguation via **`AskUserQuestion`** (**`allowed-tools`**). See the term **Blocking interactive prompt** below.
 

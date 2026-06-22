@@ -15,9 +15,9 @@ allowed-tools:
 ---
 # Intake Gate (HARD-GATE)
 
-## Human input (all hosts)
+## Human input
 
-This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. **Every Forge-supported IDE** maps it to a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (e.g. Cursor **`AskQuestion`**; CLIs / editors without the tool: **numbered options in chat + stop**). Actual intake questioning runs through **`intake-interrogate`**, which inherits the same host mapping. See **`using-forge`** **Interactive human input**.
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. It maps to a **blocking interactive prompt** per **[`skills/_shared/human-input.md`](../_shared/human-input.md)**. Actual intake questioning runs through **`intake-interrogate`**, which inherits the same host mapping. See **`using-forge`** **Interactive human input**.
 
 **Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**.
 

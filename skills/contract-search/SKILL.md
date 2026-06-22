@@ -12,9 +12,14 @@ triggers:
   - "search schema"
 allowed-tools:
   - Write
+  - AskUserQuestion
 ---
 
 # Contract-Search Skill
+
+## Human input
+
+Resolve every human-decision fork (NEEDS_CONTEXT / NEEDS_COORDINATION / NEEDS_INFRA_CHANGE / BLOCKED) through **`AskUserQuestion`** (in `allowed-tools`) — never a prose-only "reply if…". Canonical convention: [`skills/_shared/human-input.md`](../_shared/human-input.md).
 
 Teaches teams to negotiate Elasticsearch contracts with explicit specifications for index design, analyzer strategy, consistency model, and update semantics. Bridges requirements to operational search contracts.
 

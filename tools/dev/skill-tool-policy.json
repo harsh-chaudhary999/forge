@@ -121,8 +121,8 @@
     },
     "contract-api-rest": {
       "allowed_tools": [
-        "Bash",
-        "Write"
+        "Write",
+        "AskUserQuestion"
       ],
       "hard_gate": false,
       "path": "contract-api-rest/SKILL.md",
@@ -130,7 +130,8 @@
     },
     "contract-cache": {
       "allowed_tools": [
-        "Write"
+        "Write",
+        "AskUserQuestion"
       ],
       "hard_gate": false,
       "path": "contract-cache/SKILL.md",
@@ -140,7 +141,8 @@
       "allowed_tools": [
         "Read",
         "Edit",
-        "Write"
+        "Write",
+        "AskUserQuestion"
       ],
       "hard_gate": false,
       "path": "contract-event-bus/SKILL.md",
@@ -148,7 +150,8 @@
     },
     "contract-schema-db": {
       "allowed_tools": [
-        "Write"
+        "Write",
+        "AskUserQuestion"
       ],
       "hard_gate": false,
       "path": "contract-schema-db/SKILL.md",
@@ -156,7 +159,8 @@
     },
     "contract-search": {
       "allowed_tools": [
-        "Write"
+        "Write",
+        "AskUserQuestion"
       ],
       "hard_gate": false,
       "path": "contract-search/SKILL.md",

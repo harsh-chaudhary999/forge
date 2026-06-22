@@ -12,9 +12,14 @@ triggers:
   - "cache layer spec"
 allowed-tools:
   - Write
+  - AskUserQuestion
 ---
 
 # contract-cache Skill
+
+## Human input
+
+Resolve every human-decision fork (NEEDS_CONTEXT / NEEDS_COORDINATION / NEEDS_INFRA_CHANGE / BLOCKED) through **`AskUserQuestion`** (in `allowed-tools`) — never a prose-only "reply if…". Canonical convention: [`skills/_shared/human-input.md`](../_shared/human-input.md).
 
 Teaches teams to negotiate Redis/Memcached cache contracts. Covers key structure, TTL strategy, invalidation patterns, cache stampede prevention, and serialization for production cache systems.
 

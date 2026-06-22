@@ -12,11 +12,15 @@ triggers:
   - "REST contract"
   - "API endpoints spec"
 allowed-tools:
-  - Bash
   - Write
+  - AskUserQuestion
 ---
 
 # Contract-API-REST Skill
+
+## Human input
+
+Resolve every human-decision fork (NEEDS_CONTEXT / NEEDS_COORDINATION / NEEDS_INFRA_CHANGE / BLOCKED) through **`AskUserQuestion`** (in `allowed-tools`) — never a prose-only "reply if…". Canonical convention: [`skills/_shared/human-input.md`](../_shared/human-input.md).
 
 ## Anti-Pattern Preamble: REST Contract Failures
 

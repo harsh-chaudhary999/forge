@@ -15,9 +15,14 @@ allowed-tools:
   - Read
   - Edit
   - Write
+  - AskUserQuestion
 ---
 
 # Contract Event Bus Skill
+
+## Human input
+
+Resolve every human-decision fork (NEEDS_CONTEXT / NEEDS_COORDINATION / NEEDS_INFRA_CHANGE / BLOCKED / WAIVER) through **`AskUserQuestion`** (in `allowed-tools`) — never a prose-only "reply if…". Canonical convention: [`skills/_shared/human-input.md`](../_shared/human-input.md).
 
 Teaches teams to negotiate Kafka/event-bus contracts systematically. Covers schema versioning, topic design, consumer guarantees, idempotency, and ordering semantics. Output is a locked event bus contract that all producers and consumers sign off on.
 

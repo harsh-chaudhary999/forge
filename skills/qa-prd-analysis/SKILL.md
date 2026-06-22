@@ -21,9 +21,9 @@ allowed-tools:
 
 # QA PRD Analysis
 
-## Human input (all hosts)
+## Human input
 
-**`AskUserQuestion`** in **`allowed-tools`** is canonical; map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** on every IDE. **Step 0.5** applies **`using-forge`** **Multi-question elicitation** to coverage templates **Q1–Q8** (see **`using-forge`** **QA PRD analysis** specialization). **One primary topic per assistant turn**; after each answer **reconcile**. **Never** a full Q1–Q8 wall **plus** a meta-prompt in the **same** turn.
+**`AskUserQuestion`** (in **`allowed-tools`**) is the canonical blocking affordance — see **[`skills/_shared/human-input.md`](../_shared/human-input.md)**. **Step 0.5** applies **`using-forge`** **Multi-question elicitation** to coverage templates **Q1–Q8** (see **`using-forge`** **QA PRD analysis** specialization). **One primary topic per assistant turn**; after each answer **reconcile**. **Never** a full Q1–Q8 wall **plus** a meta-prompt in the **same** turn.
 
 **Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**; **No defensive downstream-gate narration (repo-wide)** (no *why semantic machine eval isn’t ready* essays between Q1→Q2→… — **any** Forge phase).
 

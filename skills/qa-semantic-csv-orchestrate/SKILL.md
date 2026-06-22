@@ -21,7 +21,7 @@ allowed-tools:
 
 # QA Semantic CSV Orchestrate
 
-**Human input (all hosts):** **`AskUserQuestion`** in **`allowed-tools`** is canonical for Claude Code + skill lint. Map to the host blocking prompt per **`skills/using-forge/SKILL.md`** (Cursor **`AskQuestion`**; numbered list + stop if unavailable).
+**Human input:** **`AskUserQuestion`** (in **`allowed-tools`**) is the canonical blocking affordance — see **[`skills/_shared/human-input.md`](../_shared/human-input.md)**.
 
 Execute the **semantic automation** path: **`qa/semantic-automation.csv`** → validate DAG → run host driver → **`qa/semantic-eval-manifest.json`** + **`qa/semantic-eval-run.log`** → log **`[P4.0-SEMANTIC-EVAL]`** in **`conductor.log`**.
 

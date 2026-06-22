@@ -19,9 +19,9 @@ allowed-tools:
 
 # Manual QA Test Cases from PRD (CSV)
 
-## Human input (all hosts)
+## Human input
 
-**`AskUserQuestion`** in **`allowed-tools`** is canonical; map per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** on every IDE (sample/count approvals, branch choices). See **`using-forge`** **Interactive human input**.
+**`AskUserQuestion`** (in **`allowed-tools`**) is the canonical blocking affordance for sample/count approvals and branch choices — see **[`skills/_shared/human-input.md`](../_shared/human-input.md)**.
 
 **Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**.
 

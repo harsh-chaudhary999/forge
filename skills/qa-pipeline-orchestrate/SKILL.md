@@ -22,9 +22,9 @@ allowed-tools:
 
 Standalone QA pipeline that runs from brain artifacts (PRD + tech plans) through to a GREEN/RED verdict, scoped to specific feature branches and a target environment. This is independent of the full Forge delivery pipeline — it does not require a full conductor run and does not author implementation code or PRs.
 
-## Human input (all hosts)
+## Human input
 
-This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**, **Multi-question elicitation**, and **Stage-local questioning**; prerequisite order: **`manual-test-cases.csv`** (or waiver) → **`qa/semantic-automation.csv`** + manifest (**`qa-semantic-csv-orchestrate`**). Dialogue norm: **`docs/forge-one-step-horizon.md`** + **`using-forge`** **Multi-question elicitation** items **4–8** (same as all **`commands/*.md`** **Assistant chat** — do not restate the full chain each message; **no defensive downstream-gate narration** mid-elicitation; question-forward; no trailing nag).
+**`AskUserQuestion`** (in **`allowed-tools`**) is the canonical blocking affordance — see **[`skills/_shared/human-input.md`](../_shared/human-input.md)**. Prerequisite order this skill enforces: **`manual-test-cases.csv`** (or waiver) → **`qa/semantic-automation.csv`** + manifest (**`qa-semantic-csv-orchestrate`**). Stay one-step-horizon (**`docs/forge-one-step-horizon.md`**) — do not restate the full chain each message.
 
 **Entry points:**
 - `/qa` — full pipeline (write scenarios + branch prep + execute + judge)

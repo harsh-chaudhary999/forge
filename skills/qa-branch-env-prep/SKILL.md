@@ -20,9 +20,9 @@ allowed-tools:
 
 # QA Branch and Environment Preparation
 
-## Human input (all hosts)
+## Human input
 
-This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). Run-mode and checkout confirmations below use the same mapping. See **`using-forge`** **Interactive human input**.
+**`AskUserQuestion`** (in **`allowed-tools`**) is the canonical blocking affordance for run-mode and checkout confirmations — see **[`skills/_shared/human-input.md`](../_shared/human-input.md)**.
 
 **Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**.
 

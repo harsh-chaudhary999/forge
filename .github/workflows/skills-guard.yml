@@ -1,0 +1,103 @@
+name: skills-guard
+
+# Enforces the Agent Skills compliance the repo was brought to:
+#   - name/description conform to the open standard
+#   - allowed-tools policy is clean and not drifted
+#   - every SKILL.md stays <= ~400 lines (progressive disclosure)
+#   - no broken intra-repo markdown links
+#   - no stray symlinks under skills/ (the 84 self-referential ones are gone — keep them gone)
+on:
+  push:
+    paths:
+      - "skills/**"
+      - "docs/**"
+      - "tools/check_skill_standard.py"
+      - "tools/dev/check_skill_standard.py"
+      - "tools/dev/lint_skill_allowed_tools.py"
+      - "tools/dev/skill-tool-policy.json"
+      - ".github/workflows/skills-guard.yml"
+  pull_request:
+    paths:
+      - "skills/**"
+      - "docs/**"
+      - "tools/check_skill_standard.py"
+      - "tools/dev/check_skill_standard.py"
+      - "tools/dev/lint_skill_allowed_tools.py"
+      - "tools/dev/skill-tool-policy.json"
+      - ".github/workflows/skills-guard.yml"
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Agent Skills standard conformance (name + description)
+        run: python3 tools/check_skill_standard.py
+
+      - name: allowed-tools lint (0 warn)
+        run: python3 tools/dev/lint_skill_allowed_tools.py
+
+      - name: allowed-tools policy not drifted
+        run: |
+          python3 tools/dev/lint_skill_allowed_tools.py --write-policy /tmp/policy.json >/dev/null
+          if ! diff -q tools/dev/skill-tool-policy.json /tmp/policy.json >/dev/null; then
+            echo "::error::skill-tool-policy.json is stale. Run: python3 tools/dev/lint_skill_allowed_tools.py --write-policy tools/dev/skill-tool-policy.json"
+            diff tools/dev/skill-tool-policy.json /tmp/policy.json || true
+            exit 1
+          fi
+          echo "OK: policy current"
+
+      - name: SKILL.md line ceiling (<= 400)
+        run: |
+          fail=0
+          for f in skills/*/SKILL.md; do
+            n=$(wc -l < "$f")
+            if [ "$n" -gt 400 ]; then echo "::error file=$f::$n lines > 400 — move depth into reference/*.md"; fail=1; fi
+          done
+          [ "$fail" = 0 ] && echo "OK: all SKILL.md <= 400 lines"
+          exit $fail
+
+      - name: No stray symlinks under skills/
+        run: |
+          links=$(find skills -type l)
+          if [ -n "$links" ]; then
+            echo "::error::symlinks found under skills/ (the self-referential <x>/<x> artifacts must stay removed):"
+            echo "$links"
+            exit 1
+          fi
+          echo "OK: no symlinks under skills/"
+
+      - name: No broken intra-repo markdown links
+        run: |
+          python3 - <<'PY'
+          import os, re, sys
+          lr = re.compile(r'\[[^\]]*\]\(([^)]+)\)')
+          files = []
+          for base in ('skills', 'docs'):
+              for root, dirs, fs in os.walk(base, followlinks=False):
+                  dirs[:] = [d for d in dirs if not os.path.islink(os.path.join(root, d))]
+                  files += [os.path.join(root, fn) for fn in fs if fn.endswith('.md')]
+          broken = []
+          for f in files:
+              d = os.path.dirname(f)
+              for m in lr.finditer(open(f, encoding='utf-8', errors='ignore').read()):
+                  link = m.group(1).strip()
+                  if link.startswith(('http://', 'https://', '#', 'mailto:')):
+                      continue
+                  target = link.split('#')[0]
+                  if not target.endswith('.md'):
+                      continue
+                  base = target.lstrip('/') if target.startswith('/') else os.path.normpath(os.path.join(d, target))
+                  if not os.path.exists(base):
+                      broken.append((f, link))
+          if broken:
+              for f, l in broken:
+                  print(f"::error file={f}::broken markdown link -> {l}")
+              sys.exit(1)
+          print(f"OK: {len(files)} markdown files scanned, 0 broken intra-repo links")
+          PY

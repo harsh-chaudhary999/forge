@@ -194,176 +194,17 @@ LoopState:
 
 ## Escalation Protocol
 
-When `attempt_count >= max_attempts` and verification still fails, escalate to user with:
+When `attempt_count >= max_attempts` and verification still fails, escalate to user with a
+full BLOCKED report (What Failed / What We Tried / Why It's Blocked / Evidence).
 
-### Escalation Report
-
-**What Failed:**
-- Evaluation scenario ID/name
-- Brief description of what was being tested
-- Initial failure message
-
-**What We Tried:**
-- Attempt 1: [fix description] → [result]
-- Attempt 2: [fix description] → [result]
-- Attempt 3: [fix description] → [result]
-
-**Why It's Blocked:**
-- All 3 auto-fix attempts exhausted
-- Unable to determine next safe fix
-- Risk of infinite loop reached
-- Human judgment needed
-
-**Evidence:**
-- Full error log from each attempt
-- Code changes applied per attempt
-- Timeline of all 3 retries
-- Environment/context information
+> Escalation report template + per-attempt/per-phase decision matrix (Quick Reference Card):
+> [`reference/escalation.md`](reference/escalation.md).
 
 ## Edge Cases
 
-### Edge Case 1: Fix Applied, Verify Still Fails (Same Error)
-
-**Symptom:**
-Attempt N: Fix applied successfully, eval re-run executed, but fails with identical error as before the fix.
-
-**Root Cause Hypothesis:**
-- Fix addressed a symptom, not the root cause
-- Hidden dependency not detected during triage
-- Fix incomplete or applied to wrong scope
-- Error message masks a deeper issue
-
-**Do NOT:**
-- Apply the same fix again with minor variation
-- Assume the fix partially worked
-- Increase attempt counter and continue
-
-**Action:**
-1. Log the repeated error with timestamp and attempt number
-2. Run deeper triage: search for dependencies, side effects, transitive failures
-3. Cross-reference with previous failure logs to identify patterns
-4. Consider if fix was applied to correct layer (e.g., frontend vs backend vs infra)
-5. Document the evidence gap that caused misdiagnosis
-
-**Escalation Keyword:**
-- If N < 3: Continue to next attempt with revised triage
-- If N = 3: Escalate as BLOCKED with full three-attempt evidence trail
-
----
-
-### Edge Case 2: Fix Applied, Verify Fails (Different Error)
-
-**Symptom:**
-Attempt N: Fix applied, eval re-run executes, original error is gone but a new error appeared.
-
-**Root Cause Hypothesis:**
-- Fix was correct but exposed a downstream failure
-- Fix broke a different code path
-- Environment state changed mid-attempt
-- Dependency cascade triggered by the fix
-
-**Do NOT:**
-- Count this as progress toward cap or completion
-- Merge new error into current retry attempt
-- Treat new error as ripple damage
-
-**Action:**
-1. Document new error separately with clear cause-link to the fix
-2. Treat new error as independent fault entry (new loop if needed)
-3. Determine if new error is acceptable (e.g., better error message, informational)
-4. If new error blocks eval, escalate current failure first
-5. Open ticket for new error as separate remediation
-
-**Escalation Keyword:**
-- NEEDS_CONTEXT (new failure introduced by fix requires human decision)
-
----
-
-### Edge Case 3: Triage and Locate Give Conflicting Outputs
-
-**Symptom:**
-Locate phase identifies fault as CODE_BUG in service A, but Triage phase categorizes it as CONFIG_ERROR in service B.
-
-**Root Cause Hypothesis:**
-- Error message origin and actual root cause differ
-- Multi-service failure with conflicting evidence
-- Triage heuristics misclassified the fault
-- Both are partially correct (code calls bad config)
-
-**Do NOT:**
-- Pick one arbitrarily and proceed
-- Blame the tool that produced first evidence
-- Ignore the conflict
-
-**Action:**
-1. Stop and re-examine evidence from locate and triage independently
-2. Cross-validate: which phase has more direct evidence (error logs, stack traces)?
-3. If code-vs-config split: check if code is correct but config is wrong
-4. Run test with good config to verify code path works
-5. Document conflict and resolution method in attempt log
-
-**Escalation Keyword:**
-- NEEDS_CONTEXT (conflicting diagnostics require clarification before fix)
-
----
-
-### Edge Case 4: Stack State Changes Between Attempts
-
-**Symptom:**
-Attempt 1: Locate identifies fault in Service A (unhealthy logs, high latency). Attempt 2 runs: Service A now healthy, but Service B is failing with the same error.
-
-**Root Cause Hypothesis:**
-- Environment is flaky or rolling updates in progress
-- Fault is environment-dependent, not code-dependent
-- Previous fix accidentally masked a broader instability
-- Multiple independent faults cascading
-
-**Do NOT:**
-- Discard Attempt 1 evidence as invalid
-- Assume Attempt 1 was a false positive
-- Chase the moving target without documenting instability
-
-**Action:**
-1. Document state change with timestamps: Service A timeline, Service B timeline
-2. Check deployment/scaling logs: did something roll out between attempts?
-3. Flag as environment instability in escalation report
-4. Treat as escalation signal: code retries are ineffective against unstable infra
-5. Include state drift evidence in escalation for ops review
-
-**Escalation Keyword:**
-- NEEDS_COORDINATION (environment instability requires ops or infra team)
-
----
-
-### Edge Case 5: All 3 Attempts BLOCKED
-
-**Symptom:**
-Attempt 1 enters BLOCKED state in Triage phase. Attempt 2 enters BLOCKED in Fix phase. Attempt 3 enters BLOCKED in Locate phase. Loop exhausted with no fix ever attempted.
-
-**Root Cause Hypothesis:**
-- Fundamental incompatibility in auto-heal approach
-- Eval scenario is malformed or unsupported
-- Recurring blocker across multiple strategies
-- Human decision needed on strategy or scenario validity
-
-**Do NOT:**
-- Silently exit or return generic BLOCKED status
-- Pretend a fix was attempted
-- Omit the phase/reason for each BLOCKED state
-
-**Action:**
-1. Emit BLOCKED with full three-attempt summary including:
-   - Attempt 1: Triage phase, BLOCKED reason, evidence
-   - Attempt 2: Fix phase, BLOCKED reason, evidence
-   - Attempt 3: Locate phase, BLOCKED reason, evidence
-2. Identify common pattern across three BLOCKED states
-3. Flag as escalation requiring human review of scenario validity or tool capability
-4. Recommend: review eval scenario format, constraints, or consider manual path
-
-**Escalation Keyword:**
-- BLOCKED (requires human decision on scenario viability)
-
----
+> Full edge-case catalog (5 cases: same-error, different-error, locate/triage conflict, stack
+> state drift, all-3-BLOCKED) with do-NOT actions and escalation keywords:
+> [`reference/edge-cases.md`](reference/edge-cases.md).
 
 ## Decision Tree: Loop Continuation Logic
 
@@ -425,92 +266,11 @@ After each verify phase, given RESULT, determine what to do:
 
 ---
 
-## Quick Reference Card
+> Per-attempt / per-phase Quick Reference Card (which output each phase must produce, when it
+> is safe to continue, and the escalation token if stuck): [`reference/escalation.md`](reference/escalation.md).
 
-| Attempt # | Phase | Expected Output | Safe to Continue? | Escalation If Stuck |
-|---|---|---|---|---|
-| 1 | Locate | Fault identified, root cause clear | YES if located | BLOCKED, escalate |
-| 1 | Triage | Auto-fixable? High confidence? | YES if fixable | NOT_AUTO_FIXABLE, escalate |
-| 1 | Fix | Changes applied, previous_fixes logged | YES if applied | APPLY_FAILED, escalate |
-| 1 | Verify | Re-run eval, check original error | YES if PASS, retry if FAIL | BLOCKED, escalate |
-| 2 | Locate | New triage angle, fresh evidence | YES if located and different | BLOCKED, escalate |
-| 2 | Triage | Different fix strategy than Attempt 1 | YES if not already tried | FIX_ALREADY_TRIED, escalate |
-| 2 | Fix | Apply revised fix, check scope | YES if applied | APPLY_FAILED, escalate |
-| 2 | Verify | Re-run eval with same scenario | YES if PASS, retry if FAIL | BLOCKED, escalate |
-| 3 | Locate | Last chance; deepest triage | YES if located | BLOCKED, escalate |
-| 3 | Triage | Highest confidence fix remaining | YES if fixable | NOT_AUTO_FIXABLE, escalate |
-| 3 | Fix | Final attempt; validate application | YES if applied | APPLY_FAILED, escalate |
-| 3 | Verify | Re-run eval; capture full evidence | **FINAL** if FAIL: BLOCKED | BLOCKED (mandatory escalate) |
-
----
-
-## Implementation Pseudocode
-
-```
-function runSelfHealLoop(evalScenario):
-    loopState = {
-        attempt_count: 0,
-        max_attempts: 3,
-        previous_fixes: [],
-        failure_logs: [],
-        current_eval_scenario: evalScenario,
-        blocked: false
-    }
-    
-    result = runEvaluation(evalScenario)
-    
-    while result.status == FAILED and loopState.attempt_count < loopState.max_attempts:
-        loopState.attempt_count += 1
-        
-        # Locate
-        fault = locateFault(result.error)
-        loopState.failure_logs.append({
-            attempt: loopState.attempt_count,
-            error: result.error,
-            fault: fault
-        })
-        
-        # Triage
-        triage = triageFault(fault)
-        if triage.autoFixable == false:
-            loopState.blocked = true
-            break
-        
-        if isFix AlreadyTried(triage.fix, loopState.previous_fixes):
-            # Skip repeated fix, mark as blocked
-            loopState.blocked = true
-            break
-        
-        # Fix
-        applyFix(triage.fix)
-        loopState.previous_fixes.append(triage.fix)
-        
-        # Verify
-        result = runEvaluation(evalScenario)
-        
-        if result.status == PASSED:
-            return {
-                status: SUCCESS,
-                retries_needed: loopState.attempt_count,
-                evidence: loopState.failure_logs
-            }
-    
-    # All retries exhausted
-    if loopState.attempt_count >= loopState.max_attempts or loopState.blocked:
-        return escalateToUser({
-            status: BLOCKED,
-            eval_scenario: evalScenario,
-            attempts_tried: loopState.attempt_count,
-            fixes_attempted: loopState.previous_fixes,
-            all_failure_logs: loopState.failure_logs,
-            reason: "Auto-fix exhausted or blocked"
-        })
-    
-    return {
-        status: BLOCKED,
-        reason: "Unknown"
-    }
-```
+> Reference loop-driver pseudocode (`runSelfHealLoop`) and a full worked failure scenario that
+> exhausts all 3 attempts into BLOCKED: [`reference/examples.md`](reference/examples.md).
 
 ## Output States
 
@@ -565,36 +325,6 @@ needs_human_review: true
 - **Dependency:** Requires `brain-read` to access eval scenario metadata
 - **Output:** Reports to user via standard escalation channel
 - **State:** Local to current evaluation context (not persisted across sessions)
-
-## Example Usage
-
-### Scenario: API Endpoint Returns Wrong Status Code
-
-```yaml
-Initial Eval Fails:
-  error: "Expected 200, got 500"
-
-Retry 1: Locate → triage → fix
-  located: "Server error in authentication handler"
-  fix: "Added missing error handling in auth middleware"
-  verify: Still failing → "Expected 200, got 500"
-
-Retry 2: Locate → triage → fix
-  located: "Database connection timeout"
-  fix: "Increased connection pool size"
-  verify: Still failing → "Expected 200, got 500"
-
-Retry 3: Locate → triage → fix
-  located: "Wrong environment variable in deployment"
-  fix: "Updated ENV var to correct database host"
-  verify: Still failing → "Expected 200, got 500"
-
-All Retries Exhausted:
-  status: BLOCKED
-  escalate: true
-  message: "API endpoint still returning 500 after 3 fix attempts.
-           Likely requires manual debugging or infrastructure changes."
-```
 
 ## Checklist
 

@@ -20,7 +20,7 @@ cd ~/forge && bash scripts/install.sh --platform claude-code
 
 ## Blocking interactive prompts
 
-Claude Code natively supports **`AskUserQuestion`** — the canonical name in Forge **`SKILL.md`** **`allowed-tools`**. Same semantics as **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** for every host.
+Claude Code natively supports **`AskUserQuestion`** — the canonical name in Forge **`SKILL.md`** **`allowed-tools`**. Same semantics as **`skills/using-forge/SKILL.md`** **Blocking interactive prompts**.
 
 ## Verification
 
@@ -62,11 +62,11 @@ Re-running **`install.sh --platform claude-code`** refreshes the plugin cache an
 
 ## Forge phase session styles
 
-Claude Code does not use Cursor’s **Plan/Agent** labels. Use the same **Forge-native** split everywhere: **planning-style** (intake, council, plan review) vs **execution-style** (build, eval, heal). Achieve it with **prompts**, **permission scope**, and **human checkpoints** — see **[`session-modes-forge.md`](session-modes-forge.md)**.
+Use the **Forge-native** split: **planning-style** (intake, council, plan review) vs **execution-style** (build, eval, heal). Achieve it with **prompts**, **permission scope**, and **human checkpoints** — see **[`session-modes-forge.md`](session-modes-forge.md)**.
 
 ## Plugin skill layout (merged `skills/`)
 
-Claude Code loads skills from the plugin cache (`~/.claude/plugins/cache/forge-plugin/forge/<version>/skills/`). Stale or nested `skills/skills/` trees cause the same “wrong intake” class of bugs as on Cursor. After install, run:
+Claude Code loads skills from the plugin cache (`~/.claude/plugins/cache/forge-plugin/forge/<version>/skills/`). Stale or nested `skills/skills/` trees cause a “wrong intake” class of bugs. After install, run:
 
 ```bash
 bash scripts/verify-forge-plugin-install.sh --platform claude-code
@@ -87,7 +87,6 @@ None — Claude Code is the primary platform. All features are fully supported.
 
 **Hook not firing:**
 - Check `hooks/hooks.json` is valid JSON and **`SessionStart`** points at **`session-start.cjs`**
-- If you use the **`hooks/session-start`** shim (e.g. some Cursor-style configs), run **`chmod +x hooks/session-start`**
 - Check Claude Code plugin cache: `ls ~/.claude/plugins/cache/`
 
 **Skills not loading:**

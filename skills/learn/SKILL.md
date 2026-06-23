@@ -2,7 +2,7 @@
 name: learn
 description: "WHEN: You've discovered something worth capturing — a pattern, a gotcha, a process improvement — and want to preserve it so future sessions can benefit. Invoke at end of session or when asked to 'save this insight', 'capture learning', 'log lesson'."
 type: flexible
-version: 1.0.1
+version: version: 1.0.2
 preamble-tier: 2
 triggers:
   - "what did we learn"
@@ -30,9 +30,9 @@ Writes session learnings to brain so future sessions benefit. Unlike `brain-writ
 
 **Rule of thumb:** "This will help me on the next PRD" → `learn`. "This reflects how this task went" → `retro`. "I just decided X because Y" → `brain-write`.
 
-## Human input (all hosts)
+## Human input
 
-This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Map to the host’s **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (Cursor **`AskQuestion`**; hosts without the tool: **numbered options + stop**). See **`using-forge`** **Interactive human input**.
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Blocking prompts follow **[`skills/_shared/human-input.md`](../_shared/human-input.md)**. See **`using-forge`** **Interactive human input**.
 
 ## Anti-Pattern Preamble
 
@@ -61,7 +61,7 @@ This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for 
 
 ### Step 1 — Determine category and insight
 
-If invoked as bare `/learn`, use a **blocking interactive prompt** per **`using-forge`** — e.g. **`AskQuestion`** with options **pattern | gotcha | process**, then a follow-up for one-sentence insight (or a single multi-field prompt if the host supports it). **Do not** rely on prose-only *what’s the category and insight?* with no **AskQuestion** / **numbered options** in the **same** turn.
+If invoked as bare `/learn`, use a **blocking interactive prompt** per **`using-forge`** — e.g. **`AskUserQuestion`** with options **pattern | gotcha | process**, then a follow-up for one-sentence insight (or a single multi-field prompt if the host supports it). **Do not** rely on prose-only *what’s the category and insight?* with no **AskUserQuestion** / **numbered options** in the **same** turn.
 
 If invoked as `/learn "<category>: <insight>"`, parse directly — no prompting.
 

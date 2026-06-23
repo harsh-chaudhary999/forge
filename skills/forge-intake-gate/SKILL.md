@@ -2,7 +2,7 @@
 name: forge-intake-gate
 description: "WHEN: A new PRD arrives for implementation. HARD-GATE: Every PRD goes through intake-interrogate; mandatory **lock fields** in prd-locked.md must be satisfied (confidence-first questioning allowed). Q9 design/UI lock mandatory when web, app, or user-visible UI is in scope. No skipping intake, no exceptions, no \"trivial\" PRDs."
 type: rigid
-version: 1.0.6
+version: version: 1.0.7
 preamble-tier: 3
 triggers:
   - "intake gate"
@@ -15,9 +15,9 @@ allowed-tools:
 ---
 # Intake Gate (HARD-GATE)
 
-## Human input (all hosts)
+## Human input
 
-This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. **Every Forge-supported IDE** maps it to a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (e.g. Cursor **`AskQuestion`**; CLIs / editors without the tool: **numbered options in chat + stop**). Actual intake questioning runs through **`intake-interrogate`**, which inherits the same host mapping. See **`using-forge`** **Interactive human input**.
+This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. It maps to a **blocking interactive prompt** per **[`skills/_shared/human-input.md`](../_shared/human-input.md)**. Actual intake questioning runs through **`intake-interrogate`**, which inherits the same host mapping. See **`using-forge`** **Interactive human input**.
 
 **Cross-cutting assistant dialogue:** **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Multi-question elicitation** items **4–8**.
 
@@ -37,7 +37,7 @@ This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for 
 | "We can do intake retrospectively if something goes wrong" | Intake prevents the wrong. Retrospective interrogation doesn't undo shipped bugs. |
 | "No one will notice if we skip intake on this one" | Skipping intake once makes it easy to skip twice. Systems degrade through exceptions. |
 | "This is internal-only, not user-facing, so less rigor" | Internal changes affect platform reliability. Risk doesn't scale with audience. |
-| "I'll bundle task-id **`AskQuestion`** + Q9 design bullets + unrelated roadmap prose in **one** assistant message" | **Fails intake UX and `using-forge` Multi-question elicitation item 6.** Intake decisions must be **sequential** or each fork **blocking** — see **`docs/forge-one-step-horizon.md`** **No bundled unrelated decisions**. |
+| "I'll bundle task-id **`AskUserQuestion`** + Q9 design bullets + unrelated roadmap prose in **one** assistant message" | **Fails intake UX and `using-forge` Multi-question elicitation item 6.** Intake decisions must be **sequential** or each fork **blocking** — see **`docs/forge-one-step-horizon.md`** **No bundled unrelated decisions**. |
 
 ## Iron Law
 

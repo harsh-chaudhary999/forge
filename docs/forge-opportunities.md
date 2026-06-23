@@ -10,7 +10,7 @@ Internal-facing backlog of **discipline**, **process**, and **feature** gaps tha
 |---|---|---|
 | **Chat is not a record** | Regulators and blameless postmortems want immutable evidence chains | Brain already git-backed; optional **`evidence-bundle`** export (manifest + SHA list + log excerpts) per task |
 | **“GREEN” without reproducibility** | Teams cannot replay what passed | Pin **`qa-pipeline.log`** / **`conductor.log`** lines + **`FORGE_TASK_ID`** + container/compose digest in run reports (partially there — tighten templates) |
-| **Skill drift across hosts** | Cursor vs Claude behave differently | **`forge-doctor`** one-shot: symlink targets, **`settings.json`** hook count, **`forge.mdc`** mtime vs plugin dir |
+| **Skill drift / stale install** | Plugin cache can diverge from the repo | **`forge-doctor`** one-shot: symlink targets, **`settings.json`** hook count, plugin-dir freshness |
 
 ## Process & org
 

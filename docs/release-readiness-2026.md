@@ -18,6 +18,18 @@ spec-driven-dev competitor field (BMAD at ~47k stars) all have concrete implicat
 
 ---
 
+## Progress log (2026-06-23)
+
+- **A1 CI skills-guard** — DONE (`47e3ee3`): enforces standard + lint + no-drift + ≤400 + 0 broken links + no symlinks.
+- **A2 LICENSE (MIT)** — DONE (`ce30bf2`).
+- **A3 84 symlinks** — DONE (`47e3ee3`): all verified self-referential, nothing depended on them.
+- **A7/B6 security threat model** — DONE (`1d5332b`, `docs/security.md`).
+- **A4 self-test fixture** — the canonical seed product (referenced by `forge-self-test` but never committed → `/forge-test` hit Phase 0 BLOCKED on every clean clone) is now committed (`f67fb6c`): `seed-product/shopapp/` 4 repos + `seed/prds/01-favorites-cross-surface-sync.md` + topology. `/forge-test` Phases 0–3 now run against a real target; Phase 4 driver eval still needs live MySQL/Redis/Kafka/ES + an Android emulator (operator-run; absent infra → scenarios N/A, not failed).
+
+Remaining P0: run the live Phase-4 smoke (operator). Then P1 (correctness audit of the ~half un-audited skills) and P2 (June-2026 feature alignment).
+
+---
+
 ## Part A — Release blockers (from the repo audit)
 
 | # | What | Where | How to fix |
@@ -25,9 +37,10 @@ spec-driven-dev competitor field (BMAD at ~47k stars) all have concrete implicat
 | A1 | **CI does not enforce skill compliance** — the ≤400 / standard / lint / link work can silently regress | `.github/workflows/` (codeql, forge-brain-guard, forge-hooks, release-tag, scan-codebase — none gate skills) | Add a `skills-guard` workflow running `tools/check_skill_standard.py`, `tools/dev/lint_skill_allowed_tools.py`, a ≤400-line check, and a markdown-link check on PRs touching `skills/**` |
 | A2 | **No `LICENSE`** — hard blocker for a public repo | repo root (absent; `.claude-plugin/plugin.json` is v1.1.0) | Add the intended OSS license (BMAD/Spec-Kit use MIT/Apache-2.0) |
 | A3 | **84 self-referential symlinks committed** (`skills/<x>/<x> → <x>/`) | `git ls-files -s skills/ \| awk '$1=="120000"'` → 84 | Remove them (`find skills -maxdepth 2 -type l -delete` after confirming nothing depends on them), add a CI check that fails on new ones. They cause infinite glob loops (a naive link-scan reported "5045 broken links" purely from the loop) |
-| A4 | **No end-to-end functional verification** — everything so far is static file surgery | whole plugin | Smoke: install plugin → load session → run `forge-self-test` / `doctor` → run the seed-product PRD→ship flow; confirm hooks fire, brain MCP starts, commands run |
+| A4 | **End-to-end self-test fixture was missing** → now committed (`f67fb6c`); live Phase-4 smoke still operator-run | `seed-product/shopapp/`, `seed/prds/` (now present); Phase 4 needs host infra | Phases 0–3 runnable from a clean clone; run `/forge-test` on a host with MySQL/Redis/Kafka/ES + Android emulator to exercise Phase 4 driver eval |
 | A5 | **~Half the skills never got a correctness audit** (only line-extracted) | eval-drivers (8), deploy-drivers (4), conductor-orchestrate, scan-codebase, forge-self-test, forge-skill-anatomy, forge-subagent-anatomy, forge-tdd, tech-plan-write, eval-product-stack-up, + loose core skills (autoplan, canary, retro, learn, dream, product-context-load, review-readiness) | Same bug-level audit applied to brain/QA/contract/reasoning/self-heal: residue, schema/path contradictions, `exit`-in-bash, brain-MCP wiring, stale facts |
 | A6 | **11 merged single-file extractions taken largely on faith** | the deploy/eval/etc. `*-reference.md` files from the remote | Spot-audit each for content loss (non-blank accounting) + relative-link depth (the conductor one had 4 broken links, now fixed) |
+| A8 | **Topology filename inconsistency** — `eval-product-stack-up` references both `forge-product.md` (18×) and `product.md` (13×); the seed standardized on `forge-product.md` | `skills/eval-product-stack-up/` (+ reference) | Reconcile to one name (likely `forge-product.md`) during the P1 eval/stack-up audit; surfaced while verifying the seed |
 | A7 | **No security threat model / posture doc** | — | See Part B6 (this is also a market-expectation item now) |
 
 ---

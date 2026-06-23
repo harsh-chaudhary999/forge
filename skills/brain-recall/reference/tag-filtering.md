@@ -55,4 +55,4 @@ grep -A 25 "^---" ~/forge/brain/decisions/**/*.md | grep -E "^(tags|status):"
 > The shipped read-only **brain MCP** `brain_recall` tool does this scan for you
 > (case-insensitive substring over the brain) and computes the brain root itself —
 > prefer it when configured; the greps above are the live fallback. See
-> [`docs/brain-mcp.md`](../../docs/brain-mcp.md).
+> [`docs/brain-mcp.md`](../../../docs/brain-mcp.md).

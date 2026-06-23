@@ -220,123 +220,16 @@ Plans that pass self-review with placeholders, vague code, or missing tests will
 - [ ] **Rationale** is not empty and does **not** only paraphrase the task title
 - [ ] **`Traces to:`** ids are consistent with **Section 1b.0** rows and **Section 0c** inventory (spot-check ≥3 tasks)
 
-### 2. Code Completeness
+### 2–5. Code-quality dimensions (Code Completeness · No Placeholder Code · Test & Commit · Output Format)
 
-**Checklist:**
-- [ ] **No "..." or "elided" code**
-  - All code blocks are complete implementations
-  - No "// ... rest of code" or "// ... other fields"
-  - Example FAIL: `const obj = { foo: 1, ... };`
-  - Example PASS: `const obj = { foo: 1, bar: 2, baz: 3 };`
+Run all four code-quality dimensions against every code block and task in the plan:
 
-- [ ] **No TODO or TODO(future) markers**
-  - All code is ready to execute now
-  - No "// TODO: implement validation" in code samples
-  - Example FAIL: `// TODO: add error handling`
-  - Example PASS: `if (!value) throw new Error("value required");`
+- **Section 2 — Code Completeness:** no `...`/elided code, no `TODO`/`TODO(future)` markers, no unresolved imports, all variables declared before use.
+- **Section 3 — No Placeholder Code:** validation logic complete (not stubbed), DB queries exact, API calls concrete (endpoint/method/headers/payload), config values explicit, error messages specific.
+- **Section 4 — Test & Commit:** each task has a runnable test command and a specific conventional-commit message that follows the repo's existing style.
+- **Section 5 — Output Format:** expected output (exit code / stdout / file changes), failure modes, and explicit performance expectations are documented per test.
 
-- [ ] **No unresolved imports**
-  - Every `import { X } from "module"` has X defined before use
-  - No imports of functions that don't exist in the module
-  - Example FAIL: `import { validateEmail } from "./helpers";` (if helpers.js doesn't export validateEmail)
-  - Example PASS: `import { validateEmail } from "./helpers";` (helpers.js exports validateEmail)
-
-- [ ] **All variables declared before use**
-  - No forward references in code
-  - All dependencies are defined in scope
-  - Example FAIL: `return calculateTotal(items);` (calculateTotal not defined above)
-  - Example PASS: `function calculateTotal(items) { ... } return calculateTotal(items);`
-
-### 3. No Placeholder Code
-
-**Checklist:**
-- [ ] **Validation logic is complete, not stubbed**
-  - Not: "add validation logic"
-  - Is: Complete validation code with specific checks
-  - Example FAIL: `// validate email address`
-  - Example PASS: `const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; if (!emailRegex.test(email)) throw new Error("Invalid email");`
-
-- [ ] **Database queries are exact, not sketchy**
-  - Not: "fetch from DB"
-  - Is: Complete SQL query with table name, columns, WHERE clause
-  - Example FAIL: `// query the user table`
-  - Example PASS: `SELECT id, email, created_at FROM users WHERE status = 'active' AND deleted_at IS NULL;`
-
-- [ ] **API calls are concrete, not abstract**
-  - Not: "call the payment service"
-  - Is: Exact endpoint, method, headers, payload
-  - Example FAIL: `// contact payment API to charge card`
-  - Example PASS: `POST /v1/charges { amount: 5000, currency: "usd", source: token }`
-
-- [ ] **Configuration values are explicit, not variables**
-  - Not: "set timeout to appropriate value"
-  - Is: Exact timeout in seconds/ms
-  - Example FAIL: `setTimeout(() => { ... }, TIMEOUT);`
-  - Example PASS: `setTimeout(() => { ... }, 5000);` (5 seconds explicit)
-
-- [ ] **Error messages are specific, not generic**
-  - Not: "handle errors gracefully"
-  - Is: Specific error message and recovery strategy
-  - Example FAIL: `catch (e) { console.log("error"); }`
-  - Example PASS: `catch (e) { logger.error("Failed to fetch user details", { userId, error: e.message }); res.status(500).json({ error: "Internal server error" }); }`
-
-### 4. Test & Commit
-
-**Checklist:**
-- [ ] **Each task has a runnable test command**
-  - Test is executable in the environment (npm test, python -m pytest, etc.)
-  - Test actually validates the requirement
-  - Example FAIL: `Test: "verify it works"`
-  - Example PASS: `Test: npm test -- --testNamePattern="validateEmail rejects invalid formats"`
-
-- [ ] **Each task has a commit message**
-  - Follows conventional commits (feat:, fix:, test:, etc.)
-  - References the requirement or task description
-  - Is actionable and specific
-  - Example FAIL: `git commit -m "update code"`
-  - Example PASS: `git commit -m "feat: add email validation with regex pattern"`
-
-- [ ] **Commit messages follow your project convention**
-  - Check recent commits for style (git log --oneline)
-  - Example: If repo uses "feat(auth): ...", replicate that format
-  - Example FAIL: `chore: misc updates`
-  - Example PASS: `feat(auth): add 2FA token caching with 300s TTL`
-
-### 5. Output Format
-
-**Checklist:**
-- [ ] **Expected output is described for each test**
-  - Exit code (0 = success, non-zero = failure)
-  - stdout content (exact text or pattern)
-  - File changes (which files created/modified, content)
-  - Example:
-    ```
-    Test passes with:
-    - Exit code: 0
-    - stdout: "All tests passed: 12 passed, 0 failed"
-    - Files created: src/validators/email.test.js
-    ```
-
-- [ ] **Failure modes are documented**
-  - If test fails, what's the likely cause?
-  - How does the error message guide troubleshooting?
-  - Example:
-    ```
-    If test fails:
-    - "validateEmail is not defined" → Function not exported from helpers.js
-    - "regex pattern mismatch" → Email pattern needs update
-    ```
-
-- [ ] **Performance expectations are explicit**
-  - If there's a performance requirement, test must measure it
-  - Not: "ensure it's fast"
-  - Is: "response time < 100ms" (measured in test)
-  - Example:
-    ```
-    Test validates performance:
-    - Query execution: < 50ms
-    - API response: < 200ms p95
-    ```
+See [reference/code-quality-criteria.md](reference/code-quality-criteria.md) for the full per-item checklists with FAIL/PASS examples for all four dimensions.
 
 ## Review Process
 
@@ -386,30 +279,7 @@ For each failed check, collect:
 
 ## Common Patterns to Check
 
-### Example: Cache TTL
-**Spec says:** "Cache 2FA codes for 5 minutes"
-**Plan says:** "Add Redis key with TTL"
-**Check:**
-- ❌ TTL value not specified (BLOCKER)
-- Fix: "Redis SET key value EX 300" (300 = 300 seconds = 5 minutes)
-
-### Example: Soft Delete
-**Spec says:** "Soft-delete users when account closed"
-**Plan has SQL:** `UPDATE users SET deleted_at = NOW() WHERE id = ?`
-**Check:**
-- ✅ No hard DELETE (good)
-- ✅ Timestamp is set (good)
-- ❌ Query doesn't check for existing delete (WARNING)
-- Fix: Add `AND deleted_at IS NULL` or handle idempotency
-
-### Example: API Contract
-**Spec says:** "GET /users/:id returns user object with email, created_at, status"
-**Plan says:** "Implement GET endpoint for user details"
-**Check:**
-- ❌ Fields not specified (BLOCKER)
-- ❌ Error cases not documented (BLOCKER)
-- ❌ 404 vs 403 handling not clear (BLOCKER)
-- Fix: Exact response shape and error codes
+See [reference/examples.md](reference/examples.md) for the worked spec-says / plan-says / check review examples (Cache TTL, Soft Delete, API Contract) — each showing how a vague plan line becomes a BLOCKER or WARNING with a concrete fix.
 
 ## Post-Implementation Checklist
 
@@ -458,82 +328,7 @@ When submitting review results:
 
 ## Edge Cases & Fallback Paths
 
-### Edge Case 1: Placeholder is discovered during self-review
-
-**Diagnosis**: Tech plan includes a task with placeholder like "TODO: wait for API docs" or "Use TBD auth mechanism".
-
-**Response**:
-- **Flag as BLOCKER**: Placeholders block deployment.
-- **Escalate**: "Plan contains [N] placeholders. Cannot dispatch until resolved: [list details]."
-- **Recovery options**:
-  1. Remove placeholder task and reduce scope.
-  2. Replace placeholder with concrete implementation (possibly temporary workaround).
-  3. Add task to unblock placeholder (e.g., "Request API docs from vendor").
-- **Track resolution**: When placeholder is resolved, re-run self-review.
-
-**Escalation**: BLOCKED - Placeholders must be resolved. Escalate to tech-plan-write-per-project to fix.
-
----
-
-### Edge Case 2: Scope is too broad (tasks cannot realistically be completed in sprint)
-
-**Diagnosis**: Self-review calculates total task time: sum of all 2-5 minute tasks = 47 minutes of implementation. But spec is complex, review will add time. Scope may not fit in available sprint time.
-
-**Response**:
-- **Calculate realistic timeline**: Estimate = task time + review buffer (20-30%) + unknowns (10-15%).
-- **Realistic estimate**: 47 min tasks + 15 min buffer + 5 min unknowns = ~67 minutes. 
-- **If fits sprint**: Proceed.
-- **If exceeds available time**: Escalate: "Estimated implementation time: [X] min. Available time: [Y] min. Scope is [over/under]."
-- **Recovery**:
-  1. Reduce scope: Remove lower-priority tasks.
-  2. Extend timeline: Ask stakeholders if deadline can slip.
-  3. Add resources: Can another developer help?
-
-**Escalation**: NEEDS_TIMELINE_ADJUSTMENT - Scope vs. time mismatch must be resolved by stakeholders.
-
----
-
-### Edge Case 3: Dependencies are missing (Task A depends on Task B from different repo, not captured)
-
-**Diagnosis**: Web project plan has Task 5: "Integrate with API endpoint". But that endpoint is defined in backend plan's Task 3. Dependency is implicit, not documented.
-
-**Response**:
-- **Detect**: Cross-check all tasks against shared-dev-spec. If a task references work from another repo, mark as dependent.
-- **Document explicitly**: "Task 5 (Web) depends on: backend-api Task 3. Cannot start until backend Task 3 is done."
-- **Sequencing**: Ensure backend Task 3 is scheduled before web Task 5 in dispatch phase.
-- **Add blocker check**: "If backend Task 3 blocked, web Task 5 automatically blocked."
-
-**Escalation**: NEEDS_SEQUENCING - If dependencies are complex, escalate to conductor to verify correct task ordering.
-
----
-
-### Edge Case 4: Plan conflicts with other repo's plan (simultaneous writes to shared resource)
-
-**Diagnosis**: Frontend plan says "Task 2: Modify shared schema migration file". Backend plan also says "Task 3: Modify shared schema migration file". Both repos try to edit the same file simultaneously.
-
-**Response**:
-- **Detect**: Cross-repo plan validation. Scan all plans for conflicting files.
-- **Resolution**:
-  1. **Merge tasks**: Combine into one schema migration task (backend owns it, frontend waits for it).
-  2. **Split file**: Create separate migration files (backend_migration_v1, frontend_migration_v1).
-  3. **Sequence**: Backend does schema migration, frontend does schema usage changes after.
-- **Document**: "Shared resource: [file]. Owner: backend. Frontend waits for completion before Task [X]."
-
-**Escalation**: NEEDS_COORDINATION - If repos must edit same file, escalate to conductor to coordinate task sequencing.
-
----
-
-### Edge Case 5: Tech Plan Is Correct but Spec Has Changed Since Plan Was Written
-
-**Diagnosis**: Tech plan was written on day 1. On day 3, Council amended the shared-dev-spec (a cache contract changed, an API field was renamed). The tech plan still references the old field names and the old cache contract. The plan is now stale.
-
-**Response**:
-- **Detect**: Before self-review, check the spec's last-modified timestamp against the plan's creation timestamp. If spec is newer, diff carefully.
-- **Reconcile**: For each changed spec field, find the task that implements it and update the task's code, file path, and test assertions
-- **Do NOT** approve a plan against a stale spec — implementation against the wrong spec creates bugs that survive code review
-- **Document**: Note in the plan header: "Reconciled with spec amendment [date]: changed X → Y in tasks 3, 7, and 9"
-
-**Escalation**: NEEDS_CONTEXT - If the spec change is large enough that more than 30% of tasks need updating, the plan should be rewritten rather than patched. Escalate to the dreamer to confirm scope before rewriting.
+See [reference/edge-cases.md](reference/edge-cases.md) for the five non-happy-path scenarios — placeholder discovered (BLOCKED), scope too broad (NEEDS_TIMELINE_ADJUSTMENT), missing cross-repo dependency (NEEDS_SEQUENCING), shared-resource plan conflict (NEEDS_COORDINATION), spec changed since plan written (NEEDS_CONTEXT) — each with Diagnosis / Response / Escalation keyword.
 
 ---
 

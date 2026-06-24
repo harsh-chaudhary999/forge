@@ -41,7 +41,7 @@ Sets up the execution environment for a QA eval run. **The first decision is alw
 
 **Branch-code-validate vs branch-local:** Use `branch-code-validate` when the primary goal is validating code logic via the repo's existing test suite. Use `branch-local` when the primary goal is running end-to-end eval scenarios through a running application. Both require a branch checkout.
 
-**Scope:** Operates on repos listed in `~/forge/brain/products/<slug>/product.md`. Never modifies `product.md`, service start commands, or infra configs. Env overrides are runtime-only — they apply to eval drivers, not to running services.
+**Scope:** Operates on repos listed in `~/forge/brain/products/<slug>/forge-product.md`. Never modifies `forge-product.md`, service start commands, or infra configs. Env overrides are runtime-only — they apply to eval drivers, not to running services.
 
 ## Anti-Pattern Preamble
 
@@ -52,10 +52,10 @@ Sets up the execution environment for a QA eval run. **The first decision is alw
 | "I'll skip branch confirmation, the user said the branch name" | Typos in branch names silently land on the wrong commit. One confirmation step prevents testing the wrong code entirely. |
 | "Dirty working tree is fine, I'll just checkout" | Checking out a branch over uncommitted changes silently discards work or produces a mixed state. Always stash or abort. |
 | "I'll just set env vars in my shell session" | Shell session env is invisible to subagents and CI. `.eval-env` is the durable, auditable env record. |
-| "product.md lists the right repos, I don't need to re-read it" | product.md changes between PRDs. Always re-read to get the current repo list and paths. |
+| "forge-product.md lists the right repos, I don't need to re-read it" | forge-product.md changes between PRDs. Always re-read to get the current repo list and paths. |
 | "A URL was provided so I'll skip the manifest" | Even for url-only runs, the manifest records WHAT URL was tested and WHEN — this is the reproducibility trail for any verdict. |
 | "The test suite passed locally so I'll skip recording the output" | Unrecorded passes are unauditable. Raw test output committed to brain is the only evidence a reviewer can independently verify. |
-| "I'll guess the test command from the file extension" | Wrong test commands silently produce misleading exit codes (e.g. a missing script exits 1 for the wrong reason). Always resolve from product.md or ask — never guess. |
+| "I'll guess the test command from the file extension" | Wrong test commands silently produce misleading exit codes (e.g. a missing script exits 1 for the wrong reason). Always resolve from forge-product.md or ask — never guess. |
 
 **If you are thinking any of the above, you are about to violate this skill.**
 
@@ -64,7 +64,7 @@ Sets up the execution environment for a QA eval run. **The first decision is alw
 Before invoking this skill, verify:
 
 - [ ] `task_id` is known and `prd-locked.md` exists in brain for it (needed for **`qa/logs`** path under **`prds/<task-id>/`**)
-- [ ] Product slug is known — `product.md` must be readable **before Steps 1+** (Step **0.0–0.1** only need **`task_id`** for logging and run-mode choice)
+- [ ] Product slug is known — `forge-product.md` must be readable **before Steps 1+** (Step **0.0–0.1** only need **`task_id`** for logging and run-mode choice)
 - [ ] Branch names are provided for each repo that needs switching (or a no-checkout mode — `url-only` / `branch-tracking` — is confirmed)
 - [ ] `run_mode` is chosen from the 4-way taxonomy: `url-only` | `branch-local` | `branch-code-validate` | `branch-tracking`
 - [ ] You are NOT about to use production credentials — QA env only
@@ -73,7 +73,7 @@ Before invoking this skill, verify:
 
 Before running any `git` commands:
 
-- [ ] product.md read and repo paths extracted
+- [ ] forge-product.md read and repo paths extracted
 - [ ] All repo paths verified to exist on disk
 - [ ] Current branch state inventoried for every in-scope repo
 - [ ] Dirty state handled: stash confirmed or user instructed to discard
@@ -94,7 +94,7 @@ mirrors the Step 8 HARD-GATE, which is the single source of truth):
 
 ## Cross-References
 
-- **`brain-read`** — prerequisite skill that loads product.md and brain artifacts this skill depends on. When **`~/forge/brain/prds/<task-id>/terminology.md`** exists, it is the per-task product term reference for **manifest** copy and human-readable branch labels ([docs/terminology-review.md](../../docs/terminology-review.md)); optional for env prep **mechanics**.
+- **`brain-read`** — prerequisite skill that loads forge-product.md and brain artifacts this skill depends on. When **`~/forge/brain/prds/<task-id>/terminology.md`** exists, it is the per-task product term reference for **manifest** copy and human-readable branch labels ([docs/terminology-review.md](../../docs/terminology-review.md)); optional for env prep **mechanics**.
 - **`qa-pipeline-orchestrate`** — invokes this skill as phase QA-P3; the orchestrator's HARD-GATE checks for the manifest and `.eval-env` this skill produces. **Step 0.0** host discovery is the **authoritative** input so run mode matches hardware; QA-P5 driver preflight **re-checks** (**safety net**).
 - **`eval-product-stack-up`** — downstream skill that reads `.eval-env` to set service environment variables before starting local services.
 - **`qa-semantic-csv-orchestrate`** / host runners — execute **`qa/semantic-automation.csv`**; `.eval-env` may still resolve `{{ BASE_URL }}`, `{{ DEVICE_ID }}`, and other variables for local runs.
@@ -121,7 +121,7 @@ This skill may invoke MCP tools when configured:
 RUN HOST HARDWARE DISCOVERY BEFORE THE RUN-MODE PROMPT (STEP 0.0) — THEN ASK RUN MODE (STEP 0.1) WITH OPTIONS THAT REFLECT WHAT THIS MACHINE ACTUALLY HAS — NEVER ASSUME OR SILENTLY DEFAULT URL-ONLY WHEN LOCAL DRIVERS ARE AVAILABLE.
 ALWAYS ASK RUN MODE (URL-ONLY / BRANCH-LOCAL / BRANCH-CODE-VALIDATE / BRANCH-TRACKING) — NEVER ASSUME.
 NEVER CHECKOUT A BRANCH WITHOUT EXPLICIT USER CONFIRMATION SHOWING: REPO PATH, CURRENT BRANCH, AND TARGET BRANCH.
-NEVER WRITE TO product.md, docker-compose.yml, OR ANY SERVICE CONFIG — .eval-env IS THE ONLY OUTPUT FILE.
+NEVER WRITE TO forge-product.md, docker-compose.yml, OR ANY SERVICE CONFIG — .eval-env IS THE ONLY OUTPUT FILE.
 ALWAYS WRITE A MANIFEST — EVEN FOR URL-ONLY RUNS — RECORDING WHAT WAS TESTED AND WHEN.
 ALWAYS RECORD THE POST-CHECKOUT GIT SHA FOR EVERY REPO (branch-local / branch-code-validate / branch-tracking).
 FOR BRANCH-CODE-VALIDATE: RECORD RAW TEST OUTPUT TO BRAIN — "TESTS PASSED" IN CHAT IS NOT EVIDENCE.
@@ -133,7 +133,7 @@ FOR BRANCH-CODE-VALIDATE: RECORD RAW TEST OUTPUT TO BRAIN — "TESTS PASSED" IN 
 - **Working tree is dirty in any repo** — STOP. Report dirty files. Ask user: stash, discard, or abort.
 - **Branch does not exist on remote** — STOP. Do not create it. Ask user to push the branch first or confirm the correct name.
 - **`.eval-env` already contains values from a prior run** — STOP. Show existing values. Confirm overwrite with user.
-- **`product.md` repo paths do not exist on disk** — STOP. Cannot checkout without valid repo path. Report missing repos.
+- **`forge-product.md` repo paths do not exist on disk** — STOP. Cannot checkout without valid repo path. Report missing repos.
 - **Remote env URL is provided but no connectivity check passes** — STOP. Log: `CONNECTIVITY FAIL: <URL> unreachable`. Ask user to verify the URL before continuing.
 - **Skipping Step 0.0 host discovery and presenting generic A/B/C/D** — STOP. The run-mode choice **must** be informed by what the host can actually run (ADB, AVDs, browsers, OS). Otherwise the agent may **silently pick `url-only`** and **never** exercise **`eval-driver-*`** preflight or local emulator boot — see **Step 0.0**.
 
@@ -141,7 +141,7 @@ FOR BRANCH-CODE-VALIDATE: RECORD RAW TEST OUTPUT TO BRAIN — "TESTS PASSED" IN 
 
 ### Step 0.0 — Host hardware discovery (HARD-GATE — before Step 0.1)
 
-**Run this before** the Step 0.1 run-mode **`AskUserQuestion`** and **before** reading **`product.md`** for repo lists (discovery needs **no** product parse — only the shell).
+**Run this before** the Step 0.1 run-mode **`AskUserQuestion`** and **before** reading **`forge-product.md`** for repo lists (discovery needs **no** product parse — only the shell).
 
 1. **`mkdir -p ~/forge/brain/prds/<task-id>/qa/logs`** (see **`skills/forge-brain-layout/SKILL.md`** **qa/logs/**).
 2. Append a **`--- qa-branch-env-prep Step0 ---`** section to **`eval-preflight-<ISO8601>.log`** (same filename convention as **`eval-driver-*`** preflight — one log per run is OK; use **one** timestamp for the session).
@@ -184,7 +184,7 @@ Record the answer as `run_mode: url-only | branch-local | branch-code-validate |
 Before starting any service, verify all required ports are free:
 
 ```bash
-# For each port required by product.md services:
+# For each port required by forge-product.md services:
 for PORT in <port1> <port2> <port3>; do
   if lsof -ti :$PORT > /dev/null 2>&1; then
     echo "CONFLICT: Port $PORT is already in use by $(lsof -ti :$PORT | xargs ps -p | tail -1)"
@@ -195,7 +195,7 @@ for PORT in <port1> <port2> <port3>; do
 done
 ```
 
-**If any port is in use:** STOP. Identify the process holding the port (`lsof -i :PORT`), terminate it if it's a stale process from a previous run, or update `product.md` if there is a genuine port conflict between services.
+**If any port is in use:** STOP. Identify the process holding the port (`lsof -i :PORT`), terminate it if it's a stale process from a previous run, or update `forge-product.md` if there is a genuine port conflict between services.
 
 **HARD-GATE: Do not proceed with branch checkout or service startup until all required ports are confirmed free.**
 
@@ -217,7 +217,7 @@ per-mode env block) and the **required minimum per mode** are in
 ```bash
 BRAIN=~/forge/brain
 SLUG=<slug>
-cat "$BRAIN/products/$SLUG/product.md"
+cat "$BRAIN/products/$SLUG/forge-product.md"
 ```
 
 Extract all repo paths from the `Projects` section. Build a map of `project-name → repo-path`.
@@ -327,7 +327,7 @@ fi
 ### Step 6 — Connectivity check (`url-only` / `branch-tracking`, or any BASE_URL set)
 
 ```bash
-# Check BASE_URL is reachable. HEALTH_PATH from product.md (or input config); default '/'.
+# Check BASE_URL is reachable. HEALTH_PATH from forge-product.md (or input config); default '/'.
 HEALTH_PATH="${HEALTH_PATH:-/}"
 curl -sf --max-time 5 "${BASE_URL}${HEALTH_PATH}" > /dev/null 2>&1 \
   && echo "✓ BASE_URL reachable" \

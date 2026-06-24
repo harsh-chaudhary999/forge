@@ -64,7 +64,7 @@ allowed-tools:
 Before invoking this skill, verify:
 
 - [ ] `task_id` is known — `prd-locked.md` must exist in brain before analysis begins
-- [ ] Product slug is known — needed to resolve `product.md` and surface list for Q2
+- [ ] Product slug is known — needed to resolve `forge-product.md` and surface list for Q2
 - [ ] Brain is accessible: `~/forge/brain/prds/<task-id>/` and `~/forge/brain/products/<slug>/` readable
 - [ ] You have NOT already asked the user any test-related questions this session — Step 0 brain load comes first
 
@@ -75,7 +75,7 @@ Before asking the first question (Step 0.5):
 - [ ] All sub-steps of Step 0 completed: product topology, PRD, **terminology.md (if present)**, shared-dev-spec, tech plans, contracts, SCAN.json, existing QA artifacts all read
 - [ ] Internal summary built (features in scope, surfaces, existing coverage, SLAs, Tier 1 hubs)
 - [ ] Q1 pre-selections derived from actual PRD content — not from generic defaults
-- [ ] Q2 surface list filtered to what appears in `product.md` — not a generic list
+- [ ] Q2 surface list filtered to what appears in `forge-product.md` — not a generic list
 
 ## Post-Implementation Checklist
 
@@ -162,7 +162,7 @@ TASK=<task-id>
 # / intake-interrogate (the PRD must be locked before QA analysis).
 [ -s "$BRAIN/prds/$TASK/prd-locked.md" ] || echo "BLOCKED: prd-locked.md missing/empty for $TASK"
 
-cat "$BRAIN/products/$SLUG/product.md" 2>/dev/null            # 1. product topology
+cat "$BRAIN/products/$SLUG/forge-product.md" 2>/dev/null            # 1. product topology
 cat "$BRAIN/prds/$TASK/prd-locked.md"                          # 2. locked PRD (requirements)
 cat "$BRAIN/prds/$TASK/terminology.md" 2>/dev/null             # 2a. canonical labels for asserts
 cat "$BRAIN/prds/$TASK/shared-dev-spec.md" 2>/dev/null         # 3. cross-surface contracts + SLAs
@@ -178,7 +178,7 @@ cat "$BRAIN/products/$SLUG/codebase/index.md" 2>/dev/null
 After reading, build an internal summary:
 - Features in scope (from PRD)
 - **Product terms** — if **`terminology.md`** exists, note `status` / `open_doubts` and which **canonical** names to use in **Q1–Q8** and downstream **Expected result** text ([docs/terminology-review.md](../../docs/terminology-review.md) — not [forge-glossary](../forge-glossary/SKILL.md))
-- Surfaces present in product (from product.md)
+- Surfaces present in product (from forge-product.md)
 - **PRD ↔ design / UI mapping already captured elsewhere** — `tech-plans/*.md` (components, routes, testids), `shared-dev-spec.md`, `prd-locked.md` design / Q9 anchors, `design/*.md`, Confluence/PRD tables linked in lock — note **paths + whether traceability is complete enough for test steps**
 - Existing test coverage (from **`qa/`** — manual CSV, semantic automation, logs)
 - Contracts and SLAs in play (response time, data retention, error codes)
@@ -219,7 +219,7 @@ This field is informational (no machine validation) but enables auditors to veri
 3. **After every user reply — reconcile (adaptive)**  
    - **Skip** the next template question if the answer **already resolves** that dimension (e.g. “full regression + all surfaces + exhaustive” may subsume **Q3** depth). In chat, state explicitly: *Skipped Q3 — covered by Q1/Q2 answers: …*  
    - **Insert** tailored questions for **new doubts** the reply surfaced (security edge, env constraint, design gap) **before** mechanically advancing to the next default label — **zero ambiguities** beats **checking every box**.  
-   - If brain artifacts already answered a dimension (e.g. surfaces in **`product.md`**), **confirm in one short interactive prompt** rather than re-reading the entire Q2 wall verbatim.
+   - If brain artifacts already answered a dimension (e.g. surfaces in **`forge-product.md`**), **confirm in one short interactive prompt** rather than re-reading the entire Q2 wall verbatim.
 
 4. **Coverage obligation** — Every **dimension** represented by Q1–Q7 must be **resolved or risk-accepted** in the transcript; **Q8** when Web/Android/iOS is in scope (or **N/A** with reason). Dimensions may be satisfied **without** asking the corresponding template if subsumed — **must** still appear in **`qa-analysis.md`** with *source: user reply Q1* or *subsumed by …*.
 

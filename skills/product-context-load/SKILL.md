@@ -29,7 +29,7 @@ This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for 
 | Rationalization | Why It Fails |
 |---|---|
 | "I already know this product's repos" | Products change between PRDs — repos get added, services get decomposed, stacks get migrated. Always reload from brain. |
-| "The PRD mentions the repos, I don't need product.md" | PRDs describe features, not topology. product.md is the canonical source for repos, services, stacks, and deployment strategies. |
+| "The PRD mentions the repos, I don't need forge-product.md" | PRDs describe features, not topology. forge-product.md is the canonical source for repos, services, stacks, and deployment strategies. |
 | "I'll skip validation, the product definitely exists" | Typos in product slugs and stale PRD references cause silent failures downstream. Validate existence before proceeding. |
 | "I only need the backend repo for this change" | Even single-repo changes may affect other services through contracts. Load the full topology to see the impact radius. |
 | "Product context is just metadata, not critical" | Every downstream phase (council, tech plans, eval) uses product context. Wrong context means wrong contracts, wrong plans, wrong eval. |
@@ -47,31 +47,31 @@ PRODUCT CONTEXT IS LOADED FROM THE BRAIN FILE ON EVERY INVOCATION — NEVER FROM
 If you notice any of these, STOP and do not proceed:
 
 - **Product slug from PRD doesn't match any directory in `~/forge/brain/products/`** — Unregistered product will cause all downstream phases to fail. STOP. Ask user to create forge-product.md or fix the PRD slug before proceeding.
-- **Product context is loaded from memory or chat history instead of reading the brain file** — Memory is stale. Brain files are authoritative. STOP. Read `~/forge/brain/products/<slug>/product.md` fresh on every load.
-- **Product topology lists repos that no longer exist in git** — Stale product.md causes tech plan tasks to fail. STOP. Validate each repo path exists before returning context.
-- **PRD mentions a repo not in product.md** — Either the repo should be added to product.md or the PRD has a typo. STOP. Reconcile before proceeding to council.
+- **Product context is loaded from memory or chat history instead of reading the brain file** — Memory is stale. Brain files are authoritative. STOP. Read `~/forge/brain/products/<slug>/forge-product.md` fresh on every load.
+- **Product topology lists repos that no longer exist in git** — Stale forge-product.md causes tech plan tasks to fail. STOP. Validate each repo path exists before returning context.
+- **PRD mentions a repo not in forge-product.md** — Either the repo should be added to forge-product.md or the PRD has a typo. STOP. Reconcile before proceeding to council.
 - **Product context is loaded after council has already started** — Council needs topology to identify affected surfaces. STOP. Always load product context before invoking any surface reasoning.
-- **Service start/stop commands in product.md are not verified** — Wrong startup commands make eval-product-stack-up fail. STOP. Verify commands are executable before surfacing to downstream phases.
+- **Service start/stop commands in forge-product.md are not verified** — Wrong startup commands make eval-product-stack-up fail. STOP. Verify commands are executable before surfacing to downstream phases.
 - **A project has neither `deploy_doc` nor (`start` and `health`)** — Stack-up has no runbook. STOP. Send the user back to `/workspace` Step 3b or `/scan` Step 1 to record deploy truth before council or eval that needs a live stack.
 - **Git discovery (step 7) skipped when Q10 applies or multi-repo ambiguity exists** — Implementers will optimize for brain-only artifacts and miss in-repo reference branches. STOP. Append branch listing for each in-scope repo before marking context load complete (see **`intake-interrogate` Q10** for when closure / discovery matter).
 
 Given a product slug (from the locked PRD), load and validate:
 
-1. **Find the product.md**
+1. **Find the forge-product.md**
    ```bash
    cd ~/forge/brain
-   cat products/<slug>/product.md
+   cat products/<slug>/forge-product.md
    ```
    If not found, stop. User must write and commit forge-product.md first.
 
 2. **Parse the projects**
-   The product.md lists projects: backend-api, web-dashboard, app-mobile, etc.
+   The forge-product.md lists projects: backend-api, web-dashboard, app-mobile, etc.
    Each project has: repo path, role (backend/web/app/infra), language, framework, deploy_strategy.
 
 3. **Validate repos exist**
    ```bash
-   for project in $(grep -A 2 "^### " product.md | grep -v "^--" | awk '{print $2}'); do
-     if [ ! -d $(grep -A 1 "^### $project" product.md | grep "repo:" | awk '{print $2}') ]; then
+   for project in $(grep -A 2 "^### " forge-product.md | grep -v "^--" | awk '{print $2}'); do
+     if [ ! -d $(grep -A 1 "^### $project" forge-product.md | grep "repo:" | awk '{print $2}') ]; then
        echo "ERROR: Repo for $project not found"
      fi
    done
@@ -172,16 +172,16 @@ Given a product slug (from the locked PRD), load and validate:
 
 ### Edge Case 1: Product config doesn't exist
 
-**Diagnosis**: Product slug from PRD (e.g., "shopapp") maps to `~/forge/brain/products/shopapp/product.md`, but the file doesn't exist.
+**Diagnosis**: Product slug from PRD (e.g., "shopapp") maps to `~/forge/brain/products/shopapp/forge-product.md`, but the file doesn't exist.
 
 **Response**:
-- **Escalate to user**: "Product 'shopapp' configuration not found. Do you have a `product.md` file for this product?"
+- **Escalate to user**: "Product 'shopapp' configuration not found. Do you have a `forge-product.md` file for this product?"
 - **Options**:
   1. User provides the file: Import it, validate, proceed.
   2. User asks to create it: Escalate with template: "We need: product name, repos list, contracts, deployment strategy."
   3. User says "use a different product": Update PRD slug, try again.
 
-**Escalation**: BLOCKED - Cannot load context without product config. Ask user to provide or create product.md.
+**Escalation**: BLOCKED - Cannot load context without product config. Ask user to provide or create forge-product.md.
 
 ---
 
@@ -264,13 +264,13 @@ Next: Council reasoning.
 
 Before advancing to council:
 
-- [ ] Product slug validated — `~/forge/brain/products/<slug>/product.md` exists
+- [ ] Product slug validated — `~/forge/brain/products/<slug>/forge-product.md` exists
 - [ ] All listed repos validated — each path exists on disk
 - [ ] Circular dependencies checked — topological sort passes without cycles
-- [ ] Port conflicts checked — for each service in `product.md` that declares a `port` or `health_port`, verify no two services claim the same port number. Run:
+- [ ] Port conflicts checked — for each service in `forge-product.md` that declares a `port` or `health_port`, verify no two services claim the same port number. Run:
   ```bash
-  # Extract all port declarations from product.md
-  grep -E 'port:|health_port:|listen:' ~/forge/brain/products/<slug>/product.md | \
+  # Extract all port declarations from forge-product.md
+  grep -E 'port:|health_port:|listen:' ~/forge/brain/products/<slug>/forge-product.md | \
     awk '{print $2}' | sort | uniq -d | \
     while read p; do echo "[PORT-CONFLICT] port=$p claimed by multiple services"; done
   ```

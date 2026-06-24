@@ -120,8 +120,8 @@ PRD → Intake → Council → Spec freeze → Tech plans
 ```
 
 † **Manual QA CSV (`qa/manual-test-cases.csv`):**  
-- **`/forge` (full pipeline):** **Always mandatory** in State 4b before **`[P4.0-SEMANTIC-EVAL]`** — do **not** log `[P4.0-QA-CSV] skipped=not_required`. Orchestrator should pass **`entrypoint = full pipeline (/forge)`** into **`conductor-orchestrate`**. If `forge_qa_csv_before_eval` is missing or `false` in **`product.md`**, a **`/forge`** run **sets it to `true`** when CSV is produced so CI and later runs stay aligned.  
-- **Partial commands** (`/intake`, `/council`, `/plan`, …): **Mandatory** when **`forge_qa_csv_before_eval: true`** in **`~/forge/brain/products/<slug>/product.md`** or the task charter requires a CSV; otherwise **recommended** — may log `[P4.0-QA-CSV] skipped=not_required` when intentionally omitted for that partial run only.  
+- **`/forge` (full pipeline):** **Always mandatory** in State 4b before **`[P4.0-SEMANTIC-EVAL]`** — do **not** log `[P4.0-QA-CSV] skipped=not_required`. Orchestrator should pass **`entrypoint = full pipeline (/forge)`** into **`conductor-orchestrate`**. If `forge_qa_csv_before_eval` is missing or `false` in **`forge-product.md`**, a **`/forge`** run **sets it to `true`** when CSV is produced so CI and later runs stay aligned.  
+- **Partial commands** (`/intake`, `/council`, `/plan`, …): **Mandatory** when **`forge_qa_csv_before_eval: true`** in **`~/forge/brain/products/<slug>/forge-product.md`** or the task charter requires a CSV; otherwise **recommended** — may log `[P4.0-QA-CSV] skipped=not_required` when intentionally omitted for that partial run only.  
 - **CSV rows** are **acceptance / TMS-style** atomic cases (8 columns + **Source**), **not** a catalog of unit tests — see [QA & test artifacts](#qa--test-artifacts).
 
 ‡ *When web/app work has **net-new UI**, intake must lock **design** in `prd-locked.md` (see **`intake-interrogate`**) — not a fixed “question count.”*
@@ -130,7 +130,7 @@ PRD → Intake → Council → Spec freeze → Tech plans
 
 | Stage | What happens | Gate |
 |---|---|---|
-| **Intake** | Mandatory **`prd-locked.md`** **sections** (not a fixed number of user questions): product, goal, success criteria, **repos + registry** (`repo_registry_confidence`, mismatch notes, `product_md_update_required`), contracts, timeline, rollback, metrics — plus **design / UI** (`design_intake_anchor`, implementable design or waiver) when web, app, or user-visible UI is in scope. **Confidence-first:** pre-fill from PRD + `product.md`, ask **low-confidence / high-stakes** doubts only; **variable** user turns — **stop** when every required section is concrete. Skill **`intake-interrogate`** uses **Q1–Q9** only as an **internal checklist** name for those sections. | HARD-GATE |
+| **Intake** | Mandatory **`prd-locked.md`** **sections** (not a fixed number of user questions): product, goal, success criteria, **repos + registry** (`repo_registry_confidence`, mismatch notes, `product_md_update_required`), contracts, timeline, rollback, metrics — plus **design / UI** (`design_intake_anchor`, implementable design or waiver) when web, app, or user-visible UI is in scope. **Confidence-first:** pre-fill from PRD + `forge-product.md`, ask **low-confidence / high-stakes** doubts only; **variable** user turns — **stop** when every required section is concrete. Skill **`intake-interrogate`** uses **Q1–Q9** only as an **internal checklist** name for those sections. | HARD-GATE |
 | **Council** | Four surfaces (backend, web, app, infra) + five contracts (REST, events, cache, DB, search) negotiate → **`shared-dev-spec.md`**. | HARD-GATE |
 | **Spec freeze** | Spec is immutable until re-council. | HARD-GATE |
 | **Tech plans** | Per-repo plans: **exact files**, complete code snippets, exact commands (`tech-plan-write-per-project`). Informed by **codebase scan** when present. | Human approval typical |
@@ -154,7 +154,7 @@ PRD → Intake → Council → Spec freeze → Tech plans
 
 | Order | Artifact / log | Purpose |
 |---:|---|---|
-| **0** | **`[P4.0-QA-CSV]`** | **Approved** **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** (≥1 row after **`qa-prd-analysis`** + **`qa-manual-test-cases-from-prd`** Step 7). **Required** when **`forge_qa_csv_before_eval: true`** in **`product.md`** **or** the run is **full `/forge`** (then also persist **`forge_qa_csv_before_eval: true`** if it was unset/false). **Partial** run + flag false/unset: may log **`skipped=not_required`** only if CSV is intentionally omitted. |
+| **0** | **`[P4.0-QA-CSV]`** | **Approved** **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** (≥1 row after **`qa-prd-analysis`** + **`qa-manual-test-cases-from-prd`** Step 7). **Required** when **`forge_qa_csv_before_eval: true`** in **`forge-product.md`** **or** the run is **full `/forge`** (then also persist **`forge_qa_csv_before_eval: true`** if it was unset/false). **Partial** run + flag false/unset: may log **`skipped=not_required`** only if CSV is intentionally omitted. |
 | **1** | **`[P4.0-SEMANTIC-EVAL]`** + valid **`qa/semantic-eval-manifest.json`** (and **`qa/semantic-automation.csv`** when **`kind: semantic-csv-eval`**) | Machine-eval readiness for **P4.4**: NL-first semantic CSV (**`docs/semantic-eval-csv.md`**). **No standard waive** for shippable work; only logged **`ABORT_TASK`**. |
 | **2** | **`[P4.0-TDD-RED]`** per repo (or logged **`WAIVE_TDD`**) | **Automated** tests in product repos: **RED before GREEN** (**`forge-tdd`**). May be **unit, service, or BDD-style** — team choice; must encode tech plan + trace **CSV `Id`s** when CSV exists. |
 | **3** | **`[DESIGN-INGEST]`** when **net-new UI** | Materialized design under **`design/`** or locked Figma key + node IDs + ingest notes — unless **`design_waiver: prd_only`**. |
@@ -210,7 +210,7 @@ Shared roots: both can use **`qa-prd-analysis`** and **`qa-analysis.md`**; stand
 | **`qa-prd-analysis`** | Structured PRD analysis → **`~/forge/brain/prds/<task-id>/qa/qa-analysis.md`**; Step 0.5 = **`using-forge`** **Multi-question elicitation** for Q1–Q8 (see **QA PRD analysis** specialization in **`using-forge`**). |
 | **`qa-manual-test-cases-from-prd`** | Atomic **CSV**, Step 3 + Step 7 approvals, estimation, reuse/deprecation, final report. **HARD-GATE:** no production CSV rows before sample approval; no final report before count approval. |
 
-**Product policy** — edit **`~/forge/brain/products/<slug>/product.md`** (create with **`/workspace`**; there is **no** bundled `forge-product.md` template in-repo):
+**Product policy** — edit **`~/forge/brain/products/<slug>/forge-product.md`** (create with **`/workspace`**; there is **no** bundled `forge-product.md` template in-repo):
 
 ```yaml
 # When true: conductor requires [P4.0-QA-CSV] before [P4.0-SEMANTIC-EVAL] on partial runs too.
@@ -280,7 +280,7 @@ Disable entirely: `FORGE_REPO_DOCS_MIRROR=0`.
 |---|---|---|
 | `GREP_SUBSTRING` | URL string in source matches route in another repo | Direct HTTP call detected by static analysis |
 | `OPENAPI` | Call-site URL matched against OpenAPI spec path | Verified against the consuming service's spec |
-| `TOPOLOGY_DECLARED` | `product.md` topology says A calls B but URL is dynamic | Declared dependency (env var / template literal) — verify manually |
+| `TOPOLOGY_DECLARED` | `forge-product.md` topology says A calls B but URL is dynamic | Declared dependency (env var / template literal) — verify manually |
 | `SHARED_TYPE` | Same type name found in `classes/` of two repos | Shared data contract across services |
 | `EVENT_BUS` | Producer keyword in one repo + consumer keyword in another | Kafka/event-bus publish→subscribe link |
 
@@ -290,7 +290,7 @@ Unresolved edges (call-sites with no matched route) are listed in an **`## Unres
 
 ## Service topology
 
-Add a `## Service Topology` section to **`~/forge/brain/products/<slug>/product.md`** to unlock cross-repo edge inference in `/scan`. This is optional but recommended for multi-service products — without it, scan can only detect routes via literal URL strings in source code.
+Add a `## Service Topology` section to **`~/forge/brain/products/<slug>/forge-product.md`** to unlock cross-repo edge inference in `/scan`. This is optional but recommended for multi-service products — without it, scan can only detect routes via literal URL strings in source code.
 
 ```markdown
 ## Service Topology
@@ -324,7 +324,7 @@ Role names (`backend-api`, `frontend`, …) must match the `--repos <role>:<path
 
 ## What makes it different
 
-- **No product code changes required** to adopt Forge — you describe topology in **`product.md`** / workspace flow.
+- **No product code changes required** to adopt Forge — you describe topology in **`forge-product.md`** / workspace flow.
 - **No third-party agent frameworks** in the plugin’s own rules (D5).
 - **Auditable brain** — git-backed markdown for decisions, specs, scans, QA, eval.
 - **Brain MCP server** — a read-only [MCP](https://modelcontextprotocol.io) server (`tools/mcp/forge_brain_mcp.py`, stdlib-only) exposes the brain to any agent, no Forge session required: tools (`brain_read`/`recall`/`why`/`conductor_status`), the brain as MCP **resources** (`brain:///<path>`), and ready-made **prompts** (`task_brief`, …). See [`docs/brain-mcp.md`](docs/brain-mcp.md).
@@ -357,7 +357,7 @@ Role names (`backend-api`, `frontend`, …) must match the `--repos <role>:<path
 /workspace
 ```
 
-Forge will guide: product name, repos (URLs or paths), **roles**, and **deploy / run gate** (README or doc path + **`start`** / **`health`** for `product.md` — required for reliable **`eval-product-stack-up`**).
+Forge will guide: product name, repos (URLs or paths), **roles**, and **deploy / run gate** (README or doc path + **`start`** / **`health`** for `forge-product.md` — required for reliable **`eval-product-stack-up`**).
 
 Add infra later:
 
@@ -371,7 +371,7 @@ Then **`/scan <slug>`** so council and tech plans have **codebase context**.
 
 ## Describing your product
 
-The **only** file drivers and the conductor read is **`~/forge/brain/products/<slug>/product.md`**. Create or extend it with **`/workspace`** (repos, deploy gate, services) and **`product-context-load`**. There is no bundled copy-template step — edit **`product.md`** directly so flags like **`forge_qa_csv_before_eval`** match how you actually run delivery.
+The **only** file drivers and the conductor read is **`~/forge/brain/products/<slug>/forge-product.md`**. Create or extend it with **`/workspace`** (repos, deploy gate, services) and **`product-context-load`**. There is no bundled copy-template step — edit **`forge-product.md`** directly so flags like **`forge_qa_csv_before_eval`** match how you actually run delivery.
 
 ---
 
@@ -447,7 +447,7 @@ Each file under **`commands/`** has YAML **`name:`** + **`description:`**, optio
 | Command | Purpose |
 |---|---|
 | **`/forge`** | **Full E2E** — invoke **`conductor-orchestrate`** with **`entrypoint = full pipeline (/forge)`**: intake → context → council → tech plans → **State 4b (mandatory QA CSV + semantic CSV/manifest machine-eval + TDD RED + design gate)** → dispatch → reviews → **P4.4 eval** → heal → **PR set / merges** → dream/brain. Does **not** stop at planning. |
-| **`/workspace`** | Register product **`product.md`**, repos, roles, deploy/runbook (`scan` / eval prerequisites). |
+| **`/workspace`** | Register product **`forge-product.md`**, repos, roles, deploy/runbook (`scan` / eval prerequisites). |
 | **`/scan`** | Codebase → brain graph (**`scan-codebase`**); not a substitute for **`/forge`**. |
 | **`/intake`** | **Partial** — PRD lock only (**`forge-intake-gate`**, **`intake-interrogate`**). |
 | **`/council`** | **Partial** — multi-surface council only; needs locked PRD. |
@@ -525,7 +525,7 @@ Rigid skills typically include: **Anti-Pattern Preamble**, **Iron Law**, **Red F
 
 Two common layouts coexist:
 
-1. **`~/forge/brain/products/<slug>/`** — `product.md`, **`codebase/`** (from `/scan`), patterns, optional nested PRD material.
+1. **`~/forge/brain/products/<slug>/`** — `forge-product.md`, **`codebase/`** (from `/scan`), patterns, optional nested PRD material.
 
    **`codebase/`** contains:
 
@@ -556,7 +556,7 @@ python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain
 
 It **requires** valid **`qa/semantic-eval-manifest.json`** (and **`qa/semantic-automation.csv`** coherence when applicable — **`docs/forge-task-verification.md`**). Optional **`conductor.log`** ordering (first **`[P4.0-SEMANTIC-EVAL]`** before **`[P4.1-DISPATCH]`**, **QA CSV + `[P4.0-QA-CSV]`** when **`forge_qa_csv_before_eval: true`**, net-new **design/** or `[DESIGN-INGEST]`), and optional **`--strict-tdd`**.
 
-After a successful **`/forge`** run, **`product.md`** should carry **`forge_qa_csv_before_eval: true`** so this verifier matches **full-pipeline** semantics.
+After a successful **`/forge`** run, **`forge-product.md`** should carry **`forge_qa_csv_before_eval: true`** so this verifier matches **full-pipeline** semantics.
 
 Full reference: **[`docs/forge-task-verification.md`](docs/forge-task-verification.md)**. GitHub Actions template: **[`.github/workflows/forge-brain-guard.yml`](.github/workflows/forge-brain-guard.yml)** (usually copied or invoked from the **brain** repo, not only from Forge).
 
@@ -588,7 +588,7 @@ Check YAML frontmatter on any skill that fails to load.
 
 ### Eval or stack-up fails
 
-1. Confirm **`product.md`** has **`start`** + **`health`** (or **`deploy_doc`**) per service.
+1. Confirm **`forge-product.md`** has **`start`** + **`health`** (or **`deploy_doc`**) per service.
 2. Run **`/heal`** with logs from **`~/forge/brain/prds/<task-id>/`** (or product’s eval paths).
 3. Re-run **`/scan`** if the codebase map is stale.
 

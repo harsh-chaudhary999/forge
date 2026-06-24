@@ -24,7 +24,7 @@ Resolve every human-decision fork (NEEDS_CONTEXT / NEEDS_COORDINATION / NEEDS_IN
 
 ## Step 0 — Recall prior contracts (before negotiating)
 
-This skill declares `requires: [brain-read]` — exercise it. Before proposing the REST contract: `brain_recall`/grep the product topology (`products/<slug>/product.md`) and any existing `api-rest-contract.md` + prior API decisions for the affected entity, so this contract supersedes rather than duplicates prior locks. Record the resulting `contract_id` (brain decision id / commit SHA) in the LOCK checklist.
+This skill declares `requires: [brain-read]` — exercise it. Before proposing the REST contract: `brain_recall`/grep the product topology (`products/<slug>/forge-product.md`) and any existing `api-rest-contract.md` + prior API decisions for the affected entity, so this contract supersedes rather than duplicates prior locks. Record the resulting `contract_id` (brain decision id / commit SHA) in the LOCK checklist.
 
 ## Anti-Pattern Preamble: REST Contract Failures
 

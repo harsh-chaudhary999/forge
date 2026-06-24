@@ -156,7 +156,7 @@ Automatically classify test and system failures into one of four categories to e
 3. **`semantic-eval-manifest.json`** **`outcome`** — must align with log; mismatch → treat as **environment / tooling** or incomplete run (**BAD TEST** / harness).
 
 **Classification hints:**
-- **`status: FAILED`** + stack/message pointing at product code → **REAL BUG** on the service mapped from **`surface`** (see **`product.md`**).
+- **`status: FAILED`** + stack/message pointing at product code → **REAL BUG** on the service mapped from **`surface`** (see **`forge-product.md`**).
 - Assertion text in **`intent`** wrong vs spec but app correct → **BAD TEST** (semantic row or expectation drift).
 - Empty **`semantic-eval-run.log`** but **`outcome: fail`** → **ENVIRONMENT** or aborted runner; gather host/driver logs.
 - Intermittent passes across re-runs with same manifest → **FLAKY** (driver or external dependency).

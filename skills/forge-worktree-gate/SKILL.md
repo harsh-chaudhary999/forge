@@ -344,7 +344,7 @@ Output: **WORKTREE CREATED** (ready to implement) or **BLOCKED** (disk space ful
 **Do NOT:** Merge one repo's worktree before the other is ready — partial cross-repo merges break integration.
 
 **Action:**
-1. Coordinate merge order per the product.md `Merge Order` field — typically backend first, then frontend
+1. Coordinate merge order per the forge-product.md `Merge Order` field — typically backend first, then frontend
 2. Both worktrees should be complete and verified independently before either is merged
 3. After merging the first repo, immediately start the eval for the combined state — don't wait for the second merge
 4. If the first merge causes eval to fail (because the second repo isn't merged yet), that is expected — document as "partial merge, second repo pending"

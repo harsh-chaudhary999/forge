@@ -58,7 +58,7 @@ Standalone QA pipeline that runs from brain artifacts (PRD + tech plans) through
 Before invoking this skill, verify:
 
 - [ ] `task_id` is known and `prd-locked.md` exists in brain
-- [ ] Product slug is known (resolves `product.md` and repo paths)
+- [ ] Product slug is known (resolves `forge-product.md` and repo paths)
 - [ ] Entry point is clear: `/qa` (full), `/qa-write` (scenarios only), or `/qa-run` (execute only)
 - [ ] If `/qa-run`: valid **`qa/semantic-eval-manifest.json`** + **`qa/semantic-automation.csv`** per **`docs/semantic-eval-csv.md`** / **`verify_forge_task.py`**
 - [ ] Branches and target env are confirmed (or `mode: remote` with valid BASE_URL)
@@ -68,7 +68,7 @@ Before invoking this skill, verify:
 Before advancing past QA-P1:
 
 - [ ] `prd-locked.md` verified to exist for the task
-- [ ] `product.md` readable and repo paths exist on disk
+- [ ] `forge-product.md` readable and repo paths exist on disk
 - [ ] Pipeline phases to execute determined (full vs partial entry point)
 - [ ] Resume point identified if restarting after a RED verdict (`--from=QA-PX`)
 
@@ -167,7 +167,7 @@ SLUG=<slug>
 
 cat "$BRAIN/prds/$TASK/prd-locked.md"
 cat "$BRAIN/prds/$TASK/terminology.md" 2>/dev/null
-cat "$BRAIN/products/$SLUG/product.md"
+cat "$BRAIN/products/$SLUG/forge-product.md"
 ls "$BRAIN/prds/$TASK/tech-plans/" 2>/dev/null
 ls "$BRAIN/prds/$TASK/qa/semantic-automation.csv" 2>/dev/null && echo "SEMANTIC CSV PRESENT"
 ```
@@ -252,7 +252,7 @@ set -a && source ~/forge/brain/prds/<task-id>/.eval-env && set +a
 ```
 
 Invoke `eval-product-stack-up`:
-- Reads `product.md` for service start commands
+- Reads `forge-product.md` for service start commands
 - Starts services in dependency order
 - Runs health checks for each configured service
 - Reports READY or FAILED

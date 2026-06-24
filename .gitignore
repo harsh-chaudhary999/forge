@@ -38,6 +38,14 @@ tools/scan_forge/fixtures/
 # Local scratch (manual verifier fixtures)
 .scratch/
 
+# Seed test fixtures + self-test run output — LOCAL ONLY, never committed.
+# The seed product and its PRDs are our local test scaffold; nothing under here
+# (source, generated tests, node deps, or self-test brain output) goes to the remote.
+/seed-product/
+/seed/
+brain/self-test/
+**/node_modules/
+
 # Accidental self-symlink at repo root (e.g. ln -s . forge)
 /forge
 

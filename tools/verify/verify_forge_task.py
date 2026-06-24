@@ -29,7 +29,7 @@ Validates (when applicable):
     reference Ids from qa/manual-test-cases.csv or qa/semantic-automation.csv; Required=yes
     manual rows need a marker (see tools/tdd_csv_trace.py).
 
-Core checks use stdlib only (product.md may mix markdown headings with YAML).
+Core checks use stdlib only (forge-product.md may mix markdown headings with YAML).
 
 Usage (from Forge repo root, brain elsewhere):
   python3 tools/verify_forge_task.py --task-id my-feature --brain ~/forge/brain
@@ -249,17 +249,17 @@ def _parse_prd_product_name(prd_path: Path) -> str | None:
 def _resolve_product_slug(
     brain: Path, prd_path: Path, product_slug: str | None
 ) -> tuple[str | None, Path | None]:
-    """Return (slug, product.md path) for policy reads."""
+    """Return (slug, forge-product.md path) for policy reads."""
     products = brain / "products"
     if product_slug:
-        pm = products / product_slug / "product.md"
+        pm = products / product_slug / "forge-product.md"
         return (product_slug, pm if pm.is_file() else None)
 
     pname = _parse_prd_product_name(prd_path)
     if not pname or not products.is_dir():
         return (None, None)
     want = pname.casefold()
-    for pm in sorted(products.glob("*/product.md")):
+    for pm in sorted(products.glob("*/forge-product.md")):
         m = RE_NAME_FIELD.search(_read_text(pm))
         if m and m.group(1).strip().casefold() == want:
             return (pm.parent.name, pm)
@@ -461,7 +461,7 @@ def verify_detailed(
     prd_locked = task_dir / "prd-locked.md"
     slug, product_md = _resolve_product_slug(brain, prd_locked, product_slug)
     if product_slug and not product_md:
-        errors.append(f"--product {product_slug}: missing {brain / 'products' / product_slug / 'product.md'}")
+        errors.append(f"--product {product_slug}: missing {brain / 'products' / product_slug / 'forge-product.md'}")
     require_qa = _product_requires_qa_before_eval(product_md)
 
     if check_prd_sections:
@@ -690,7 +690,7 @@ def main() -> int:
     p.add_argument(
         "--product",
         default=None,
-        help="Product slug under brain/products/<slug>/product.md (optional if prd-locked matches name:)",
+        help="Product slug under brain/products/<slug>/forge-product.md (optional if prd-locked matches name:)",
     )
     p.add_argument(
         "--strict-tdd",

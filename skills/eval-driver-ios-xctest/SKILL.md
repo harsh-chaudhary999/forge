@@ -88,7 +88,7 @@ Physical devices are a separate flow (developer disk image, pairing); if eval ta
 ### 3. Choose `simulator_id` (priority order)
 
 1. **Eval scenario / driver config** — If YAML names **`simulator_id`**, **`SIMULATOR_UDID`**, or **iOS runtime + device name** (team convention), resolve to a UDID from the list.
-2. **`product.md`** — If **`services.<app>.simulator_id`** (or Forge seed convention **`default`**) matches a listed UDID or name, use it.
+2. **`forge-product.md`** — If **`services.<app>.simulator_id`** (or Forge seed convention **`default`**) matches a listed UDID or name, use it.
 3. **Environment** — If **`SIMULATOR_UDID`** (or team **`IOS_SIMULATOR_UDID`**) is set and valid, use it.
 4. **Single booted simulator** — If exactly **one** is **Booted**, **`default`** may target it.
 5. **Multiple matches, no pin** — **Interactive:** list **name — iOS version — UDID** and **ask once** which to boot/use unless the user already specified in this task. **CI:** **FAIL** with instructions to set **`SIMULATOR_UDID`** or scenario UDID, or boot exactly one simulator before eval.

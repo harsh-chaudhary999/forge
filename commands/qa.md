@@ -39,8 +39,8 @@ Same **forward order** as **`/qa-write`**: **`prd-locked`** → **`qa-prd-analys
 **Product terms:** When **`terminology.md`** exists for the task, **`qa-prd-analysis`** / **`qa-manual-test-cases-from-prd`** / **`qa-semantic-csv-orchestrate`** load it so **expected results** and steps use **canonical** names — see [docs/terminology-review.md](../docs/terminology-review.md).
 
 - **`~/forge/brain/prds/<task-id>/prd-locked.md`** — locked PRD (**`/intake`** default; alternatives documented in **`commands/qa-write.md`**)
-- **`~/forge/brain/products/<slug>/product.md`** — product topology with repo paths
-- For local mode: services must be startable via the `start` commands in `product.md`
+- **`~/forge/brain/products/<slug>/forge-product.md`** — product topology with repo paths
+- For local mode: services must be startable via the `start` commands in `forge-product.md`
 - For Android: ADB connected device or emulator (`adb devices`)
 - For iOS: Simulator running or Appium MCP configured (`xcrun simctl list`)
 
@@ -72,6 +72,6 @@ A RED verdict from `/qa` must not be manually overridden. Fix the failing code a
 
 **Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns, **no defensive downstream-gate narration** mid-elicitation — **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**); **one blocking affordance per unrelated fork** (no bundled prose obligations); **no dual prompts** — **never** the **`AskUserQuestion`** widget on **one** topic **and** a **long markdown question** on **another** in the **same** message; **no chat–widget duplicate** — long lists / same question body **once** in **chat**; **`AskUserQuestion`** = **short** title + **options** only (**`docs/forge-one-step-horizon.md`** **Chat vs `AskUserQuestion` widget**); **headline / first § = immediate next artifact** — **not** *What unlocks machine eval*, **`qa/semantic-automation.csv`**, or Step −1 **as the main heading** when **manual CSV** / **`qa-manual-test-cases-from-prd`** / **`qa-prd-analysis`** is still the next gate (**`docs/forge-one-step-horizon.md`** **Headline = immediate next step**); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
 
-**Forge plugin scope:** Skills from `skills/`; brain artifacts from `~/forge/brain/`; repos from `product.md` paths.
+**Forge plugin scope:** Skills from `skills/`; brain artifacts from `~/forge/brain/`; repos from `forge-product.md` paths.
 
 **Session style:** Prefer execution-style (stack-up, browser/emulator automation, terminal output). See `docs/platforms/session-modes-forge.md`.

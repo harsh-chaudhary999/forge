@@ -68,7 +68,7 @@ Not acceptable: reading from `prds/<other-task-id>/` when the active task is dif
 ## Product Topology
 ```bash
 cd ~/forge/brain
-cat products/<product-slug>/product.md
+cat products/<product-slug>/forge-product.md
 ```
 
 Gives you: repos, roles, tech stacks, deployment strategies, services, contracts.

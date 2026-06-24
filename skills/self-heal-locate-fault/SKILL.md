@@ -146,7 +146,7 @@ Forge machine-eval is **semantic CSV + manifest + run log** only. **Do not** loo
 
 **Semantic RED:** If **`qa/semantic-eval-manifest.json`** has **`outcome: fail`** (or Phase 4.4 semantic branch returned RED), **open `qa/semantic-eval-run.log` first.** Format: comment header lines (`# …`, `task_id=…`, `driver=…`), then **one JSON object per line** per semantic step. Parse each line with **`jq`** or a small script; locate objects where **`status`** is **`FAILED`**, **`ERROR`**, or non-success; read **`id`**, **`surface`**, **`intent`**, and any **`error`** / **`message`** fields.
 
-**Trace Surface → service:** Map **`surface`** values (**Web**, **API**, **Android**, …) to repos/services via **`~/forge/brain/products/<slug>/product.md`** Projects / roles. Evidence starts in the **log JSON** lines and the failing step’s **`id`** in **`qa/semantic-automation.csv`**.
+**Trace Surface → service:** Map **`surface`** values (**Web**, **API**, **Android**, …) to repos/services via **`~/forge/brain/products/<slug>/forge-product.md`** Projects / roles. Evidence starts in the **log JSON** lines and the failing step’s **`id`** in **`qa/semantic-automation.csv`**.
 
 ## Algorithm
 

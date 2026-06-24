@@ -118,7 +118,7 @@ Use **both** layers:
 
 ### 3. Boot path when the target is an AVD, not yet in `adb devices`
 
-When the scenario, **`product.md`**, or the user names an **AVD** (or API level → pick matching AVD from **`emulator -list-avds`**) but **`adb devices`** does not yet show that emulator:
+When the scenario, **`forge-product.md`**, or the user names an **AVD** (or API level → pick matching AVD from **`emulator -list-avds`**) but **`adb devices`** does not yet show that emulator:
 
 1. Ensure **`emulator`** is on **PATH** (typically **`$ANDROID_HOME/emulator`**).
 2. Start it in the background, e.g. **`emulator -avd <AvdName> -no-snapshot-load &`** (add **`-gpu`** / **`-no-window`** flags per host/CI needs). Older installs may accept **`emulator @<AvdName>`** — use what works on the host.
@@ -130,7 +130,7 @@ If **`emulator`** is missing, or **`emulator -list-avds`** is empty and no USB d
 ### 4. Choose `device_id` (priority order) — after boot if needed
 
 1. **Eval scenario / driver config** — **`device_id`**, **`ANDROID_SERIAL`**, **`emulator_id`**, or **`avd_name`** / **API level** pin: if **`avd_name`** (or resolvable AVD) is given and not running, follow **Boot path when the target is an AVD** (step 3 above), then connect to the resulting **`emulator-555x`** serial.
-2. **`product.md`** — **`services.<app>.emulator_id`** (serial) or team field for **AVD name** / API — same: boot first if only AVD is known.
+2. **`forge-product.md`** — **`services.<app>.emulator_id`** (serial) or team field for **AVD name** / API — same: boot first if only AVD is known.
 3. **Environment** — **`ANDROID_SERIAL`** when it matches a **current** `adb devices` row (after any boot).
 4. **Single running device** — Exactly **one** usable row → may use **`default`** without asking.
 5. **Multiple running devices, no pin** — **Interactive:** list rows + **ask once**. **CI:** **FAIL** — set **`ANDROID_SERIAL`** / scenario pin, or start **only one** emulator before eval.

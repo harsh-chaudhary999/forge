@@ -1,11 +1,11 @@
 ---
 name: workspace
-description: Initialize or open a Forge workspace. Point it at any folder — it scans for git repos, infers roles from folder names, detects languages, runs a deploy/runbook gate (README or user-provided doc), then builds product.md. No manual merge-order config needed.
+description: Initialize or open a Forge workspace. Point it at any folder — it scans for git repos, infers roles from folder names, detects languages, runs a deploy/runbook gate (README or user-provided doc), then builds forge-product.md. No manual merge-order config needed.
 ---
 
 # /workspace
 
-**Forge plugin:** This command is defined in the **Forge** repository; it writes **`~/forge/brain/products/<slug>/product.md`** and related brain layout — not third-party workspace products.
+**Forge plugin:** This command is defined in the **Forge** repository; it writes **`~/forge/brain/products/<slug>/forge-product.md`** and related brain layout — not third-party workspace products.
 
 Set up a Forge workspace by scanning an existing folder structure. Works with any layout — Forge detects git repos, infers roles, and auto-detects languages. Only asks what it cannot figure out itself.
 
@@ -107,11 +107,11 @@ If the user corrects something, apply it before continuing. Do not re-scan — j
 
 ---
 
-### Step 3b — Deployment & local run documentation (HARD-GATE before `product.md`)
+### Step 3b — Deployment & local run documentation (HARD-GATE before `forge-product.md`)
 
-**Why:** Spawned agents (`eval-product-stack-up`, `/eval`, deploy drivers) read **`product.md`**, not chat. If run/deploy steps never get written, stack-up becomes guesswork and eval fails for the wrong reasons.
+**Why:** Spawned agents (`eval-product-stack-up`, `/eval`, deploy drivers) read **`forge-product.md`**, not chat. If run/deploy steps never get written, stack-up becomes guesswork and eval fails for the wrong reasons.
 
-For **each** detected repo (before writing Step 5 `product.md`):
+For **each** detected repo (before writing Step 5 `forge-product.md`):
 
 1. **Auto-detect** — Read, in order, the first file that exists:
    `README.md`, `readme.md`, `README.rst`, `docs/README.md`, `docs/DEVELOPMENT.md`, `docs/DEPLOY.md`, `DEPLOY.md`, `CONTRIBUTING.md`.
@@ -122,16 +122,16 @@ For **each** detected repo (before writing Step 5 `product.md`):
 - `deploy_source: readme` | `compose` | `external-doc`
 - `deploy_doc: <path-relative-to-repo>` (e.g. `README.md`, `docs/local.md`)
 
-Optionally copy explicit `start`, `stop`, `health`, `port` into `product.md` **only when** they are unambiguous from the doc; otherwise leave them blank — `deploy_doc` is still the source of truth.
+Optionally copy explicit `start`, `stop`, `health`, `port` into `forge-product.md` **only when** they are unambiguous from the doc; otherwise leave them blank — `deploy_doc` is still the source of truth.
 
 **If not sufficient:** **STOP** before Step 5 and use a **blocking interactive prompt** per **`using-forge`** for each repo (one message can cover all repos in a small table). Present **A** vs **B** via **`AskUserQuestion`** or **numbered 1–2** + **stop**; then collect the path or paste — not only prose *provide A or B* with no same-turn fork.
 
 - **A)** Path **relative to repo root** to the file that contains deploy / local run steps (Forge will use this for stack-up and eval prep), **or**
-- **B)** Paste the lines to store as `start`, optional `stop`, `health`, optional `port` in `product.md`.
+- **B)** Paste the lines to store as `start`, optional `stop`, `health`, optional `port` in `forge-product.md`.
 
 There is **no “skip deploy” path** — you cannot run a meaningful **`eval-product-stack-up`** or E2E eval without knowing how to start and verify each service. If the user truly has no docs yet, **do not create the workspace** until they provide (A) or (B).
 
-**Do not skip Step 3b** — every project row must have **`deploy_source` + `deploy_doc`** or **`start` + `health`** (minimum) before `product.md` is written.
+**Do not skip Step 3b** — every project row must have **`deploy_source` + `deploy_doc`** or **`start` + `health`** (minimum) before `forge-product.md` is written.
 
 ---
 
@@ -149,9 +149,9 @@ That's it for *undetectable* product identity. **Step 3b** already handled deplo
 
 ---
 
-### Step 5 — Create product.md
+### Step 5 — Create forge-product.md
 
-Generate `~/forge/brain/products/<slug>/product.md` from the scan results:
+Generate `~/forge/brain/products/<slug>/forge-product.md` from the scan results:
 
 ```markdown
 # Product: <Detected or Confirmed Name>
@@ -210,7 +210,7 @@ Generate `~/forge/brain/products/<slug>/product.md` from the scan results:
 Then confirm and auto-trigger codebase scan:
 
 ```
-✅ Workspace created: ~/forge/brain/products/<slug>/product.md
+✅ Workspace created: ~/forge/brain/products/<slug>/forge-product.md
 
    3 repos registered:
    → backend  (~/<workspace>/backend)
@@ -219,7 +219,7 @@ Then confirm and auto-trigger codebase scan:
 
    Infrastructure: not configured (optional — add with /workspace add-infra <slug>)
 
-   Deploy / run: each project has `deploy_doc` or start+health in product.md (Step 3b).
+   Deploy / run: each project has `deploy_doc` or start+health in forge-product.md (Step 3b).
 ```
 
 ### Step 5a — Bootstrap brain as Obsidian vault (first time only)
@@ -308,7 +308,7 @@ cp "$BT/"{app.json,graph.json,workspace.json,core-plugins.json,appearance.json} 
 
 ---
 
-### Step 5b — Auto-scan all repos (REQUIRED after product.md is created)
+### Step 5b — Auto-scan all repos (REQUIRED after forge-product.md is created)
 
 **REQUIRED SKILL:** Invoke `scan-codebase` skill for each registered repo automatically.
 Do NOT wait for the user to ask — the codebase map is needed for planning.
@@ -317,7 +317,7 @@ Do NOT wait for the user to ask — the codebase map is needed for planning.
 
 **Optional (recommended after first brain write):** Pass **`--phase57-write-report`** so phase57 emits `wikilink-orphan-report.md` — orphan `[[wikilinks]]` and ambiguous basenames.
 
-**Optional before Phase 4:** Pass **`--product-md ~/forge/brain/products/<slug>/product.md`** so built-in role validation ensures each project’s `- role:` matches the basename of its `- repo:` path (phase4 / phase56 assume they are equal).
+**Optional before Phase 4:** Pass **`--product-md ~/forge/brain/products/<slug>/forge-product.md`** so built-in role validation ensures each project’s `- role:` matches the basename of its `- repo:` path (phase4 / phase56 assume they are equal).
 
 **After the run:** Pass **`--cleanup`** or delete the temp run directory printed on stdout so `forge_scan_*.txt` files in that directory are not reused accidentally.
 
@@ -344,7 +344,7 @@ After scan completes, show final confirmation:
 
    Infrastructure: not configured (optional — add with /workspace add-infra <slug>)
 
-   Deploy / run: each project has `deploy_doc` or start+health in product.md (Step 3b).
+   Deploy / run: each project has `deploy_doc` or start+health in forge-product.md (Step 3b).
    Codebase scan: ✅ done (re-run any time: /scan <slug>)
    Cross-repo module links: ✅ phase56 (if multi-repo)
    Wikilink audit: optional `--phase57-write-report` → `wikilink-orphan-report.md`
@@ -358,7 +358,7 @@ After scan completes, show final confirmation:
 ### Step 6 — Open existing workspace (`/workspace open <slug>`)
 
 ```bash
-cat ~/forge/brain/products/<slug>/product.md
+cat ~/forge/brain/products/<slug>/forge-product.md
 ```
 
 Read `SCAN.json` to get scan age:
@@ -407,7 +407,7 @@ Only triggered when the user explicitly wants to configure DB/cache/queue for ev
 4. **"Port for each service?"** — ask per repo, suggest common defaults (3000, 3001, 8080)
 5. **"How do you start each service?"** — suggest `npm start`, `python -m uvicorn`, `go run .`, etc. based on detected language
 
-Update `product.md` Infrastructure section in-place. Never rewrite the whole file.
+Update `forge-product.md` Infrastructure section in-place. Never rewrite the whole file.
 
 ---
 
@@ -416,7 +416,7 @@ Update `product.md` Infrastructure section in-place. Never rewrite the whole fil
 1. Ask: **"Path or GitHub URL of the new repo?"**
 2. Auto-detect language, framework, branch
 3. Ask role only if ambiguous
-4. Append to `product.md` Projects section
+4. Append to `forge-product.md` Projects section
 5. Ask: **"Does the merge order need updating?"**
 
 ---
@@ -448,4 +448,4 @@ Update `product.md` Infrastructure section in-place. Never rewrite the whole fil
 - **One question at a time.** No forms. No YAML to fill in.
 - **Any folder structure works.** `myapp/backend`, `projects/myapp/api`, `~/code/backend` — all the same.
 - **Infra is eval-time only.** Intake, council, and plan work without a single infra detail.
-- **Never overwrite existing product.md without confirmation.** If one already exists for the slug, show diff and ask.
+- **Never overwrite existing forge-product.md without confirmation.** If one already exists for the slug, show diff and ask.

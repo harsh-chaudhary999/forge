@@ -1,5 +1,5 @@
 """
-topology_reader.py — Parse the ``## Service Topology`` section of product.md.
+topology_reader.py — Parse the ``## Service Topology`` section of forge-product.md.
 
 Produces a ``Topology`` object consumed by phase5 and phase56 to:
   - Declare which service calls which (HTTP/RPC fallback for dynamic URLs)
@@ -7,7 +7,7 @@ Produces a ``Topology`` object consumed by phase5 and phase56 to:
   - Record DB ownership per service
   - Record config keys per service
 
-Product.md format (additive — existing product.md without this section still works):
+forge-product.md format (additive — existing forge-product.md without this section still works):
 
     ## Service Topology
 

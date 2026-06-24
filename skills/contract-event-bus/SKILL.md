@@ -26,7 +26,7 @@ Resolve every human-decision fork (NEEDS_CONTEXT / NEEDS_COORDINATION / NEEDS_IN
 
 ## Step 0 — Recall prior contracts (before negotiating)
 
-This skill declares `requires: [brain-read]` — exercise it. Before proposing the event contract: `brain_recall`/grep the product topology (`products/<slug>/product.md`) and any existing `event-contract.md` + prior event/topic decisions for the affected domain, so this contract supersedes rather than duplicates prior locks. Record the resulting `contract_id` (brain decision id / commit SHA) in the LOCK checklist.
+This skill declares `requires: [brain-read]` — exercise it. Before proposing the event contract: `brain_recall`/grep the product topology (`products/<slug>/forge-product.md`) and any existing `event-contract.md` + prior event/topic decisions for the affected domain, so this contract supersedes rather than duplicates prior locks. Record the resulting `contract_id` (brain decision id / commit SHA) in the LOCK checklist.
 
 Teaches teams to negotiate Kafka/event-bus contracts systematically. Covers schema versioning, topic design, consumer guarantees, idempotency, and ordering semantics. Output is a locked event bus contract that all producers and consumers sign off on.
 

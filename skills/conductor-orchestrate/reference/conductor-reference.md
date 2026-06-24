@@ -172,7 +172,7 @@
 
 **Obligation (waived):** When `prd-locked.md` records **`implementation_closure: not applicable`** with reason — log **`[DISCOVERY] task_id=<id> obligation=waived reason=implementation_closure_not_applicable`** (optional: `git rev-parse HEAD` in primary repo only for audit).
 
-**ACTION (when obligation not waived):** In **each** repo path from `product.md` that is **in Q4 for this task**, run **read-only** git discovery and record evidence under `~/forge/brain/prds/<task-id>/discovery.md` (or append to `context-loaded.md`):
+**ACTION (when obligation not waived):** In **each** repo path from `forge-product.md` that is **in Q4 for this task**, run **read-only** git discovery and record evidence under `~/forge/brain/prds/<task-id>/discovery.md` (or append to `context-loaded.md`):
 
 1. `git rev-parse --show-toplevel` and `git status -sb` and `git rev-parse HEAD`
 2. `git branch -a` (or `git branch -a \| grep -iE '<tokens from PRD title>'`) — surface **existing** topic / release / integration branch names (including common `feat/*` / `feature/*` patterns where used) **before** council assumes greenfield.
@@ -260,8 +260,8 @@ Ensure **consensus** across all repos (no conflicting contracts).
 **ENTRY:** All tech plans written; **`tech-plan-self-review` PASS** per repo; **`[TECH-PLAN-XALIGN]`** **PASS** or **N/A**; **`[TECH-PLAN-HUMAN]`** with **`APPROVED`** or **`WAIVED`**; **`tech-plans/HUMAN_SIGNOFF.md`** on disk matching that log; `shared-dev-spec.md` locked.  
 **ACTION:**
   0. **Manual QA CSV (acceptance inventory — before eval artifact and before feature TDD):**
-  - **Full pipeline entrypoint (`/forge` — `commands/forge.md`):** The user chose **end-to-end automation**, not a partial phase. **Always** complete **`qa-prd-analysis`** + **`qa-manual-test-cases-from-prd`** through **Step 7 approval** so **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** exists with **≥1** approved row. Log **`[P4.0-QA-CSV] task_id=<id> rows=<n> approved=yes`**. **Do not** log **`[P4.0-QA-CSV] skipped=not_required`**. If **`~/forge/brain/products/<slug>/product.md`** has **`forge_qa_csv_before_eval`** unset or **`false`**, **set it to `true`** when this step completes so **`verify_forge_task.py`** and later runs match **`/forge`** semantics.
-  - **Partial runs** (orchestration **without** the **`/forge`** entrypoint — e.g. user only ran **`/plan`** or asked for “council only”): When **`forge_qa_csv_before_eval: true`** in **`product.md`**, or when the **task charter** explicitly requires a QA CSV deliverable, same requirements as the **`/forge`** bullet (mandatory CSV + log). If the flag is **false** or unset **and** the run is **partial**, this step is **recommended** — log **`[P4.0-QA-CSV] skipped=not_required`** only when intentionally omitted for that partial run.
+  - **Full pipeline entrypoint (`/forge` — `commands/forge.md`):** The user chose **end-to-end automation**, not a partial phase. **Always** complete **`qa-prd-analysis`** + **`qa-manual-test-cases-from-prd`** through **Step 7 approval** so **`~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv`** exists with **≥1** approved row. Log **`[P4.0-QA-CSV] task_id=<id> rows=<n> approved=yes`**. **Do not** log **`[P4.0-QA-CSV] skipped=not_required`**. If **`~/forge/brain/products/<slug>/forge-product.md`** has **`forge_qa_csv_before_eval`** unset or **`false`**, **set it to `true`** when this step completes so **`verify_forge_task.py`** and later runs match **`/forge`** semantics.
+  - **Partial runs** (orchestration **without** the **`/forge`** entrypoint — e.g. user only ran **`/plan`** or asked for “council only”): When **`forge_qa_csv_before_eval: true`** in **`forge-product.md`**, or when the **task charter** explicitly requires a QA CSV deliverable, same requirements as the **`/forge`** bullet (mandatory CSV + log). If the flag is **false** or unset **and** the run is **partial**, this step is **recommended** — log **`[P4.0-QA-CSV] skipped=not_required`** only when intentionally omitted for that partial run.
   - **Escape:** When CSV is mandatory (**flag true** **or** **`/forge`**), the only escape is **`[ABORT_TASK]`** with human owner — not silent skip.
   1. **Machine-eval artifact — before any feature dispatch, after step 0 when applicable:** **`qa/semantic-automation.csv`** → run (**`tools/run_semantic_csv_eval.py`** or host drivers) → valid **`~/forge/brain/prds/<task-id>/qa/semantic-eval-manifest.json`** per **`docs/forge-task-verification.md`** + **`qa/semantic-eval-run.log`** when produced. Log **`[P4.0-SEMANTIC-EVAL]`**. Product tests come from **`manual-test-cases.csv`** + tech plans via **`forge-tdd`**.
      If this artifact cannot be produced yet, the only allowed escape is **`[ABORT_TASK]`** with human owner — not silent skip.
@@ -274,7 +274,7 @@ Ensure **consensus** across all repos (no conflicting contracts).
 
 **SUCCESS CONDITION:** QA CSV satisfied when required (**`forge_qa_csv_before_eval: true`** or **full `/forge`**); valid semantic manifest **+** **`[P4.0-SEMANTIC-EVAL]`**; every repo has logged RED (or waived TDD).  
 **FAILURE CONDITION:** Missing QA CSV when required (**flag true** or **`/forge`**); missing valid semantic manifest + **`[P4.0-SEMANTIC-EVAL]`**; skipped RED.  
-**ESCALATION:** Missing deploy/runbook in `product.md` → user must fix workspace (`/workspace` Step 3b) before `eval-product-stack-up` can succeed.
+**ESCALATION:** Missing deploy/runbook in `forge-product.md` → user must fix workspace (`/workspace` Step 3b) before `eval-product-stack-up` can succeed.
 
 ### State 4b-design: Design ingestion (HARD-GATE before P4.1 when net-new UI)
 **APPLIES WHEN:** `prd-locked.md` / `shared-dev-spec.md` → **Design source (from intake)** has **`design_new_work: yes`** AND the product includes a **web** or **app** repo — **unless** `design_waiver: prd_only` (with owner + risk) is locked.
@@ -556,7 +556,7 @@ Skipping this step and creating a new file when an existing one should be modifi
 
 #### Phase 4.4: Eval — Multi-Surface Evaluation (mandatory invocation)
 **ENTRY:** All repos pass code quality review.  
-**MUST NOT SKIP:** This phase is **not optional** for a completed delivery. If stack-up cannot run (e.g. missing `deploy_doc` / `start`+`health` in `product.md`), **STOP** and fix `product.md` — do not pretend the task finished.
+**MUST NOT SKIP:** This phase is **not optional** for a completed delivery. If stack-up cannot run (e.g. missing `deploy_doc` / `start`+`health` in `forge-product.md`), **STOP** and fix `forge-product.md` — do not pretend the task finished.
 
 **Branch selection:** Forge **only** runs the **semantic CSV + manifest + run.log** path for Phase 4.4. Unit/integration tests in product repos come from **`forge-tdd`** and **`manual-test-cases.csv`**.
 

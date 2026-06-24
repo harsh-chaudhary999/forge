@@ -116,7 +116,7 @@ Tag-based filtering (tag syntax, AND/OR semantics, combining with grep) detailed
 
 ## 3. Product/Project Filtering
 
-Filter brain records by product (slug under `products/<slug>/`) and the repos/projects in that product's `product.md`.
+Filter brain records by product (slug under `products/<slug>/`) and the repos/projects in that product's `forge-product.md`.
 
 **Canonical decision frontmatter** (see `forge-brain-layout` / `brain-write`):
 ```yaml

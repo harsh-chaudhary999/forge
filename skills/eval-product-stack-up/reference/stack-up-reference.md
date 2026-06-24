@@ -263,7 +263,7 @@ const report = buildStackReport(topology, infraResult, serviceResult, healthChec
 
 4. **Start Services** (in resolved dependency order)
 
-   **Service startup uses deploy drivers:** The `start` command for each service is provided by the deploy driver matching the product's `deploy_strategy` field in `product.md`:
+   **Service startup uses deploy drivers:** The `start` command for each service is provided by the deploy driver matching the product's `deploy_strategy` field in `forge-product.md`:
    - `deploy_strategy: pm2-ssh` → invoke `deploy-driver-pm2-ssh` for startup
    - `deploy_strategy: docker-compose` → invoke `deploy-driver-docker-compose` for startup
    - `deploy_strategy: systemd` → invoke `deploy-driver-systemd` for startup

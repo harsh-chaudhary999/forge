@@ -8,7 +8,7 @@ The numbering below is a **checklist of fields** that must appear in `prd-locked
 
 **Q1: Which product?**
 "This PRD affects which product? (e.g., 'ShopApp', 'InvoicingPlatform')"
-→ Look up the product in `~/forge/brain/products/<slug>/product.md` to validate it exists.
+→ Look up the product in `~/forge/brain/products/<slug>/forge-product.md` to validate it exists.
 → If not found, ask user to provide `forge-product.md` or register the product first.
 → **If high confidence:** PRD + metadata already name one registered product — pre-fill **Product:** and ask **confirm slug** only.
 
@@ -26,24 +26,24 @@ The numbering below is a **checklist of fields** that must appear in `prd-locked
 
 **Before you ask the user (agent MUST do this silently):**
 
-1. Read `~/forge/brain/products/<slug>/product.md` and list every **`### <heading>`** and each project's **`- role:`** value — these are the **only** legal repo identifiers for MCQ options.
+1. Read `~/forge/brain/products/<slug>/forge-product.md` and list every **`### <heading>`** and each project's **`- role:`** value — these are the **only** legal repo identifiers for MCQ options.
 2. Extract from the PRD **explicit audience / surface / actor** (who or what the change serves: end customer, merchant, partner, admin, platform team, device class, region, …) — use **neutral** vocabulary; do not assume any vendor’s domain dictionary.
 3. **Cross-check:** For each candidate repo, ask: *Would a new engineer, reading **only** the `role` name and the **`repo:`** path (parent folders, basename), believe this project matches the PRD’s audience and surface?*  
    - If the PRD implies one audience (e.g. **consumer-facing**) but the **only** registered web (or app, or API) **`role`** / path suggests **another** (e.g. **admin**, **partner**, **internal**), treat that as **HIGH RISK — naming or registry mismatch**. **Do not** recommend “that repo only” as the **first** or **sole** confident MCQ option.
-4. **Never** justify a repo pick with “it is the only **X** in `product.md`” where **X** is mobile, web, backend, worker, etc. That is **mechanical cardinality**, not product truth.
+4. **Never** justify a repo pick with “it is the only **X** in `forge-product.md`” where **X** is mobile, web, backend, worker, etc. That is **mechanical cardinality**, not product truth.
 
 **How to ask Q4:**
 
-- Prefer **open list first**: “Which **`role` names** from `product.md` will change? (2–5). If unsure, say unsure.”
+- Prefer **open list first**: “Which **`role` names** from `forge-product.md` will change? (2–5). If unsure, say unsure.”
 - If you use **multiple choice**, every option must be **honestly scoped**:
   - **Do not** put a **single** repo as **option A** when step 3 found a **naming/audience tension** — put **“Other / registry review”** first or make **D) Other** the **recommended** path until the user confirms.
-  - Add one line of **epistemic humility** in the prompt: *“If the PRD audience does not match any `role` name, answer **Other** and we will fix `product.md` before council.”*
-- If no registered repo clearly matches the PRD surface, **STOP** and say so: *“No `product.md` project matches [audience]. Add/register the correct repo or rename roles before locking Q4.”*
+  - Add one line of **epistemic humility** in the prompt: *“If the PRD audience does not match any `role` name, answer **Other** and we will fix `forge-product.md` before council.”*
+- If no registered repo clearly matches the PRD surface, **STOP** and say so: *“No `forge-product.md` project matches [audience]. Add/register the correct repo or rename roles before locking Q4.”*
 
 **Lock in `prd-locked.md` immediately after Q4 (always include these three lines):**
 
 ```markdown
-**Repos Affected:** (role names from product.md, 2–5)
+**Repos Affected:** (role names from forge-product.md, 2–5)
 **repo_registry_confidence:** high | medium | low
 **repo_naming_mismatch_notes:** (none) | (bullets: e.g. “PRD implies consumer UI; only registered web role is `admin-console` — confirm or add repo”)
 **product_md_update_required:** no | yes (if yes, link or describe what to add/fix before council)
@@ -57,7 +57,7 @@ The numbering below is a **checklist of fields** that must appear in `prd-locked
 When the PRD centers on an entity type that likely participates in **multiple product pipelines** (CRM / leads, acquisition feeds, verification, fraud or trust scoring, billing, messaging, regional compliance, alpha vs production paths — **use neutral names from the PRD**), add **`pipeline_adjacency_notes`** to `prd-locked.md` after this cluster (MCQ + free text is fine):
 
 1. **Does this change touch or read state also used by other flows?** (yes / no / unknown)
-2. If **yes** or **unknown**: list **which** adjacent pipelines (from PRD + `product.md` roles) and whether this task **reads**, **writes**, or **must explicitly avoid** each.
+2. If **yes** or **unknown**: list **which** adjacent pipelines (from PRD + `forge-product.md` roles) and whether this task **reads**, **writes**, or **must explicitly avoid** each.
 3. **Brain follow-up:** Point to **`docs/adjacency-and-cohorts.md`** for **`discovery-adjacency.md`** + **`touchpoints/`** artifacts before Council closes (**State 2.6** + council), unless **`adjacency_waiver`** with owner.
 
 **Lock snippet (append to `prd-locked.md` when Q4b applies):**

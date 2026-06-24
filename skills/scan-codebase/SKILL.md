@@ -127,13 +127,13 @@ Output goes to: `~/forge/brain/products/<slug>/codebase/`
 
 ## Deployment / runbook gate (eval & stack-up)
 
-**Problem:** `eval-product-stack-up` and deploy drivers read **`~/forge/brain/products/<slug>/product.md`**. If every project lacks **`deploy_doc`** (path to run/deploy doc, relative to that repo) **and** lacks a usable **`start`** + **`health`**, agents guess — services fail to spawn and eval wastes cycles.
+**Problem:** `eval-product-stack-up` and deploy drivers read **`~/forge/brain/products/<slug>/forge-product.md`**. If every project lacks **`deploy_doc`** (path to run/deploy doc, relative to that repo) **and** lacks a usable **`start`** + **`health`**, agents guess — services fail to spawn and eval wastes cycles.
 
-**HARD-GATE (workspace path):** When scan follows **`/workspace`** init, **`product.md` must already satisfy `/workspace` Step 3b** (each project has `deploy_source` + `deploy_doc`, or `start`+`health`). Do not treat workspace-complete until Step 3b is done.
+**HARD-GATE (workspace path):** When scan follows **`/workspace`** init, **`forge-product.md` must already satisfy `/workspace` Step 3b** (each project has `deploy_source` + `deploy_doc`, or `start`+`health`). Do not treat workspace-complete until Step 3b is done.
 
-**When `/scan` runs later:** If `product.md` is missing deploy fields, follow **`commands/scan.md` Step 1** — rediscover README/compose, ask once for paths or commands, update `product.md`, then run `forge_scan.py`. **Blocking is allowed** until deploy fields exist — eval and stack-up are not optional for a “ready” product workspace.
+**When `/scan` runs later:** If `forge-product.md` is missing deploy fields, follow **`commands/scan.md` Step 1** — rediscover README/compose, ask once for paths or commands, update `forge-product.md`, then run `forge_scan.py`. **Blocking is allowed** until deploy fields exist — eval and stack-up are not optional for a “ready” product workspace.
 
-**Optional brain artifact:** After a successful gate, you may add `codebase/DEPLOYMENT.md` summarizing per-role `deploy_doc` paths and health URLs for humans — keep **`product.md`** the machine source of truth for stack-up.
+**Optional brain artifact:** After a successful gate, you may add `codebase/DEPLOYMENT.md` summarizing per-role `deploy_doc` paths and health URLs for humans — keep **`forge-product.md`** the machine source of truth for stack-up.
 
 ---
 
@@ -229,7 +229,7 @@ python3 tools/verify_scan_outputs.py ~/forge/brain/products/<slug>/codebase
 | `--brain-codebase <dir>` | Brain codebase parent (the tree containing `modules/`, `classes/`, …) |
 | `--repos role:/abs/path …` | One or more repos; **`role` must equal `basename(path)`** |
 | `--run-dir <dir>` | Artifact dir for `forge_scan_*.txt` and `run.json` |
-| `--product-md <file>` | Optional — validates `role:` vs repo basename pairs in `product.md` |
+| `--product-md <file>` | Optional — validates `role:` vs repo basename pairs in `forge-product.md` |
 | `--skip-phase57` | Skip wikilink validation |
 | `--phase57-write-report` | Write `wikilink-orphan-report.md` under the brain codebase parent |
 | `--cleanup` | Remove `forge_scan_*.txt` in the run dir after success |
@@ -263,7 +263,7 @@ python3 tools/verify_scan_outputs.py ~/forge/brain/products/<slug>/codebase
 python3 tools/forge_scan.py \
   --brain-codebase ~/forge/brain/products/<slug>/codebase \
   --repos backend:~/projects/backend web:~/projects/web app:~/projects/app \
-  [--product-md ~/forge/brain/products/<slug>/product.md] \
+  [--product-md ~/forge/brain/products/<slug>/forge-product.md] \
   [--phase57-write-report] [--cleanup]
 ```
 
@@ -286,7 +286,7 @@ Tier 1 is **incoming reference score ≥5** from a cheap import-line scan, not �
 ### Fixing orphan `[[wikilinks]]`
 
 1. Re-run with **`--phase57-write-report`**.
-2. Align **`role`** in `product.md` with **`basename(repo path)`** for each project.
+2. Align **`role`** in `forge-product.md` with **`basename(repo path)`** for each project.
 3. Re-run scan after slug fixes; remove stale links the report flags.
 
 ### Optional operator utilities (post-scan)

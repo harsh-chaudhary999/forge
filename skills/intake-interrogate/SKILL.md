@@ -1,6 +1,6 @@
 ---
 name: intake-interrogate
-description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Confidence-first: pre-fill from PRD + product.md; variable number of user turns — stop as soon as mandatory lock fields are concrete and doubts are cleared (no fixed question count; two answers can resolve many latent doubts). Q4 registry + Q9 design gates unchanged when they apply; **Q10 implementation closure** (VCS reference, authoritative delivery boundary, implementation stack) when the ambiguity gate in Q10 applies."
+description: "WHEN: You've been given a PRD for a multi-repo product and need to lock scope, success criteria, and contracts. Confidence-first: pre-fill from PRD + forge-product.md; variable number of user turns — stop as soon as mandatory lock fields are concrete and doubts are cleared (no fixed question count; two answers can resolve many latent doubts). Q4 registry + Q9 design gates unchanged when they apply; **Q10 implementation closure** (VCS reference, authoritative delivery boundary, implementation stack) when the ambiguity gate in Q10 applies."
 type: rigid
 effort: high
 requires: [brain-write]
@@ -38,7 +38,7 @@ allowed-tools:
 | "We only had two user messages so intake must be shallow" | **Depth ≠ message count.** Two dense, corrective answers can satisfy many dimensions. Judge **lock quality**, not transcript length. |
 | "The user said TBD, that's fine for now" | TBD answers cannot be locked. A PRD with TBD success criteria cannot be evaluated. Push for specifics or block the PRD until resolved. |
 | "I'll ask multiple questions at once to save time" | Multi-question dumps produce short, shallow answers. One question at a time forces thought and produces lockable answers. |
-| "Only one repo in `product.md` matches a signal (sole web app, sole API service, sole worker, …), so that must be the repo" | **Cardinality ≠ correctness.** Picking the only backend / only frontend / only mobile entry because it is unique is **registry guessing**, not a validated lock. STOP. Cross-check PRD audience and semantics against **`role:`** and **`repo:`** path; surface mismatches; use explicit list + `product.md` fix or human confirmation. |
+| "Only one repo in `forge-product.md` matches a signal (sole web app, sole API service, sole worker, …), so that must be the repo" | **Cardinality ≠ correctness.** Picking the only backend / only frontend / only mobile entry because it is unique is **registry guessing**, not a validated lock. STOP. Cross-check PRD audience and semantics against **`role:`** and **`repo:`** path; surface mismatches; use explicit list + `forge-product.md` fix or human confirmation. |
 | "I'll phrase option A as the narrowest scope so it looks like the right pick" | Narrowest ≠ correct. MCQ **order** and **only** wording bias humans and models toward A. STOP. When **PRD audience or surface** (who uses it: customer, partner, admin, internal, …) **conflicts** with a **project `role` name** or parent path segment, **do not** present a single-repo “100% confident” option — lead with **escalation / Other**. |
 | "**Forge intake is exactly eight questions in fixed order with no design question** — I stayed inside the gate" | **False.** This skill is **`intake-interrogate`**, not a literal eight-chat-turn script. **`prd-locked.md` must include defined sections** (see **Lock dimensions**); **Q9 (design / UI)** applies when web, app, or **user-visible UI** is in scope — including the **verbatim design source-of-truth blockquote** in the thread and **`design_intake_anchor`**. A Figma link in the PRD **does not** replace Q9 or the blockquote. Claiming “no ninth question” is **misreading Forge**; if you locked without Q9 when UI applied, **re-open intake** — do not defend it. |
 | "I'll prepend *after intake comes council, then tech plans, then …* every turn so the user sees the roadmap" | **`docs/forge-one-step-horizon.md`** — **`using-forge`** **Horizon narration**. Stay on the **current** elicitation; full pipeline order is documented outside chat. |
@@ -50,7 +50,7 @@ allowed-tools:
 
 ```
 MANDATORY LOCK FIELDS IN prd-locked.md (TEMPLATE + Q4 REGISTRY LINES + Q9 WHEN UI SCOPE APPLIES + **Q10 WHEN IMPLEMENTATION-CLOSURE GATE APPLIES**) MUST BE CONCRETE BEFORE COUNCIL — NO TBD.
-CONFIDENCE-FIRST: PRE-FILL HIGH-CONFIDENCE ANSWERS FROM PRD + product.md; ASK THE USER ONLY FOR LOW-CONFIDENCE GAPS, CONTRADICTIONS, AND HIGH-STAKES AMBIGUITY — NOT THE SAME OPEN QUESTIONS WHEN THE PRD ALREADY STATES THE ANSWER.
+CONFIDENCE-FIRST: PRE-FILL HIGH-CONFIDENCE ANSWERS FROM PRD + forge-product.md; ASK THE USER ONLY FOR LOW-CONFIDENCE GAPS, CONTRADICTIONS, AND HIGH-STAKES AMBIGUITY — NOT THE SAME OPEN QUESTIONS WHEN THE PRD ALREADY STATES THE ANSWER.
 THERE IS NO TARGET NUMBER OF USER TURNS: STOP WHEN MANDATORY FIELDS ARE CONCRETE AND HIGH-STAKES DOUBTS ARE CLEARED — EVEN IF THAT TOOK TWO MESSAGES; DO NOT PAD TO EIGHT OR ANY OTHER QUOTA.
 WHEN Q9 APPLIES (WEB / APP / USER-VISIBLE UI): THE USER MUST SEE THE VERBATIM “SINGLE DESIGN SOURCE OF TRUTH” QUESTION (BLOCKQUOTE IN Q9 BELOW) IN AN ASSISTANT MESSAGE IN THIS INTAKE — YOU MAY ADD PRE-FILLED CONTEXT AROUND IT, BUT YOU MAY NOT WRITE design_intake_anchor OR CLAIM INTAKE COMPLETE UNTIL THAT EXACT SENTENCE HAS BEEN SHOWN. “CONFIRM” MEANS: SHOW THE VERBATIM LINE, THEN ASK CONFIRM/CORRECT — NOT SILENT INFERENCE FROM THE PRD ALONE.
 A TBD LOCK FIELD IS NO LOCK. PARTIAL INTAKE IS NO INTAKE.
@@ -58,7 +58,7 @@ A TBD LOCK FIELD IS NO LOCK. PARTIAL INTAKE IS NO INTAKE.
 
 ## HARD-GATE
 
-Do not skip **intake** (this skill and a written `prd-locked.md`). **Do** skip **ritual re-asking** when the PRD + `product.md` already supply a **high-confidence** answer — pre-fill, cite evidence, **confirm or correct** instead. **Never** skip mandatory **lock fields** (including Q4 registry lines and Q9 when UI scope applies). **Exception to “confirm-only”:** Q9’s **verbatim design source-of-truth question must still appear in chat** (see Iron Law) — pre-fill does not replace showing that line to the user.
+Do not skip **intake** (this skill and a written `prd-locked.md`). **Do** skip **ritual re-asking** when the PRD + `forge-product.md` already supply a **high-confidence** answer — pre-fill, cite evidence, **confirm or correct** instead. **Never** skip mandatory **lock fields** (including Q4 registry lines and Q9 when UI scope applies). **Exception to “confirm-only”:** Q9’s **verbatim design source-of-truth question must still appear in chat** (see Iron Law) — pre-fill does not replace showing that line to the user.
 
 ## Red Flags — STOP
 
@@ -66,19 +66,19 @@ If you notice any of these, STOP and do not proceed:
 
 - **Any question is answered with "TBD" or "we'll figure it out later"** — Unanswered questions become undiscovered requirements. STOP. Get the answer now or the PRD cannot be locked.
 - **Agent fires multiple unrelated open-ended questions in one message** — Shallow answers. STOP. **Allowed:** one numbered **Confirm / Correct** list for **pre-filled, high-confidence** fields only. **Not allowed:** several vague questions in one dump.
-- **Product slug is not found in `~/forge/brain/products/`** — PRD references an unregistered product. STOP. Register the product (e.g. run **`/workspace`**) or use a **blocking interactive prompt** per **`using-forge`** to obtain **`product.md`** / brain registration before proceeding.
+- **Product slug is not found in `~/forge/brain/products/`** — PRD references an unregistered product. STOP. Register the product (e.g. run **`/workspace`**) or use a **blocking interactive prompt** per **`using-forge`** to obtain **`forge-product.md`** / brain registration before proceeding.
 - **Success criteria is stated in vague terms ("fast", "good UX", "reliable")** — Unmeasurable criteria cannot be evaluated. STOP. Get specific, testable criteria (e.g., "< 200ms p99 latency") before locking.
 - **Rollback plan is "just redeploy the old version"** — Not a real rollback plan for schema changes, cache migrations, or event stream additions. STOP. Get a concrete rollback procedure.
-- **User dismisses a dimension as "not relevant" without evidence** — STOP. Verify against PRD + `product.md`: if the dimension truly does not apply, record **`N/A`** with a **one-line scope reason** in `prd-locked.md`. If it **does** apply, ask the **specific doubt** (why it matters for contracts, rollback, or eval).
+- **User dismisses a dimension as "not relevant" without evidence** — STOP. Verify against PRD + `forge-product.md`: if the dimension truly does not apply, record **`N/A`** with a **one-line scope reason** in `prd-locked.md`. If it **does** apply, ask the **specific doubt** (why it matters for contracts, rollback, or eval).
 - **PRD touches web or app but Q9 (design / UI change class) was not asked, was skipped, or is TBD** — Surfaces without an explicit design decision ship on hidden assumptions. STOP. Ask Q9 and lock an answer (including **no new design work** or **engineering-only UI**) before PRD lock.
 - **`design_new_work: yes` but design is not machine-implementable** — A wiki/Confluence link, bare Figma share URL, or “we’ll export later” is not a durable transport layer for council or subagents. STOP. Require **implementable design** per Q9 rules (brain `design/` paths, or `figma_file_key` + `figma_root_node_ids`, or an explicit **`design_waiver`** with owner + risk). Do not lock until one of those is true.
 - **User-visible or design-related work without a recorded design source-of-truth lock** — If Q9 applies (see **When to ask** below), `prd-locked.md` **must** include **`design_intake_anchor`**. **Also:** the **verbatim blockquote question** from the Q9 section must appear in an **earlier assistant message** in this intake (pair with PRD quote + confirm is OK). If `design_intake_anchor` exists but **no** assistant message in this thread contains that blockquote, intake is **invalid** — the user was never given the mandated prompt. **Never infer** from chat links alone, **never assume** engineering-only without user confirmation after showing the blockquote (or explicit user “no UI” reply to that prompt).
-- **Q4 repo choice without `repo_registry_confidence` + naming check** — You invented certainty. STOP. Reread `product.md` project **`role:`** names and **`repo:`** path segments against the PRD’s **stated audience and surface** (who/what the change is for). If they **diverge**, you must **not** lock “minimal MCQ” alone — record **`repo_naming_mismatch_notes`** and **`product_md_update_required`** or get human sign-off.
+- **Q4 repo choice without `repo_registry_confidence` + naming check** — You invented certainty. STOP. Reread `forge-product.md` project **`role:`** names and **`repo:`** path segments against the PRD’s **stated audience and surface** (who/what the change is for). If they **diverge**, you must **not** lock “minimal MCQ” alone — record **`repo_naming_mismatch_notes`** and **`product_md_update_required`** or get human sign-off.
 - **PRD is locked without brain-write recording the decision** — The lock exists only in chat context and will be lost. STOP. Write to brain before calling PRD locked.
 
 ## Confidence-first intake (MUST — default)
 
-1. **Silent audit first:** Read the PRD, `product.md`, and (if present) brain scan / prior decisions. For each **lock dimension** in the Q1–Q9 reference below, assign **confidence**: **high** (explicit, unambiguous in documents), **medium** (partially stated or needs disambiguation), **low** (missing, contradictory, or unsafe to infer).
+1. **Silent audit first:** Read the PRD, `forge-product.md`, and (if present) brain scan / prior decisions. For each **lock dimension** in the Q1–Q9 reference below, assign **confidence**: **high** (explicit, unambiguous in documents), **medium** (partially stated or needs disambiguation), **low** (missing, contradictory, or unsafe to infer).
 
 2. **Pre-fill from evidence:** For every **high** dimension, draft the corresponding `prd-locked.md` text **from the PRD/product** (cite section or quote briefly). **Do not invent** facts not supported by the documents.
 
@@ -235,7 +235,7 @@ Write all answers to `~/forge/brain/prds/<task-id>/prd-locked.md`:
   2. **User says "I'll register it later"**: Cannot proceed. Intake requires valid product. Escalate.
   3. **User wants to continue anyway**: Document risk in prd-locked.md: "Product not registered. Proceeding with unvalidated product definition."
 
-**Escalation**: BLOCKED - Cannot lock PRD without validating product exists. Route to product registration or ask user to provide product.md.
+**Escalation**: BLOCKED - Cannot lock PRD without validating product exists. Route to product registration or ask user to provide forge-product.md.
 
 ---
 

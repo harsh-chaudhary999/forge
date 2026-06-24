@@ -43,7 +43,7 @@ This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for 
 
 ```
 ALL MANDATORY prd-locked.md FIELDS (intake-interrogate TEMPLATE + Q4 REGISTRY + Q9 WHEN UI SCOPE APPLIES) MUST BE CONCRETE BEFORE COUNCIL.
-CONFIDENCE-FIRST QUESTIONING IS ALLOWED — RITUAL RE-ASKING OF EVERY NUMBERED QUESTION IS NOT REQUIRED WHEN PRD + product.md ALREADY SUPPLY HIGH-CONFIDENCE ANSWERS THE USER CONFIRMS.
+CONFIDENCE-FIRST QUESTIONING IS ALLOWED — RITUAL RE-ASKING OF EVERY NUMBERED QUESTION IS NOT REQUIRED WHEN PRD + forge-product.md ALREADY SUPPLY HIGH-CONFIDENCE ANSWERS THE USER CONFIRMS.
 THE COUNT OF USER MESSAGES IS NOT FIXED: STOP INTAKE WHEN LOCK FIELDS ARE COMPLETE AND DOUBTS ARE CLEARED — DO NOT PAD QUESTIONS TO HIT A HISTORICAL QUOTA.
 PARTIAL INTAKE (ANY MANDATORY FIELD STILL TBD) IS NO INTAKE.
 ```
@@ -79,7 +79,7 @@ If you notice any of these, STOP and do not proceed:
 - **Output:** PRD identified, ownership clear
 
 ### Invoke Intake-Interrogate Skill
-**ALWAYS invoke `intake-interrogate` — do not invent a parallel questionnaire.** It uses **confidence-first** elicitation: pre-fill from PRD + `product.md`, ask **low-confidence / high-stakes** doubts, and still require every **mandatory lock field** (including Q4 registry lines and Q9 when UI applies). See the skill’s **Lock dimensions (Q1–Q9 reference)** — conversation order follows **doubt severity**, not fixed Q1→Q9 chat.
+**ALWAYS invoke `intake-interrogate` — do not invent a parallel questionnaire.** It uses **confidence-first** elicitation: pre-fill from PRD + `forge-product.md`, ask **low-confidence / high-stakes** doubts, and still require every **mandatory lock field** (including Q4 registry lines and Q9 when UI applies). See the skill’s **Lock dimensions (Q1–Q9 reference)** — conversation order follows **doubt severity**, not fixed Q1→Q9 chat.
 
 ### Lock the PRD
 - **Input:** Completed `prd-locked.md` with all mandatory fields (Q1–Q8 dimensions + Q9 when in scope)
@@ -268,7 +268,7 @@ Before claiming intake complete:
 
 ## Post-Implementation Checklist
 
-- [ ] Product topology validated via `product-context-load` before PRD was locked — all referenced repos exist in `product.md`, no port conflicts detected.
+- [ ] Product topology validated via `product-context-load` before PRD was locked — all referenced repos exist in `forge-product.md`, no port conflicts detected.
 - [ ] `prd-locked.md` written to `~/forge/brain/prds/<task-id>/` (not just in chat).
 - [ ] All 9 intake questions answered (Q1–Q9, including Q9 design lock).
 - [ ] `[P1-PRD-LOCKED]` logged to `conductor.log`.

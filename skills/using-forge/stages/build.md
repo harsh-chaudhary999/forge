@@ -44,7 +44,7 @@ These three gates must ALL be satisfied before `[P4.1-DISPATCH]` is logged:
 - **"The change is tiny, I'll skip the worktree"** — No change is too small for a worktree. One worktree per task, always.
 - **"I'll write the test after I know the implementation works"** — This is not TDD. Test must be written BEFORE any implementation code and observed to FAIL on the first run.
 - **"The spec-reviewer can trust my summary of what changed"** — It cannot. `forge-trust-code` reads the actual diff. Summaries are not evidence.
-- **"QA CSV is optional, we can skip it this time"** — If `forge_qa_csv_before_eval: true` in product.md or if this is a `/forge` run, it is mandatory. No exceptions.
+- **"QA CSV is optional, we can skip it this time"** — If `forge_qa_csv_before_eval: true` in forge-product.md or if this is a `/forge` run, it is mandatory. No exceptions.
 - **"Semantic automation can wait until after implementation"** — State 4b requires a valid manifest + coherent CSV before dispatch; do not treat machine eval as an afterthought.
 
 ## Subagent Dispatch Rules

@@ -46,7 +46,7 @@ existing semantic machine-eval inputs in brain (qa/semantic-automation.csv + man
 
 - **`/qa-write` ordering** satisfied **before** `/qa-run`: **`prd-locked.md`**, **`qa-prd-analysis`** + **`qa-analysis.md`**, then **`manual-test-cases.csv`** or documented waiver where policy requires — see **`commands/qa-write.md`** and **`skills/qa-pipeline-orchestrate/SKILL.md`**. `/qa-run` assumes upstream authoring order was respected.
 - **Machine-eval inputs present:** valid **`~/forge/brain/prds/<task-id>/qa/semantic-eval-manifest.json`** with coherent **`qa/semantic-automation.csv`** — see **`docs/forge-task-verification.md`**.
-- **`~/forge/brain/products/<slug>/product.md`** — for repo paths and service start commands
+- **`~/forge/brain/products/<slug>/forge-product.md`** — for repo paths and service start commands
 - For Android: `adb devices` shows connected device or running emulator
 - For iOS: simulator running (`xcrun simctl list | grep Booted`) or Appium MCP configured
 
@@ -85,7 +85,7 @@ Do NOT declare the feature ready to merge on a RED or YELLOW **product** verdict
 
 **Assistant chat:** Follow **`docs/forge-one-step-horizon.md`** and **`skills/using-forge/SKILL.md`** — **one-step horizon**; **question-forward** elicitation (no unsolicited command/skill-reference **preface**, no **later-stage** status **suffix** on single-answer turns, **no defensive downstream-gate narration** mid-elicitation — **`docs/forge-one-step-horizon.md`** **No defensive downstream-gate narration (repo-wide)**); **one blocking affordance per unrelated fork** (no bundled prose obligations); **no dual prompts** — **never** the **`AskUserQuestion`** widget on **one** topic **and** a **long markdown question** on **another** in the **same** message; **no chat–widget duplicate** — long lists / same question body **once** in **chat**; **`AskUserQuestion`** = **short** title + **options** only (**`docs/forge-one-step-horizon.md`** **Chat vs `AskUserQuestion` widget**); **headline / first § = immediate next artifact** — **not** *What unlocks machine eval*, **`qa/semantic-automation.csv`**, or the full ordering table **as the main heading** when **manual CSV** / **`qa-manual-test-cases-from-prd`** / **`qa-prd-analysis`** is still the next gate (**`docs/forge-one-step-horizon.md`** **Headline = immediate next step**); **phase-specific** waivers/ordering **only** where this doc and the active skill say; **Multi-question elicitation** (items **4–8**) & **Blocking interactive prompts**.
 
-**Forge plugin scope:** Skills from `skills/`; brain from `~/forge/brain/`; repo paths from `product.md`.
+**Forge plugin scope:** Skills from `skills/`; brain from `~/forge/brain/`; repo paths from `forge-product.md`.
 
 **vs `/eval`:** `/eval` is the forge delivery pipeline eval gate (State P4.4, requires State 4b artifacts). `/qa-run` is standalone — works without a full conductor run, targets any branch, generates its report independently.
 

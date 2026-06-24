@@ -1,6 +1,6 @@
 # Glossary — Core Concepts
 
-Canonical artifacts (shared-dev-spec, product.md, prd-locked.md, terminology.md, brain layout), the skill/discipline vocabulary (Skill, Rigid/Flexible Skill, Red Flag, Anti-Pattern, HARD-GATE, Discipline), roadmap terms (Phase, Batch, P0/P1/P2/P3), and the cross-cutting nouns (Surface, Contract, Driver, Escalation, Superpowers, Seed Product, worktree-per-project-per-task).
+Canonical artifacts (shared-dev-spec, forge-product.md, prd-locked.md, terminology.md, brain layout), the skill/discipline vocabulary (Skill, Rigid/Flexible Skill, Red Flag, Anti-Pattern, HARD-GATE, Discipline), roadmap terms (Phase, Batch, P0/P1/P2/P3), and the cross-cutting nouns (Surface, Contract, Driver, Escalation, Superpowers, Seed Product, worktree-per-project-per-task).
 
 ---
 
@@ -16,9 +16,9 @@ Canonical artifacts (shared-dev-spec, product.md, prd-locked.md, terminology.md,
 
 ---
 
-### product.md
+### forge-product.md
 
-**Definition:** Per-product workspace config file at `~/forge/brain/products/<slug>/product.md`. Contains: product slug, repo paths (role → absolute path), start/health commands per service, `deploy_doc` for services with complex startup, and flags. The most important flag is `forge_qa_csv_before_eval` (boolean) — when `true` or when the entrypoint is `/forge`, `qa-manual-test-cases-from-prd` is mandatory before `[P4.0-SEMANTIC-EVAL]`.
+**Definition:** Per-product workspace config file at `~/forge/brain/products/<slug>/forge-product.md`. Contains: product slug, repo paths (role → absolute path), start/health commands per service, `deploy_doc` for services with complex startup, and flags. The most important flag is `forge_qa_csv_before_eval` (boolean) — when `true` or when the entrypoint is `/forge`, `qa-manual-test-cases-from-prd` is mandatory before `[P4.0-SEMANTIC-EVAL]`.
 
 **Key fields:**
 - `forge_qa_csv_before_eval: true|false` — gates manual QA CSV requirement
@@ -46,7 +46,7 @@ Canonical artifacts (shared-dev-spec, product.md, prd-locked.md, terminology.md,
 
 **Definition:** The Forge brain is the append-only, git-backed evidence store at `~/forge/brain/`. Two subtrees:
 
-- `~/forge/brain/products/<slug>/` — persistent per-product config (`product.md`, `codebase/`, `terminology.md`, scan outputs)
+- `~/forge/brain/products/<slug>/` — persistent per-product config (`forge-product.md`, `codebase/`, `terminology.md`, scan outputs)
 - `~/forge/brain/prds/<task-id>/` — per-task artifacts (all phases of a single pipeline run)
 
 **Per-task layout (`~/forge/brain/prds/<task-id>/`):**

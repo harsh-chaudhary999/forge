@@ -15,14 +15,14 @@ How do you want to run these tests?
      BASE_URL, API_BASE_URL, plus any driver secrets (DB_DSN, REDIS_URL, TEST_USER_*, …) needed for eval.
      No git checkout, no local stack, no booting AVD/emulator or local Chrome CDP unless drivers point at reachable endpoints.
 
-  B) Branch-local — Check out feature branches, bring up the product stack per product.md, then run eval drivers
+  B) Branch-local — Check out feature branches, bring up the product stack per forge-product.md, then run eval drivers
      (eval-product-stack-up → qa-pipeline QA-P5). Requires branches map + runtime env (BASE_URL after stack-up,
      DEVICE_ID / IOS_SIMULATOR_ID / DB_DSN / REDIS_URL as scenarios require). Uses host resources from discovery
      (Chrome for CDP, emulator if Android in scope — see KVM note on Linux).
 
   C) Branch-code-validate — Check out branches and run each repo’s native test suite only (npm test, pytest,
      go test, …). No full product stack or eval-driver UI automation. Same branches map; optional test_commands
-     overrides from product.md.
+     overrides from forge-product.md.
 
   D) Branch-tracking — You provide BASE_URL to the deployed stack; record which branch/SHA is live per repo
      in the branch-env manifest for traceability (optional shallow checkout for diff only — see workflow notes).

@@ -120,8 +120,8 @@ def _is_mount_only_route_line(raw_line: str) -> bool:
 
 
 def _load_product_roles(brain_parent: Path) -> dict[str, str]:
-    """Best-effort parse of ../product.md project roles."""
-    product_md = brain_parent.parent / "product.md"
+    """Best-effort parse of ../forge-product.md project roles."""
+    product_md = brain_parent.parent / "forge-product.md"
     if not product_md.is_file():
         return {}
     try:
@@ -853,7 +853,7 @@ def run_phase56(brain_parent: Path, scan_tmp: Path, topology=None) -> None:
         unresolved_section = (
             "\n\n## Unresolved Edges\n\n"
             "_Call sites where no matching route, type, or topology entry was found. "
-            "Likely dynamic URLs, environment-variable base URLs, or cross-product calls not in product.md._\n\n"
+            "Likely dynamic URLs, environment-variable base URLs, or cross-product calls not in forge-product.md._\n\n"
             "```tsv\n"
             + "\n".join(unresolved_unique[:200])
             + ("\n... (truncated)" if len(unresolved_unique) > 200 else "")

@@ -5,7 +5,7 @@ The skill accepts a structured input — either provided inline or read from
 
 ```yaml
 task_id: PRD-042
-slug: shopapp                       # product slug — resolves repos from product.md
+slug: shopapp                       # product slug — resolves repos from forge-product.md
 run_mode: url-only | branch-local | branch-code-validate | branch-tracking
 
 # For branch-local, branch-code-validate, and branch-tracking: branch overrides per repo
@@ -13,11 +13,11 @@ branches:
   backend-api: feature/payment-v2
   web-dashboard: feature/payment-ui
 
-# For branch-code-validate: test commands per repo (if not in product.md)
+# For branch-code-validate: test commands per repo (if not in forge-product.md)
 test_commands:
   backend-api: "npm test"
   web-dashboard: "npm run test:unit"
-  # Fallback: if absent, read test_command from product.md Projects section for that repo
+  # Fallback: if absent, read test_command from forge-product.md Projects section for that repo
 
 # Runtime env — injected into .eval-env for eval drivers (branch-local / url-only only)
 env:
@@ -34,5 +34,5 @@ env:
 **Required minimum per mode:**
 - `url-only`: `task_id`, `slug`, `run_mode`, `BASE_URL`
 - `branch-local`: `task_id`, `slug`, `run_mode`, at least one `branches` entry
-- `branch-code-validate`: `task_id`, `slug`, `run_mode`, at least one `branches` entry (test commands from `product.md` or `test_commands` override)
+- `branch-code-validate`: `task_id`, `slug`, `run_mode`, at least one `branches` entry (test commands from `forge-product.md` or `test_commands` override)
 - `branch-tracking`: `task_id`, `slug`, `run_mode`, `BASE_URL`, at least one `branches` entry

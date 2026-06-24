@@ -40,7 +40,7 @@ Semantic machine-eval artifacts, the `conductor.log` phase markers (`[P4.x-…]`
 
 ### [P4.0-QA-CSV]
 
-**Definition:** `conductor.log` marker logged after `~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv` has ≥1 approved row and Step 7 approval is granted in `qa-manual-test-cases-from-prd`. Format: `[P4.0-QA-CSV] task_id=<id> rows=<n> approved=yes`. When logging `skipped=not_required`, it is only valid on partial runs (`/plan`, `/build`, etc.) when `forge_qa_csv_before_eval` is `false`/unset in `product.md`. **Never** log `skipped=not_required` on a full `/forge` run.
+**Definition:** `conductor.log` marker logged after `~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv` has ≥1 approved row and Step 7 approval is granted in `qa-manual-test-cases-from-prd`. Format: `[P4.0-QA-CSV] task_id=<id> rows=<n> approved=yes`. When logging `skipped=not_required`, it is only valid on partial runs (`/plan`, `/build`, etc.) when `forge_qa_csv_before_eval` is `false`/unset in `forge-product.md`. **Never** log `skipped=not_required` on a full `/forge` run.
 
 **Prerequisite for:** `[P4.0-SEMANTIC-EVAL]` must come after this marker. `conductor-orchestrate` State 4b enforces the ordering.
 

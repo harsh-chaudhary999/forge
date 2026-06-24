@@ -17,7 +17,7 @@ Build a codebase knowledge graph for the Forge brain. Works on any existing repo
 /scan                              # scan all repos in current workspace
 /scan <slug>                       # scan all repos in workspace <slug>
 /scan <slug> <role>                # scan one project role (backend | web | mobile | shared)
-/scan <slug> <path>                # scan a specific repo path (overrides product.md)
+/scan <slug> <path>                # scan a specific repo path (overrides forge-product.md)
 /scan --refresh                    # force re-scan even if scan is <7 days old
 ```
 
@@ -28,30 +28,30 @@ Build a codebase knowledge graph for the Forge brain. Works on any existing repo
 ### Step 0 — Resolve target
 
 **If no slug given:**
-- Check if a workspace is open (look for `~/forge/brain/products/*/product.md`)
+- Check if a workspace is open (look for `~/forge/brain/products/*/forge-product.md`)
 - If exactly one workspace exists → use it
 - If multiple exist → list them and use a **blocking interactive prompt** per **`skills/using-forge/SKILL.md`** **Blocking interactive prompts** (**`AskUserQuestion`** / **numbered slugs + stop**)
 - If none exist → use a **blocking interactive prompt** to choose: e.g. run **`/workspace`** now vs provide path — not only prose *Run `/workspace` first* with no same-turn choices
 
 **If slug given:**
-- Read `~/forge/brain/products/<slug>/product.md`
+- Read `~/forge/brain/products/<slug>/forge-product.md`
 - Collect all `repo:` paths from the Projects section
 - Verify each path exists: `ls <repo-path>` — warn if any are missing, skip them
 
 **If a specific path is given (no slug match):**
-- Treat as ad-hoc scan: use dirname as slug, don't require product.md
-- Warn: "No product.md found — scanning as standalone repo. Brain output will be at `~/forge/brain/products/<dirname>/codebase/`"
+- Treat as ad-hoc scan: use dirname as slug, don't require forge-product.md
+- Warn: "No forge-product.md found — scanning as standalone repo. Brain output will be at `~/forge/brain/products/<dirname>/codebase/`"
 
 ---
 
-### Step 1 — Deployment / runbook readiness (from `product.md`)
+### Step 1 — Deployment / runbook readiness (from `forge-product.md`)
 
-When `~/forge/brain/products/<slug>/product.md` exists, **read it before** invoking `scan-codebase` / `forge_scan.py`:
+When `~/forge/brain/products/<slug>/forge-product.md` exists, **read it before** invoking `scan-codebase` / `forge_scan.py`:
 
 - For each `### <project>` block, check for **`deploy_doc`** (path relative to that project’s `repo:`) **or** a usable **`start`** + **`health`** pair.
-- If **missing**: run the same README / `docker-compose` discovery as **`/workspace` Step 3b**. If still insufficient, **pause** the scan once, require a doc path or `start`/`health`, update `product.md`, then continue. **Do not** complete `/scan` for that slug while deploy fields are empty (same bar as workspace).
+- If **missing**: run the same README / `docker-compose` discovery as **`/workspace` Step 3b**. If still insufficient, **pause** the scan once, require a doc path or `start`/`health`, update `forge-product.md`, then continue. **Do not** complete `/scan` for that slug while deploy fields are empty (same bar as workspace).
 
-This keeps the first workspace pass authoritative while allowing `/scan --refresh` without repeating the whole wizard if `product.md` is already complete.
+This keeps the first workspace pass authoritative while allowing `/scan --refresh` without repeating the whole wizard if `forge-product.md` is already complete.
 
 ---
 

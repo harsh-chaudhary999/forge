@@ -13,7 +13,7 @@ Valid: user is testing against an already-deployed stack (CI/staging). Skip Step
 If `TEST_USER_PASSWORD`, `API_KEY`, or similar secrets are provided: confirm they are safe for the test environment. Never use production credentials. Redact all `*_PASSWORD`, `*_SECRET`, `*_KEY` values in the manifest.
 
 ### Monorepo (all services in one git repository)
-When `product.md` lists multiple services that all live in the same git repo (e.g. a monorepo at a single path), treat that repo as a single checkout target. The `branches` map entry uses the monorepo path as the key. Do not attempt separate checkouts per logical service — there is only one working tree. Record the single post-checkout SHA in the manifest against all logical services that share it.
+When `forge-product.md` lists multiple services that all live in the same git repo (e.g. a monorepo at a single path), treat that repo as a single checkout target. The `branches` map entry uses the monorepo path as the key. Do not attempt separate checkouts per logical service — there is only one working tree. Record the single post-checkout SHA in the manifest against all logical services that share it.
 
 ### Restoring the operator's working tree (D30)
 In-place checkout (Steps 2–4) mutates the operator's branches. Capture each repo's

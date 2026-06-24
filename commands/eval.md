@@ -9,7 +9,7 @@ Invoke the **`forge-eval-gate`** skill to run the **evaluation pipeline** only: 
 
 - **`~/forge/brain/prds/<task-id>/qa/semantic-automation.csv`** committed and executed so **`qa/semantic-eval-manifest.json`** + **`qa/semantic-eval-run.log`** exist — log **`[P4.0-SEMANTIC-EVAL]`** when authoring completes (**`docs/semantic-eval-csv.md`**, **`docs/forge-task-verification.md`**).
 - Manual QA CSV (**`manual-test-cases.csv`**) is human acceptance + **`forge-tdd`** traceability — not the machine-eval file.
-- **`~/forge/brain/products/<slug>/product.md`** must define runnable **`start`** + **`health`** (or **`deploy_doc`**) for services the eval stack needs (**`eval-product-stack-up`**).
+- **`~/forge/brain/products/<slug>/forge-product.md`** must define runnable **`start`** + **`health`** (or **`deploy_doc`**) for services the eval stack needs (**`eval-product-stack-up`**).
 
 ```bash
 python3 tools/verify_forge_task.py --task-id <task-id> --brain ~/forge/brain

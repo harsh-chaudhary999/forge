@@ -6,7 +6,7 @@ For each repo in the `branches` map, run the configured test command:
 
 ```bash
 REPO=<path>
-TEST_CMD=<test_command from product.md or test_commands override>
+TEST_CMD=<test_command from forge-product.md or test_commands override>
 
 echo "=== Running tests in $REPO ==="
 echo "Command: $TEST_CMD"
@@ -28,9 +28,9 @@ fi
 
 **How to resolve the test command per repo:**
 1. Check `test_commands` in the input config (explicit override)
-2. Else read `product.md` for the repo's `test_command` field in the Projects section
+2. Else read `forge-product.md` for the repo's `test_command` field in the Projects section
 3. Else detect from repo structure: `package.json` → `npm test`, `pytest.ini`/`setup.py` → `pytest`, `go.mod` → `go test ./...`, `pom.xml` → `mvn test`, `build.gradle` → `./gradlew test`
-4. If still unknown: STOP. Use `AskUserQuestion` — paste **`product.md`** `test_command`, pick from numbered detector guesses, or free-text **one** command — **never guess** without confirmation.
+4. If still unknown: STOP. Use `AskUserQuestion` — paste **`forge-product.md`** `test_command`, pick from numbered detector guesses, or free-text **one** command — **never guess** without confirmation.
 
 **Record results per repo:**
 

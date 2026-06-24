@@ -56,7 +56,7 @@ Forge’s **skills** and **agents** enforce Phase 4 ordering **procedurally**. T
 | **`--require-conductor-timestamps`** | Any non-comment line containing a `[P…]` phase token lacks a leading ISO-8601 timestamp (see `conductor-orchestrate` **Log Format**) |
 | **`--strict-single-task-brain`** | More than one `prds/*/conductor.log` exists (combine with **`--allow-multi-task-brain`** to opt out) |
 | **Gate ledger path** | **`--gates-dir`** optional: defaults to `prds/<task-id>/gates/` when that directory exists; if an explicit `--gates-dir` path is missing, the task-local `gates/` is used instead (**INFO** on stderr) |
-| **`forge_qa_csv_before_eval: true`** | Resolved `products/<slug>/product.md` (via `--product` or `prd-locked.md` **Product:** matching `name:`) — requires data rows in `qa/manual-test-cases.csv` |
+| **`forge_qa_csv_before_eval: true`** | Resolved `products/<slug>/forge-product.md` (via `--product` or `prd-locked.md` **Product:** matching `name:`) — requires data rows in `qa/manual-test-cases.csv` |
 | **Log order** | If `conductor.log` exists: first `[P4.1-DISPATCH]` must not appear before `[P4.0-SEMANTIC-EVAL]`; with QA flag, `[P4.0-QA-CSV]` … `approved=yes` must precede that line |
 | **Net-new design** | If `prd-locked.md` indicates **design_new_work: yes** and no `design_waiver` … `prd_only`: requires files under `design/` and/or `[DESIGN-INGEST]` before first `[P4.1-DISPATCH]` when a log exists; if the log is missing, **design/** must be non-empty |
 | **`--strict-tdd`** | `[P4.0-TDD-RED]` must appear before the first `[P4.1-DISPATCH]` |

@@ -19,13 +19,13 @@ allowed-tools:
 
 # Eval Product Stack Up
 
-Orchestrates startup of the product stack for evaluation. Reads product topology from product.md, starts only the infrastructure and services that are **configured** in the product file, validates health checks, and reports readiness.
+Orchestrates startup of the product stack for evaluation. Reads product topology from forge-product.md, starts only the infrastructure and services that are **configured** in the product file, validates health checks, and reports readiness.
 
 ## Human input
 
 This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for Claude Code and skill lint. Blocking prompts follow **[`skills/_shared/human-input.md`](../_shared/human-input.md)**. See **`using-forge`** **Interactive human input**.
 
-**Infrastructure is optional.** If no infra (DB, Redis, Kafka, Elasticsearch) is configured in product.md, stack-up skips infra startup and runs eval against services only. Eval scenarios that require unconfigured infra are automatically skipped and marked N/A — they do not cause an eval failure.
+**Infrastructure is optional.** If no infra (DB, Redis, Kafka, Elasticsearch) is configured in forge-product.md, stack-up skips infra startup and runs eval against services only. Eval scenarios that require unconfigured infra are automatically skipped and marked N/A — they do not cause an eval failure.
 
 ## Anti-Pattern Preamble: No Rationalizations
 
@@ -48,22 +48,22 @@ This skill lists **`AskUserQuestion`** in **`allowed-tools`** — canonical for 
 
 4. **"Partial failures are fine, we can test what's up"**
    - Truth: There is a critical distinction between two types of partial stacks:
-     - **By design** (infra not configured in product.md) → VALID. Skip that infra. Eval the rest. Mark dependent scenarios N/A.
+     - **By design** (infra not configured in forge-product.md) → VALID. Skip that infra. Eval the rest. Mark dependent scenarios N/A.
      - **By failure** (infra configured but failed to start) → INVALID. This is a real failure. Fail fast.
    - Consequence of conflating the two: agents either block all eval because Redis isn't configured (too strict) or silently eval against a broken stack (too loose).
-   - Standard: If infra is **absent from product.md**, skip it gracefully. If infra is **in product.md but fails to start**, fail fast with detailed error.
+   - Standard: If infra is **absent from forge-product.md**, skip it gracefully. If infra is **in forge-product.md but fails to start**, fail fast with detailed error.
 
 ## Iron Law
 
 ```
-EVERY STACK-UP READS product.md FRESH AND STARTS EXACTLY WHAT IS CONFIGURED — NO MORE, NO LESS.
+EVERY STACK-UP READS forge-product.md FRESH AND STARTS EXACTLY WHAT IS CONFIGURED — NO MORE, NO LESS.
 CONFIGURED SERVICES THAT FAIL TO START = HARD FAILURE. UNCONFIGURED SERVICES = GRACEFUL SKIP.
 HEALTH CHECKS ARE NEVER SKIPPED FOR CONFIGURED SERVICES.
 EVAL SCENARIOS REQUIRING UNCONFIGURED INFRA ARE MARKED N/A, NOT FAILED.
 ```
 
-**Infra tiers (all optional unless configured in product.md):**
-- Tier 1 — Application services (backend, web, mobile): Always required if in product.md
+**Infra tiers (all optional unless configured in forge-product.md):**
+- Tier 1 — Application services (backend, web, mobile): Always required if in forge-product.md
 - Tier 2 — Relational DB (MySQL, PostgreSQL, SQLite): Optional. Skip if not configured.
 - Tier 3 — Cache (Redis, Memcached): Optional. Skip if not configured.
 - Tier 4 — Message bus (Kafka, RabbitMQ): Optional. Skip if not configured.
@@ -78,8 +78,8 @@ If you notice any of these, STOP and do not proceed:
 - **Services are started in alphabetical or arbitrary order instead of dependency order** — Service B depending on Service A will fail to connect if A is not yet healthy. STOP. Resolve the dependency graph and start in topological order: infrastructure first, then services that depend on it.
 - **`stack-down` is not called when eval fails** — Services left running from a failed eval contaminate the next run with leftover data, open connections, and consumed offsets. STOP. `stack-down` must be called unconditionally in the cleanup path, whether eval passed or failed.
 - **Health check is a TCP port probe only (port accepting connections)** — A port open means the OS socket is bound, not that the application is ready. STOP. Health checks must be HTTP endpoint checks (or equivalent application-level readiness probes) that verify the application is actually serving requests.
-- **A configured service in `product.md` has no `deploy_doc` and no `start`+`health`** — There is nothing executable to automate. STOP. Return user to `/workspace` Step 3b or `/scan` Step 1 to add a runbook path or commands; do not pretend stack-up can proceed.
-- **Stack-up is declared successful before every *configured* service is verified** — A stack missing a configured service will produce eval failures that look like code bugs. STOP. Every service listed in product.md must pass its health check. Services *not* listed in product.md are not started and not checked — that is correct behaviour, not a bug.
+- **A configured service in `forge-product.md` has no `deploy_doc` and no `start`+`health`** — There is nothing executable to automate. STOP. Return user to `/workspace` Step 3b or `/scan` Step 1 to add a runbook path or commands; do not pretend stack-up can proceed.
+- **Stack-up is declared successful before every *configured* service is verified** — A stack missing a configured service will produce eval failures that look like code bugs. STOP. Every service listed in forge-product.md must pass its health check. Services *not* listed in forge-product.md are not started and not checked — that is correct behaviour, not a bug.
 
 ## Overview
 
@@ -97,7 +97,7 @@ This skill enables:
 
 ### Eval host preflight vs product stack (cross-cutting)
 
-This skill only proves configured services from **`product.md`** are **READY** (HTTP health, ports, deps). It does **not** install Chrome/CDP, Android emulator/adb, XCTest/simctl, or Node/Appium — those are **eval host** concerns.
+This skill only proves configured services from **`forge-product.md`** are **READY** (HTTP health, ports, deps). It does **not** install Chrome/CDP, Android emulator/adb, XCTest/simctl, or Node/Appium — those are **eval host** concerns.
 
 Before **`qa-semantic-csv-orchestrate`** / **`qa-pipeline-orchestrate`** QA-P5, agents **must** follow **`eval-driver-ios-xctest`**, **`eval-driver-android-adb`**, **`eval-driver-web-cdp`**, **`eval-driver-api-http`** preflight sections and write transcripts under **`~/forge/brain/prds/<task-id>/qa/logs/`** (**`skills/forge-brain-layout/SKILL.md`**). Failure modes should be distinguishable: **service unhealthy** (this skill) vs **no browser / no device / wrong OS for iOS** (driver skills). Do not blame **stack-up** when the blocker is **missing KVM** or **no `--remote-debugging-port`**.
 

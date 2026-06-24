@@ -49,11 +49,11 @@ Adjust the pre-checked (☑) items based on what the PRD actually contains. Pre-
 
 ## Q2 — Surfaces (mandatory)
 
-Show only surfaces that exist in `product.md` for this product:
+Show only surfaces that exist in `forge-product.md` for this product:
 
 ```
 Which surfaces should scenarios be generated for?
-[Surfaces registered in product.md for <slug>:]
+[Surfaces registered in forge-product.md for <slug>:]
 
   ☑ Web ({{ web-dashboard repo }}) — browser via Chrome DevTools Protocol
   ☑ API ({{ backend-api repo }})   — REST/GraphQL via HTTP driver
@@ -64,7 +64,7 @@ Which surfaces should scenarios be generated for?
   ○ Event Bus (Kafka)               — event publish/consume verification
   ○ Search (Elasticsearch)          — index update, query result checks
 
-Pre-checked surfaces appear in both the PRD and product.md.
+Pre-checked surfaces appear in both the PRD and forge-product.md.
 Answer: which surfaces should have scenarios generated? (or "all")
 ```
 

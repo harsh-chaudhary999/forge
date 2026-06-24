@@ -181,7 +181,7 @@ mkdir -p brain/self-test/${SELF_TEST_RUN_ID}
 export SELF_TEST_BRAIN=brain/self-test/${SELF_TEST_RUN_ID}
 
 # 3. Verify eval infrastructure is running
-# (MySQL, Redis, Kafka, Elasticsearch — per seed/product.md)
+# (MySQL, Redis, Kafka, Elasticsearch — per seed/forge-product.md)
 mysql -h localhost shopapp -e "SELECT 1" || { echo "MySQL FAILED"; exit 1; }
 redis-cli PING || { echo "Redis FAILED"; exit 1; }
 curl -s http://localhost:9200/_health | jq '.status' || { echo "ES FAILED"; exit 1; }

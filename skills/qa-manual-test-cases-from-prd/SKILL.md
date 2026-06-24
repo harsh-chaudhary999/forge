@@ -46,7 +46,7 @@ Approved manual test cases are **acceptance inventory**: they define *what* must
 4. **P4.1 implementation (GREEN)** — production code only after RED exists.
 5. **P4.4 eval** — execute semantic CSV against the stack; **`eval-judge`** reads manifest + run log.
 
-**HARD-GATE (team opt-in):** If `~/forge/brain/products/<slug>/product.md` sets **`forge_qa_csv_before_eval: true`** for this product, **`conductor-orchestrate` State 4b** requires a logged **`[P4.0-QA-CSV]`** *before* **`[P4.0-SEMANTIC-EVAL]`**. Without that, do not author machine-eval artifacts or dispatch feature work.
+**HARD-GATE (team opt-in):** If `~/forge/brain/products/<slug>/forge-product.md` sets **`forge_qa_csv_before_eval: true`** for this product, **`conductor-orchestrate` State 4b** requires a logged **`[P4.0-QA-CSV]`** *before* **`[P4.0-SEMANTIC-EVAL]`**. Without that, do not author machine-eval artifacts or dispatch feature work.
 
 **Anti-pattern:** Writing **`qa/semantic-automation.csv`** or TDD tests **only** from prose tech plans while ignoring an in-flight manual QA CSV for the same task — you will double-specify and drift.
 
@@ -106,7 +106,7 @@ SUMMARY MUST READ AS PLAIN ENGLISH TO A NEW QA READER (NO ACRONYM SOUP / INTERNA
 | `<PRD_SOURCE>` | PRD location | wiki URL, PDF path, markdown |
 | `<EXISTING_TESTS>` | Prior cases | Xray folder via MCP, TestRail export CSV, or “none” |
 | `<KB_PATH>` | Internal rules/docs | `@docs/recruiter` style path or “none” |
-| `<WEB_BASE_URL>` | Default web entry | from `product.md` or user |
+| `<WEB_BASE_URL>` | Default web entry | from `forge-product.md` or user |
 | `<ADMIN_BASE_URL>` | Optional | user-supplied |
 | `<OUTPUT_CSV>` | Writable output | default: `~/forge/brain/prds/<task-id>/qa/manual-test-cases.csv` |
 | `<VALIDATION_CODE>` | Team secret to prove rules were read | e.g. `TESTCASE_FORMAT_<TEAM>` — user provides |
@@ -234,7 +234,7 @@ If an agent only fills **Summary** and **Expected Result**, **Description** is *
 
 **Why:** `qa-prd-analysis` already loads the brain once; this skill **must not** collapse that work into a short summary when writing cases. **Primary artifacts** hold acceptance wording, routes, error codes, SLAs, and integration edges — **`qa-analysis.md` alone cannot substitute.**
 
-Resolve **`<slug>`** from `prd-locked.md` or `product.md` reference. Then **Read/cat each path that exists** (skip missing paths only after recording a **`CONTEXT_GAP`** line for Step 8). Prefer the read-only brain MCP when connected (`brain_read`/`brain_list` for the reload, `brain_recall` for prior-QA / REGRESSION discovery); the `cat` heredoc is the fallback.
+Resolve **`<slug>`** from `prd-locked.md` or `forge-product.md` reference. Then **Read/cat each path that exists** (skip missing paths only after recording a **`CONTEXT_GAP`** line for Step 8). Prefer the read-only brain MCP when connected (`brain_read`/`brain_list` for the reload, `brain_recall` for prior-QA / REGRESSION discovery); the `cat` heredoc is the fallback.
 
 ```bash
 BRAIN="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
@@ -251,7 +251,7 @@ for f in "$BRAIN/prds/$TASK/tech-plans/"*.md; do [ -f "$f" ] && echo "=== $f ===
 
 for f in "$BRAIN/products/$SLUG/contracts/"*.md; do [ -f "$f" ] && echo "=== $f ===" && cat "$f"; done
 
-cat "$BRAIN/products/$SLUG/product.md" 2>/dev/null
+cat "$BRAIN/products/$SLUG/forge-product.md" 2>/dev/null
 
 # Scan — architecture / API surface / hubs (when present)
 cat "$BRAIN/products/$SLUG/codebase/index.md" 2>/dev/null
@@ -267,7 +267,7 @@ head -c 24000 "$BRAIN/products/$SLUG/codebase/SCAN.json" 2>/dev/null
 | **shared-dev-spec** | Cross-surface behaviors, versioning, idempotency, SLAs → API/integration cases |
 | **tech-plans** | Concrete routes, schemas, component names, task IDs → **Summary/Description** specificity and traceability |
 | **contracts** | Error shapes, cache keys, event schemas → contract-driven cases |
-| **product.md** | Platforms, URLs, repo roles → **Platform** column and navigation prefixes |
+| **forge-product.md** | Platforms, URLs, repo roles → **Platform** column and navigation prefixes |
 | **SCAN / index** | Real paths, hubs, known fragile modules → regression-suggested cases (tag Source appropriately) |
 | **qa-analysis.md** | Which **types** and **surfaces** to prioritize — not the only source of *what* to assert |
 
@@ -323,7 +323,7 @@ Re-walk **prd-locked + shared-dev-spec + tech-plans + contracts** (Step 1b set) 
 
 After count approval, deliver a summary with:
 
-- **Sources consulted** — bullet list of brain paths whose content informed row text (minimum: `prd-locked.md`, `qa-analysis.md`, every `tech-plans/*.md` read, `shared-dev-spec.md` if present, `contracts/*.md` if read, `product.md`, scan `index.md` if used).
+- **Sources consulted** — bullet list of brain paths whose content informed row text (minimum: `prd-locked.md`, `qa-analysis.md`, every `tech-plans/*.md` read, `shared-dev-spec.md` if present, `contracts/*.md` if read, `forge-product.md`, scan `index.md` if used).
 - **`CONTEXT_GAP` entries** — any required artifact that was missing or stale and how it was handled; include **precondition** gaps (e.g. seed/flag undefined after user could not answer). If **any** gap is still **open** (unresolved, not risk-accepted, not deferred-with-owner), you **must** run **CONTEXT_GAP closure (interactive)** below **before** treating the suite as **execution-ready** — not only listing gaps in the report.
 - Total reusable (Step 4).
 - Total deprecated (Step 4.5) + reasons + replacements.

@@ -152,6 +152,78 @@ if (
   }
 }
 
+// ── Loop-engineering guard (self-heal termination) ─────────────────────────
+// When the agent logs a [P4.4-EVAL-FAIL] to a conductor.log, enforce the loop
+// termination controls (self-heal-loop-cap + docs/loop-engineering.md): surface a
+// block when a retry exceeds the 3-attempt cap or repeats the prior failure
+// signature (no-progress). 'ask' so the operator can consciously override — the
+// agent may not self-authorize past the cap. Fail-open on any error.
+(function loopGuardCheck() {
+  try {
+    const SELF_HEAL_CAP = 3;
+    let payload = '';
+    let target = '';
+    if (isBashShell) {
+      payload = String(toolInput.command || '');
+      target = payload; // redirect target is embedded in the command
+    } else if (toolName === 'Edit' || toolName === 'Write' || toolName === 'StrReplace') {
+      payload = String(toolInput.content || toolInput.new_string || toolInput.new_str || '');
+      target = String(toolInput.file_path || toolInput.path || toolInput.new_path || '');
+    } else {
+      return;
+    }
+    if (!/\[P4\.4-EVAL-FAIL\]/.test(payload)) return; // not recording a self-heal failure
+    if (!/conductor\.log/.test(target) && !/conductor\.log/.test(payload)) return;
+
+    const homeExpand = (p) => p.replace(/^~(?=\/)/, os.homedir());
+    const newSig = (payload.match(/\[P4\.4-EVAL-FAIL\][^\n]*?\bsignature=([^\s"']+)/) || [])[1] || '';
+
+    let logPath = '';
+    const pm = target.match(/(\S*conductor\.log)/) || payload.match(/(\S*conductor\.log)/);
+    if (pm && pm[1]) {
+      logPath = homeExpand(pm[1]);
+    } else {
+      const taskId = (process.env.FORGE_TASK_ID || process.env.FORGE_PRD_TASK_ID || '').trim();
+      const brain = homeExpand(process.env.FORGE_BRAIN || process.env.FORGE_BRAIN_PATH || path.join(os.homedir(), 'forge', 'brain'));
+      if (taskId) logPath = path.join(brain, 'prds', taskId, 'conductor.log');
+    }
+    if (!logPath || !fs.existsSync(logPath)) return; // cannot verify → allow
+
+    const failLines = fs.readFileSync(logPath, 'utf-8').split('\n').filter((l) => /\[P4\.4-EVAL-FAIL\]/.test(l));
+    const priorCount = failLines.length;
+    const lastSig = priorCount ? ((failLines[priorCount - 1].match(/\bsignature=([^\s"']+)/) || [])[1] || '') : '';
+
+    let verdict = '';
+    let reason = '';
+    if (newSig && lastSig && newSig === lastSig) {
+      verdict = 'ESCALATE_NO_PROGRESS';
+      reason = `This attempt repeats the prior failure signature '${newSig}'. Same signature = the root-cause diagnosis is wrong; another retry on the same fault is forbidden.`;
+    } else if (priorCount >= SELF_HEAL_CAP) {
+      verdict = 'ESCALATE_CAP';
+      reason = `${priorCount} failed self-heal attempts are already logged — the ${SELF_HEAL_CAP}-attempt cap is reached. A further retry violates self-heal-loop-cap.`;
+    }
+    if (!verdict) return; // within bounds → allow
+
+    const output = {
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'ask',
+        permissionDecisionReason:
+          `[forge-pre-tool-use] LOOP GUARD: ${verdict}\n\n` +
+          `${reason}\n\n` +
+          `Per self-heal-loop-cap + docs/loop-engineering.md: escalate BLOCKED with all attempt evidence ` +
+          `(see the Reflexion critiques in prds/<task>/heal/) instead of retrying. ` +
+          `Full verdict: python3 tools/forge_loop_guard.py --task-id <id> --strict\n\n` +
+          `Override is an operator decision only — the agent may not self-authorize past the cap.`,
+      },
+    };
+    process.stdout.write(JSON.stringify(output));
+    process.exit(0);
+  } catch (_) {
+    // fail open — never block normal work on a guard error
+  }
+})();
+
 // ── Skill-level allowed-tools (when hooks.json wires PreToolUse for this tool) ─
 
 const ACTIVE_SKILL_FILE = path.join(os.homedir(), '.forge', '.active-skill');

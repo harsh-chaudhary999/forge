@@ -209,7 +209,7 @@ if [ "$WIP_COUNT" -gt 0 ]; then
 fi
 ```
 
-**When to checkpoint:** After each conductor.log write (`[P1.*]`, `[P2.*]`, `[P3-SPEC-FROZEN]`, `[P4.0-*]`, `[P4.1-DISPATCH]`, `[P4.4-EVAL-GREEN]`, `[P5.*]`).
+**When to checkpoint:** After each conductor.log write (`[P1.*]`, `[P2.*]`, `[P2-SPEC-FROZEN]`, `[P4.0-*]`, `[P4.1-DISPATCH]`, `[P4.4-EVAL-GREEN]`, `[P5.*]`).
 
 **Why:** If context compacts mid-orchestration, the next session runs `/context-restore` to load the checkpoint, reads the conductor.log for phase state, and resumes from the exact phase. Without WIP commits, partial work may be untracked.
 

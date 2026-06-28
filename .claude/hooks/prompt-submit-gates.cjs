@@ -22,7 +22,7 @@ const GATE_PATTERNS = {
   DISPATCH:         /\[P4\.1-DISPATCH\]/,
   EVAL_GREEN:       /\[P4\.4-EVAL-GREEN\]/,
   PR_MERGED:        /\[P5[.-]/,
-  SPEC_FROZEN:      /\[P3-SPEC-FROZEN\]/,
+  SPEC_FROZEN:      /\[P2-SPEC-FROZEN\]/,
   PRD_LOCKED:       /\[P1-PRD-LOCKED\]/,
   // Standalone QA pipeline gates (qa-pipeline.log)
   QA_P7_REPORT:       /\[QA-P7-REPORT\]/,
@@ -115,7 +115,7 @@ function resolveNextGate(logContent) {
 
   // PRD locked → council
   if (has(GATE_PATTERNS.PRD_LOCKED)) {
-    return 'NEXT GATE: Invoke forge-council-gate → council-multi-repo-negotiate (4 surfaces + 5 contracts) → spec-freeze → log [P3-SPEC-FROZEN]';
+    return 'NEXT GATE: Invoke forge-council-gate → council-multi-repo-negotiate (4 surfaces + 5 contracts) → spec-freeze → log [P2-SPEC-FROZEN]';
   }
 
   return null; // early stages or unrecognized state — no specific next-gate

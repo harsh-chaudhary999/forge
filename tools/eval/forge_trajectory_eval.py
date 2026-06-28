@@ -91,11 +91,11 @@ def analyze(task_id: str, brain: Path) -> dict:
 
     gates = {
         "intake_locked": has("P1-PRD-LOCKED"),
-        "spec_frozen": has("P2-SPEC-FROZEN"),
+        "spec_frozen": has("P2-SPEC-FROZEN") or has("P3-SPEC-FROZEN"),  # canonical P2-SPEC-FROZEN; legacy P3-SPEC-FROZEN still accepted for pre-rename conductor.logs
         "semantic_eval": has("P4.0-SEMANTIC-EVAL"),
         "tdd_red": has("P4.0-TDD-RED"),
         "dispatched": has("P4.1-DISPATCH"),
-        "review_passed": has("P4.3-REVIEW-PASS"),
+        "review_passed": has("P4.2-REVIEW") or has("P4.3-REVIEW-PASS"),  # conductor logs [P4.2-REVIEW]; pr-set-coordinate logs the explicit [P4.3-REVIEW-PASS]
         "eval_ran": has("P4.4-EVAL"),
     }
 
@@ -109,9 +109,12 @@ def analyze(task_id: str, brain: Path) -> dict:
     ]
 
     # Eval outcome from the last P4.4 marker.
+    # Accept both success spellings: conductor logs the canonical [P4.4-EVAL-GREEN]
+    # (conductor-orchestrate / conductor-reference §"If verdict GREEN"); some gate skills
+    # log [P4.4-EVAL-PASS]. Either means a passing eval.
     eval_outcome = None
     for e in reversed(events):
-        if e["marker"].startswith("P4.4-EVAL-PASS"):
+        if e["marker"].startswith(("P4.4-EVAL-PASS", "P4.4-EVAL-GREEN")):
             eval_outcome = "GREEN"
             break
         if e["marker"].startswith("P4.4-EVAL-FAIL"):

@@ -564,7 +564,7 @@ Skipping this step and creating a new file when an existing one should be modifi
   1. Invoke **`eval-product-stack-up`** (semantic steps hit URLs/devices against the built stack).
   2. Invoke **`qa-semantic-csv-orchestrate`** / **`python3 tools/run_semantic_csv_eval.py`** so **`outcome`** reflects this run against the **built** product.
   3. Invoke **`eval-judge`** on **`qa/semantic-eval-manifest.json`** + **`qa/semantic-eval-run.log`** per skill § Semantic path.
-  4. If verdict GREEN → log **`[P4.4-EVAL-GREEN] task_id=<id> timestamp=<ISO8601> path=semantic manifest=qa/semantic-eval-manifest.json`**. If RED/YELLOW → Phase 4.5.
+  4. If verdict GREEN → log **`[P4.4-EVAL-GREEN] task_id=<id> timestamp=<ISO8601> path=semantic manifest=qa/semantic-eval-manifest.json`**. If RED/YELLOW → log **`[P4.4-EVAL-FAIL] task_id=<id> outcome=<RED|YELLOW>`** (or **`[P4.4-RED-INFRA]`** when the failure is environment/stack, not product) → Phase 4.5. These failure markers are consumed by `tools/eval/forge_trajectory_eval.py` (eval outcome + self-heal-loop count) and `forge-team-gates`.
 
 **SUCCESS CONDITION:** Manifest **`outcome: pass`** (and judge confirms — **`yellow`**/`fail` are not GREEN).  
 **FAILURE CONDITION:** Semantic **`outcome`** is **`fail`** / judge RED **or** **`yellow`** without documented acceptance.  
@@ -575,7 +575,9 @@ Skipping this step and creating a new file when an existing one should be modifi
 [P4.4-EVAL] task_id=<id> service=<svc> timestamp=<ISO8601> status=UP
 [P4.4-EVAL] task_id=<id> path=semantic status=RUN_START
 [P4.4-EVAL] task_id=<id> path=semantic outcome=<pass|fail|yellow>
-[P4.4-EVAL-GREEN] task_id=<id> timestamp=<ISO8601> path=semantic manifest=qa/semantic-eval-manifest.json
+[P4.4-EVAL-GREEN] task_id=<id> timestamp=<ISO8601> path=semantic manifest=qa/semantic-eval-manifest.json   # verdict GREEN
+[P4.4-EVAL-FAIL]  task_id=<id> timestamp=<ISO8601> outcome=<RED|YELLOW> manifest=qa/semantic-eval-manifest.json   # verdict RED/YELLOW → Phase 4.5
+[P4.4-RED-INFRA]  task_id=<id> timestamp=<ISO8601> reason=<stack|service|network>   # eval blocked by environment, not product
 ```
 
 #### Phase 4.5: Self-Heal (Locate, Triage, Fix, Verify — Max 3 Retries)

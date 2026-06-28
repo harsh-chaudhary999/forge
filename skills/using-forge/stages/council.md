@@ -50,15 +50,15 @@ A contract is "locked" when it has: signed-off field names, types, nullable cons
 ## Gate Sequence
 
 ```
-forge-council-gate → product-context-load → 4 surface reasoning skills → council-multi-repo-negotiate → 5 contracts locked → spec-freeze → [P3-SPEC-FROZEN] logged
+forge-council-gate → product-context-load → 4 surface reasoning skills → council-multi-repo-negotiate → 5 contracts locked → spec-freeze → [P2-SPEC-FROZEN] logged
 ```
 
 ## Brain Writes Required
 
 - `~/forge/brain/prds/<task-id>/shared-dev-spec.md` — frozen after `spec-freeze`
 - `~/forge/brain/prds/<task-id>/contracts/` — one file per contract
-- `~/forge/brain/prds/<task-id>/conductor.log` — append `[P3-SPEC-FROZEN] task_id=<id>`
+- `~/forge/brain/prds/<task-id>/conductor.log` — append `[P2-SPEC-FROZEN] task_id=<id>`
 
 ## Next Gate
 
-`[P3-SPEC-FROZEN]` logged → switch to build phase → invoke `tech-plan-write-per-project` per repo.
+`[P2-SPEC-FROZEN]` logged → switch to build phase → invoke `tech-plan-write-per-project` per repo.

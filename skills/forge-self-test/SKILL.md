@@ -87,6 +87,14 @@ The self-test validates that Forge works end-to-end on a real product. Without i
 **PRD under test:** `seed/prds/01-favorites-cross-surface-sync.md`
 — Cross-surface sync of user favorites (backend, web, mobile, shared schemas all touched).
 
+**Seed availability — local-only by design.** `seed-product/` and `seed/` are **gitignored**
+(kept out of the repo so the distribution stays lean). A fresh clone therefore has **no** seed,
+and Phase 0 will report **BLOCKED — seed not present** until you provide one. This is **expected
+on a clean checkout, not a pipeline regression.** To run the self-test, materialize the fixture
+locally first: recreate `seed-product/shopapp/` (the 4-repo stack above) + `seed/prds/01-favorites-cross-surface-sync.md`,
+or point the run at any local multi-repo product with an equivalent cross-surface PRD. The fixture
+is maintained locally by Forge maintainers and is never pushed to the remote.
+
 ---
 
 ## Reference (load on demand)
@@ -214,6 +222,7 @@ SKILL.md is the operational contract: discipline, core workflow/decision logic, 
 Before declaring Forge production-ready, verify all items:
 
 **Phase 0:**
+- [ ] Seed present locally — `seed-product/shopapp/` + `seed/prds/` exist (both **gitignored by design**; absent on a fresh clone → **BLOCKED — seed not present** is expected, see **Seed Product** above, not a regression)
 - [ ] Seed product repos accessible
 - [ ] Brain path initialized (clean state, no prior run contamination)
 - [ ] Infrastructure running (MySQL, Redis, Kafka, Elasticsearch)

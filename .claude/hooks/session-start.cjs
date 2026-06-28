@@ -30,7 +30,7 @@
  *     other [P4.4-…]           → eval (eval in flight or RED, etc.)
  *     [P4.1-DISPATCH]          → eval (per stages/eval.md)
  *     [P4.0-…]                 → build (State 4b prep)
- *     [P3-SPEC-FROZEN], [P3.5…] → build
+ *     [P2-SPEC-FROZEN], [P3.5…] → build
  *     other [P3…], [P2…]       → council
  *     [P1…]                    → intake
  *   No recognizable marker     → intake

@@ -35,7 +35,7 @@ function markerToStage(marker) {
 
   if (/^\[P5/.test(upper)) return 'pr';
 
-  if (upper.includes('P4.4-EVAL-GREEN')) return 'pr';
+  if (upper.includes('P4.4-EVAL-GREEN') || upper.includes('P4.4-EVAL-PASS')) return 'pr';
 
   if (/^\[P4\.4/i.test(marker)) return 'eval';
 
@@ -43,7 +43,7 @@ function markerToStage(marker) {
 
   if (/^\[P4\.0/i.test(marker)) return 'build';
 
-  if (upper.includes('P3-SPEC-FROZEN') || /\[P3\.5/i.test(marker)) return 'build';
+  if (upper.includes('P2-SPEC-FROZEN') || /\[P3\.5/i.test(marker)) return 'build';
 
   if (/^\[P3/i.test(marker)) return 'council';
 

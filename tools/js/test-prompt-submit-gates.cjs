@@ -86,28 +86,28 @@ assert('PRD locked → council gate (no [TERMINOLOGY] line)',
   'forge-council-gate');
 
 assert('spec frozen, nothing done → 3 missing gates',
-  resolveNextGate('[P1-PRD-LOCKED]\n[P3-SPEC-FROZEN]'),
+  resolveNextGate('[P1-PRD-LOCKED]\n[P2-SPEC-FROZEN]'),
   '[P4.0-QA-CSV]');
 
 assert('spec frozen, QA-CSV done → still missing SEMANTIC-EVAL and TDD-RED',
-  resolveNextGate('[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes'),
+  resolveNextGate('[P2-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes'),
   '[P4.0-SEMANTIC-EVAL]');
 
 assert('spec frozen, QA-CSV + SEMANTIC-EVAL, no TDD → missing TDD only',
-  resolveNextGate('[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-SEMANTIC-EVAL]'),
+  resolveNextGate('[P2-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-SEMANTIC-EVAL]'),
   '[P4.0-TDD-RED]');
 
 assert('spec frozen, QA-CSV + SEMANTIC-EVAL + TDD → all State 4b satisfied',
-  resolveNextGate('[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-SEMANTIC-EVAL]\n[P4.0-TDD-RED]'),
+  resolveNextGate('[P2-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-SEMANTIC-EVAL]\n[P4.0-TDD-RED]'),
   'All State 4b gates satisfied');
 
 assertAll('spec frozen + TERMINOLOGY pending → State 4b + ALSO (both verified)',
-  resolveNextGate('[P1-PRD-LOCKED]\n[P3-SPEC-FROZEN]\n[TERMINOLOGY] task_id=X file=present status=draft open_doubts=pending'),
+  resolveNextGate('[P1-PRD-LOCKED]\n[P2-SPEC-FROZEN]\n[TERMINOLOGY] task_id=X file=present status=draft open_doubts=pending'),
   ['[P4.0-QA-CSV]', 'ALSO: [TERMINOLOGY]']);
 
 assert('spec frozen, all 4b, two [TERMINOLOGY] last none → no ALSO (no false positive from earlier pending)',
   resolveNextGate(
-    '[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-SEMANTIC-EVAL]\n[P4.0-TDD-RED]\n[TERMINOLOGY] first open_doubts=pending\n[TERMINOLOGY] task_id=X file=present open_doubts=none',
+    '[P2-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-SEMANTIC-EVAL]\n[P4.0-TDD-RED]\n[TERMINOLOGY] first open_doubts=pending\n[TERMINOLOGY] task_id=X file=present open_doubts=none',
   ),
   'All State 4b gates satisfied',
 );
@@ -135,7 +135,7 @@ assert(
 );
 
 assert('spec frozen, all 4b done, TERMINOLOGY pending (single line) → dispatch line + ALSO terminology',
-  resolveNextGate('[P3-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-SEMANTIC-EVAL]\n[P4.0-TDD-RED]\n[TERMINOLOGY] task_id=X file=present open_doubts=pending'),
+  resolveNextGate('[P2-SPEC-FROZEN]\n[P4.0-QA-CSV] approved=yes\n[P4.0-SEMANTIC-EVAL]\n[P4.0-TDD-RED]\n[TERMINOLOGY] task_id=X file=present open_doubts=pending'),
   'ALSO: [TERMINOLOGY]');
 
 assert('dispatch logged → eval running',

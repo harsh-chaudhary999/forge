@@ -308,14 +308,14 @@ This skill depends on and coordinates with:
    - **Sync Point:** Output of locate-fault is input to triage phase
 
 2. **self-heal-triage**
-   - **How:** Triage classifies fault type (CODE_BUG, CONFIG_ERROR, etc.) and determines auto-fixability
+   - **How:** Triage classifies fault type (`flaky` | `bad_test` | `real_bug` | `environment`) and determines auto-fixability
    - **Why:** Triage output determines if auto-fix can proceed or escalate
    - **Sync Point:** Triage confidence score influences retry decision
 
 3. **self-heal-systematic-debug**
-   - **How:** Invoked when loop reaches BLOCKED to provide deeper 4-phase investigation
-   - **Why:** Loop cap escalation may benefit from systematic debugging approach
-   - **Sync Point:** BLOCKED with insufficient evidence routes to systematic-debug
+   - **How:** Invoked *within* an attempt (not only after the cap) when triage routes to `real_bug` and the fault needs deeper 4-phase investigation before a fix can be applied
+   - **Why:** Complex reproducible bugs need root-cause confirmation before remediation, same as any other attempt
+   - **Sync Point:** Refuses to proceed (STOP, escalate to loop-cap) if it's invoked after the 3-attempt cap is already exceeded — it operates inside the budget, not after it
 
 4. **forge-eval-gate**
    - **How:** Eval gate receives BLOCKED/DONE result from loop-cap; gates merge based on final status

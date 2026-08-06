@@ -250,9 +250,10 @@ Use this tree to determine which skill category to invoke first given your task 
 ```
 START: Given a task or question
   │
-  ├─ Is this a PRD, spec, or requirement?
-  │  ├─ YES → Run intake-interrogate or intake first
-  │  │       (Process skills before anything else)
+  ├─ Is this a roadmap item, PRD, spec, or requirement?
+  │  ├─ YES → Run lane-risk-triage first (or /triage) — Scope-led items stop
+  │  │       there, do not reach intake. Build-led items: run
+  │  │       intake-interrogate or /intake next.
   │  │       Then: Goto "Reasoning Step"
   │  └─ NO → Goto "Already Have Spec"
   │

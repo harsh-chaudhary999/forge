@@ -191,7 +191,7 @@ Timeline: D42 → (6mo) Warm → (6mo) Cold → (1y) Archived; D89 in use
 ### Integration
 - Works seamlessly with brain-read (status filtering)
 - Requires brain-write for recording status transitions
-- Complements brain-remember for active decision tracking
+- Complements brain-write (via the `/remember` command) for active decision tracking
 
 ### Governance
 - Status transitions are logged with timestamps
@@ -335,7 +335,7 @@ Result:
 
 ---
 
-**Related Skills:** brain-read, brain-write, brain-remember
+**Related Skills:** brain-read, brain-write
 
 ### Post-Implementation Checklist: Did I Follow the Skill?
 

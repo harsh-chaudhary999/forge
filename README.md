@@ -2,7 +2,7 @@
 
 > Plug-and-play multi-repo product orchestration for AI-assisted delivery. Takes a PRD and drives it through locked scope, negotiated contracts, tech plans, TDD implementation, multi-surface eval, review, and coordinated PRs — with a **git-backed brain** as the system of record.
 
-Forge ships a feature across **multiple repos** without embedding a runtime framework in your product code: **skills** (markdown + YAML), **subagents**, **hooks**, and **commands** encode process. **Full skill catalog** under `skills/` (count: `bash scripts/count-skills.sh`), **4 subagents**, **21 slash commands**. **Built for [Claude Code](https://code.claude.com).**
+Forge ships a feature across **multiple repos** without embedding a runtime framework in your product code: **skills** (markdown + YAML), **subagents**, **hooks**, and **commands** encode process. **Full skill catalog** under `skills/` (count: `bash scripts/count-skills.sh`), **4 subagents**, **23 slash commands** — but see [Where to actually start](#5-where-to-actually-start-read-this-before-the-skill-catalog): almost all usage is 2 of those 23. **Built for [Claude Code](https://code.claude.com).**
 
 > **This is the Claude-only branch.** It is specialized for Claude Code and uses Claude-native primitives (subagent frontmatter, dynamic workflows, MCP, the Agent Skills standard). Builds for other IDEs (Cursor, Gemini CLI, Codex, …) live on their own branches.
 
@@ -14,7 +14,7 @@ Forge ships a feature across **multiple repos** without embedding a runtime fram
 
 ## Table of contents
 
-- [Quick start](#quick-start) (includes [keeping Forge updated](#4-keeping-forge-updated-how-you-hear-about-changes))
+- [Quick start](#quick-start) (includes [keeping Forge updated](#4-keeping-forge-updated-how-you-hear-about-changes), [where to actually start](#5-where-to-actually-start-read-this-before-the-skill-catalog))
 - [What Forge is (and is not)](#what-forge-is-and-is-not)
 - [How Forge works](#how-forge-works)
 - [Delivery gates (Phase 4)](#delivery-gates-phase-4)
@@ -95,6 +95,32 @@ cd ~/forge && git pull && bash scripts/install.sh
 Restart Claude Code (or start a new session) after a meaningful skill or hook change. See **[`docs/platforms/claude-code.md`](docs/platforms/claude-code.md)**.
 
 **Version today:** the current plugin version lives in **`package.json`** and **`.claude-plugin/plugin.json`** (and **`.claude-plugin/marketplace.json`**) — read it there rather than trusting a number copied into prose. Bump all three when you cut a new drop. **Tags are not created automatically** on push; maintainers bump versions in a PR, then may run the optional **`Tag release`** GitHub Action (see **`docs/contributing.md` → Releases**) to push `vX.Y.Z`, and publish a GitHub Release with the matching **`CHANGELOG.md`** section so watchers hear about it.
+
+---
+
+### 5. Where to actually start (read this before the skill catalog)
+
+Forge ships a large skill catalog (`bash scripts/count-skills.sh`) — most of it is internal machinery you will never invoke by name. As a user, not a contributor, this is the whole surface you need on day one:
+
+```
+/workspace   — once, when you first point Forge at a product
+/forge       — everything else, almost all of the time
+```
+
+That's it for the common path. The other 21 commands exist for when `/forge`'s default full run isn't what you want right now:
+
+| If you want to... | Use |
+|---|---|
+| Check a decision, search past context, or verify Forge is wired correctly | `/why`, `/recall`, `/forge-status` |
+| Resume or re-run one phase of a partial/interrupted `/forge` run | `/intake`, `/council`, `/plan`, `/build`, `/eval`, `/heal`, `/review` |
+| Run QA independent of a full delivery pipeline | `/qa`, `/qa-write`, `/qa-run` |
+| Diagnose an install/environment problem | `/doctor`, `/forge-install` |
+| Map an existing codebase before planning work in it | `/scan` |
+| Everything else (retrospectives, evidence bundles, meta-testing) | see the full [Commands reference](#commands-reference) below |
+
+**The 85 skills under `skills/` are not a menu — they're what `/forge` and the commands above invoke for you.** You will almost never type a skill name directly. If you're *using* Forge rather than *extending* it, you can skip the skill catalog entirely and just work through the table above.
+
+**If you're extending Forge** (writing a new skill, not just using existing ones): start with `forge-writing-skills` + `forge-skill-anatomy` for the methodology, and `python3 tools/scaffold_skill.py <name> --type <rigid|flexible|reference>` to generate a compliant, self-checked skeleton before you write a line of content.
 
 ---
 
@@ -446,7 +472,8 @@ Each file under **`commands/`** has YAML **`name:`** + **`description:`**, optio
 
 | Command | Purpose |
 |---|---|
-| **`/forge`** | **Full E2E** — invoke **`conductor-orchestrate`** with **`entrypoint = full pipeline (/forge)`**: intake → context → council → tech plans → **State 4b (mandatory QA CSV + semantic CSV/manifest machine-eval + TDD RED + design gate)** → dispatch → reviews → **P4.4 eval** → heal → **PR set / merges** → dream/brain. Does **not** stop at planning. |
+| **`/forge`** | **Full E2E** — invoke **`conductor-orchestrate`** with **`entrypoint = full pipeline (/forge)`**: **lane & risk triage** → intake → context → council → tech plans → **State 4b (mandatory QA CSV + semantic CSV/manifest machine-eval + TDD RED + design gate)** → dispatch → reviews → **P4.4 eval** → heal → **PR set / merges** → dream/brain. Does **not** stop at planning. |
+| **`/triage`** | **Partial** — lane & risk classification only (**`lane-risk-triage`**); Scope-led items stop here, Build-led items proceed to `/intake`. |
 | **`/workspace`** | Register product **`forge-product.md`**, repos, roles, deploy/runbook (`scan` / eval prerequisites). |
 | **`/scan`** | Codebase → brain graph (**`scan-codebase`**); not a substitute for **`/forge`**. |
 | **`/intake`** | **Partial** — PRD lock only (**`forge-intake-gate`**, **`intake-interrogate`**). |
@@ -487,7 +514,7 @@ forge/
 │   ├── qa-semantic-csv-orchestrate/
 │   └── …
 ├── agents/                 # 4 subagent definitions (*.md)
-├── commands/               # 21 slash-command docs (*.md)
+├── commands/               # 23 slash-command docs (*.md)
 ├── hooks/                  # Hook manifest (hooks.json — Claude Code auto-discovers it)
 ├── .claude/hooks/          # Claude Code + repo git hooks: *.cjs (session-start, pre-tool-use, …)
 ├── tools/                  # scan_forge, verify_forge_task.py, forge_adjacency_scan.py — see tools/README.md

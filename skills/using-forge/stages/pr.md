@@ -19,8 +19,8 @@ NO PR IS RAISED UNTIL EVAL IS GREEN IN brain/prds/<task-id>/conductor.log. MERGE
 
 ## Active Skills (invoke in this order)
 
-1. `pr-set-coordinate` — collects all branch/PR references across repos, validates eval GREEN precondition
-2. `pr-set-merge-order` — determines safe merge sequence (dependency order, schema-first, API-before-consumers)
+1. `pr-set-merge-order` — determines safe merge sequence (dependency order, schema-first, API-before-consumers)
+2. `pr-set-coordinate` — collects all branch/PR references across repos, validates eval GREEN precondition, raises and merges PRs in the order from step 1
 3. Merge each PR in the locked order — do NOT deviate from the sequence
 4. `dream-retrospect-post-pr` — runs dreamer scoring + brain learnings after all PRs merge
 5. `brain-write` — commits all retrospective decisions to brain

@@ -102,7 +102,7 @@ Invoke these skills in parallel (no dependencies between them):
 - **app.md**: React Native/Kotlin/Swift UI, offline-first patterns, native constraints, push notifications, device storage
 - **infra.md**: MySQL schema, Redis caching strategy, Kafka topics, Elasticsearch indexes, monitoring, scaling
 
-Store outputs in: `/home/lordvoldemort/Videos/forge/brain/prds/[task-id]/reasoning/`
+Store outputs in: `~/forge/brain/prds/<task-id>/council/` — each reasoning skill writes its own file there (`backend.md`, `web.md`, `app.md`, `infra.md`) per `reasoning-as-*`'s own Output section; this skill only reads them back, it does not rename or relocate them.
 
 ---
 
@@ -146,12 +146,13 @@ Each contract skill will:
 
 ### Step 3.3: Collect Negotiated Contracts
 
-Store outputs:
-- `/home/lordvoldemort/Videos/forge/brain/prds/[task-id]/contracts/api-contract.md`
-- `/home/lordvoldemort/Videos/forge/brain/prds/[task-id]/contracts/event-contract.md`
-- `/home/lordvoldemort/Videos/forge/brain/prds/[task-id]/contracts/cache-contract.md`
-- `/home/lordvoldemort/Videos/forge/brain/prds/[task-id]/contracts/db-contract.md`
-- `/home/lordvoldemort/Videos/forge/brain/prds/[task-id]/contracts/search-contract.md`
+Store outputs, per the `<domain>-contract.md` convention (`contract-event-bus` cites this explicitly as "council convention"):
+- `~/forge/brain/prds/<task-id>/contracts/api-contract.md`
+- `~/forge/brain/prds/<task-id>/contracts/event-contract.md`
+- `~/forge/brain/prds/<task-id>/contracts/db-contract.md`
+- `~/forge/brain/prds/<task-id>/contracts/search-contract.md`
+
+**Cache is the exception:** `contract-cache` writes only into `shared-dev-spec.md`'s cache section (no standalone `cache-contract.md`) — treat that as this skill's actual convention, not a gap to fill.
 
 ---
 
@@ -165,10 +166,10 @@ After contract skill invocation, check if all conflicts are resolved:
 
 ### Step 4.2: Escalate to Dreamer (if needed)
 
-For UNRESOLVED conflicts that require human-level counterfactual reasoning:
+For UNRESOLVED conflicts that require human-level counterfactual reasoning, invoke the `dream-resolve-inline` skill (via the `/dream` command):
 
 ```
-/inline-dreamer [unresolved-conflict]
+/dream [unresolved-conflict]
 ```
 
 Provide to dreamer:
@@ -261,7 +262,7 @@ Eight diagnosis/response/escalation cards live in **[`reference/edge-cases.md`](
 - [ ] Invoke relevant contract skills in parallel
 - [ ] Collect negotiated contracts
 - [ ] Identify any unresolved conflicts
-- [ ] Escalate unresolved conflicts to `/inline-dreamer`
+- [ ] Escalate unresolved conflicts to `dream-resolve-inline` (via `/dream`)
 - [ ] Document decision trail for all conflicts
 - [ ] Consolidate shared-dev-spec.md with all sections (including **Design source (from intake)** when web or app is in scope)
 - [ ] **Parity:** Create `parity/` with **`external-plan.md`** OR completed **`checklist.md`** (from **`docs/parity-checklist-template.md`**) OR **`waiver.md`** — before **`spec-freeze`**
@@ -283,7 +284,7 @@ Eight diagnosis/response/escalation cards live in **[`reference/edge-cases.md`](
 
 - [ ] All 5 contracts (REST API, event bus, cache, DB schema, search) reached `negotiated` status — no contract is still `open`, `draft`, or `disputed`
 - [ ] `shared-dev-spec.md` is committed to the brain under `~/forge/brain/prds/<task-id>/` with a `task_id:` anchor in the file header, not merely written to disk
-- [ ] A `[P2-SPEC-FREEZE]` conductor marker (or equivalent `[SPECLOCK]` decision record) is logged in `conductor.log` — confirming council is complete and spec is ready for `spec-freeze`
+- [ ] A `[P2-SPEC-FROZEN]` conductor marker (or equivalent `[SPECLOCK]` decision record) is logged in `conductor.log` — confirming council is complete and spec is ready for `spec-freeze`
 - [ ] No contract is left in `open` or `disputed` state before proceeding: every unresolved conflict was escalated to the dreamer and resolved with a signed-off decision record
 - [ ] The `[TERMINOLOGY]` line is appended to `conductor.log` with `open_doubts=none` (or `pending` only if an explicit waiver is recorded) — `spec-freeze` blocks on `pending` without a waiver
 

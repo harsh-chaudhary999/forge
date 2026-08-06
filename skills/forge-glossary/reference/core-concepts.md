@@ -8,11 +8,11 @@ Canonical artifacts (shared-dev-spec, forge-product.md, prd-locked.md, terminolo
 
 **Definition:** The canonical contract document produced by `Council` and locked by `spec-freeze`. Lives at `~/forge/brain/prds/<task-id>/shared-dev-spec.md`. Contains all 5 service contracts negotiated by the 4 surfaces: REST API (endpoints, payloads, status codes), event bus (topics, schemas), cache (keys, TTL, invalidation), database (tables, schema, migrations), search (document structure, analyzers). Immutable after `[P2-SPEC-FROZEN]` — changes require full SPEC-AMENDMENT Protocol (council re-vote + new `[P2-SPEC-AMENDED]` marker).
 
-**Usage Context:** All downstream phases read from this file. `tech-plan-write-per-project` breaks it into per-repo tasks. `spec-reviewer` verifies implementation matches it line-by-line. `forge-drift-check` detects divergence. Do not modify post-freeze without re-opening council.
+**Usage Context:** All downstream phases read from this file. `tech-plan-write-per-project` breaks it into per-repo tasks. `spec-reviewer` verifies implementation matches it line-by-line. `tools/forge_drift_check.py` (CLI tool, not a skill) detects divergence. Do not modify post-freeze without re-opening council.
 
 **What It's NOT:** Not a living document. Not per-repo. Not aspirational. Not a "first draft" — it is the signed contract.
 
-**Cross-References:** Written by `council-multi-repo-negotiate`; locked by `spec-freeze`; read by `tech-plan-write-per-project`, `spec-reviewer`, `forge-drift-check`; amended via `spec-freeze` § SPEC-AMENDMENT Protocol.
+**Cross-References:** Written by `council-multi-repo-negotiate`; locked by `spec-freeze`; read by `tech-plan-write-per-project`, `spec-reviewer`, `tools/forge_drift_check.py`; amended via `spec-freeze` § SPEC-AMENDMENT Protocol.
 
 ---
 

@@ -218,9 +218,9 @@ Before handing fault diagnosis to self-heal-triage:
 
 1. **self-heal-triage**
    - When to use: After fault has been located, use triage to classify failure type
-   - Purpose: Determines whether failure is flaky (timing), bad test, or reproducible bug
+   - Purpose: Determines which of triage's 4 categories the failure is — Flaky Test, Bad Test, Real Bug, or Environment Issue
    - Input: Fault diagnosis from self-heal-locate-fault
-   - Output: Classification (FLAKY, TEST_BUG, or REPRODUCIBLE) with confidence score
+   - Output: Classification (`flaky` | `bad_test` | `real_bug` | `environment`) with confidence score
 
 2. **self-heal-loop-cap**
    - When to use: To ensure healing loop doesn't spin infinitely on the same failure

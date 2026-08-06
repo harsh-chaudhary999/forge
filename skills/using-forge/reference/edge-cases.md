@@ -5,7 +5,7 @@
 ### Edge Case 1: Skill Not Found in Catalog
 
 **Symptom:**
-Skill tool returns "not found" or skill is referenced but doesn't exist in `~/forge/skills/`.
+Skill tool returns "not found" or skill is referenced but doesn't exist in `~/.claude/skills/` (the installed plugin's skill catalog — the Forge repo's own copy lives at `skills/` in the plugin root, not under `~/forge/`, which is reserved for the brain).
 
 **Do NOT:**
 Invent behavior from memory. Proceed as if a missing skill is equivalent to running it.

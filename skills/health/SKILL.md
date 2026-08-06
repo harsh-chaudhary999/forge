@@ -120,12 +120,13 @@ fi
 **Check 7 — Forge product config:**
 
 ```bash
-CONFIG="$REPO_ROOT/forge-product.yaml"
-if [ -f "$CONFIG" ]; then
-  echo "✓ Forge product cfg   forge-product.yaml — present"
+BRAIN_DIR="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
+CONFIGS=$(find "$BRAIN_DIR/products" -maxdepth 2 -name "forge-product.md" 2>/dev/null)
+if [ -n "$CONFIGS" ]; then
+  echo "✓ Forge product cfg   $(echo "$CONFIGS" | wc -l) forge-product.md found under $BRAIN_DIR/products/"
 else
-  echo "✗ Forge product cfg   forge-product.yaml — NOT FOUND"
-  echo "  Fix: copy from seed-product/ or create from template"
+  echo "✗ Forge product cfg   no forge-product.md found under $BRAIN_DIR/products/"
+  echo "  Fix: run /workspace to register a product, or create forge-product.md from a template"
 fi
 ```
 

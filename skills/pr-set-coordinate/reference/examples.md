@@ -367,11 +367,16 @@ brain-write \
 
 ### From Conductor Orchestrate (After Eval Passes)
 
+`--merge-order` comes from `pr-set-merge-order`'s brain-write key `merge_order.sequence` — a **space**-separated
+sequence (that skill's own `echo "${sorted[@]}"`), not comma-separated. The comma-joined form below is illustrative
+only; read the actual value rather than hardcoding a delimiter:
+
 ```bash
-# Conductor calls this skill after eval-product-stack passes
+# Conductor calls this skill after eval-product-stack passes AND pr-set-merge-order has run
+MERGE_ORDER_RAW="$(brain-read --key merge_order.sequence)"  # space-separated, from pr-set-merge-order
 invoke pr-set-coordinate \
   --affected-projects "shared-schemas,backend-api,web-dashboard,app-mobile" \
-  --merge-order "shared-schemas,backend-api,web-dashboard,app-mobile" \
+  --merge-order "$MERGE_ORDER_RAW" \
   --task-id "feature-xyz-abc123" \
   --shared-dev-spec "$(brain-read --key shared-dev-spec)"
 ```

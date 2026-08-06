@@ -177,7 +177,7 @@ Before claiming work is complete, verify:
 
 - [ ] PRD locked (decision ID: PRDLK-...)
 - [ ] Spec locked (decision ID: SPECLOCK-...)
-- [ ] Tech plan linked (decision ID: TECHPLAN-...)
+- [ ] Tech plan linked (decision ID: `D<NNN>` or `D<YYYYMMDD>-<NNN>` — same two schemes as everything else here, not a third)
 - [ ] All trade-offs recorded (what was chosen, what was not)
 - [ ] All constraints recorded (why we can't do X)
 - [ ] All escalations recorded (to dreamer, with links)

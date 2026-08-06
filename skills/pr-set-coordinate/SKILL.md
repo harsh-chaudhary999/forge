@@ -198,7 +198,7 @@ Cross-Link, Squash) are in [`reference/templates.md`](reference/templates.md).
 
 ## Cross-References
 
-- `pr-set-merge-order`: Called after pr-set-coordinate raises all PRs; determines safe merge sequence across repos.
+- `pr-set-merge-order`: Called **before** pr-set-coordinate raises any PRs — determines the safe merge sequence across repos first; PR creation (Step 1 below) requires that order to already exist.
 - `forge-eval-gate`: Eval must pass GREEN before PRs can be raised; pr-set-coordinate is blocked if `[P4.4-EVAL-PASS]` not logged.
 - `conductor-orchestrate`: Sequences `[P5-PR-RAISED]` after `[P4.3-REVIEW-PASS]`; pr-set-coordinate produces the `[P5-PR-RAISED]` markers.
 - `worktree-per-project-per-task`: Produces the branches that pr-set-coordinate turns into PRs.

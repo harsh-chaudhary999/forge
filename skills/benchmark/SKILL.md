@@ -241,7 +241,6 @@ echo "Verdict: $VERDICT"
 
 ## Cross-References
 
-- `qa-prd-analysis`: Produces the quality analysis from the PRD that benchmark uses as a baseline.
 - `forge-verification`: Benchmark results must be verifiable by forge-verification before being logged.
 - `forge-eval-gate`: Eval gate that baseline metrics feed into; benchmark establishes the "pass" threshold.
 - `second-opinion-review`: Independent review that can use benchmark results as evidence for or against a design decision.

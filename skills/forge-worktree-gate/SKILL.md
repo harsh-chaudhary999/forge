@@ -63,10 +63,10 @@ If you notice any of these, STOP and do not proceed:
 
 1. **Create worktree** (invoke `/worktree-per-project-per-task`)
    ```
-   Creates isolated worktree:
-   - Branch name: feature/TASKID (e.g., feature/D123-backend-auth)
+   Creates isolated worktree (exact mechanics owned by `worktree-per-project-per-task` — this is a summary, not a second source of truth):
+   - Branch name: task/TASKID (e.g., task/D123-backend-auth)
    - Based on: main (always, not on other tasks' branches)
-   - Directory: .claude/worktrees/TASKID/
+   - Directory: <project-root>/.worktrees/TASKID-<timestamp>/
    - Environment: clean slate (node_modules, build artifacts, cache all fresh)
    ```
 
@@ -122,9 +122,9 @@ If you notice any of these, STOP and do not proceed:
   5. Delete worktree branch (cleanup)
 
 ### Cleanup Worktree
-- **After eval passes on main:**
+- **Unconditional — runs on both PASS and FAIL after self-heal** (per `worktree-per-project-per-task`; stale worktrees from failed tasks accumulate and fill disk if cleanup is skipped on failure):
   1. Invoke `/worktree-per-project-per-task` with action=cleanup
-  2. Remove worktree directory (.claude/worktrees/TASKID/)
+  2. Remove worktree directory (.worktrees/TASKID/)
   3. Record cleanup in brain (closure to WKRK decision)
 
 ### Edge Cases & Fallback Paths
@@ -175,7 +175,7 @@ If you notice any of these, STOP and do not proceed:
 - **Action:**
   1. Investigate worktree bloat (old worktrees not cleaned up?)
   2. Delete old, unused worktrees
-  3. Cleanup tool: `rm -rf .claude/worktrees/OLD_TASKID/`
+  3. Cleanup tool: `rm -rf .worktrees/OLD_TASKID/`
   4. Retry worktree creation
   5. If space still insufficient: escalate as BLOCKED (infrastructure constraint)
 
@@ -194,7 +194,7 @@ Before implementing, verify:
 
 - [ ] Fresh worktree created (not reused from previous task)
 - [ ] Worktree branch is based on main (not on other tasks' branches)
-- [ ] Worktree directory is isolated (.claude/worktrees/TASKID/)
+- [ ] Worktree directory is isolated (.worktrees/TASKID/)
 - [ ] node_modules / build artifacts are fresh (not shared with main)
 - [ ] Task scope is bounded (not creeping)
 - [ ] Dependencies documented in brain (WKRK decision)
@@ -221,14 +221,14 @@ After task complete:
 ### Edge Case 1: Filesystem Space Exhausted (Too Many Worktrees, Disk Full)
 **Situation:** Cannot create fresh worktree because disk is full or storage quota exceeded. Previous worktrees were not cleaned up.
 
-**Example:** `.claude/worktrees/` directory is 500GB; 30 old worktrees with node_modules accumulated. Disk has <10GB free.
+**Example:** `.worktrees/` directory is 500GB; 30 old worktrees with node_modules accumulated. Disk has <10GB free.
 
 **Do NOT:** Work in main branch to save space. Space shortage is a real problem that must be fixed.
 
 **Action:**
 1. Diagnose: which worktrees are consuming space?
    ```bash
-   du -sh .claude/worktrees/*/
+   du -sh .worktrees/*/
    ```
 2. Identify old/stale worktrees:
    - Which tasks are complete (merged to main)?
@@ -236,7 +236,7 @@ After task complete:
    - Which worktrees have not been touched in 7+ days?
 3. Cleanup stale worktrees:
    ```bash
-   rm -rf .claude/worktrees/OLD_TASKID/
+   rm -rf .worktrees/OLD_TASKID/
    ```
 4. If cleanup frees enough space: create fresh worktree for current task
 5. If cleanup is insufficient:
@@ -289,7 +289,7 @@ After task complete:
 ### Edge Case 3: Worktree Cleanup Fails (Stale Files, Permission Issues, Locks)
 **Situation:** Worktree exists but cannot be deleted. Files are in use, permissions prevent deletion, or git locks remain.
 
-**Example:** "Permission denied: .claude/worktrees/TASKID/" or "Cannot delete, files in use by another process" or ".git/HEAD is locked"
+**Example:** "Permission denied: .worktrees/TASKID/" or "Cannot delete, files in use by another process" or ".git/HEAD is locked"
 
 **Do NOT:** Leave dirty worktrees around. Accumulation of dirty worktrees blocks future work.
 
@@ -300,19 +300,19 @@ After task complete:
    - Git lock exists? (left from interrupted operation)
    - Submodule sync incomplete?
 2. If files locked:
-   - Find process: `lsof +D .claude/worktrees/TASKID/`
+   - Find process: `lsof +D .worktrees/TASKID/`
    - Kill process: `kill <PID>`
    - Wait for file descriptors to close
-   - Retry cleanup: `rm -rf .claude/worktrees/TASKID/`
+   - Retry cleanup: `rm -rf .worktrees/TASKID/`
 3. If permission issue:
-   - Check file ownership: `ls -la .claude/worktrees/TASKID/`
-   - Fix ownership (if running as different user): `chown -R $USER .claude/worktrees/TASKID/`
+   - Check file ownership: `ls -la .worktrees/TASKID/`
+   - Fix ownership (if running as different user): `chown -R $USER .worktrees/TASKID/`
    - Retry cleanup
 4. If git lock exists:
-   - Remove lock: `rm .claude/worktrees/TASKID/.git/HEAD.lock`
+   - Remove lock: `rm .worktrees/TASKID/.git/HEAD.lock`
    - Retry cleanup
 5. If cleanup still fails:
-   - Force delete (use with caution): `rm -rf --force .claude/worktrees/TASKID/`
+   - Force delete (use with caution): `rm -rf --force .worktrees/TASKID/`
    - Document: what was forced, why, what data might be lost
 6. Escalate: **NEEDS_COORDINATION** (cleanup failed, potential data loss, manual intervention required)
 

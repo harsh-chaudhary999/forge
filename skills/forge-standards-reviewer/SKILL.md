@@ -171,7 +171,7 @@ Read the relevant sections from the discovered standards files. Extract rules as
 | Anti-Pattern Preamble | Required for `rigid` type skills |
 | Iron Law | Required for `rigid` type skills |
 | Checklist | Required for `rigid` type skills |
-| Edge Cases | Required for all skills (min 3) |
+| Edge Cases | Required for all skills — **min 5 for `rigid`, min 3 for `flexible`/`reference`** (per `forge-skill-anatomy`; do not pass a rigid skill with only 3) |
 
 **Agent format rules (from forge-subagent-anatomy):**
 
@@ -224,7 +224,7 @@ For each **new or modified rigid skill** in the diff:
 - [ ] `## Anti-Pattern Preamble` section present?
 - [ ] `## Iron Law` section with fenced code block present?
 - [ ] `HARD-GATE` label on at least one enforcement step?
-- [ ] `## Edge Cases` section with minimum 3 cases?
+- [ ] `## Edge Cases` section with minimum 5 cases for `rigid` skills, 3 for `flexible`/`reference`?
 - [ ] Checklist at end of skill?
 - [ ] `description:` frontmatter says WHEN, not WHAT?
 - [ ] `requires:` field present (even if empty array)?

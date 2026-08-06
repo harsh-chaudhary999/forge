@@ -71,7 +71,7 @@ If you notice any of these, STOP and do not proceed:
 ### Bring Up Stack
 - **Input:** Eval scenarios
 - **Action:** Stand up all services required by eval
-  1. Invoke `/eval-product-stack-up` (reads forge-product.yaml)
+  1. Invoke `eval-product-stack-up` (reads `forge-product.md`)
      - Spins up database (with schema migrations)
      - Spins up caches (Redis, etc.)
      - Spins up event bus (Kafka, RabbitMQ)

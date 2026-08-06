@@ -209,7 +209,7 @@ The troubleshooting table (already-checked-out, permission-denied removal, `.wor
 
 ## Post-Implementation Checklist
 
-- [ ] Worktree created with branch name `<task-id>/<repo-role>` (task-id scoped, not generic).
+- [ ] Worktree created with branch name `task/<task-id>` (task-id scoped, not generic).
 - [ ] `git worktree list` confirms the new worktree is isolated from main.
 - [ ] Implementation ran inside the worktree (not in the main working directory).
 - [ ] Worktree branch pushed to remote before PR creation.

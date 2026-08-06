@@ -6,7 +6,7 @@ The sequential phases of the Forge delivery pipeline, in order: Intake → Counc
 
 ### Intake
 
-**Definition:** The first non-skippable phase where a PRD is interrogated through 8 structured questions that lock scope, success criteria, constraints, and cross-service boundaries. Produces a locked PRD artifact.
+**Definition:** The first non-skippable phase where a PRD is interrogated, confidence-first, until every mandatory `prd-locked.md` lock field (Q1–Q9, plus a conditional Q10 when the implementation-closure gate applies) is concrete — not a fixed count of questions; see `intake-interrogate`. Produces a locked PRD artifact.
 
 **Usage Context:** Triggered at the start of every Forge run. The conductor invokes `forge-intake-gate` to execute intake. Output is immutable — no scope changes after intake without restarting the pipeline.
 

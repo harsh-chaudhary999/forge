@@ -63,7 +63,7 @@ System state changes between attempts. Services restart, caches clear, environme
 ### Anti-Pattern 5: "Loop cap only applies to code bugs, not infra faults"
 
 **Why It Fails:**
-Infrastructure failures classified as `RED_INFRA` by `forge-eval-gate` (ECONNREFUSED, Docker daemon down, MCP unavailable) do **NOT** consume a retry cycle — they escalate immediately to BLOCKED. Only classification types `CODE_BUG`, `FLAKY`, and `TEST_BUG` from `self-heal-triage` consume retries from the 3-attempt budget.
+Infrastructure failures classified as `RED_INFRA` by `forge-eval-gate` (ECONNREFUSED, Docker daemon down, MCP unavailable) do **NOT** consume a retry cycle — they escalate immediately to BLOCKED. Only classification types `real_bug`, `flaky`, and `bad_test` from `self-heal-triage` consume retries from the 3-attempt budget.
 
 **Enforcement (MUST):**
 1. MUST apply 3-attempt cap to code faults, config errors, and flaky/test failures

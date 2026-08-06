@@ -187,7 +187,7 @@ the full edge-case handling that is loaded on demand.
 
 **Action:**
 1. Write the decision to the product-level brain (not repo-level): `~/forge/brain/products/<slug>/decisions/`
-2. Set `type: cross-repo-architecture` in the frontmatter
+2. Set `type: architecture` in the frontmatter (the valid enum is `architecture`/`api`/`database`/`infra`/`process`/`decision` per `brain-write` — the cross-repo nature is captured by `scope:` below, not by inventing a new `type` value)
 3. List all affected repos in a `scope:` field: `scope: [backend, web, mobile]`
 4. Link the decision from each repo's relevant module brain file using `brain-link`
 5. If each repo needs repo-specific implementation notes, write separate `D042-backend-impl.md` and `D042-mobile-impl.md` that reference the parent D042

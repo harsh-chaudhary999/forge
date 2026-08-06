@@ -210,7 +210,7 @@ per-mode env block) and the **required minimum per mode** are in
 
 ## Workflow
 
-> Steps 1–4 run only in `branch-local` mode. In `url-only` and `branch-tracking` modes, skip directly to Step 5.
+> Step 1 (read topology) runs in every mode. Steps 2–4 (checkout) run in `branch-local` and `branch-code-validate` only — `url-only` and `branch-tracking` skip Steps 2–4 and proceed to Step 5. See the per-mode breakdown below for the exact step range each mode follows; this is a summary, not a fifth source of truth.
 
 ### Step 1 — Read product topology
 

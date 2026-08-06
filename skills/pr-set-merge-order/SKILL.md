@@ -2,7 +2,7 @@
 name: pr-set-merge-order
 description: "WHEN: Coordinated PRs exist across multiple repos and you need to determine the safe merge sequence before pr-set-coordinate executes merges."
 type: rigid
-requires: [brain-read]
+requires: [brain-read, brain-write]
 version: 1.0.0
 preamble-tier: 3
 triggers:

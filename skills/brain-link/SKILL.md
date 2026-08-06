@@ -361,7 +361,7 @@ code cross-linking, timeline visualization, collaboration).
 **brain-forget**: Archive deprecated decisions
 - Use when: A decision is superseded and should be retired
 - Integration: Use `brain-link` to create the `replaces` link, then `brain-forget` to archive the old decision
-- Important: Mark `status=superseded` before archival to preserve provenance in the graph
+- Important: Mark `status=cold` (there is no `superseded` status value — see Red Flags above) and set `superseded_by:` before archival to preserve provenance in the graph
 
 **Usage Flow**:
 ```
@@ -389,6 +389,6 @@ Before claiming completion:
 - [ ] Every link has an explicit `link_type` — never left as untyped or defaulting to "related"
 - [ ] Directionality is correct — `replaces` and `variant` are directional; `conflicts`, `complements`, `related` are bidirectional (reverse link created)
 - [ ] Link includes provenance: `when` it was created and `why` the relationship exists
-- [ ] If a `supersedes` link was created, the superseded decision's status was updated to `superseded` via brain-forget or brain-write
+- [ ] If a `supersedes` link was created, the superseded decision's status was updated to `cold` (not `superseded` — no such status value) via brain-forget or brain-write
 - [ ] No graph cycles introduced — traversal from source does not loop back to source
 - [ ] Links were created immediately at decision time, not batched after multiple decisions were written

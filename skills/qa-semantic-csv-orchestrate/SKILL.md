@@ -118,16 +118,26 @@ If any NO: machine gate or conductor discipline failed — fix before merge.
 
 When step B lists `DependsOn: step-A-id`, the driver must pass step A's result to step B's execution context:
 
-**Step result format (all drivers return).** Per-step uses **`status`** (matching the
-shipped runner `run_semantic_csv_eval.py`, which emits per-step `status` =
-`PASSED`/`VALIDATED`/`SKIPPED`/`FAILED`); the **top-level manifest** aggregates to
-**`outcome`** (`pass`/`fail`/`yellow`) — that is the field `eval-judge` reads. Do not
-confuse the two. Canonical schema: [`docs/semantic-eval-schema.md`](../../docs/semantic-eval-schema.md).
+**Step result format (all real drivers return).** Per-step uses **`outcome`**
+(`PASS`/`FAIL`/`BLOCKED_DEPENDENCY`/`SKIPPED`/`CONTEXT_GAP` — the enum `eval-judge`
+reads per step); the **top-level manifest** aggregates to a *separate*, differently-named
+**`outcome`** field at the manifest level (`pass`/`fail`/`yellow`/`RED_INFRA`) — same
+field name, different level, do not confuse the two. Canonical schema (binding — this
+is what real drivers implement): [`docs/semantic-eval-schema.md`](../../docs/semantic-eval-schema.md).
+
+**Known gap:** the currently-shipped noop/dry-run runner (`tools/verify/run_semantic_csv_eval.py`)
+does not yet implement this schema — it emits a simplified `{"id", "status": "PASSED"|"VALIDATED"|"SKIPPED"}`
+shape and, per its own docstring, "never marks steps FAILED." That noop shape is a
+placeholder for wiring/smoke-testing this skill's manifest-writing path, not the target
+schema — a real driver must emit the canonical `outcome`-keyed rows above, including real
+`FAIL` (with a `CODE_BUG` root-cause note where applicable), or `eval-judge`'s RED/YELLOW
+distinction has nothing to read.
+
 ```json
 {
   "stepId": "step-create-user",
   "surface": "api",
-  "status": "PASSED",
+  "outcome": "PASS",
   "result": {
     "userId": "user_abc123",
     "email": "test@example.com"

@@ -180,7 +180,9 @@ Before classifying any failure, check whether `forge-eval-gate` has logged a `RE
 
 ## Classification Categories (4 + transient + escalation)
 
-Classify every located failure into one of four categories — **Flaky Test**, **Bad Test**, **Real Bug**, **Environment Issue** — then route. The full per-category evidence catalogs (identifying evidence, common error patterns, suggested actions), the `CLASSIFY` decision algorithm, and the HIGH/MEDIUM/LOW confidence-scoring bands live in **`reference/classification.md`** (load on demand). The routing card, confidence-handling decision tree, and pipeline output contract live in **`reference/routing.md`**.
+Classify every located failure into one of four categories — **Flaky Test**, **Bad Test**, **Real Bug**, **Environment Issue** — machine enum `flaky | bad_test | real_bug | environment`. This is the only vocabulary any other skill should cross-reference. The full per-category evidence catalogs (identifying evidence, common error patterns, suggested actions), the `CLASSIFY` decision algorithm, and the HIGH/MEDIUM/LOW confidence-scoring bands live in **`reference/classification.md`** (load on demand). The routing card, confidence-handling decision tree, and pipeline output contract live in **`reference/routing.md`**.
+
+**Vocabulary note:** `reference/triage-examples-edge-cases.md` and some Anti-Pattern prose in this file use informal working labels (`CODE_BUG`, `CONFIG_ERROR`) in worked scenarios written before the 4-category enum above was finalized. Those informal labels are **not** a second valid vocabulary — `CODE_BUG` maps to `real_bug`, `CONFIG_ERROR` maps to `environment` (or `real_bug` when the fix is a code change, per the scenario). Treat the canonical enum above as authoritative; the worked examples' scenario content (evidence, decision logic) is still valid, only the ad hoc labels are stale.
 
 ## Reference (load on demand)
 

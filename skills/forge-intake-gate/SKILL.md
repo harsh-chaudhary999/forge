@@ -70,6 +70,9 @@ If you notice any of these, STOP and do not proceed:
 
 ## Detailed Workflow
 
+### Prerequisite: Lane & Risk Triage
+Before this gate runs, `lane-risk-triage` must have recorded `lane: build-led` in `lane-lock.md` for this item — a Scope-led item does not get a PRD or reach intake at all (see `conductor-orchestrate` State 0). If no `lane-lock.md` exists yet, invoke `lane-risk-triage` first; do not treat its absence as license to skip straight to intake.
+
 ### Identify PRD (Input Validation)
 - **Input:** Raw requirement (email, Slack, document, conversation)
 - **Check:**

@@ -8,13 +8,17 @@ research pass on the agent/LLM landscape. Each item lists **what / where / how**
 
 ## TL;DR
 
-Forge's **skill layer** is in good shape (all 85 skills ≤400 lines, standard + lint
-pass, 0 broken markdown links, 5 cohorts bug-audited). It is **not** release-ready:
-no end-to-end functional proof, ~half the skills never got a correctness audit, CI
-does not enforce any of the compliance just achieved, there is no `LICENSE`, and 84
-stray self-symlinks are committed. Separately, the June-2026 landscape has moved —
-MCP, native goals/memory, OTel GenAI semconv, computer-use, and a crowded
-spec-driven-dev competitor field (BMAD at ~47k stars) all have concrete implications.
+Forge's **skill layer** is in good shape (all skills ≤400 lines, standard + lint pass,
+0 broken markdown links, full local test battery green — 62 Python + 3 JS unit tests
+plus MCP/eval/hook smokes). **Governance since landed:** `LICENSE` (MIT) added, the 84
+stray self-symlinks removed, and a `skills-guard` CI gate now **enforces** the ≤400 /
+standard / lint / no-symlink compliance (so it can't regress). It is still **not**
+release-ready: **no end-to-end functional proof** (a full Phase-4 run needs
+MySQL+Kafka+emulator + the local-only seed), and **~half the skills never got a deep
+correctness audit** (structural compliance ≠ behavioral correctness). Separately, the
+June-2026 landscape has moved — MCP, native goals/memory, OTel GenAI semconv,
+computer-use, and a crowded spec-driven-dev competitor field (BMAD at ~47k stars) — see
+Parts B–C.
 
 ---
 
@@ -28,7 +32,7 @@ spec-driven-dev competitor field (BMAD at ~47k stars) all have concrete implicat
 
 ## Progress log (2026-06-24)
 
-- **Seed is now LOCAL-ONLY — REVERSES A4 (operator decision).** The seed fixture commit `f67fb6c` (`seed-product/` + `seed/prds/`) was dropped from the unpushed history and `seed-product/` + `seed/` are gitignored: the seed is our local test scaffold, never committed, nothing seed-related goes to the remote. **Consequence:** a clean clone no longer ships a self-test fixture, so `/forge-test` hits Phase-0 BLOCKED on a fresh checkout again (the exact problem A4 had "fixed" by committing it). If a bundled fixture is wanted for release, it must ship some other way (separate fixtures repo, generated on demand, or a minimal committed stub) — TBD. The `forge-product.md` migration decision below is unaffected.
+- **Seed is now LOCAL-ONLY — REVERSES A4 (operator decision).** The seed fixture commit `f67fb6c` (`seed-product/` + `seed/prds/`) was dropped from the unpushed history and `seed-product/` + `seed/` are gitignored: the seed is our local test scaffold, never committed, nothing seed-related goes to the remote. **Consequence:** a clean clone no longer ships a self-test fixture, so `/forge-test` hits Phase-0 BLOCKED on a fresh checkout again (the exact problem A4 had "fixed" by committing it). **Resolved (process, 2026-06-24):** the seed stays local-only; `forge-self-test` now **documents** this ("Seed availability — local-only by design") and treats a missing seed as an **expected `BLOCKED — seed not present`** with setup guidance, so a fresh-clone Phase-0 stop is no longer a confusing/opaque failure. A bundled-fixture mechanism for *end users* (separate fixtures repo, on-demand generator, or a minimal committed stub) remains **optional/TBD** — not a release blocker for the maintainer self-test path. The `forge-product.md` migration decision below is unaffected.
 - **Seed favorites implementation + tests GREEN** (local seed, gitignored) — completed the implementation the 2026-06-23 `/forge-self-test` run stalled before producing (it stopped at P3-TECH-PLANS). `web-dashboard`: added `hooks/useFavorites.ts`, `components/FavoritesGrid.tsx`, a `Favorite` type in `lib/api.ts`, and jest wiring (`jest.config.js`, `jest.setup.js`, devDeps, `test` script). `shared-schemas/test/favorites_proto.test.js` PASS; `web-dashboard` 4/4 PASS (`useFavorites` ×2 + `FavoritesGrid` ×2). RED→GREEN verified via `npm test` in both repos.
 - **A6 merged extractions audit** — DONE (audit only, no fix needed). Scope correction: there are **16** `*-reference.md` files, not 11. (1) Link-depth: CI `.md` check 0 broken over 274 files; gap check (dirs + non-`.md` relative links the CI skips) over all 16 refs = 0 broken. (2) Content-loss (non-blank accounting at each file's add-commit): 15/16 show ~99.8% of SKILL.md-removed lines present verbatim in the reference. The one outlier, `qa-prd-analysis/reference/surface-reference.md` (`f5b4a16`), is a confirmed **false positive** — that commit split one 643→388 SKILL.md across **three** reference files; all "absent" lines are accounted for by documented intentional edits (collapsed anti-pattern rows, condensed Step-0 bash with all 8 read targets preserved, date→placeholder, Lovable/Cursor renames) + lightly-reworded coverage content verified present in `coverage-techniques.md` / `interrogation-templates.md`. No content lost.
 - **A8 / A5 topology filename — FULL MIGRATION DONE** (working tree, UNCOMMITTED, supersedes the earlier eval-product-stack-up-only A8 fix). The A5 sweep found the inconsistency was catalog-wide and a **functional break**, not cosmetic: the creator (`/workspace` command) wrote `product.md` while consumers (`eval-product-stack-up`) read `forge-product.md`, so stack-up would fail on real (non-seed) products. **Decision (operator): canonical = `forge-product.md`** (finish the migration — matches the committed seed + namespacing). Renamed every bare `product.md` → `forge-product.md` across **48 files** (skills, commands incl. the `/workspace` creator, agents, `docs/forge-opportunities.md` + `forge-task-verification.md`, and 3 tools: `phase56.py`, `topology_reader.py`, `verify_forge_task.py`). Verify: 0 bare `product.md` remaining (this doc excepted — it discusses the names), 0 `forge-forge-` double-prefix, 240 total `forge-product.md`. Standard (88 conform) + lint (0 warn) + policy-in-sync + 0 broken links + all 3 tools `py_compile` clean.

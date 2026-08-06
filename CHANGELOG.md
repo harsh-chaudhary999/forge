@@ -41,6 +41,15 @@ move to dedicated branches.
   - `dream-retrospect-post-pr` (v1.0.0→1.1.0) now runs the analyzer before
     qualitative scoring; `eval-judge` (v2.0.0→2.1.0) cross-references it. Stdlib
     only. See [`docs/eval-trajectory.md`](docs/eval-trajectory.md).
+- **Loop engineering** (`tools/eval/forge_loop_guard.py`, shim `tools/forge_loop_guard.py`):
+  explicit termination logic for the self-heal loop beyond the 3-attempt cap — **no-progress
+  detection** (consecutive `[P4.4-EVAL-FAIL]` attempts sharing a `signature=` → escalate
+  before spending the next retry), **wall-clock budget**, and a verdict
+  (`DONE`/`CONTINUE`/`ESCALATE_NO_PROGRESS`/`ESCALATE_CAP`/`ESCALATE_BUDGET`; `--strict`).
+  `self-heal-loop-cap` (v1.0.0→1.1.0) now logs failure signatures, calls the guard before
+  each retry, and carries a **Reflexion** critique (`prds/<id>/heal/attempt-<n>.md`) into the
+  next attempt. Conductor documents the `[P4.4-EVAL-FAIL]`/`[P4.4-RED-INFRA]` markers the loop
+  turns on. Stdlib only. See [`docs/loop-engineering.md`](docs/loop-engineering.md).
 - **`/forge-council` dynamic workflow** (`.claude/workflows/forge-council.js`):
   the council span as a [Dynamic Workflow](https://code.claude.com/docs/en/workflows)
   — fans out 4 surfaces × 5 contracts over a locked PRD, adversarially cross-checks

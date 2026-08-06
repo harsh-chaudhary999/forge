@@ -210,7 +210,7 @@ const GATE_MARKERS = [
   { pattern: /\[P4\.1-DISPATCH\]/,               id: 'P4.1-DISPATCH' },
   { pattern: /\[P4\.4-EVAL-GREEN\]/,             id: 'P4.4-EVAL-GREEN' },
   { pattern: /\[P5[.-]/,                         id: 'P5-PR-SET' },
-  { pattern: /\[P3-SPEC-FROZEN\]/,               id: 'P3-SPEC-FROZEN' },
+  { pattern: /\[P2-SPEC-FROZEN\]/,               id: 'P2-SPEC-FROZEN' },
   { pattern: /\[P1-PRD-LOCKED\]/,                id: 'P1-PRD-LOCKED' },
 ];
 

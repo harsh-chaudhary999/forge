@@ -101,6 +101,23 @@ jobs:
           python3 tools/forge_trajectory_eval.py --task-id demo --brain "$T" --strict >/dev/null && echo "OK: trajectory eval (GREEN, strict)"
           python3 tools/forge_otel_export.py --task-id demo --brain "$T" | python3 -c "import sys,json; t=json.load(sys.stdin); assert t['resourceSpans'][0]['scopeSpans'][0]['spans']; print('OK: OTLP/JSON export')"
 
+      - name: loop guard syntax + termination smoke
+        run: |
+          python3 -m py_compile tools/eval/forge_loop_guard.py tools/forge_loop_guard.py
+          T="$(mktemp -d)"; mkdir -p "$T/prds/demo"
+          # two failed attempts, SAME signature → no-progress → ESCALATE (strict exits 1)
+          printf '%s\n' \
+            '2026-06-18T10:00:00Z [P4.4-EVAL-FAIL] task_id=demo signature=null-deref outcome=RED' \
+            '2026-06-18T10:20:00Z [P4.4-EVAL-FAIL] task_id=demo signature=null-deref outcome=RED' \
+            > "$T/prds/demo/conductor.log"
+          if python3 tools/forge_loop_guard.py --task-id demo --brain "$T" --strict >/dev/null 2>&1; then
+            echo "FAIL: expected ESCALATE_NO_PROGRESS"; exit 1
+          else echo "OK: loop guard escalates on no-progress"; fi
+          # single attempt → CONTINUE (strict exits 0)
+          printf '%s\n' '2026-06-18T10:00:00Z [P4.4-EVAL-FAIL] task_id=demo signature=a outcome=RED' > "$T/prds/demo/conductor.log"
+          python3 tools/forge_loop_guard.py --task-id demo --brain "$T" --strict >/dev/null && echo "OK: loop guard CONTINUE within bounds"
+          rm -rf "$T"
+
       - name: Stage marker unit tests
         run: node .claude/hooks/test-forge-stage-detect.cjs
 
@@ -124,6 +141,24 @@ jobs:
 
       - name: Load pre-tool-use hook (syntax)
         run: node --check .claude/hooks/pre-tool-use.cjs
+
+      - name: pre-tool-use loop-guard enforcement smoke
+        run: |
+          set -euo pipefail
+          T="$(mktemp -d)"; mkdir -p "$T/prds/demo"
+          printf '%s\n' \
+            '[P4.4-EVAL-FAIL] task_id=demo signature=a outcome=RED' \
+            '[P4.4-EVAL-FAIL] task_id=demo signature=b outcome=RED' \
+            '[P4.4-EVAL-FAIL] task_id=demo signature=c outcome=RED' > "$T/prds/demo/conductor.log"
+          # a 4th [P4.4-EVAL-FAIL] write must be gated (cap reached)
+          cmd="echo '[P4.4-EVAL-FAIL] task_id=demo signature=d outcome=RED' >> $T/prds/demo/conductor.log"
+          in=$(python3 -c "import json,sys; print(json.dumps({'tool_name':'Bash','tool_input':{'command':sys.argv[1]}}))" "$cmd")
+          out=$(printf '%s' "$in" | node .claude/hooks/pre-tool-use.cjs)
+          echo "$out" | grep -q 'LOOP GUARD: ESCALATE_CAP' && echo "OK: hook gates a retry past the cap"
+          # a normal edit (no marker) must pass through silently
+          out2=$(printf '{"tool_name":"Edit","tool_input":{"file_path":"/tmp/x/foo.ts","new_string":"x=1"}}' | node .claude/hooks/pre-tool-use.cjs)
+          test -z "$out2" && echo "OK: hook allows normal edits"
+          rm -rf "$T"
 
       - name: Load post-commit hook (syntax)
         run: node --check .claude/hooks/post-commit.cjs

@@ -581,7 +581,7 @@ Skipping this step and creating a new file when an existing one should be modifi
   1. Invoke **`eval-product-stack-up`** (semantic steps hit URLs/devices against the built stack).
   2. Invoke **`qa-semantic-csv-orchestrate`** / **`python3 tools/run_semantic_csv_eval.py`** so **`outcome`** reflects this run against the **built** product.
   3. Invoke **`eval-judge`** on **`qa/semantic-eval-manifest.json`** + **`qa/semantic-eval-run.log`** per skill § Semantic path.
-  4. If verdict GREEN → log **`[P4.4-EVAL-GREEN] task_id=<id> timestamp=<ISO8601> path=semantic manifest=qa/semantic-eval-manifest.json`**. If RED/YELLOW → Phase 4.5.
+  4. If verdict GREEN → log **`[P4.4-EVAL-GREEN] task_id=<id> timestamp=<ISO8601> path=semantic manifest=qa/semantic-eval-manifest.json`**. If RED/YELLOW → log **`[P4.4-EVAL-FAIL] task_id=<id> outcome=<RED|YELLOW>`** (or **`[P4.4-RED-INFRA]`** when the failure is environment/stack, not product) → Phase 4.5. These failure markers are consumed by `tools/eval/forge_trajectory_eval.py` (eval outcome + self-heal-loop count) and `forge-team-gates`.
 
 **SUCCESS CONDITION:** Manifest **`outcome: pass`** (and judge confirms — **`yellow`**/`fail` are not GREEN).  
 **FAILURE CONDITION:** Semantic **`outcome`** is **`fail`** / judge RED **or** **`yellow`** without documented acceptance.  
@@ -592,20 +592,25 @@ Skipping this step and creating a new file when an existing one should be modifi
 [P4.4-EVAL] task_id=<id> service=<svc> timestamp=<ISO8601> status=UP
 [P4.4-EVAL] task_id=<id> path=semantic status=RUN_START
 [P4.4-EVAL] task_id=<id> path=semantic outcome=<pass|fail|yellow>
-[P4.4-EVAL-GREEN] task_id=<id> timestamp=<ISO8601> path=semantic manifest=qa/semantic-eval-manifest.json
+[P4.4-EVAL-GREEN] task_id=<id> timestamp=<ISO8601> path=semantic manifest=qa/semantic-eval-manifest.json   # verdict GREEN
+[P4.4-EVAL-FAIL]  task_id=<id> timestamp=<ISO8601> signature=<fault-id> outcome=<RED|YELLOW> manifest=qa/semantic-eval-manifest.json   # verdict RED/YELLOW → Phase 4.5; signature drives no-progress detection
+[P4.4-RED-INFRA]  task_id=<id> timestamp=<ISO8601> reason=<stack|service|network>   # eval blocked by environment, not product
 ```
 
 #### Phase 4.5: Self-Heal (Locate, Triage, Fix, Verify — Max 3 Retries)
 **ENTRY:** Eval fails (**`qa/semantic-eval-run.log`** JSON lines + manifest **`outcome`**).  
-**ACTION:** Retry loop (max 3 attempts):
+**ACTION:** Retry loop (max 3 attempts) — apply the loop-engineering termination controls ([docs/loop-engineering.md](../../../docs/loop-engineering.md)):
+  0. **Termination gate (run before every retry):** `python3 tools/forge_loop_guard.py --task-id <id> --strict`. On `ESCALATE_NO_PROGRESS` (the last two attempts share a failure signature), `ESCALATE_CAP`, or `ESCALATE_BUDGET` → **stop and escalate — do not retry.** Only `CONTINUE` proceeds. (The `pre-tool-use` hook also enforces this if the gate is skipped.)
   1. **Attempt N (1-3):**
-     - **Locate Fault:** Invoke `self-heal-locate-fault` — parse **`qa/semantic-eval-run.log`** and map **`surface` → service** (see skill § Semantic).
+     - **Locate Fault:** Invoke `self-heal-locate-fault` — parse **`qa/semantic-eval-run.log`** and map **`surface` → service** (see skill § Semantic). Record the **fault id** — it is the failure `signature`.
+     - **Reflexion:** **Read** prior `prds/<id>/heal/attempt-*.md` critiques first; do **not** repeat a tried-and-failed fix.
      - **Triage Issue:** Invoke `self-heal-triage` to classify the failure (missing endpoint, schema mismatch, performance, semantic step failure, etc.).
      - **Fix:** Invoke `self-heal-systematic-debug` to generate fix suggestions. Send back to dev-implementer to implement fix.
      - **Verify:** Re-run eval to check if fix worked.
+     - **On FAIL:** log `[P4.4-EVAL-FAIL] task_id=<id> signature=<fault-id> outcome=<RED|YELLOW>` **and** write the Reflexion critique `prds/<id>/heal/attempt-<n>.md` (what was tried, the signature, why it failed).
   2. If eval PASS → advance to Phase 5.1 (PR).
-  3. If eval FAIL and attempts < 3 → loop back to Locate Fault.
-  4. If eval FAIL and attempts = 3 → escalate.
+  3. If eval FAIL and the guard returns `CONTINUE` → loop back to step 0.
+  4. If the guard returns any `ESCALATE_*` (cap, no-progress, or budget) → escalate BLOCKED with all attempt evidence + the Reflexion critiques.
 
 **SUCCESS CONDITION:** Eval passes after self-heal fix.  
 **FAILURE CONDITION:** Eval still fails after 3 attempts.  

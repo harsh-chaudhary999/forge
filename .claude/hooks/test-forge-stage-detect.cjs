@@ -63,8 +63,8 @@ test('no markers defaults intake', () => {
   assert.strictEqual(detectStageFromLogContent('no phase tags here\n'), 'intake');
 });
 
-test('P3-SPEC-FROZEN build', () => {
-  assert.strictEqual(markerToStage('[P3-SPEC-FROZEN]'), 'build');
+test('P2-SPEC-FROZEN build', () => {
+  assert.strictEqual(markerToStage('[P2-SPEC-FROZEN]'), 'build');
 });
 
 test('findMostRecentQAPipelineLog is exported', () => {

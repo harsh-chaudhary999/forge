@@ -1127,6 +1127,6 @@ This skill works with:
 - **localhost** - Default network (requires Docker Desktop on macOS/Windows)
 
 For production deployments, see related skills:
-- `deploy-driver-k8s` - Kubernetes orchestration
 - `eval-product-stack-up` - Full product stack coordination
+- Kubernetes orchestration has no dedicated Forge deploy-driver skill yet — this doc previously pointed at a "deploy-driver-k8s" skill that was never built. Use `deploy-driver-local-process`/`deploy-driver-pm2-ssh`/`deploy-driver-systemd` as a stand-in on the host running `kubectl`, or add a real k8s deploy-driver skill before relying on this path.
 

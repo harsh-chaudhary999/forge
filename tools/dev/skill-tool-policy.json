@@ -508,6 +508,17 @@
       "path": "intake-interrogate/SKILL.md",
       "type": "rigid"
     },
+    "lane-risk-triage": {
+      "allowed_tools": [
+        "Read",
+        "Bash",
+        "Write",
+        "AskUserQuestion"
+      ],
+      "hard_gate": true,
+      "path": "lane-risk-triage/SKILL.md",
+      "type": "rigid"
+    },
     "learn": {
       "allowed_tools": [
         "Bash",

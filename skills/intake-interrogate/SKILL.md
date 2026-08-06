@@ -4,7 +4,7 @@ description: "WHEN: You've been given a PRD for a multi-repo product and need to
 type: rigid
 effort: high
 requires: [brain-write]
-version: version: 1.0.10
+version: 1.0.10
 preamble-tier: 2
 triggers:
   - "interrogate PRD"

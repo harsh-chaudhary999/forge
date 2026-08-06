@@ -333,7 +333,7 @@ Try to start the service.
   5. Commit with: `skill: update {skill-name} — {what changed and why}`
 
 ### Case 4: Skill References a Non-Existent Dependency
-- **Symptom:** `requires: [brain-persist-v2]` but `brain-persist-v2` doesn't exist
+- **Symptom:** `requires: [brain-persist-v2]` but `brain-persist-v2` doesn't exist <!-- crossref: fictional-example -->
 - **Do NOT:** Ship with a broken requires reference
 - **Action:**
   1. Verify every entry in `requires:` maps to an existing skill directory
@@ -341,7 +341,7 @@ Try to start the service.
   3. If dependency is planned: ship the dependency before the dependent skill
 
 ### Case 5: Two Skills Have Overlapping Scope
-- **Symptom:** New skill `eval-driver-cache-v2` overlaps heavily with `eval-driver-cache-redis`
+- **Symptom:** New skill `eval-driver-cache-v2` overlaps heavily with `eval-driver-cache-redis` <!-- crossref: fictional-example -->
 - **Do NOT:** Ship both and let confusion sort itself out
 - **Action:**
   1. Determine: are these the same skill (consolidate) or genuinely different (clarify boundaries)?

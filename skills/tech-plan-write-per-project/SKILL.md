@@ -4,7 +4,7 @@ description: "WHEN: Shared-dev-spec is frozen and per-project tech plans must be
 type: rigid
 effort: high
 requires: [brain-read]
-version: 1.0.5
+version: 1.1.0
 preamble-tier: 3
 triggers:
   - "write tech plan"
@@ -123,6 +123,18 @@ If you notice any of these, STOP and do not proceed:
 - **Missing product intent trace** — **Section 1b.0** rows lack **Why (rationale)**; or **Section 1b.3** bullets lack **`Why:`** clause; or **Section 1b.4** / **Section 1b.5** / **`#### 1b.5b`** tables omit **PRD / rationale** where the skill prescribes them; or any **Section 2** task omits **`Traces to:`** or **`Rationale:`** — STOP. Add intent lines until every change is tied to **`prd-locked.md`** / spec / contract obligation.
 - **`### 1b.2a` missing, shallow, or misplaced** — No touchpoint inventory; table rows with **empty Evidence** / **no repo paths** for **Y** categories; **Exploration notes** missing or generic (“looked at repo”); or **`### 1b.2a`** appears **before** **Section 1b.5** / **`#### 1b.5b`** (cannot cite concrete ops/topics) — STOP. Run **full exploration mode** per **`### 1b.2a`**.
 - **`### 1b.2b` missing when gate applies** — Elaborative work (multi-file net-new, **≥3** integrations, or multiple **PARTIAL** touchpoints) but no **first-session reconnaissance** (git block, **≥5** minimum reads, **≥2** discovery commands) — STOP. Brain scan alone is not a work order.
+- **`lane-lock.md` records `risk_tier: high-risk` but the plan has no Risk Tier Rigor section** — A wrong first pass on financial/identity/attribution/org-mapping data is expensive or impossible to unwind; skipping the dry-run + staged-rollout plan is exactly the gap `lane-risk-triage` exists to close. STOP. Add the section below before `tech-plan-self-review` can PASS.
+
+## Risk Tier Rigor (when `lane-lock.md` records `risk_tier: high-risk`)
+
+Add this section to the plan, after Section 1b and before Section 2 tasks. Skip entirely (one-line `Risk Tier: standard — N/A`) when `risk_tier: standard`.
+
+- **Data-integrity + rollback plan:** exact tables/records/fields the first pass touches, and the precise steps to undo a bad write (not "redeploy the old version" — that doesn't undo already-written data).
+- **Dry-run-on-a-copy approach:** how the first pass gets exercised against a copy of the real data (or an equivalently representative fixture) before touching production, and what "the copy behaved correctly" is verified against.
+- **Staged rollout plan:** the rollout is split into stages (e.g. by cohort, region, or percentage) with an explicit **validation query** run between stages — name the query and its expected result, not just "check it looks right."
+- **Sign-off:** name who outside the dev+AI loop must approve the validation results before the next stage or full ship (per `lane-lock.md`'s recorded risk reason — the human closest to the data this item touches).
+
+**INSUFFICIENT:** "we'll be careful," a rollback plan that only covers code (not data already written), or a staged rollout with no named validation query between stages.
 
 ## Overview
 
@@ -258,6 +270,7 @@ Before handing plans to tech-plan-self-review:
 
 ## Cross-References
 
+- `lane-risk-triage`: Provides `lane-lock.md`'s `risk_tier` — when `high-risk`, this skill's Risk Tier Rigor section is mandatory before `tech-plan-self-review` can PASS.
 - `forge-council-gate`: Provides the locked `shared-dev-spec.md` (all 5 contracts) that this skill decomposes into per-repo tech plans.
 - `spec-freeze`: Immutable spec after `[P2-SPEC-FROZEN]` — tech-plan-write-per-project must not diverge from the frozen spec.
 - `conductor-orchestrate`: Sequences `[P3-TECH-PLAN-LOCKED]` after tech plans pass review; consuming the plans produced here.

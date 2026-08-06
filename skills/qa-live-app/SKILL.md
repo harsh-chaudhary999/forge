@@ -71,8 +71,7 @@ HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$BASE_URL" 2
 echo "Base URL: $BASE_URL (HTTP ${HTTP_STATUS:-no-response})"
 ```
 
-If `HTTP_STATUS` is `000`/empty, **STOP** — do **not** `exit` (these blocks run in the
-agent's own shell; `exit` would kill the session). Use **`AskUserQuestion`** to offer:
+If `HTTP_STATUS` is `000`/empty, **STOP** — do **not** just let the script `exit` silently (a bare `exit` here only ends that one Bash-tool call; it does not surface the failure to the user). Use **`AskUserQuestion`** to offer:
 retry, fix the URL, or abort. Proceed only once the URL responds.
 
 **Step 2 — Find and read the QA CSV:**

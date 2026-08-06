@@ -6,6 +6,9 @@ name: skills-guard
 #   - every SKILL.md stays <= ~400 lines (progressive disclosure)
 #   - no broken intra-repo markdown links
 #   - no stray symlinks under skills/ (the 84 self-referential ones are gone — keep them gone)
+#   - no broken skill-name cross-references, malformed version fields, or bare product.md
+#     (bug classes a markdown-link checker can't see — found by manual audit, see
+#     docs/release-readiness-2026.md A5 — now guarded so they can't silently reappear)
 on:
   push:
     paths:
@@ -15,6 +18,8 @@ on:
       - "tools/dev/check_skill_standard.py"
       - "tools/dev/lint_skill_allowed_tools.py"
       - "tools/dev/skill-tool-policy.json"
+      - "tools/check_skill_crossrefs.py"
+      - "tools/dev/check_skill_crossrefs.py"
       - ".github/workflows/skills-guard.yml"
   pull_request:
     paths:
@@ -24,6 +29,8 @@ on:
       - "tools/dev/check_skill_standard.py"
       - "tools/dev/lint_skill_allowed_tools.py"
       - "tools/dev/skill-tool-policy.json"
+      - "tools/check_skill_crossrefs.py"
+      - "tools/dev/check_skill_crossrefs.py"
       - ".github/workflows/skills-guard.yml"
 
 jobs:
@@ -41,6 +48,9 @@ jobs:
 
       - name: allowed-tools lint (0 warn)
         run: python3 tools/dev/lint_skill_allowed_tools.py
+
+      - name: No broken skill cross-references, malformed versions, or bare product.md
+        run: python3 tools/check_skill_crossrefs.py
 
       - name: allowed-tools policy not drifted
         run: |

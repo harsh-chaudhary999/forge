@@ -3,7 +3,7 @@ name: eval-driver-web-cdp
 description: "WHEN: qa-semantic-csv-orchestrate or run_semantic_csv_eval dispatches an automation step that requires web UI interaction or assertion. Chrome DevTools Protocol: launch(), navigate(), interact(click/type/scroll), screenshot(), getDOM(), teardown()."
 type: rigid
 requires: [brain-read]
-version: version: 1.0.5
+version: 1.0.5
 preamble-tier: 3
 triggers:
   - "eval web UI"

@@ -78,7 +78,7 @@ When the PRD centers on an entity type that likely participates in **multiple pr
 
 **Q7: Rollback plan?**
 "If this breaks prod, how do we roll it back? (e.g., 'API v1 is still live', 'DB migration is backward-compat')"
-→ Lock the rollback strategy.
+→ Lock the rollback strategy. If `lane-lock.md` records `risk_tier: high-risk`, this alone is not sufficient — `tech-plan-write-per-project`'s Risk Tier Rigor section (dry-run-on-a-copy + staged rollout + validation query) is also mandatory before dispatch.
 
 **Q8: Success metrics?**
 "How will you measure if this succeeded post-launch? (e.g., 'login rate > 90%', 'search latency < 500ms')"

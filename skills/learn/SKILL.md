@@ -2,7 +2,7 @@
 name: learn
 description: "WHEN: You've discovered something worth capturing — a pattern, a gotcha, a process improvement — and want to preserve it so future sessions can benefit. Invoke at end of session or when asked to 'save this insight', 'capture learning', 'log lesson'."
 type: flexible
-version: version: 1.0.2
+version: 1.0.2
 preamble-tier: 2
 triggers:
   - "what did we learn"

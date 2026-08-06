@@ -72,7 +72,7 @@ conformant so skills load identically on every compliant host. Verify with:
 |---|---|
 | Skills (full catalog) | `skills/` — count: `bash scripts/count-skills.sh` from repo root |
 | Agents (4) | `agents/` |
-| Commands (21) | `commands/` |
+| Commands (23) | `commands/` |
 | Hook manifest (`hooks.json`) | `hooks/` |
 | Claude / git hook scripts (`.cjs`) | `.claude/hooks/` |
 | Dynamic workflows | `.claude/workflows/*.js` (e.g. `forge-council.js`) |

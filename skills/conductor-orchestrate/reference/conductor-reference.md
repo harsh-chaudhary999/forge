@@ -136,8 +136,25 @@
 
 ## Workflow States & Transitions
 
+### State 0: Roadmap-Item Triage (Lane & Risk)
+**ENTRY:** A roadmap item or PRD candidate exists, before any PRD text has been locked.
+**ACTION:** Invoke `lane-risk-triage` skill. Confidence-first, same rhythm as intake: if the item text makes the Lane call unambiguous, classify silently and cite the passage — most items resolve here with zero extra user turns. Only ask when Gate 1/Gate 2 are genuinely unclear.
+**ENTRY CONDITION:** Item description available (roadmap line, ticket, or raw PRD text).
+**SUCCESS CONDITION:** `lane-lock.md` exists in `~/forge/brain/prds/<task-id>/` with `lane` recorded. Two valid outcomes:
+  - `lane: build-led` (+ `risk_tier`) → proceed to State 1.
+  - `lane: scope-led` → **STOP here.** Do not proceed to State 1. Report to the user that this item needs product/PM-led scoping outside Forge before it can become a PRD. This is a clean, successful exit, not a failure.
+**FAILURE CONDITION:** Lane classification attempted but genuinely ambiguous after one clarifying round with the user.
+**ESCALATION:** Ask the user directly which lane they believe applies and why; record the answer as the classification with `confidence: user-asserted`.
+**LOGGING:**
+```
+[TRIAGE] task_id=<id> timestamp=<ISO8601> status=START
+[TRIAGE] task_id=<id> gate1=<tripped|not-tripped> gate2=<tripped|not-tripped> lane=<scope-led|build-led>
+[TRIAGE] task_id=<id> risk_tier=<standard|high-risk> (build-led only)
+[TRIAGE] task_id=<id> timestamp=<ISO8601> status=<LOCKED-BUILD-LED|LOCKED-SCOPE-LED-STOP>
+```
+
 ### State 1: Intake Interrogation
-**ENTRY:** PRD provided by user.  
+**ENTRY:** PRD provided by user; `lane-lock.md` records `lane: build-led`.  
 **ACTION:** Invoke `intake-interrogate` skill to lock scope, success criteria, and contracts.  
 **ENTRY CONDITION:** PRD raw (user provided text/doc).  
 **SUCCESS CONDITION:** `prd-locked.md` exists in `~/forge/brain/prds/<task-id>/`.  
@@ -390,7 +407,7 @@ After dev-implementer reports completion, verify the implementation log or commi
   - **Web:** `eval-driver-web-cdp` — CDP-shaped UI checks; **ask the operator** whether the host uses raw CDP, **Playwright/Puppeteer**, or a **browser MCP** for execution.
   - **App:** `eval-driver-android-adb` — ADB checks.
   - **Cache:** `eval-driver-cache-redis` — Redis operations.
-  - **Search:** `eval-driver-search-elasticsearch` — Elasticsearch queries.
+  - **Search:** `eval-driver-search-es` — Elasticsearch queries.
 
 **SUCCESS CONDITION:** All eval drivers pass (all assertions green).  
 **FAILURE CONDITION:** Any eval driver fails (assertion fails, error raised, timeout).  

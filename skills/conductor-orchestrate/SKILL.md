@@ -1,9 +1,9 @@
 ---
 name: conductor-orchestrate
-description: "WHEN: PRD is locked. You are the master state machine orchestrating the entire forge workflow. Routes the task through all phases, tracks state, manages escalations, and coordinates subagents."
+description: "WHEN: A roadmap item or PRD needs delivery. You are the master state machine orchestrating the entire forge workflow — from lane/risk triage through intake, council, build, eval, and ship. Routes the task through all phases, tracks state, manages escalations, and coordinates subagents."
 type: rigid
-requires: [intake-interrogate, product-context-load, brain-read, brain-write, forge-worktree-gate, council-multi-repo-negotiate, spec-freeze, tech-plan-write-per-project, tech-plan-self-review, qa-manual-test-cases-from-prd, forge-tdd, eval-product-stack-up, qa-semantic-csv-orchestrate, forge-eval-gate, pr-set-coordinate, dream-retrospect-post-pr]
-version: 1.0.14
+requires: [lane-risk-triage, intake-interrogate, product-context-load, brain-read, brain-write, forge-worktree-gate, council-multi-repo-negotiate, spec-freeze, tech-plan-write-per-project, tech-plan-self-review, qa-manual-test-cases-from-prd, forge-tdd, eval-product-stack-up, qa-semantic-csv-orchestrate, forge-eval-gate, pr-set-coordinate, dream-retrospect-post-pr]
+version: 1.1.0
 preamble-tier: 4
 triggers:
   - "start the pipeline"
@@ -76,11 +76,13 @@ If you notice any of these, STOP and do not proceed:
 
 ## Purpose
 
-The Conductor is the master state machine that orchestrates a single task (PRD) through the entire Forge lifecycle:
+The Conductor is the master state machine that orchestrates a single task (roadmap item → PRD) through the entire Forge lifecycle:
 
 ```
-Intake → Load Product → Council → Tech Plans → **QA CSV (acceptance + TDD basis)** → **Semantic CSV execution (manifest + run.log) + forge-tdd RED** → **Design ingest (when net-new UI)** → Dispatch (GREEN) → Review → **Eval (E2E)** → PR Set
+**Lane & Risk Triage** → Intake → Load Product → Council → Tech Plans → **QA CSV (acceptance + TDD basis)** → **Semantic CSV execution (manifest + run.log) + forge-tdd RED** → **Design ingest (when net-new UI)** → Dispatch (GREEN) → Review → **Eval (E2E)** → PR Set
 ```
+
+**Lane & Risk Triage happens first, before Intake.** If it locks `lane: scope-led`, the Conductor stops there — the item needs product/PM-led scoping outside Forge, not a PRD. Only `lane: build-led` items proceed into Intake.
 
 The Conductor:
 - Ensures each state completes before moving to the next

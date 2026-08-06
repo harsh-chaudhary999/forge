@@ -162,7 +162,8 @@ BRAIN="${FORGE_BRAIN:-${FORGE_BRAIN_PATH:-$HOME/forge/brain}}"
 TASK=<task-id>
 SLUG=<slug>
 
-# Verify required artifacts exist (echo BLOCKED — do not `exit`, these run in the agent shell)
+# Verify required artifacts exist (echo BLOCKED instead of `exit`ing — the checks below this one
+# should still run so every missing artifact is reported in one pass, not just the first)
 [ -s "$BRAIN/prds/$TASK/prd-locked.md" ] || echo "BLOCKED: prd-locked.md not found for task $TASK"
 
 cat "$BRAIN/prds/$TASK/prd-locked.md"

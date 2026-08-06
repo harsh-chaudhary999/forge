@@ -2,7 +2,7 @@
 name: forge-glossary
 description: "WHEN: You encounter an unfamiliar Forge term and need its canonical definition."
 type: reference
-version: version: 1.0.15
+version: 1.0.15
 preamble-tier: 1
 triggers:
   - "what does X mean"
